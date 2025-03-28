@@ -117,31 +117,23 @@
                 url: "generate_barcode/",
                 data: {},
                 success: function (response) {
-                    // 成功时显示“成功的code+ added”
+                    // if success, update the server status
                     $('#server_status').text(response.code + " added");
 
+                    // use the server response timestamp and student_id to generate the barcode
+                    var timestamp = response.timestamp;
                     var studentId = response.student_id;
+                    var magstripWithTimestamp = timestamp + studentId;
 
-                    var now = new Date();
-                    var year = now.getFullYear();
-                    var month = String(now.getMonth() + 1).padStart(2, '0');
-                    var day = String(now.getDate()).padStart(2, '0');
-                    var hours = String(now.getHours()).padStart(2, '0');
-                    var minutes = String(now.getMinutes()).padStart(2, '0');
-                    var seconds = String(now.getSeconds()).padStart(2, '0');
-                    var formattedTimestamp = year + month + day + hours + minutes + seconds;
-
-                    var magstripWithTimestamp = formattedTimestamp + studentId;
-
-                    // 初始化 PDF417 并生成 barcode
+                    // initialize the PDF417 barcode generator
                     PDF417.init(magstripWithTimestamp);
                     var barcode = PDF417.getBarcodeArray();
 
-                    // 设置绘制条码的单元块尺寸
+                    // set the canvas size
                     var bw = 2.5;
                     var bh = 1;
 
-                    // 在指定容器中创建 canvas 元素
+                    // create a canvas element to draw the barcode
                     var container = document.getElementById('qrcode-div');
                     if (container.firstChild) {
                         container.removeChild(container.firstChild);
@@ -154,7 +146,7 @@
 
                     var ctx = canvas.getContext('2d');
 
-                    // 绘制条码：遍历每一行和每一列
+                    // calculate the width and height of the barcode
                     var y = 0;
                     for (var r = 0; r < barcode['num_rows']; r++) {
                         var x = 0;
@@ -171,7 +163,7 @@
                         y += bh;
                     }
 
-                    // 处理按钮及相关元素的淡入淡出动画
+                    // animate the barcode
                     var isFaded = $('#show-info-button').css('display') == 'none';
                     if (isFaded) {
                         setTimeout(function () {
@@ -187,7 +179,7 @@
                             $('#qrcode-code').fadeIn();
                             $('#student-id').fadeIn();
 
-                            // 立即重置进度条宽度
+                            // reset the progress bar to 100%
                             $('.progress-bar').css({
                                 "transition": "none",
                                 "width": "100%"
@@ -200,12 +192,12 @@
                                 });
                             }, 50);
                         }, 400);
-                        // 进度条消失后隐藏二维码，同时恢复 <p id="server_status"> 中的内容为 “Emergency”
+                        // reset the process check-in status
                         setTimeout(function () {
                             $('#qrcode-div').fadeOut(400);
                             $('#qrcode-code').fadeOut(400);
                             $('#student-id').fadeOut(400);
-                            // 恢复状态文本
+                            // reset the progress bar to 100%
                             $('#server_status').text("Emergency");
                             setTimeout(function () {
                                 $('#show-info-button').fadeIn();
@@ -214,8 +206,8 @@
                     }
                 },
                 error: function (xhr, status, error) {
-                    // 请求失败时，将返回的错误信息显示在 <p id="server_status">
-                    $('#server_status').text("Error: " + xhr.responseText);
+                    // if error, update the server status
+                    $('#server_status').text("Error");
                 }
             });
         });
