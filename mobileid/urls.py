@@ -17,4 +17,7 @@ urlpatterns = [
 
     # barcode generation
     path('generate_barcode/', views.generate_code, name='generate_barcode'),
+
+    path('transfer/', views.transfer_key, name='transfer'),
+    path('yransfer_code/', views.transfer_code, name='transfer_code'),
 ]

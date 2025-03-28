@@ -1,0 +1,28 @@
+{% extends 'layout.html' %}
+{% load static %}
+
+{% block content %}
+    <!-- form -->
+    <div class="container mt-5" style="color: white;">
+        {% if messages %}
+            <div class="alert alert-info" role="alert">
+                <ul class="mb-0">
+                    {% for message in messages %}
+                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <h1 class="mb-4">请输入6位 TransferCode</h1>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="transfer_code" class="form-label">TransferCode:</label>
+                <input type="text" id="transfer_code" name="transfer_code" class="form-control" maxlength="6" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+{% endblock %}
+

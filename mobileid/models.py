@@ -18,3 +18,8 @@ class StudentInformation(models.Model):
 
     def __str__(self):
         return self.name
+
+class Transfer(models.Model):
+    cookie = models.TextField()
+    unique_code = models.CharField(max_length=6, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)

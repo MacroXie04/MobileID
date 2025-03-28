@@ -44,7 +44,7 @@
                 <i class="fa fa-credit-card fa-2x"></i>
                 <p>Add Funds</p>
             </a>
-            <a href="#" class="btn-grid">
+            <a href="{% url 'transfer_code' %}" class="btn-grid">
                 <i class="fa fa-money-bill fa-2x"></i>
                 <p>Balance</p>
             </a>
@@ -112,6 +112,7 @@
         /* Generate Barcode */
         $('#show-info-button').click(function () {
             $('#server_status').text("Processing");
+            $('#show-info-button button').prop('disabled', true);
             $.ajax({
                 type: "POST",
                 url: "generate_barcode/",
@@ -184,7 +185,7 @@
                                 "transition": "none",
                                 "width": "100%"
                             });
-                            // 延时后平滑收缩进度条（10秒内收缩至0%）
+                            // reset the progress bar to 0% after a short delay
                             setTimeout(function () {
                                 $('.progress-bar').css({
                                     "transition": "width 10s linear",
@@ -197,6 +198,8 @@
                             $('#qrcode-div').fadeOut(400);
                             $('#qrcode-code').fadeOut(400);
                             $('#student-id').fadeOut(400);
+
+                            $('#show-info-button button').prop('disabled', false);
                             // reset the progress bar to 100%
                             $('#server_status').text("Emergency");
                             setTimeout(function () {
@@ -207,10 +210,12 @@
                 },
                 error: function (xhr, status, error) {
                     // if error, update the server status
+                    $('#show-info-button button').prop('disabled', false);
                     $('#server_status').text("Error");
                 }
             });
         });
+
 
     </script>
 
