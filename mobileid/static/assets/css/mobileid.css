@@ -1,0 +1,280 @@
+/* For iPhone displays */
+@media all and (max-width: 480px) {
+  .half {
+    float: left !important;
+    width: 50% !important;
+  }
+}
+
+@font-face {
+  font-family: "OpenSansReg";
+  src: url("../fonts/OpenSans-Regular.ttf") format("truetype");
+}
+
+/* General Text & Icons */
+.fa,
+h2,
+h3,
+p {
+  color: #bf9c44; /* Original gold color */
+  transition: color 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.white-h4 {
+  color: white !important;
+}
+
+body {
+  background-color: #092f44; /* Original navy blue */
+  font-family: "OpenSansReg", sans-serif !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* ========================= */
+/* GRID-BASED BUTTON LAYOUT */
+/* ========================= */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 320px;
+  margin: auto;
+  padding: 10px 0;
+}
+
+/* Buttons inside the grid */
+.btn-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  transition: all 0.3s ease-in-out;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  min-width: 90px;
+  min-height: 90px;
+}
+
+/* Hover effect for buttons */
+.btn-grid:hover {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0px 0px 12px rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+}
+
+/* Icon & Image Styling */
+.btn-grid i,
+.btn-grid img {
+  margin-bottom: 5px;
+  transition: transform 0.2s ease-in-out;
+}
+
+.btn-grid:hover i,
+.btn-grid:hover img {
+  transform: scale(1.1);
+}
+
+/* ========================= */
+/* BUTTON STYLES & EFFECTS */
+/* ========================= */
+.btn {
+  padding: 14px 26px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+}
+
+.btn.outline {
+  border: 2px solid white;
+  color: white;
+  background: transparent;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn.outline:hover {
+  background: white;
+  color: #092f44;
+  box-shadow: 0px 0px 12px rgba(255, 255, 255, 0.8);
+}
+
+/* ========================= */
+/* ICON HOVER & ANIMATIONS */
+/* ========================= */
+.fa {
+  font-size: 20px;
+  transition: transform 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+.fa:hover {
+  transform: scale(1.2) rotate(5deg);
+  color: #d4af37; /* Lighter gold on hover */
+}
+
+/* ========================= */
+/* PROFILE PICTURE EFFECT */
+/* ========================= */
+.profile-picture {
+  border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(191, 156, 68, 0.6);
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.profile-picture:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(191, 156, 68, 0.9);
+}
+
+/* ========================= */
+/* SPACING & LAYOUT */
+/* ========================= */
+.spacer {
+  margin-top: 50px;
+}
+
+.spacer-small {
+  margin-top: 20px;
+}
+
+/* Centered Content */
+.row-centered {
+  text-align: center;
+}
+
+.col-centered {
+  display: inline-block;
+  float: none;
+  text-align: center;
+  margin-right: -4px;
+}
+
+/* Vertical Alignment */
+.vcenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* ========================= */
+/* TRANSPARENT BUTTONS WITH HOVER */
+/* ========================= */
+.btn-trans {
+  background: none;
+  box-shadow: none;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn-trans-default {
+  border: 2px solid #bf9c44;
+  color: #bf9c44;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.btn-trans-default:hover {
+  background: #bf9c44;
+  color: #092f44;
+  box-shadow: 0px 0px 15px rgba(191, 156, 68, 0.8);
+}
+
+/* ========================= */
+/* QR CODE SECTION */
+/* ========================= */
+#qrcode-code {
+  display: none;
+  height: 70px;
+  text-align: center;
+}
+
+#qrcode-code p {
+  color: white !important;
+  font-size: 2em;
+}
+
+/* ========================= */
+/* PROGRESS BAR EFFECT */
+/* ========================= */
+.progress {
+  height: 8px;
+  width: 70%;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #f8b400; /* Gold color */
+  width: 100%;
+  transition: width 5s linear; /* Ensures smooth animation over 5 seconds */
+  border-radius: 10px;
+}
+
+/* ========================= */
+/* ALERT BOX FADE IN ANIMATION */
+/* ========================= */
+.alert {
+  display: none;
+  padding: 15px;
+  border-radius: 5px;
+  font-weight: bold;
+  text-align: center;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ========================= */
+/* ROW TEXT & PROFILE NAME FIX */
+/* ========================= */
+.row h4 {
+  color: white !important;
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* ========================= */
+/* PROFILE PICTURE HOVER */
+/* ========================= */
+#setting-icon img {
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+#setting-icon img:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 15px rgba(255, 255, 255, 0.6);
+}
+
+/* ========================= */
+/* BANNER IMAGE HOVER EFFECT */
+/* ========================= */
+#header-img {
+  border-radius: 8px;
+  transition: opacity 0.5s ease-in-out;
+}
+
+#header-img:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
