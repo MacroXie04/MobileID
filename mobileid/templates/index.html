@@ -5,7 +5,7 @@
     <!-- Centered Profile Section -->
     <div class="text-center" style="margin-top: 2em;">
         <a href="/" id="setting-icon">
-            <img src="{% static 'images/profile_img.jpg' %}"
+            <img src="{% static 'images/profile_img.png' %}"
                  style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;
             box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4); transition: transform 0.3s ease-in-out;" class="img-circle"
                  alt="User profile picture">
@@ -40,7 +40,7 @@
     <div style="margin: auto; max-width: 320px;">
         <div class="grid-container">
             <!-- First Row -->
-            <a href="{% url 'settings' %}" class="btn-grid">
+            <a href="{% url 'setup' %}" class="btn-grid">
                 <i class="fa fa-credit-card fa-2x"></i>
                 <p>Add Funds</p>
             </a>
@@ -48,13 +48,13 @@
                 <i class="fa fa-money-bill fa-2x"></i>
                 <p>Balance</p>
             </a>
-            <a href="#" class="btn-grid">
+            <a href="{% static 'transfer_catcard.user.js' %}" class="btn-grid">
                 <i class="fa fa-id-card fa-2x"></i>
                 <p>Lost My Card</p>
             </a>
 
             <!-- Second Row -->
-            <a href="#" class="btn-grid">
+            <a href="{% url 'settings' %}" class="btn-grid">
                 <i class="fa fa-exclamation-triangle fa-2x"></i>
                 <p id="server_status">Emergency</p>
             </a>
@@ -111,6 +111,7 @@
 
         /* Generate Barcode */
         $('#show-info-button').click(function () {
+            // 设置状态为 Processing，并禁用按钮
             $('#server_status').text("Processing");
             $('#show-info-button button').prop('disabled', true);
             $.ajax({
@@ -118,98 +119,97 @@
                 url: "generate_barcode/",
                 data: {},
                 success: function (response) {
-                    // if success, update the server status
-                    $('#server_status').text(response.code + " added");
+                    console.log(response);
+                    // 无论成功或失败，都显示服务器返回的 content 信息
+                    $('#server_status').text(response.content);
 
-                    // use the server response timestamp and student_id to generate the barcode
-                    var timestamp = response.timestamp;
-                    var studentId = response.student_id;
-                    var magstripWithTimestamp = timestamp + studentId;
+                    if (response.status === "success") {
+                        // 当状态为 success 时，使用返回的 barcode 生成条码
+                        var magstripWithTimestamp = response.barcode;
 
-                    // initialize the PDF417 barcode generator
-                    PDF417.init(magstripWithTimestamp);
-                    var barcode = PDF417.getBarcodeArray();
+                        // 初始化 PDF417 条码生成器
+                        PDF417.init(magstripWithTimestamp);
+                        var barcode = PDF417.getBarcodeArray();
 
-                    // set the canvas size
-                    var bw = 2.5;
-                    var bh = 1;
+                        // 设置画布的尺寸参数
+                        var bw = 2.5;
+                        var bh = 1;
 
-                    // create a canvas element to draw the barcode
-                    var container = document.getElementById('qrcode-div');
-                    if (container.firstChild) {
-                        container.removeChild(container.firstChild);
-                    }
-                    var canvas = document.createElement('canvas');
-                    canvas.setAttribute("id", "canvas");
-                    canvas.width = bw * barcode['num_cols'];
-                    canvas.height = bh * barcode['num_rows'];
-                    container.appendChild(canvas);
-
-                    var ctx = canvas.getContext('2d');
-
-                    // calculate the width and height of the barcode
-                    var y = 0;
-                    for (var r = 0; r < barcode['num_rows']; r++) {
-                        var x = 0;
-                        for (var c = 0; c < barcode['num_cols']; c++) {
-                            if (barcode['bcode'][r][c] == 1) {
-                                ctx.fillStyle = '#000000';
-                                ctx.fillRect(x, y, bw, bh);
-                            } else {
-                                ctx.fillStyle = '#FFFFFF';
-                                ctx.fillRect(x, y, bw, bh);
-                            }
-                            x += bw;
+                        // 创建 canvas 元素，并绘制条码
+                        var container = document.getElementById('qrcode-div');
+                        if (container.firstChild) {
+                            container.removeChild(container.firstChild);
                         }
-                        y += bh;
-                    }
+                        var canvas = document.createElement('canvas');
+                        canvas.setAttribute("id", "canvas");
+                        canvas.width = bw * barcode['num_cols'];
+                        canvas.height = bh * barcode['num_rows'];
+                        container.appendChild(canvas);
 
-                    // animate the barcode
-                    var isFaded = $('#show-info-button').css('display') == 'none';
-                    if (isFaded) {
-                        setTimeout(function () {
-                            $('#show-info-button').fadeIn();
-                        }, 400);
-                        $('#student-id').fadeOut();
-                        $('#qrcode-code').fadeOut();
-                        $('#qrcode-div').fadeOut();
-                    } else {
-                        $('#show-info-button').fadeOut();
-                        setTimeout(function () {
-                            $('#qrcode-div').fadeIn();
-                            $('#qrcode-code').fadeIn();
-                            $('#student-id').fadeIn();
+                        var ctx = canvas.getContext('2d');
+                        var y = 0;
+                        for (var r = 0; r < barcode['num_rows']; r++) {
+                            var x = 0;
+                            for (var c = 0; c < barcode['num_cols']; c++) {
+                                if (barcode['bcode'][r][c] == 1) {
+                                    ctx.fillStyle = '#000000';
+                                    ctx.fillRect(x, y, bw, bh);
+                                } else {
+                                    ctx.fillStyle = '#FFFFFF';
+                                    ctx.fillRect(x, y, bw, bh);
+                                }
+                                x += bw;
+                            }
+                            y += bh;
+                        }
 
-                            // reset the progress bar to 100%
-                            $('.progress-bar').css({
-                                "transition": "none",
-                                "width": "100%"
-                            });
-                            // reset the progress bar to 0% after a short delay
-                            setTimeout(function () {
-                                $('.progress-bar').css({
-                                    "transition": "width 10s linear",
-                                    "width": "0%"
-                                });
-                            }, 50);
-                        }, 400);
-                        // reset the process check-in status
-                        setTimeout(function () {
-                            $('#qrcode-div').fadeOut(400);
-                            $('#qrcode-code').fadeOut(400);
-                            $('#student-id').fadeOut(400);
-
-                            $('#show-info-button button').prop('disabled', false);
-                            // reset the progress bar to 100%
-                            $('#server_status').text("Emergency");
+                        // 根据当前显示状态决定动画逻辑
+                        var isFaded = $('#show-info-button').css('display') == 'none';
+                        if (isFaded) {
                             setTimeout(function () {
                                 $('#show-info-button').fadeIn();
                             }, 400);
-                        }, 10400);
+                            $('#student-id').fadeOut();
+                            $('#qrcode-code').fadeOut();
+                            $('#qrcode-div').fadeOut();
+                        } else {
+                            $('#show-info-button').fadeOut();
+                            setTimeout(function () {
+                                $('#qrcode-div').fadeIn();
+                                $('#qrcode-code').fadeIn();
+                                $('#student-id').fadeIn();
+
+                                // 重置进度条
+                                $('.progress-bar').css({
+                                    "transition": "none",
+                                    "width": "100%"
+                                });
+                                setTimeout(function () {
+                                    $('.progress-bar').css({
+                                        "transition": "width 10s linear",
+                                        "width": "0%"
+                                    });
+                                }, 50);
+                            }, 400);
+                            setTimeout(function () {
+                                $('#qrcode-div').fadeOut(400);
+                                $('#qrcode-code').fadeOut(400);
+                                $('#student-id').fadeOut(400);
+
+                                $('#show-info-button button').prop('disabled', false);
+                                $('#server_status').text("Emergency");
+                                setTimeout(function () {
+                                    $('#show-info-button').fadeIn();
+                                }, 400);
+                            }, 10400);
+                        }
+                    } else {
+                        // 当状态为 failure 时，仅重新启用按钮
+                        $('#show-info-button button').prop('disabled', false);
                     }
                 },
                 error: function (xhr, status, error) {
-                    // if error, update the server status
+                    // 请求出错时，恢复按钮状态，并显示错误信息
                     $('#show-info-button button').prop('disabled', false);
                     $('#server_status').text("Error");
                 }

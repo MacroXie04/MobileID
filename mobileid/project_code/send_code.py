@@ -1,43 +1,35 @@
 import time
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-import re
-import json
-import requests
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
-
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
-import time
-from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 def send_otc(current_mobile_id_rand, student_id, barcode):
+    # # using selenium on linux server
+    # chrome_options = Options()
+    # chrome_options.binary_location = "/usr/bin/google-chrome"
+    # chrome_options.set_capability("acceptInsecureCerts", False)
+    #
+    # chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--no-sandbox")
+    # chrome_options.add_argument("--disable-dev-shm-usage")
+    # chrome_options.add_argument("--disable-gpu")
+    #
+    # # 启动 Chrome 浏览器（自动下载/管理 ChromeDriver）
+    # driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+    # using selenium on laptop computer
     chrome_options = Options()
-
     chrome_options.set_capability("acceptInsecureCerts", False)
-
     chrome_options.add_argument("--headless")
-
-    # 2) 启动浏览器
     driver = webdriver.Chrome(options=chrome_options)
 
     try:
-        # 3) 打开页面
         driver.get("https://icatcard.ucmerced.edu/mobileid/rand.php")
 
-        # 4) 使用浏览器执行 JS 发送 POST（或根据真实表单操作元素也可）
-        #   这里演示直接用 XMLHttpRequest。若此请求需要依赖 Cookie/Session，
-        #   那么浏览器拿到的 cookie 就自动包含在此请求里。
+        # 使用浏览器执行 JS 发送 POST 请求
         driver.execute_script(
             f"""
             var xhr = new XMLHttpRequest();
@@ -51,14 +43,14 @@ def send_otc(current_mobile_id_rand, student_id, barcode):
                 document.body.innerHTML = "<pre>" + xhr.responseText + "</pre>";
             }};
 
-            // POST 的 body
+            // POST 的 body 数据
             xhr.send("mobileidrand={current_mobile_id_rand}&studentid={student_id}&barcode={barcode}");
-        """
+            """
         )
 
         time.sleep(1)
 
-        # 5) 从页面 DOM 中获取返回结果
+        # 从页面 DOM 中获取返回结果
         response_text = driver.find_element(By.TAG_NAME, "pre").text
         print("content：\n", response_text)
 

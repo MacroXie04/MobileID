@@ -1,0 +1,31 @@
+{% extends 'layout.html' %}
+{% load static %}
+
+{% block content %}
+    <!-- form -->
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="card p-4 shadow-sm" style="max-width: 400px; width: 100%;">
+            <h3 class="text-center mb-4">Update Your Information</h3>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ form.name.label_tag }}
+                    {{ form.name }}
+                </div>
+                <div class="mb-3">
+                    {{ form.student_id.label_tag }}
+                    {{ form.student_id }}
+                </div>
+                <div class="mb-3">
+                    {{ form.session.label_tag }}
+                    {{ form.session }}
+                </div>
+                <button type="button" class="btn btn-outline-secondary w-100 py-2 mt-2" style="margin-bottom: 15px"
+                        onclick="document.getElementById('{{ form.session.id_for_label }}').value=''">Clear Session
+                </button>
+                <button type="submit" class="btn btn-primary w-100 py-2">Submit</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+

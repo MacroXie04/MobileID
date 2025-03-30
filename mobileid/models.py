@@ -8,7 +8,7 @@ class StudentInformation(models.Model):
     # student information
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=100)
-    section = models.TextField()
+    session = models.TextField()
 
     # mobile id information
     mobile_id_rand_array = models.JSONField(default=list, blank=True)
@@ -18,6 +18,23 @@ class StudentInformation(models.Model):
 
     def __str__(self):
         return self.name
+
+class UserBarcodeSettings(models.Model):
+    # foreign key to user
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    # barcode settings
+    barcode_status = models.BooleanField(default=False)
+    static_barcode = models.CharField(max_length=100, blank=True)
+
+    # server verification settings
+    server_verification = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.barcode_status}"
+
+
+
 
 class Transfer(models.Model):
     cookie = models.TextField()

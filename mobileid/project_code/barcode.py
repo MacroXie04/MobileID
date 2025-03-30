@@ -8,9 +8,8 @@ import json
 
 
 def uc_merced_mobile_id(user_cookie):
-    html_source = request_mobile_id(f"{user_cookie}")
+    html_source = request_mobile_id(user_cookie)
     mobile_id_rand_array, student_id, barcode = parse_html_data(html_source)
-
     return {
         "mobile_id_rand_array": mobile_id_rand_array,
         "student_id": student_id,
@@ -19,12 +18,24 @@ def uc_merced_mobile_id(user_cookie):
 
 
 def request_mobile_id(user_cookie):
-    # initialize Chrome WebDriver
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    # # using selenium on linux server
+    # chrome_options = Options()
+    # chrome_options.binary_location = "/usr/bin/google-chrome"
+    # chrome_options.set_capability("acceptInsecureCerts", False)
+    #
+    # chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--no-sandbox")
+    # chrome_options.add_argument("--disable-dev-shm-usage")
+    # chrome_options.add_argument("--disable-gpu")
+    #
+    # # 启动 Chrome 浏览器（自动下载/管理 ChromeDriver）
+    # driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    # using selenium on laptop computer
+    chrome_options = Options()
+    chrome_options.set_capability("acceptInsecureCerts", False)
+    chrome_options.add_argument("--headless")
+    driver = webdriver.Chrome(options=chrome_options)
 
     driver.execute_cdp_cmd("Network.enable", {})
 
@@ -37,11 +48,11 @@ def request_mobile_id(user_cookie):
         "Accept-Encoding": "gzip, deflate, br, zstd",
         "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
         "Cache-Control": "max-age=0",
-        "Cookie": (user_cookie),
+        "Cookie": user_cookie,
         "User-Agent": (
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "Mozilla/5.0 (X11; Linux x86_64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0"
+            "Chrome/134.0.0.0 Safari/537.36"
         ),
     }
 
@@ -53,7 +64,6 @@ def request_mobile_id(user_cookie):
     time.sleep(1)
 
     html_source = driver.page_source
-
     driver.quit()
 
     return html_source
@@ -61,11 +71,11 @@ def request_mobile_id(user_cookie):
 
 def parse_html_data(html_content):
     try:
-        # mobile_id_rand_array
+        # 提取 mobile_id_rand_array
         array_pattern = r"var\s+mobileid_rand_array\s*=\s*(\[[^\]]*\])"
-        # student_id
+        # 提取 student_id
         student_id_pattern = r"studentid:\s*\"(.*?)\""
-        # barcode
+        # 提取 barcode
         barcode_pattern = r"barcode:\s*\"(.*?)\""
 
         array_match = re.search(array_pattern, html_content)
