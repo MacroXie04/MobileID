@@ -1,7 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
-from django.shortcuts import render
-
+from django.shortcuts import redirect, render
 from mobileid.models import StudentInformation
 
 
@@ -12,7 +10,7 @@ def index(request):
         student_id = user_profile.student_id
         name = user_profile.name
     except StudentInformation.DoesNotExist:
-        return redirect('/settings/')
+        return redirect('setup')
 
     return render(request, 'index.html', {'student_id': student_id, 'name': name, })
 

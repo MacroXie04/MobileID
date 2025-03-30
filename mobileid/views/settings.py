@@ -1,11 +1,10 @@
-from mobileid.forms import SettingsForm
+from mobileid.forms.SetupForm import SetupForm
 from django.shortcuts import redirect
 from django.shortcuts import render
-from mobileid.forms import SettingsForm
 from mobileid.models import StudentInformation
 from django.contrib.auth.decorators import login_required
 from mobileid.models import UserBarcodeSettings
-from mobileid.forms import UserBarcodeSettingsForm
+from mobileid.forms.UserBarcodeSettingsForm import UserBarcodeSettingsForm
 
 
 @login_required(login_url='/login/')
@@ -13,7 +12,7 @@ def setup(request):
     user_profile, created = StudentInformation.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
-        form = SettingsForm(request.POST)
+        form = SetupForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
             user_profile.name = data.get('name')
@@ -31,7 +30,7 @@ def setup(request):
             user_profile.save()
             return redirect('index')
     else:
-        form = SettingsForm(initial={
+        form = SetupForm(initial={
             'name': user_profile.name,
             'student_id': user_profile.student_id,
             'Session': user_profile.session,

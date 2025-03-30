@@ -7,24 +7,22 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 
 def send_otc(current_mobile_id_rand, student_id, barcode):
-    # # using selenium on linux server
-    # chrome_options = Options()
-    # chrome_options.binary_location = "/usr/bin/google-chrome"
-    # chrome_options.set_capability("acceptInsecureCerts", False)
-    #
-    # chrome_options.add_argument("--headless")
-    # chrome_options.add_argument("--no-sandbox")
-    # chrome_options.add_argument("--disable-dev-shm-usage")
-    # chrome_options.add_argument("--disable-gpu")
-    #
-    # # 启动 Chrome 浏览器（自动下载/管理 ChromeDriver）
-    # driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-
-    # using selenium on laptop computer
+    # using selenium on linux server
     chrome_options = Options()
+    chrome_options.binary_location = "/usr/bin/google-chrome"
     chrome_options.set_capability("acceptInsecureCerts", False)
+
     chrome_options.add_argument("--headless")
-    driver = webdriver.Chrome(options=chrome_options)
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    #
+    # # using selenium on laptop computer
+    # chrome_options = Options()
+    # chrome_options.set_capability("acceptInsecureCerts", False)
+    # chrome_options.add_argument("--headless")
+    # driver = webdriver.Chrome(options=chrome_options)
 
     try:
         driver.get("https://icatcard.ucmerced.edu/mobileid/rand.php")

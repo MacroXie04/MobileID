@@ -2,23 +2,23 @@ import json
 import random
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.shortcuts import redirect
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from mobileid.models import StudentInformation, Transfer
+from mobileid.forms.TransferCodeForm import TransferCodeForm
 
 
 @csrf_exempt
 def transfer_key(request):
     if request.method == "POST":
         try:
-            # 解析 JSON 数据
+            # decode the json data
             data = json.loads(request.body)
             cookie = data.get("cookie")
             if not cookie:
                 return JsonResponse({"error": "No cookie Data Found"}, status=400)
 
-            # 生成一个唯一的6位数字（避免重复）
+            # generate a unique 6-digit code
             unique_code = None
             while True:
                 candidate = str(random.randint(100000, 999999))
@@ -26,11 +26,11 @@ def transfer_key(request):
                     unique_code = candidate
                     break
 
-            # 将 cookie 与生成的唯一码存入数据库
+            # save to the database
             transfer_obj = Transfer.objects.create(cookie=cookie, unique_code=unique_code)
             transfer_obj.save()
 
-            # 返回生成的唯一6位数字
+            # return the unique code
             return JsonResponse({"unique_code": unique_code})
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
@@ -41,31 +41,24 @@ def transfer_key(request):
 @login_required(login_url='/login/')
 def transfer_code(request):
     if request.method == "POST":
-        user_profile = StudentInformation.objects.get(user=request.user)
-
-        transfer_code = request.POST.get("transfer_code", "").strip()
-        if not transfer_code or len(transfer_code) != 6 or not transfer_code.isdigit():
-            messages = [f"TransferCode is not valid."]
-            return render(request, "transfer.html", {'messages': messages})
-
-        try:
-            transfer_obj = Transfer.objects.get(unique_code=transfer_code)
-        except Transfer.DoesNotExist:
-            messages = [f"TransferCode is not valid."]
-            return render(request, "transfer.html", {'messages': messages})
-
-        cookie_value = transfer_obj.cookie
-
-        try:
-            user_profile = StudentInformation.objects.get(user=request.user)
-        except StudentInformation.DoesNotExist:
-            return redirect("settings")
-
-        user_profile.section = cookie_value
-        user_profile.save()
-
-        transfer_obj.delete()
-
-        return redirect("index")
+        form = TransferCodeForm(request.POST)
+        if form.is_valid():
+            transfer_code = form.cleaned_data['transfer_code']
+            try:
+                transfer_obj = Transfer.objects.get(unique_code=transfer_code)
+            except Transfer.DoesNotExist:
+                form.add_error('transfer_code', "TransferCode is not valid.")
+                return render(request, "transfer.html", {'form': form})
+            try:
+                user_profile = StudentInformation.objects.get(user=request.user)
+            except StudentInformation.DoesNotExist:
+                return redirect("settings")
+            user_profile.session = transfer_obj.cookie
+            user_profile.save()
+            transfer_obj.delete()
+            return redirect("index")
+        else:
+            return render(request, "transfer.html", {'form': form})
     else:
-        return render(request, "transfer.html")
+        form = TransferCodeForm()
+    return render(request, "transfer.html", {'form': form})
