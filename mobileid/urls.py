@@ -26,5 +26,3 @@ urlpatterns = [
     path('transfer_code/', transfer.transfer_code, name='transfer_code'),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
