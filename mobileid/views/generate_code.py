@@ -1,8 +1,10 @@
 from datetime import datetime
+
 import pytz
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+
 from mobileid.models import StudentInformation, UserBarcodeSettings
 from mobileid.project_code import send_code, barcode
 

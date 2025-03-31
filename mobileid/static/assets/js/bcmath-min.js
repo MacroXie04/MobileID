@@ -24,12 +24,12 @@ var libbcmath = {
     MINUS: "-",
     BASE: 10,
     scale: 0,
-    bc_num: function() {
+    bc_num: function () {
         this.n_sign = null;
         this.n_len = null;
         this.n_scale = null;
         this.n_value = null;
-        this.toString = function() {
+        this.toString = function () {
             var b, a;
             a = this.n_value.join("");
             b = ((this.n_sign == libbcmath.PLUS) ? "" : this.n_sign) + a.substr(0, this.n_len);
@@ -39,7 +39,7 @@ var libbcmath = {
             return b
         }
         ;
-        this.setScale = function(a) {
+        this.setScale = function (a) {
             while (this.n_scale < a) {
                 this.n_value.push(0);
                 this.n_scale++
@@ -51,7 +51,7 @@ var libbcmath = {
             return this
         }
     },
-    bc_new_num: function(b, c) {
+    bc_new_num: function (b, c) {
         var a;
         a = new libbcmath.bc_num();
         a.n_sign = libbcmath.PLUS;
@@ -61,19 +61,19 @@ var libbcmath = {
         libbcmath.memset(a.n_value, 0, 0, b + c);
         return a
     },
-    safe_emalloc: function(c, b, a) {
+    safe_emalloc: function (c, b, a) {
         return Array((c * b) + a)
     },
-    bc_init_num: function() {
-        return new libbcmath.bc_new_num(1,0)
+    bc_init_num: function () {
+        return new libbcmath.bc_new_num(1, 0)
     },
-    _bc_rm_leading_zeros: function(a) {
+    _bc_rm_leading_zeros: function (a) {
         while ((a.n_value[0] === 0) && (a.n_len > 1)) {
             a.n_value.shift();
             a.n_len--
         }
     },
-    php_str2num: function(b) {
+    php_str2num: function (b) {
         var a;
         a = b.indexOf(".");
         if (a == -1) {
@@ -82,16 +82,16 @@ var libbcmath = {
             return libbcmath.bc_str2num(b, (b.length - a))
         }
     },
-    CH_VAL: function(a) {
+    CH_VAL: function (a) {
         return a - "0"
     },
-    BCD_CHAR: function(a) {
+    BCD_CHAR: function (a) {
         return a + "0"
     },
-    isdigit: function(a) {
+    isdigit: function (a) {
         return (isNaN(parseInt(a, 10)) ? false : true)
     },
-    bc_str2num: function(h, c) {
+    bc_str2num: function (h, c) {
         var g, f, a, b, e, i, d;
         g = h.split("");
         a = 0;
@@ -153,7 +153,7 @@ var libbcmath = {
         }
         return f
     },
-    cint: function(b) {
+    cint: function (b) {
         if (typeof (b) == "undefined") {
             b = 0
         }
@@ -163,29 +163,29 @@ var libbcmath = {
         }
         return a
     },
-    MIN: function(d, c) {
+    MIN: function (d, c) {
         return ((d > c) ? c : d)
     },
-    MAX: function(d, c) {
+    MAX: function (d, c) {
         return ((d > c) ? d : c)
     },
-    ODD: function(b) {
+    ODD: function (b) {
         return (b & 1)
     },
-    memset: function(d, e, c, a) {
+    memset: function (d, e, c, a) {
         var b;
         for (b = 0; b < a; b++) {
             d[e + b] = c
         }
     },
-    memcpy: function(b, f, e, d, a) {
+    memcpy: function (b, f, e, d, a) {
         var c;
         for (c = 0; c < a; c++) {
             b[f + c] = e[d + c]
         }
         return true
     },
-    bc_is_zero: function(a) {
+    bc_is_zero: function (a) {
         var b;
         var c;
         b = a.n_len + a.n_scale;
@@ -199,11 +199,11 @@ var libbcmath = {
             return true
         }
     },
-    bc_out_of_memory: function() {
+    bc_out_of_memory: function () {
         throw new Error("(BC) Out of memory")
     }
 };
-libbcmath.bc_add = function(f, d, c) {
+libbcmath.bc_add = function (f, d, c) {
     var e, b, a;
     if (f.n_sign === d.n_sign) {
         e = libbcmath._bc_do_add(f, d, c);
@@ -211,28 +211,28 @@ libbcmath.bc_add = function(f, d, c) {
     } else {
         b = libbcmath._bc_do_compare(f, d, false, false);
         switch (b) {
-        case -1:
-            e = libbcmath._bc_do_sub(d, f, c);
-            e.n_sign = d.n_sign;
-            break;
-        case 0:
-            a = libbcmath.MAX(c, libbcmath.MAX(f.n_scale, d.n_scale));
-            e = libbcmath.bc_new_num(1, a);
-            libbcmath.memset(e.n_value, 0, 0, a + 1);
-            break;
-        case 1:
-            e = libbcmath._bc_do_sub(f, d, c);
-            e.n_sign = f.n_sign
+            case -1:
+                e = libbcmath._bc_do_sub(d, f, c);
+                e.n_sign = d.n_sign;
+                break;
+            case 0:
+                a = libbcmath.MAX(c, libbcmath.MAX(f.n_scale, d.n_scale));
+                e = libbcmath.bc_new_num(1, a);
+                libbcmath.memset(e.n_value, 0, 0, a + 1);
+                break;
+            case 1:
+                e = libbcmath._bc_do_sub(f, d, c);
+                e.n_sign = f.n_sign
         }
     }
     return e
 }
 ;
-libbcmath.bc_compare = function(b, a) {
+libbcmath.bc_compare = function (b, a) {
     return libbcmath._bc_do_compare(b, a, true, false)
 }
 ;
-libbcmath._bc_do_compare = function(e, d, c, b) {
+libbcmath._bc_do_compare = function (e, d, c, b) {
     var g, a;
     var f;
     if (c && (e.n_sign != d.n_sign)) {
@@ -309,7 +309,7 @@ libbcmath._bc_do_compare = function(e, d, c, b) {
     return (0)
 }
 ;
-libbcmath._one_mult = function(d, e, i, f, j, c) {
+libbcmath._one_mult = function (d, e, i, f, j, c) {
     var h, g;
     var b, a;
     if (f === 0) {
@@ -333,7 +333,7 @@ libbcmath._one_mult = function(d, e, i, f, j, c) {
     }
 }
 ;
-libbcmath.bc_divide = function(l, k, z) {
+libbcmath.bc_divide = function (l, k, z) {
     var y;
     var w;
     var c, b;
@@ -486,7 +486,7 @@ libbcmath.bc_divide = function(l, k, z) {
     return w
 }
 ;
-libbcmath._bc_do_add = function(h, g, i) {
+libbcmath._bc_do_add = function (h, g, i) {
     var f;
     var c, b;
     var k, e, j;
@@ -559,7 +559,7 @@ libbcmath._bc_do_add = function(h, g, i) {
     return f
 }
 ;
-libbcmath._bc_do_sub = function(h, g, i) {
+libbcmath._bc_do_sub = function (h, g, i) {
     var l;
     var m, a;
     var d, f;
@@ -618,7 +618,7 @@ libbcmath._bc_do_sub = function(h, g, i) {
 ;
 libbcmath.MUL_BASE_DIGITS = 80;
 libbcmath.MUL_SMALL_DIGITS = (libbcmath.MUL_BASE_DIGITS / 4);
-libbcmath.bc_multiply = function(f, d, h) {
+libbcmath.bc_multiply = function (f, d, h) {
     var c;
     var b, a;
     var g, e;
@@ -637,7 +637,7 @@ libbcmath.bc_multiply = function(f, d, h) {
     return c
 }
 ;
-libbcmath.new_sub_num = function(b, d, c) {
+libbcmath.new_sub_num = function (b, d, c) {
     var a = new libbcmath.bc_num();
     a.n_sign = libbcmath.PLUS;
     a.n_len = b;
@@ -646,7 +646,7 @@ libbcmath.new_sub_num = function(b, d, c) {
     return a
 }
 ;
-libbcmath._bc_simp_mul = function(i, b, h, m, a) {
+libbcmath._bc_simp_mul = function (i, b, h, m, a) {
     var j;
     var k, c, f;
     var n, l;
@@ -670,7 +670,7 @@ libbcmath._bc_simp_mul = function(i, b, h, m, a) {
     return j
 }
 ;
-libbcmath._bc_shift_addsub = function(b, g, a, d) {
+libbcmath._bc_shift_addsub = function (b, g, a, d) {
     var c, h;
     var e, f;
     e = g.n_len;
@@ -725,7 +725,7 @@ libbcmath._bc_shift_addsub = function(b, g, a, d) {
     return true
 }
 ;
-libbcmath._bc_rec_mul = function(m, i, l, j, c) {
+libbcmath._bc_rec_mul = function (m, i, l, j, c) {
     var k;
     var s, r, h, g;
     var f, p;
@@ -790,7 +790,7 @@ libbcmath._bc_rec_mul = function(m, i, l, j, c) {
     return k
 }
 ;
-libbcmath.bc_sub = function(e, d, c) {
+libbcmath.bc_sub = function (e, d, c) {
     var f;
     var b, a;
     if (e.n_sign != d.n_sign) {
@@ -799,24 +799,25 @@ libbcmath.bc_sub = function(e, d, c) {
     } else {
         b = libbcmath._bc_do_compare(e, d, false, false);
         switch (b) {
-        case -1:
-            f = libbcmath._bc_do_sub(d, e, c);
-            f.n_sign = (d.n_sign == libbcmath.PLUS ? libbcmath.MINUS : libbcmath.PLUS);
-            break;
-        case 0:
-            a = libbcmath.MAX(c, libbcmath.MAX(e.n_scale, d.n_scale));
-            f = libbcmath.bc_new_num(1, a);
-            libbcmath.memset(f.n_value, 0, 0, a + 1);
-            break;
-        case 1:
-            f = libbcmath._bc_do_sub(e, d, c);
-            f.n_sign = e.n_sign;
-            break
+            case -1:
+                f = libbcmath._bc_do_sub(d, e, c);
+                f.n_sign = (d.n_sign == libbcmath.PLUS ? libbcmath.MINUS : libbcmath.PLUS);
+                break;
+            case 0:
+                a = libbcmath.MAX(c, libbcmath.MAX(e.n_scale, d.n_scale));
+                f = libbcmath.bc_new_num(1, a);
+                libbcmath.memset(f.n_value, 0, 0, a + 1);
+                break;
+            case 1:
+                f = libbcmath._bc_do_sub(e, d, c);
+                f.n_sign = e.n_sign;
+                break
         }
     }
     return f
 }
 ;
+
 function bcadd(b, d, f) {
     var e, c, a;
     if (typeof (f) == "undefined") {
@@ -840,6 +841,7 @@ function bcadd(b, d, f) {
     }
     return a.toString()
 }
+
 function bcsub(b, d, f) {
     var e, c, a;
     if (typeof (f) == "undefined") {
@@ -863,6 +865,7 @@ function bcsub(b, d, f) {
     }
     return a.toString()
 }
+
 function bccomp(a, c, e) {
     var d, b;
     if (typeof (e) == "undefined") {
@@ -875,6 +878,7 @@ function bccomp(a, c, e) {
     b = libbcmath.bc_str2num(c.toString(), e);
     return libbcmath.bc_compare(d, b, e)
 }
+
 function bcscale(a) {
     a = parseInt(a, 10);
     if (isNaN(a)) {
@@ -886,6 +890,7 @@ function bcscale(a) {
     libbcmath.scale = a;
     return true
 }
+
 function bcdiv(b, d, f) {
     var e, c, a;
     if (typeof (f) == "undefined") {
@@ -905,13 +910,14 @@ function bcdiv(b, d, f) {
     }
     a = libbcmath.bc_divide(e, c, f);
     if (a === -1) {
-        throw new Error(11,"(BC) Division by zero")
+        throw new Error(11, "(BC) Division by zero")
     }
     if (a.n_scale > f) {
         a.n_scale = f
     }
     return a.toString()
 }
+
 function bcmul(b, d, f) {
     var e, c, a;
     if (typeof (f) == "undefined") {
@@ -935,6 +941,7 @@ function bcmul(b, d, f) {
     }
     return a.toString()
 }
+
 function bcround(d, b) {
     var a, c;
     a = "0." + Array(b + 1).join("0") + "5";

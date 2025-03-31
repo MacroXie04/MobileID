@@ -1,4 +1,5 @@
 from django import forms
+
 from mobileid.models import UserBarcodeSettings
 
 

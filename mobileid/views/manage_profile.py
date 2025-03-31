@@ -1,10 +1,11 @@
-from mobileid.forms.SetupForm import SetupForm
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.shortcuts import render
-from mobileid.models import StudentInformation
-from django.contrib.auth.decorators import login_required
-from mobileid.models import UserBarcodeSettings
+
+from mobileid.forms.SetupForm import SetupForm
 from mobileid.forms.UserBarcodeSettingsForm import UserBarcodeSettingsForm
+from mobileid.models import StudentInformation
+from mobileid.models import UserBarcodeSettings
 
 
 @login_required(login_url='/login/')
@@ -40,7 +41,6 @@ def setup(request):
         })
 
     return render(request, 'setup.html', {'form': form})
-
 
 
 @login_required

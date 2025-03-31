@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from .models import StudentInformation, Transfer, UserBarcodeSettings
 
 admin.site.register(StudentInformation)

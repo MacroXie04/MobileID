@@ -1,5 +1,6 @@
 from django import forms
 
+
 # transfer code form
 class TransferCodeForm(forms.Form):
     transfer_code = forms.CharField(

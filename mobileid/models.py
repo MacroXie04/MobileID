@@ -1,6 +1,8 @@
-from django.db import models
+import os
+import uuid
+
 from django.contrib.auth.models import User
-import uuid, os
+from django.db import models
 
 
 # function to generate a unique file path for user uploads
@@ -8,6 +10,7 @@ def user_directory_path(instance, filename):
     ext = filename.split('.')[-1]
     unique_filename = f"{instance.user.username}_{uuid.uuid4().hex}.{ext}"
     return os.path.join('avatars', unique_filename)
+
 
 # user information
 class StudentInformation(models.Model):
@@ -30,6 +33,7 @@ class StudentInformation(models.Model):
 
     def __str__(self):
         return self.name
+
 
 # user barcode settings
 class UserBarcodeSettings(models.Model):
