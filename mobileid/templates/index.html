@@ -5,10 +5,17 @@
     <!-- Centered Profile Section -->
     <div class="text-center" style="margin-top: 2em;">
         <a href="/" id="setting-icon">
-            <img src="{% static 'images/profile_img.png' %}"
-                 style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;
-            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4); transition: transform 0.3s ease-in-out;" class="img-circle"
-                 alt="User profile picture">
+            {% if user_profile.avatar %}
+                <img src="{{ user_profile.avatar.url }}"
+                     style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;
+                 box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4); transition: transform 0.3s ease-in-out;"
+                     class="img-circle" alt="User profile picture">
+            {% else %}
+                <img src="{% static 'images/profile_img.png' %}"
+                     style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;
+                 box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4); transition: transform 0.3s ease-in-out;"
+                     class="img-circle" alt="Default user profile picture">
+            {% endif %}
         </a>
 
         <h4 class="white-h4" style="margin-top: 0.5em; color: white !important;">

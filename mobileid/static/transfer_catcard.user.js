@@ -10,8 +10,9 @@
 // @grant        GM_getValue
 // @grant        GM_deleteValue
 // @connect      127.0.0.1
-// @connect      http://43.135.136.220
+// @connect      http://catcard.online/transfer/
 // @connect      43.135.136.220
+// @connect      catcard.online
 // ==/UserScript==
 
 (function () {
@@ -120,7 +121,7 @@
 
                 GM_xmlhttpRequest({
                     method: "POST",
-                    url: "http://43.135.136.220/transfer/",
+                    url: "http://catcard.online/transfer/",
                     headers: {
                         "Content-Type": "application/json"
                     },

@@ -12,7 +12,8 @@ def index(request):
     except StudentInformation.DoesNotExist:
         return redirect('setup')
 
-    return render(request, 'index.html', {'student_id': student_id, 'name': name, })
-
-
-
+    return render(request, 'index.html', {
+        'student_id': student_id,
+        'name': name,
+        'user_profile': user_profile  # 新增
+    })

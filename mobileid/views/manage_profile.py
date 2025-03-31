@@ -12,13 +12,16 @@ def setup(request):
     user_profile, created = StudentInformation.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
-        form = SetupForm(request.POST)
+        form = SetupForm(request.POST, request.FILES)  # 注意这里
         if form.is_valid():
             data = form.cleaned_data
             user_profile.name = data.get('name')
             user_profile.student_id = data.get('student_id')
 
-            # if session is different, reset the mobile id array
+            if 'avatar' in request.FILES:
+                user_profile.avatar = request.FILES['avatar']
+
+            # process the session data
             if user_profile.session != data.get('session'):
                 user_profile.mobile_id_rand_array = []
                 user_profile.current_mobile_id_rand = 0
