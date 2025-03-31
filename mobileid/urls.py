@@ -1,7 +1,7 @@
-from django.contrib import admin
 from django.urls import path
-from django.urls import include
-from .views import user_verification, index, settings, generate_code, transfer
+from .views import user_verification, index, manage_profile, generate_code, transfer
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
 
@@ -9,8 +9,8 @@ urlpatterns = [
     path("", index.index, name="index"),
 
     # settings page
-    path('setup/', settings.setup, name='setup'),
-    path('settings/', settings.settings, name='settings'),
+    path('setup/', manage_profile.setup, name='setup'),
+    path('settings/', manage_profile.settings, name='settings'),
 
     # user authentication
     path('login/', user_verification.user_login, name='login'),
@@ -20,8 +20,10 @@ urlpatterns = [
     # barcode generation
     path('generate_barcode/', generate_code.generate_code, name='generate_barcode'),
 
-
     # barcode transfer
     path('transfer/', transfer.transfer_key, name='transfer'),
     path('transfer_code/', transfer.transfer_code, name='transfer_code'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

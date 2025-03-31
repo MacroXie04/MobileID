@@ -18,9 +18,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-3l146vm!dkmv_!bdr(mv^2+flq^%kh%_e&j82n1err8qzr_prf"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ["catcard.online", "www.catcard.online", "43.135.136.220", "http://43.135.136.220", "http://localhost:8000", "http://127.0.0.1:8000/"]
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -108,15 +108,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-STATIC_URL = "/static/"
+STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
-# 开发时使用的静态文件目录
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "mobileid", "static"),
-]
-
-# collectstatic 后生成的静态文件目录
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

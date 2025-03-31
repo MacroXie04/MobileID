@@ -13,6 +13,13 @@ class SetupForm(forms.Form):
         'class': 'form-control',
         'placeholder': 'Enter your student ID'
     }))
+    avatar = forms.ImageField(
+        label="Profile Photo",
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+        })
+    )
     session = forms.CharField(
         label="Session",
         required=False,
