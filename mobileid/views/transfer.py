@@ -1,16 +1,14 @@
 import json
 import random
-
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
-
-from mobileid.forms.TransferCodeForm import TransferCodeForm
 from mobileid.models import StudentInformation, Transfer
+from django.views.decorators.http import require_GET, require_POST
 
 
-@csrf_exempt
+@require_POST
 def transfer_key(request):
     if request.method == "POST":
         try:
@@ -38,29 +36,3 @@ def transfer_key(request):
             return JsonResponse({"error": str(e)}, status=500)
     else:
         return JsonResponse({"error": "Please sent request with script"}, status=405)
-
-
-@login_required(login_url='/login/')
-def transfer_code(request):
-    if request.method == "POST":
-        form = TransferCodeForm(request.POST)
-        if form.is_valid():
-            transfer_code = form.cleaned_data['transfer_code']
-            try:
-                transfer_obj = Transfer.objects.get(unique_code=transfer_code)
-            except Transfer.DoesNotExist:
-                form.add_error('transfer_code', "TransferCode is not valid.")
-                return render(request, "transfer.html", {'form': form})
-            try:
-                user_profile = StudentInformation.objects.get(user=request.user)
-            except StudentInformation.DoesNotExist:
-                return redirect("settings")
-            user_profile.session = transfer_obj.cookie
-            user_profile.save()
-            transfer_obj.delete()
-            return redirect("index")
-        else:
-            return render(request, "transfer.html", {'form': form})
-    else:
-        form = TransferCodeForm()
-    return render(request, "transfer.html", {'form': form})

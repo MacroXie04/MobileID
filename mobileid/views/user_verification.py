@@ -19,9 +19,12 @@ def register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect('index')
+            user = form.save(commit=False)
+            user.is_active = False
+            user.save()
+            # login(request, user)
+            # return redirect('index')
+            return redirect('login')
     else:
         form = UserRegisterForm()
 

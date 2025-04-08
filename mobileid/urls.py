@@ -21,8 +21,8 @@ urlpatterns = [
     # barcode generation
     path('generate_barcode/', generate_code.generate_code, name='generate_barcode'),
 
-    # barcode transfer
+    # create barcode
     path('transfer/', transfer.transfer_key, name='transfer'),
-    path('transfer_code/', transfer.transfer_code, name='transfer_code'),
+    path('create_barcode/', manage_profile.create_barcode, name='create_barcode'),
 ]
 

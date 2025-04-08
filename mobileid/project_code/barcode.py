@@ -7,6 +7,24 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
+from .send_code import send_otc
+
+
+def auto_send_code(user_cookies):
+    server_result = uc_merced_mobile_id(user_cookies)
+
+    for mobile_id_rand in server_result["mobile_id_rand_array"]:
+        response = send_otc(mobile_id_rand, server_result["student_id"], server_result["barcode"])
+        if response["status"] == "success":
+            return {
+                "status": "success",
+                "code": mobile_id_rand,
+            }
+
+    return {
+        "status": "failure",
+    }
+
 
 def uc_merced_mobile_id(user_cookie):
     html_source = request_mobile_id(user_cookie)

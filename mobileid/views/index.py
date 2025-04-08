@@ -16,5 +16,5 @@ def index(request):
     return render(request, 'index.html', {
         'student_id': student_id,
         'name': name,
-        'user_profile': user_profile  # 新增
+        'user_profile': user_profile
     })

@@ -28,28 +28,25 @@ def send_otc(current_mobile_id_rand, student_id, barcode):
     try:
         driver.get("https://icatcard.ucmerced.edu/mobileid/rand.php")
 
-        # 使用浏览器执行 JS 发送 POST 请求
+        # using selenium to send the code
         driver.execute_script(
             f"""
             var xhr = new XMLHttpRequest();
             xhr.open("POST", "https://icatcard.ucmerced.edu/mobileid/rand.php", true);
             xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
-            // 如果需要带特定 Cookie 而非页面自动生成的 session，可写：
             xhr.setRequestHeader("Cookie", "session_for%3Aindex_php=8e6df98bc61073a5ac6ba55eb92a9045");
 
             xhr.onload = function () {{
                 document.body.innerHTML = "<pre>" + xhr.responseText + "</pre>";
             }};
 
-            // POST 的 body 数据
             xhr.send("mobileidrand={current_mobile_id_rand}&studentid={student_id}&barcode={barcode}");
             """
         )
 
         time.sleep(1)
 
-        # 从页面 DOM 中获取返回结果
         response_text = driver.find_element(By.TAG_NAME, "pre").text
         print("content：\n", response_text)
 
