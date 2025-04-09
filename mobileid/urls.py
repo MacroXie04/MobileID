@@ -9,7 +9,7 @@ urlpatterns = [
     # index page
     path("", index.index, name="index"),
 
-    # settings page
+    # manage profile
     path('setup/', manage_profile.setup, name='setup'),
     path('settings/', manage_profile.settings, name='settings'),
 
@@ -21,8 +21,9 @@ urlpatterns = [
     # barcode generation
     path('generate_barcode/', generate_code.generate_code, name='generate_barcode'),
 
-    # barcode transfer
+    # manage barcode
     path('transfer/', transfer.transfer_key, name='transfer'),
-    path('transfer_code/', transfer.transfer_code, name='transfer_code'),
+    path('create_barcode/', manage_profile.create_barcode, name='create_barcode'),
+    path('manage_barcode/', manage_profile.manage_barcode, name='manage_barcode'),
 ]
 

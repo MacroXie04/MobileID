@@ -18,11 +18,3 @@ class SetupForm(forms.Form):
             'class': 'form-control',
         })
     )
-    session = forms.CharField(
-        label="Session",
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter your Session (no limit)'
-        })
-    )

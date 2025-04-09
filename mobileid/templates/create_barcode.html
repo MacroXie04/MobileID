@@ -1,0 +1,45 @@
+{% extends 'layout_write.html' %}
+
+{% block content %}
+    <!-- form -->
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="card p-4 shadow-sm" style="max-width: 400px; width: 100%;">
+            <h3 class="text-center mb-4">Create & Transfer Barcode</h3>
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}<br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="mb-3">
+                    {{ form.source_type.label_tag }}
+                    {{ form.source_type }}
+                    {% if form.source_type.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.source_type.errors %}
+                                {{ error }}<br>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.input_value.label_tag }}
+                    {{ form.input_value }}
+                    {% if form.input_value.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.input_value.errors %}
+                                {{ error }}<br>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2">Submit</button>
+                <br>
+                <a href="{% url 'index' %}" class="btn btn-secondary w-100 mt-2">Back</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

@@ -51,7 +51,7 @@
                 <i class="fa fa-credit-card fa-2x"></i>
                 <p>Add Funds</p>
             </a>
-            <a href="{% url 'transfer_code' %}" class="btn-grid">
+            <a href="{% url 'create_barcode' %}" class="btn-grid">
                 <i class="fa fa-money-bill fa-2x"></i>
                 <p>Balance</p>
             </a>
@@ -65,7 +65,7 @@
                 <i class="fa fa-exclamation-triangle fa-2x"></i>
                 <p id="server_status">Emergency</p>
             </a>
-            <a href="#" class="btn-grid">
+            <a href="{% url 'manage_barcode' %}" class="btn-grid">
                 <i class="fa fa-dumbbell fa-2x"></i>
                 <p>Gym</p>
             </a>
@@ -118,7 +118,7 @@
 
         /* Generate Barcode */
         $('#show-info-button').click(function () {
-            // 设置状态为 Processing，并禁用按钮
+            // set button to processing
             $('#server_status').text("Processing");
             $('#show-info-button button').prop('disabled', true);
             $.ajax({
@@ -127,22 +127,21 @@
                 data: {},
                 success: function (response) {
                     console.log(response);
-                    // 无论成功或失败，都显示服务器返回的 content 信息
+
                     $('#server_status').text(response.content);
 
                     if (response.status === "success") {
-                        // 当状态为 success 时，使用返回的 barcode 生成条码
+                        // if the server returns success, we can proceed to generate the barcode
                         var magstripWithTimestamp = response.barcode;
-
-                        // 初始化 PDF417 条码生成器
+                        // init PDF417
                         PDF417.init(magstripWithTimestamp);
                         var barcode = PDF417.getBarcodeArray();
 
-                        // 设置画布的尺寸参数
+                        // set canvas
                         var bw = 2.5;
                         var bh = 1;
 
-                        // 创建 canvas 元素，并绘制条码
+                        // create canvas
                         var container = document.getElementById('qrcode-div');
                         if (container.firstChild) {
                             container.removeChild(container.firstChild);
@@ -211,12 +210,11 @@
                             }, 10400);
                         }
                     } else {
-                        // 当状态为 failure 时，仅重新启用按钮
+                        // show error message
                         $('#show-info-button button').prop('disabled', false);
                     }
                 },
                 error: function (xhr, status, error) {
-                    // 请求出错时，恢复按钮状态，并显示错误信息
                     $('#show-info-button button').prop('disabled', false);
                     $('#server_status').text("Error");
                 }

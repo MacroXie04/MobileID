@@ -1,0 +1,36 @@
+{% extends 'layout_write.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="card p-4 shadow-sm" style="max-width: 400px; width: 100%;">
+            <h3 class="text-center mb-4">Select a Barcode to Delete</h3>
+
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    <ul>
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ form.barcode.label_tag }}
+                    {{ form.barcode }}
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2">Delete</button>
+                <br>
+                <a href="{% url 'index' %}" class="btn btn-secondary w-100 mt-2">Back</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

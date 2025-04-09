@@ -1,6 +1,5 @@
 import os
 import uuid
-
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -20,19 +19,29 @@ class StudentInformation(models.Model):
     # student information
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=100)
-    session = models.TextField()
-
-    # user upload photo
     avatar = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
 
-    # mobile id information
-    mobile_id_rand_array = models.JSONField(default=list, blank=True)
-    current_mobile_id_rand = models.IntegerField(default=0, blank=True)
-    barcode = models.CharField(max_length=100, blank=True)
-    code_student_id = models.CharField(max_length=100, blank=True)
+    def __str__(self):
+        return f"{self.name} - StudentID: **{self.student_id[-4:]}"
+
+
+# barcode information
+class Barcode(models.Model):
+    # storage upload user
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # barcode information
+    barcode = models.TextField()
+
+    # usage information
+    total_usage = models.IntegerField(default=0)
+    last_used = models.DateTimeField(auto_now=False)
+
+    # server verification information
+    session = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return self.name
+        return f"Barcode ending with {self.barcode[-4:]} - {self.user.username}"
 
 
 # user barcode settings
@@ -41,14 +50,19 @@ class UserBarcodeSettings(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     # barcode settings
-    barcode_status = models.BooleanField(default=False)
-    static_barcode = models.CharField(max_length=100, blank=True)
-
+    barcode = models.ForeignKey(Barcode, on_delete=models.SET_NULL, blank=True, null=True)
+    dynamic_barcode = models.BooleanField(default=True)
     # server verification settings
-    server_verification = models.BooleanField(default=True)
+    server_verification = models.BooleanField(default=False)
+
+    # timestamp verification
+    timestamp_verification = models.BooleanField(default=True)
+
+    # barcode pull settings
+    barcode_pull = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.username} - {self.barcode_status}"
+        return f"{self.user.username}'s Barcode Settings"
 
 
 # transfer information
@@ -56,3 +70,6 @@ class Transfer(models.Model):
     cookie = models.TextField()
     unique_code = models.CharField(max_length=6, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"**{self.unique_code[-4:]} - cookie: *{self.cookie[-4:]}"
