@@ -22,8 +22,11 @@
     <!-- Header -->
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; position: relative;">
 
+
         <div style="flex: 1;">
-            <img src="{% static 'images/ucm3.png' %}" alt="UC Merced Logo" style="height: 60px;"/>
+            <a href="{% url 'index' %}">
+                <img src="{% static 'images/ucm3.png' %}" alt="UC Merced Logo" style="height: 60px;"/>
+            </a>
         </div>
 
         <div style="flex: 1; display: flex; justify-content: center;">

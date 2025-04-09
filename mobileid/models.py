@@ -50,7 +50,7 @@ class UserBarcodeSettings(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     # barcode settings
-    barcode = models.ForeignKey(Barcode, on_delete=models.CASCADE, blank=True, null=True)
+    barcode = models.ForeignKey(Barcode, on_delete=models.SET_NULL, blank=True, null=True)
     dynamic_barcode = models.BooleanField(default=True)
     # server verification settings
     server_verification = models.BooleanField(default=False)

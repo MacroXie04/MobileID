@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends 'layout_write.html' %}
 
 {% block content %}
 <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
@@ -43,6 +43,8 @@
                 {{ form.barcode_pull }}
             </div>
             <button type="submit" class="btn btn-primary w-100 py-2">Submit</button>
+            <br>
+            <a href="{% url 'index' %}" class="btn btn-secondary w-100 mt-2">Back</a>
         </form>
     </div>
 </div>

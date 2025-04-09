@@ -1,22 +1,20 @@
 import random
 from datetime import datetime, timedelta
-
 import pytz
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-
 from mobileid.models import StudentInformation, UserBarcodeSettings, Barcode
-from mobileid.project_code import send_code, barcode
+from mobileid.project_code import barcode
 
 
+#TODO: sometimes generate will not work fast enough
 # Generate Barcode
 @csrf_exempt
 @login_required(login_url='/login/')
 def generate_code(request):
     # Retrieve user profile and settings with error handling
     try:
-        user_profile = StudentInformation.objects.get(user=request.user)
         user_settings = UserBarcodeSettings.objects.get(user=request.user)
     except (StudentInformation.DoesNotExist, UserBarcodeSettings.DoesNotExist):
         return JsonResponse({"status": "error", "message": "User settings not found."})
@@ -56,20 +54,28 @@ def generate_code(request):
 
         # Server verification branch
         if user_settings.server_verification:
-            # Use the session from user's assigned barcode
-            session = user_settings.barcode.session
-            server_result = barcode.auto_send_code(session)
-            if server_result.get('success'):
-                content_msg = f"code {server_result.get('code')} verified"
-            else:
-                content_msg = f"server verification failed - {code.barcode[-4:]}"
-            update_usage(code)
-            return JsonResponse({
-                "status": "success",
-                "barcode_type": "dynamic code",
-                "content": content_msg,
-                "barcode": f"{timestamp}{code.barcode}",
-            })
+            try:
+                # Use the session from user's assigned barcode
+                session = user_settings.barcode.session
+                server_result = barcode.auto_send_code(session)
+                if server_result.get('success'):
+                    content_msg = f"code {server_result.get('code')} verified"
+                else:
+                    content_msg = f"server verification failed - {code.barcode[-4:]}"
+                update_usage(code)
+                return JsonResponse({
+                    "status": "success",
+                    "barcode_type": "dynamic code",
+                    "content": content_msg,
+                    "barcode": f"{timestamp}{code.barcode}",
+                })
+            except Exception as e:
+                return JsonResponse({
+                    "status": "success",
+                    "barcode_type": "dynamic code",
+                    "content": f'server verification failed - {code.barcode[-4:]}',
+                    "barcode": f"{timestamp}{code.barcode}",
+                })
         else:
             update_usage(code)
             return JsonResponse({

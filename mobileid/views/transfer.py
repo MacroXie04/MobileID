@@ -4,10 +4,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
-from mobileid.models import StudentInformation, Transfer
+from mobileid.models import Transfer
 from django.views.decorators.http import require_GET, require_POST
 
-
+@csrf_exempt
 @require_POST
 def transfer_key(request):
     if request.method == "POST":

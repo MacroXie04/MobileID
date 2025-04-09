@@ -22,6 +22,15 @@ class BarcodeForm(forms.Form):
         })
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Add 'is-invalid' class to fields with errors for styling red borders
+        for field in self.fields:
+            if self.errors.get(field):
+                existing_classes = self.fields[field].widget.attrs.get('class', '')
+                if 'is-invalid' not in existing_classes:
+                    self.fields[field].widget.attrs['class'] = existing_classes + ' is-invalid'
+
     def clean(self):
         cleaned_data = super().clean()
         source_type = cleaned_data.get("source_type")
