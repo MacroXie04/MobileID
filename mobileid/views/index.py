@@ -9,9 +9,6 @@ def index(request):
     try:
         user_profile = StudentInformation.objects.get(user=request.user)
         user_settings = UserBarcodeSettings.objects.get(user=request.user)
-        # Check if the user has a barcode assigned
-        if user_settings.barcode is None:
-            return redirect('settings')
         student_id = user_profile.student_id
         name = user_profile.name
     except StudentInformation.DoesNotExist:
