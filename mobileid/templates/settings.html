@@ -1,51 +1,128 @@
 {% extends 'layout_write.html' %}
 
 {% block content %}
-<div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-    <div class="card p-4 shadow-sm" style="max-width: 400px; width: 100%;">
-        <h3 class="text-center mb-4">Update Barcode Settings</h3>
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
+            <h3 class="text-center mb-4">Update Barcode Settings</h3>
 
-        {% if form.errors %}
-        <div class="alert alert-danger">
-            <ul>
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <li>{{ field.label }}: {{ error }}</li>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    <ul>
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <form method="post" id="barcode-settings-form">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    {{ form.barcode_pull.label_tag }}
+                    {{ form.barcode_pull }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.barcode.label_tag }}
+                    {{ form.barcode }}
+                    <div id="barcode-tip" class="form-text text-muted d-none">
+                        Barcode pull will auto select the Barcode based on usage.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    {{ form.server_verification.label_tag }}
+                    {{ form.server_verification }}
+                    <div id="server-tip-static" class="form-text text-muted d-none">
+                        Disabled because selected barcode is Static.
+                    </div>
+                    <div id="server-tip-pull" class="form-text text-muted d-none">
+                        This setting is managed by the Barcode pull.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    {{ form.timestamp_verification.label_tag }}
+                    {{ form.timestamp_verification }}
+                    <div id="timestamp-tip-static" class="form-text text-muted d-none">
+                        Disabled because selected barcode is Static.
+                    </div>
+                    <div id="timestamp-tip-pull" class="form-text text-muted d-none">
+                        This setting is managed by the Barcode pull.
+                    </div>
+                </div>
+
+
+                <button type="submit" class="btn btn-primary w-100 py-2">Save Settings</button>
+                <br>
+                <a href="{% url 'index' %}" class="btn btn-secondary w-100 mt-2">Back</a>
+            </form>
         </div>
-        {% endif %}
-
-        <form method="post">
-            {% csrf_token %}
-            <div class="mb-3">
-                {{ form.barcode.label_tag }}
-                {{ form.barcode }}
-            </div>
-            <div class="mb-3">
-                {{ form.server_verification.label_tag }}
-                {{ form.server_verification }}
-            </div>
-            <div class="mb-3">
-                {{ form.timestamp_verification.label_tag }}
-                {{ form.timestamp_verification }}
-            </div>
-            <div class="mb-3">
-                {{ form.dynamic_barcode.label_tag }}
-                {{ form.dynamic_barcode }}
-            </div>
-            <div class="mb-3">
-                {{ form.barcode_pull.label_tag }}
-                {{ form.barcode_pull }}
-            </div>
-            <button type="submit" class="btn btn-primary w-100 py-2">Submit</button>
-            <br>
-            <a href="{% url 'index' %}" class="btn btn-secondary w-100 mt-2">Back</a>
-        </form>
     </div>
-</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const barcodeField = document.getElementById("id_barcode");
+            const barcodePullField = document.getElementById("id_barcode_pull");
+            const serverField = document.getElementById("id_server_verification");
+            const timestampField = document.getElementById("id_timestamp_verification");
+
+            const barcodeTip = document.getElementById("barcode-tip");
+
+            const serverTipStatic = document.getElementById("server-tip-static");
+            const serverTipPull = document.getElementById("server-tip-pull");
+
+            const timestampTipStatic = document.getElementById("timestamp-tip-static");
+            const timestampTipPull = document.getElementById("timestamp-tip-pull");
+
+            function disableField(field, tipList) {
+                field.disabled = true;
+                tipList.forEach(tip => tip.classList.remove('d-none'));
+            }
+
+            function enableField(field, tipList) {
+                field.disabled = false;
+                tipList.forEach(tip => tip.classList.add('d-none'));
+            }
+
+            function updateFieldStates() {
+                const isPullEnabled = barcodePullField.value === 'True';
+                const selectedOption = barcodeField.options[barcodeField.selectedIndex];
+                const isStatic = selectedOption && selectedOption.text.includes("Static");
+
+                // Barcode
+                if (isPullEnabled) {
+                    barcodeField.disabled = true;
+                    barcodeTip.classList.remove("d-none");
+                } else {
+                    barcodeField.disabled = false;
+                    barcodeTip.classList.add("d-none");
+                }
+
+                // Server Verification & Timestamp
+                if (isPullEnabled) {
+                    disableField(serverField, [serverTipPull]);
+                    disableField(timestampField, [timestampTipPull]);
+                } else if (isStatic) {
+                    disableField(serverField, [serverTipStatic]);
+                    disableField(timestampField, [timestampTipStatic]);
+                } else {
+                    enableField(serverField, [serverTipStatic, serverTipPull]);
+                    enableField(timestampField, [timestampTipStatic, timestampTipPull]);
+                }
+            }
+
+            barcodePullField.addEventListener('change', updateFieldStates);
+            barcodeField.addEventListener('change', updateFieldStates);
+
+            // On load
+            updateFieldStates();
+        });
+    </script>
 {% endblock %}
