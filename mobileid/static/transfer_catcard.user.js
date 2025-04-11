@@ -13,8 +13,7 @@
 // @grant        GM_addValueChangeListener
 // @connect      catcard.online
 // @connect      127.0.0.1
-// @connect      http://catcard.online/transfer/
-// @connect      43.135.136.220
+// @connect      https://catcard.online/transfer/
 // ==/UserScript==
 
 (function () {
@@ -46,7 +45,7 @@
     }
 
     // ===============================
-    // MyMerced 页面逻辑
+    // Display the One-time transfer CatCard link
     // ===============================
     if (window.location.href.indexOf(myMercedPattern) !== -1) {
         // 在页面添加一个新的 <li>，初始显示图标和 "OneTime Transfer CatCard"
@@ -54,12 +53,12 @@
             var ulElem = document.getElementById("kgoui_Rcontent_I0_Rcontent_I0_Rcontent_I0_Ritems");
             if (!ulElem) return;
             var liElem = document.createElement("li");
-            // 新 id，避免与已有的 CatCard 冲突
+            // link a new id to the <li> element
             liElem.id = "kgoui_Rcontent_I0_Rcontent_I0_Rcontent_I0_Ritems_I1_OTTransfer";
             liElem.className = "kgoui_object kgoui_grid_grid_item is_369225fa301c602ae622eaa25adbbe06 kgo-font-size-xsmall kgo-grid-item kgo-has-link";
             liElem.setAttribute("data-type", "content");
 
-            // 初始：显示图标 + "OneTime Transfer CatCard"
+            // initial HTML content
             liElem.innerHTML = `
                 <a href="https://icatcard.ucmerced.edu/mobileid/" class="kgo-grid-item-content" target="_blank" rel="noopener noreferrer">
                   <div class="kgo-image-wrapper">
@@ -135,7 +134,7 @@
 
             GM_xmlhttpRequest({
                 method: "POST",
-                url: "http://catcard.online/transfer/",
+                url: "https://catcard.online/transfer/",
                 headers: {
                     "Content-Type": "application/json"
                 },
