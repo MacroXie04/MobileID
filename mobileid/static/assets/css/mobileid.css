@@ -6,10 +6,8 @@
     }
 }
 
-@font-face {
-    font-family: "OpenSansReg";
-    src: url("../fonts/OpenSans-Regular.ttf") format("truetype");
-}
+/* Use Google Fonts instead of the local TTF file */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400&display=swap');
 
 /* General Text & Icons */
 .fa,
@@ -26,7 +24,7 @@ p {
 
 body {
     background-color: #092f44; /* Original navy blue */
-    font-family: "OpenSansReg", sans-serif !important;
+    font-family: "Open Sans", sans-serif !important;
     margin: 0;
     padding: 0;
 }
