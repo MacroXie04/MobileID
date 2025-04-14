@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import pytz
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 
 from mobileid.models import StudentInformation, UserBarcodeSettings, Barcode
 from mobileid.project_code.barcode import auto_send_code
