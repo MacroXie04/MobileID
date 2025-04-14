@@ -66,7 +66,7 @@ Welcome to the **UC Merced-Barcode**!
 ## Features
 
 - **UC Merced Dynamic Barcode Support**: The UC Merced dynamic barcode can be transfer **only under authorization** using the website build-in transfer toolkit.
-- **UC Merced Dynamic Barcode Transfer Toolkit**: The UC Merced dynamic barcode transfer toolkit can be used to transfer the UC Merced dynamic barcode to another student card.
+- **UC Merced Dynamic Barcode Transfer Toolkit**: The UC Merced dynamic barcode transfer toolkit can be used to transfer the UC Merced dynamic barcode.
 
 ---
 
