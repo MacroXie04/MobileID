@@ -1,4 +1,4 @@
-{% extends 'layout.html' %}
+{% extends 'layout_write.html' %}
 {% load static %}
 
 {% block content %}
@@ -21,8 +21,121 @@
                     {{ form.avatar }}
                 </div>
                 <button type="submit" class="btn btn-primary w-100 py-2">Submit</button>
+                <hr class="my-4">
+                <button type="button" class="btn btn-outline-success w-100" onclick="registerPasskey()">
+                    Register Passkey
+                </button>
             </form>
         </div>
     </div>
+
+
+    <script>
+        function bufferDecode(value) {
+            return Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+        }
+
+        function bufferEncode(value) {
+            return btoa(String.fromCharCode(...new Uint8Array(value)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        function getCSRFToken() {
+            const match = document.cookie.match(/csrftoken=([^;]+)/);
+            return match ? match[1] : '';
+        }
+
+        async function registerPasskey() {
+            const res = await fetch("/passkey/reg/options");
+            const options = await res.json();
+
+            options.challenge = bufferDecode(options.challenge);
+            if (options.user && options.user.id) {
+                options.user.id = bufferDecode(options.user.id);
+            }
+            if (options.excludeCredentials) {
+                options.excludeCredentials = options.excludeCredentials.map(cred => ({
+                    ...cred,
+                    id: bufferDecode(cred.id),
+                }));
+            }
+
+            const credential = await navigator.credentials.create({publicKey: options});
+
+            const rawIdBytes = new Uint8Array(credential.rawId);
+            const rawIdEncoded = bufferEncode(rawIdBytes);
+
+            const credentialData = {
+                id: rawIdEncoded,
+                rawId: rawIdEncoded,  // pass both as base64url encoded string
+                type: credential.type,
+                response: {
+                    clientDataJSON: bufferEncode(credential.response.clientDataJSON),
+                    attestationObject: bufferEncode(credential.response.attestationObject),
+                }
+            };
+
+            const completeRes = await fetch("/passkey/reg/complete", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken()
+                },
+                body: JSON.stringify(credentialData),
+            });
+
+            const result = await completeRes.json();
+            if (result.status === "ok") {
+                alert("✅ Passkey 注册成功");
+            } else {
+                alert("⚠️ 注册失败: " + JSON.stringify(result));
+            }
+        }
+
+
+        async function loginWithPasskey() {
+            const res = await fetch("/passkey/auth/options");
+            const options = await res.json();
+
+            options.challenge = bufferDecode(options.challenge);
+            if (options.allowCredentials) {
+                options.allowCredentials = options.allowCredentials.map(cred => ({
+                    ...cred,
+                    id: bufferDecode(cred.id),
+                }));
+            }
+
+            const assertion = await navigator.credentials.get({publicKey: options});
+
+            const assertionData = {
+                id: assertion.id,
+                rawId: bufferEncode(assertion.rawId),
+                type: assertion.type,
+                response: {
+                    authenticatorData: bufferEncode(assertion.response.authenticatorData),
+                    clientDataJSON: bufferEncode(assertion.response.clientDataJSON),
+                    signature: bufferEncode(assertion.response.signature),
+                    userHandle: assertion.response.userHandle ? bufferEncode(assertion.response.userHandle) : null,
+                }
+            };
+
+            const completeRes = await fetch("/passkey/auth/complete", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken()
+                },
+                body: JSON.stringify(assertionData),
+            });
+
+            const result = await completeRes.json();
+            if (result.status === "ok") {
+                window.location.href = "/";
+            } else {
+                alert("❌ Passkey 登录失败");
+            }
+        }
+
+    </script>
 {% endblock %}
 

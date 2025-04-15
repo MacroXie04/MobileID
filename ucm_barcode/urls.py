@@ -25,6 +25,9 @@ urlpatterns = [
 
     # index page
     path("", include("mobileid.urls")),
+
+    # webauthn app
+    path("passkey/", include("webauthn_app.urls")),
 ]
 
 if settings.DEBUG:
