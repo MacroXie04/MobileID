@@ -1,66 +1,69 @@
 import json
-from django.http import JsonResponse, HttpResponseBadRequest
+import base64
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_POST, require_GET
-from webauthn.helpers.structs import *
-from webauthn import *
+from webauthn import (
+    generate_registration_options,
+    generate_authentication_options,
+    verify_registration_response,
+    verify_authentication_response,
+    options_to_json,
+    base64url_to_bytes,
+)
+from webauthn.helpers import (
+    parse_registration_credential_json,
+    parse_authentication_credential_json,
+)
+from webauthn.helpers.structs import (
+    AuthenticatorAttachment,
+    AuthenticatorSelectionCriteria,
+    ResidentKeyRequirement,
+    UserVerificationRequirement,
+)
+
 from .models import PasskeyCredential
-from django.contrib.auth.models import User
 
 RP_ID = "catcard.online"
 ORIGIN = "https://catcard.online"
 
+
 @login_required
 def register_options(request):
     user = request.user
+
     options = generate_registration_options(
         rp_id=RP_ID,
         rp_name="CatCard App",
-        user_id=str(user.id),
-        user_name=user.username,
-        user_display_name=user.username,
+        user_id=str(request.user.id).encode(),
+        user_name=request.user.username,
+        user_display_name=request.user.username,
         authenticator_selection=AuthenticatorSelectionCriteria(
-            resident_key="required",
-            user_verification="required",
+            authenticator_attachment=AuthenticatorAttachment.PLATFORM,
+            resident_key=ResidentKeyRequirement.REQUIRED,
+            user_verification=UserVerificationRequirement.REQUIRED,
+            require_resident_key=True,  # keeps Safari ≤ 16 happy
         ),
+        timeout=60_000,
     )
-    request.session['reg_options'] = options_to_json(options)
-    return JsonResponse(json.loads(request.session['reg_options']))
+
+    request.session["reg_options"] = options_to_json(options)
+    return JsonResponse(json.loads(request.session["reg_options"]))
+
 
 @require_POST
 @login_required
 def register_complete(request):
     try:
-        import base64
-
-        def base64url_to_bytes(val):
-            val += '=' * ((4 - len(val) % 4) % 4)
-            return base64.urlsafe_b64decode(val)
-
-        def bytes_to_base64url(b):
-            return base64.urlsafe_b64encode(b).decode('utf-8').rstrip('=')
-
         data = json.loads(request.body)
-        print("🟡 ID =", data['id'])
-        print("🟡 RAW ID =", data['rawId'])
-        print("🟡 type(id):", type(data['id']))
-        print("🟡 type(rawId):", type(data['rawId']))
 
-        # force overwrite id using rawId
-        if isinstance(data['rawId'], list):
-            raw_bytes = bytes(data['rawId'])
-        else:
-            raw_bytes = base64url_to_bytes(data['rawId'])
-
-        data['id'] = bytes_to_base64url(raw_bytes)
-
-        reg_cred = RegistrationCredential.parse_obj(data)
-        expected = json.loads(request.session.pop('reg_options'))
+        reg_cred = parse_registration_credential_json(data)  # :contentReference[oaicite:0]{index=0}
+        expected = json.loads(request.session.pop("reg_options"))
 
         verified = verify_registration_response(
             credential=reg_cred,
-            expected_challenge=expected['challenge'],
+            expected_challenge=base64url_to_bytes(expected["challenge"]),
             expected_rp_id=RP_ID,
             expected_origin=ORIGIN,
             require_user_verification=True,
@@ -72,35 +75,37 @@ def register_complete(request):
             public_key=verified.credential_public_key,
             sign_count=verified.sign_count,
         )
-
         return JsonResponse({"status": "ok"})
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return HttpResponseBadRequest(str(e))
+
 
 @require_GET
 def auth_options(request):
     options = generate_authentication_options(
         rp_id=RP_ID,
-        user_verification="required",
+        user_verification=UserVerificationRequirement.REQUIRED,
     )
-    request.session['auth_options'] = options_to_json(options)
-    return JsonResponse(json.loads(request.session['auth_options']))
+    request.session["auth_options"] = options_to_json(options)
+    return JsonResponse(json.loads(request.session["auth_options"]))
+
+
+
 
 @require_POST
 def auth_complete(request):
     try:
         data = json.loads(request.body)
-        credential_id = data['id']
 
-        cred = PasskeyCredential.objects.get(credential_id=credential_id)
-        user = cred.user
-        expected = json.loads(request.session.pop('auth_options'))
+        # Decode the credential ID so it matches the BinaryField
+        cred_id = base64url_to_bytes(data["id"])  # :contentReference[oaicite:2]{index=2}
+        cred = PasskeyCredential.objects.get(credential_id=cred_id)
+        expected = json.loads(request.session.pop("auth_options"))
 
+        auth_cred = parse_authentication_credential_json(data)  # :contentReference[oaicite:3]{index=3}
         verified = verify_authentication_response(
-            credential=AuthenticationCredential.parse_obj(data),
-            expected_challenge=expected['challenge'],
+            credential=auth_cred,
+            expected_challenge=base64url_to_bytes(expected["challenge"]),
             expected_rp_id=RP_ID,
             expected_origin=ORIGIN,
             credential_public_key=cred.public_key,
@@ -110,8 +115,7 @@ def auth_complete(request):
 
         cred.sign_count = verified.new_sign_count
         cred.save()
-
-        login(request, user)
+        login(request, cred.user)
         return JsonResponse({"status": "ok"})
     except Exception as e:
         return HttpResponseBadRequest(str(e))
