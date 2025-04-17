@@ -1,4 +1,4 @@
-{% extends 'layout.html' %}
+{% extends 'layout_write.html' %}
 {% load static %}
 
 {% block content %}
@@ -21,8 +21,19 @@
                     {{ form.avatar }}
                 </div>
                 <button type="submit" class="btn btn-primary w-100 py-2">Submit</button>
+                <hr class="my-4">
+                <button type="button" class="btn btn-outline-success w-100" onclick="registerPasskey()">
+                    Register Passkey
+                </button>
             </form>
         </div>
     </div>
+
+
 {% endblock %}
 
+
+{% block script %}
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <script src="{% static 'webauthn.js' %}"></script>
+{% endblock %}

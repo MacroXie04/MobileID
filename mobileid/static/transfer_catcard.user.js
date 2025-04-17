@@ -70,7 +70,7 @@
                     </div>
                   </div>
                   <div class="kgo-textblock kgo-margin-xxtight kgo-margin-bottom-xtight">
-                    <div class="kgo-title kgo-text kgo-font-style-normal kgo-font-weight-normal">OneTime Transfer CatCard</div>
+                    <div class="kgo-title kgo-text kgo-font-style-normal kgo-font-weight-normal">CatCard Transfer Toolkit</div>
                   </div>
                 </a>
             `;

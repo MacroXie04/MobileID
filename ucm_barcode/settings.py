@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "webauthn_app.apps.WebauthnAppConfig"
 ]
 
 MIDDLEWARE = [

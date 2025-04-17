@@ -1,7 +1,6 @@
 import os
 import uuid
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -11,25 +10,6 @@ def user_directory_path(instance, filename):
     ext = filename.split('.')[-1]
     unique_filename = f"{instance.user.username}_{uuid.uuid4().hex}.{ext}"
     return os.path.join('avatars', unique_filename)
-
-
-# user passkeys
-class PasskeyCredential(models.Model):
-    # foreign key to user
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='passkey_credentials',
-    )
-
-    # passkey information
-    credential_id = models.CharField(max_length=256, unique=True)
-    public_key = models.TextField()
-    sign_count = models.BigIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Passkey ending with {self.credential_id[-4:]} for user {self.user.username}"
 
 
 # user information
