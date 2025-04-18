@@ -1,8 +1,7 @@
 // ==UserScript==
-// @name         Transfer CatCard Script
+// @name         Transfer CatCard Toolkit
 // @namespace    http://tampermonkey.net/
-// @version      2.0
-// @author       CatCard Team
+// @version      2.1
 // @description  Transfer CatCard Toolkit
 // @match        https://connect.ucmerced.edu/student/mymerced/_/mymerced*
 // @match        https://icatcard.ucmerced.edu/mobileid/*
@@ -12,7 +11,6 @@
 // @grant        GM_deleteValue
 // @grant        GM_addValueChangeListener
 // @connect      catcard.online
-// @connect      127.0.0.1
 // @connect      https://catcard.online/transfer/
 // ==/UserScript==
 
@@ -22,7 +20,6 @@
     const myMercedPattern = "connect.ucmerced.edu/student/mymerced";
     const icatcardPattern = "icatcard.ucmerced.edu/mobileid";
 
-    // 当服务器返回结果后，用此函数将图标替换为数字，但下方文字 "OneTime Transfer CatCard" 保留
     function updateDisplay(text) {
         var liElem = document.getElementById("kgoui_Rcontent_I0_Rcontent_I0_Rcontent_I0_Ritems_I1_OTTransfer");
         if (liElem) {
@@ -48,7 +45,6 @@
     // Display the One-time transfer CatCard link
     // ===============================
     if (window.location.href.indexOf(myMercedPattern) !== -1) {
-        // 在页面添加一个新的 <li>，初始显示图标和 "OneTime Transfer CatCard"
         function addTransferCatCardLink() {
             var ulElem = document.getElementById("kgoui_Rcontent_I0_Rcontent_I0_Rcontent_I0_Ritems");
             if (!ulElem) return;
@@ -76,7 +72,6 @@
             `;
             ulElem.appendChild(liElem);
 
-            // 点击后保存转移状态，清除旧结果，跳转到 icatcard 页面
             liElem.addEventListener('click', function () {
                 GM_setValue("TransferCatCard", "true");
                 GM_setValue("TransferCatCardTime", Date.now().toString());
@@ -91,14 +86,12 @@
             addTransferCatCardLink();
         }
 
-        // 页面加载后，若已有 TransferResult，则直接显示结果
         var immediateResult = GM_getValue("TransferResult", "");
         if (immediateResult) {
             updateDisplay(immediateResult);
             GM_deleteValue("TransferResult");
         }
 
-        // 轮询检查 TransferResult，每 500ms 一次
         var checkInterval = setInterval(function () {
             var result = GM_getValue("TransferResult", "");
             if (result) {
@@ -108,7 +101,6 @@
             }
         }, 500);
 
-        // 也可通过 GM_addValueChangeListener 监听 TransferResult
         GM_addValueChangeListener("TransferResult", function (name, old_value, new_value) {
             if (new_value) {
                 updateDisplay(new_value);
@@ -117,7 +109,7 @@
     }
 
     // ===============================
-    // icatcard 页面逻辑
+    // update the display of the transfer result
     // ===============================
     else if (window.location.href.indexOf(icatcardPattern) !== -1) {
         if (GM_getValue("TransferCatCard") === "true") {

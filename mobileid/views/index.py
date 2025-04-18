@@ -17,7 +17,7 @@ def index(request):
         return redirect('settings')
 
 
-    return render(request, 'index.html', {
+    return render(request, 'index/index.html', {
         'student_id': student_id,
         'name': name,
         'user_profile': user_profile

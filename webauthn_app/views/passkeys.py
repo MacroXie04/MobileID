@@ -1,5 +1,5 @@
 import json
-import base64
+
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseBadRequest
@@ -23,13 +23,13 @@ from webauthn.helpers.structs import (
     UserVerificationRequirement,
 )
 
-from .models import PasskeyCredential
+from webauthn_app.models import PasskeyCredential
 
 RP_ID = "catcard.online"
 ORIGIN = "https://catcard.online"
 
 
-@login_required
+@login_required(login_url='/login/')
 def register_options(request):
     user = request.user
 
@@ -43,7 +43,7 @@ def register_options(request):
             authenticator_attachment=AuthenticatorAttachment.PLATFORM,
             resident_key=ResidentKeyRequirement.REQUIRED,
             user_verification=UserVerificationRequirement.REQUIRED,
-            require_resident_key=True,  # keeps Safari ≤ 16 happy
+            require_resident_key=True,
         ),
         timeout=60_000,
     )
@@ -53,12 +53,12 @@ def register_options(request):
 
 
 @require_POST
-@login_required
+@login_required(login_url='/login/')
 def register_complete(request):
     try:
         data = json.loads(request.body)
 
-        reg_cred = parse_registration_credential_json(data)  # :contentReference[oaicite:0]{index=0}
+        reg_cred = parse_registration_credential_json(data)
         expected = json.loads(request.session.pop("reg_options"))
 
         verified = verify_registration_response(
@@ -90,19 +90,17 @@ def auth_options(request):
     return JsonResponse(json.loads(request.session["auth_options"]))
 
 
-
-
 @require_POST
 def auth_complete(request):
     try:
         data = json.loads(request.body)
 
         # Decode the credential ID so it matches the BinaryField
-        cred_id = base64url_to_bytes(data["id"])  # :contentReference[oaicite:2]{index=2}
+        cred_id = base64url_to_bytes(data["id"])
         cred = PasskeyCredential.objects.get(credential_id=cred_id)
         expected = json.loads(request.session.pop("auth_options"))
 
-        auth_cred = parse_authentication_credential_json(data)  # :contentReference[oaicite:3]{index=3}
+        auth_cred = parse_authentication_credential_json(data)
         verified = verify_authentication_response(
             credential=auth_cred,
             expected_challenge=base64url_to_bytes(expected["challenge"]),
