@@ -1,0 +1,12 @@
+{% extends "layout/layout_write.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h3>Confirm Delete</h3>
+    <p>Are you sure you want to delete <strong>{{ object }}</strong>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'manage_passkeys' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -10,4 +10,5 @@ class PasskeyCredential(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Passkey for {self.user.username}"
+        created_str = self.created_at.strftime("%Y-%m-%d")
+        return f"{self.user.username}'s Passkey - Created on {created_str}"
