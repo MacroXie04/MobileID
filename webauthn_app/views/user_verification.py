@@ -45,7 +45,7 @@ def user_login(request):
     return render(request, 'login.html', {'form': form})
 
 
-@login_required(login_url='/login/')
+@login_required
 def logout(request):
     from django.contrib.auth import logout as django_logout
     django_logout(request)

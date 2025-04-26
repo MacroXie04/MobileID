@@ -28,7 +28,7 @@ RP_ID = "catcard.online"
 ORIGIN = "https://catcard.online"
 
 
-@login_required(login_url='/login/')
+@login_required
 def register_options(request):
     user = request.user
 
@@ -52,7 +52,7 @@ def register_options(request):
 
 
 @require_POST
-@login_required(login_url='/login/')
+@login_required
 def register_complete(request):
     try:
         data = json.loads(request.body)

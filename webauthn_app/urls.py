@@ -1,6 +1,6 @@
 # urls.py for webauthn_app
 from django.urls import path
-from .views import passkeys, manage
+from .views import passkeys, manage, user_verification
 
 app_name = "webauthn_app"
 urlpatterns = [
@@ -10,8 +10,16 @@ urlpatterns = [
     path('auth/options', passkeys.auth_options, name='auth_options'),
     path('auth/complete', passkeys.auth_complete, name='auth_complete'),
 
+    # user authentication
+    path('login/', user_verification.user_login, name='login'),
+    path('register/', user_verification.register, name='register'),
+    path('logout/', user_verification.logout, name='logout'),
 
     # Account management views
+    path('', manage.manage_account, name='manage_account'),
+    path('password/', manage.change_password, name='manage_password'),
+
+    # login and login out
 
     # manage passkeys
     path('passkeys/', manage.PasskeyListView.as_view(), name='manage_passkeys'),

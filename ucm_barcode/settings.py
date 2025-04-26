@@ -12,6 +12,8 @@ import os
 from pathlib import Path
 from django.core.exceptions import PermissionDenied
 
+LOGIN_URL = '/webauthn/login/'
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -19,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-3l146vm!dkmv_!bdr(mv^2+flq^%kh%_e&j82n1err8qzr_prf"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
