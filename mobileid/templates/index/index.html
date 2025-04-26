@@ -1,10 +1,10 @@
-{% extends 'layout.html' %}
+{% extends 'layout/layout.html' %}
 {% load static %}
 
 {% block content %}
     <!-- Centered Profile Section -->
     <div class="text-center" style="margin-top: 2em;">
-        <a href="/" id="setting-icon">
+        <a href="/mobileid/static" id="setting-icon">
             {% if user_profile.avatar %}
                 <img src="{{ user_profile.avatar.url }}"
                      style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;
@@ -69,7 +69,7 @@
                 <i class="fa fa-dumbbell fa-2x"></i>
                 <p>Gym</p>
             </a>
-            <a href="#" class="btn-grid">
+            <a href="{% url 'webauthn_app:manage_account' %}" class="btn-grid">
                 <i class="fa fa-info fa-2x"></i>
                 <p>Resources</p>
             </a>
@@ -85,7 +85,7 @@
     <!-- Generate Barcode JavaScript -->
     <script src="{% static 'assets/js/bcmath-min.js' %}" type="text/javascript"></script>
     <script src="{% static 'assets/js/pdf417-min.js' %}" type="text/javascript"></script>
-    <script src="{% static 'generate_barcode.js' %}" type="text/javascript"></script>
+    <script src="{% static 'assets/js/generate_barcode.js' %}" type="text/javascript"></script>
 
 {% endblock %}
 

@@ -8,7 +8,7 @@ from mobileid.project_code.barcode import auto_send_code
 
 
 # Generate Barcode
-@login_required(login_url='/login/')
+@login_required
 def generate_code(request):
     # Retrieve user profile and settings with error handling
     try:

@@ -3,16 +3,8 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
-
-from mobileid.forms.UserLoginForm import UserLoginForm
-from mobileid.forms.UserRegisterForm import UserRegisterForm
-
-
-@login_required(login_url='/login/')
-def logout(request):
-    from django.contrib.auth import logout as django_logout
-    django_logout(request)
-    return redirect('login')
+from webauthn_app.forms.UserLoginForm import UserLoginForm
+from webauthn_app.forms.UserRegisterForm import UserRegisterForm
 
 
 def register(request):
@@ -22,6 +14,9 @@ def register(request):
             user = form.save(commit=False)
             user.is_active = False
             user.save()
+            # the user is created but not activated
+            # TODO: user disable page
+            # return redirect('user_disable_page')
             # login(request, user)
             # return redirect('index')
             return redirect('login')
@@ -48,3 +43,10 @@ def user_login(request):
         form = UserLoginForm()
 
     return render(request, 'login.html', {'form': form})
+
+
+@login_required
+def logout(request):
+    from django.contrib.auth import logout as django_logout
+    django_logout(request)
+    return redirect('login')

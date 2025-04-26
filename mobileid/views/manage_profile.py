@@ -10,7 +10,7 @@ from mobileid.models import StudentInformation, Barcode, Transfer, UserBarcodeSe
 from mobileid.project_code.barcode import uc_merced_mobile_id
 
 
-@login_required(login_url='/login/')
+@login_required
 def setup(request):
     user_profile, created = StudentInformation.objects.get_or_create(user=request.user)
 
@@ -32,10 +32,10 @@ def setup(request):
             'student_id': user_profile.student_id,
         })
 
-    return render(request, 'setup.html', {'form': form})
+    return render(request, 'index/setup.html', {'form': form})
 
 
-@login_required(login_url='/login/')
+@login_required
 def settings(request):
     user_settings, created = UserBarcodeSettings.objects.get_or_create(user=request.user)
 
@@ -47,9 +47,9 @@ def settings(request):
     else:
         form = UserBarcodeSettingsForm(instance=user_settings, user=request.user)
 
-    return render(request, 'settings.html', {'form': form})
+    return render(request, 'index/settings.html', {'form': form})
 
-@login_required(login_url='/login/')
+@login_required
 def create_barcode(request):
     if request.method == 'POST':
         form = BarcodeForm(request.POST)
@@ -66,36 +66,36 @@ def create_barcode(request):
                 # creat barcode
                 if not input_value.isdigit():
                     form.add_error('input_value', "Barcode only accepts digits.")
-                    return render(request, 'create_barcode.html', {'form': form})
+                    return render(request, 'index/create_barcode.html', {'form': form})
 
                 if not len(input_value) == 16:
                     form.add_error('input_value', "Barcode is not valid.")
-                    return render(request, 'create_barcode.html', {'form': form})
+                    return render(request, 'index/create_barcode.html', {'form': form})
 
                 if Barcode.objects.filter(barcode=input_value, user=request.user).exists():
                     form.add_error('input_value', "Barcode already exists.")
-                    return render(request, 'create_barcode.html', {'form': form})
+                    return render(request, 'index/create_barcode.html', {'form': form})
 
                 barcode.barcode = input_value
                 barcode.session = None
                 barcode.barcode_type = 'Static'
                 barcode.save()
 
-                # 关联 barcode 到用户的设置中
+                # link barcode to the user
                 user_barcode_settings = UserBarcodeSettings.objects.get(user=request.user)
                 user_barcode_settings.barcode = barcode
                 user_barcode_settings.save()
                 return redirect('index')
 
             if source_type == 'session':
-                # 直接使用 session 数据
+                # using the session data
                 session = input_value
 
             if source_type == 'transfer_code':
-                # 判断 transfer_code 长度是否正确
+                # using the transfer code
                 if len(input_value) != 6:
                     form.add_error('input_value', "TransferCode is not valid.")
-                    return render(request, 'create_barcode.html', {'form': form})
+                    return render(request, 'index/create_barcode.html', {'form': form})
 
                 try:
                     transfer_obj = Transfer.objects.get(unique_code=input_value)
@@ -103,17 +103,17 @@ def create_barcode(request):
                     transfer_obj.delete()
                 except Transfer.DoesNotExist:
                     form.add_error('input_value', "Transfer not found.")
-                    return render(request, 'create_barcode.html', {'form': form})
+                    return render(request, 'index/create_barcode.html', {'form': form})
 
             if not session:
                 form.add_error('source_type', "Session is missing or invalid.")
-                return render(request, 'create_barcode.html', {'form': form})
+                return render(request, 'index/create_barcode.html', {'form': form})
 
-            # 利用 session 获取 barcode 信息
+            # use the session to get the barcode
             server_result = uc_merced_mobile_id(session)
             if server_result['barcode'] is None:
                 form.add_error('input_value', "Session Data Error.")
-                return render(request, 'create_barcode.html', {'form': form})
+                return render(request, 'index/create_barcode.html', {'form': form})
 
             barcode_text = server_result['barcode']
             # check if the barcode already exists
@@ -143,10 +143,10 @@ def create_barcode(request):
     else:
         form = BarcodeForm()
 
-    return render(request, 'create_barcode.html', {'form': form})
+    return render(request, 'index/create_barcode.html', {'form': form})
 
 
-@login_required(login_url='/login/')
+@login_required
 def manage_barcode(request):
     # check if the user has a barcode
     if not Barcode.objects.filter(user=request.user).exists():
@@ -163,4 +163,4 @@ def manage_barcode(request):
     else:
         form = ManageBarcodeForm(user=request.user)
 
-    return render(request, 'manage_barcode.html', {'form': form})
+    return render(request, 'index/manage_barcode.html', {'form': form})

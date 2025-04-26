@@ -3,7 +3,7 @@ from django.shortcuts import redirect, render
 from mobileid.models import StudentInformation, UserBarcodeSettings
 
 
-@login_required(login_url='/login/')
+@login_required
 def index(request):
     # make sure the user has a profile and setting before accessing the index page
     try:
@@ -17,7 +17,7 @@ def index(request):
         return redirect('settings')
 
 
-    return render(request, 'index.html', {
+    return render(request, 'index/index.html', {
         'student_id': student_id,
         'name': name,
         'user_profile': user_profile
