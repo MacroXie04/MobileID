@@ -44,3 +44,4 @@ user-agents
 webcolors
 webdriver-manager
 wheel
+social_django
