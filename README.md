@@ -75,7 +75,7 @@ Welcome to the **UC Merced-Barcode**!
 ### 1. Setup the Development Environment
 
 ```bash
-   git clone https://github.com/your-username/UCMerced-Barcode.git
+   git clone https://github.com/MacroXie04/UCMerced-Barcode.git
    cd UCMerced-Barcode
    python -m venv .venv
    source .venv/bin/activate
