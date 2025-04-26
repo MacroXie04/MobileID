@@ -70,9 +70,29 @@ Welcome to the **UC Merced-Barcode**!
 
 ---
 
+## Usage
 
+### 1. Setup the Development Environment
 
+```bash
+   git clone https://github.com/your-username/UCMerced-Barcode.git
+   cd UCMerced-Barcode
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+```
 
+### 2. Database Migration
 
+```bash
+   python manage.py makemigrations mobileid
+   python manage.py makemigrations webauthn_app
+   python manage.py makemigrations
+   python manage.py migrate
+```
 
+### 3. Run the Server
 
+```bash
+   python manage.py runserver
+```
