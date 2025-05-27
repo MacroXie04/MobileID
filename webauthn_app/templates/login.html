@@ -63,6 +63,6 @@
 {% endblock %}
 
 {% block script %}
-    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <script src="{% static 'index.umd.min.js' %}"></script>
     <script src="{% static 'webauthn.js' %}"></script>
 {% endblock %}

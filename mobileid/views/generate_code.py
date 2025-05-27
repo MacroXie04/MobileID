@@ -29,7 +29,7 @@ def generate_code(request):
         else:
             return JsonResponse({"status": "error", "message": "No barcodes available."})
     else:
-        # use thr barcode assigned to the user
+        # use the barcode assigned to the user
         try:
             # init the barcode
             user_barcode = user_settings.barcode

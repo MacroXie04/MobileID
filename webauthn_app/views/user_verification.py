@@ -7,6 +7,9 @@ from webauthn_app.forms.UserLoginForm import UserLoginForm
 from webauthn_app.forms.UserRegisterForm import UserRegisterForm
 
 
+def illegal_request(request):
+    return render(request, 'Illegal_request/reject.html')
+
 def register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
@@ -49,4 +52,4 @@ def user_login(request):
 def logout(request):
     from django.contrib.auth import logout as django_logout
     django_logout(request)
-    return redirect('login')
+    return redirect('index')

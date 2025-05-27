@@ -1,7 +1,8 @@
 import json
+
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseBadRequest
+from django.shortcuts import redirect
 from django.views.decorators.http import require_POST, require_GET
 from webauthn import (
     generate_registration_options,
@@ -20,6 +21,7 @@ from webauthn.helpers.structs import (
     AuthenticatorSelectionCriteria,
     ResidentKeyRequirement,
     UserVerificationRequirement,
+    AttestationConveyancePreference,
 )
 
 from webauthn_app.models import PasskeyCredential
@@ -28,37 +30,40 @@ RP_ID = "catcard.online"
 ORIGIN = "https://catcard.online"
 
 
-@login_required
+@require_GET
 def register_options(request):
     user = request.user
+    exclude = [
+        {"id": c.credential_id, "type": "public-key"}
+        for c in PasskeyCredential.objects.filter(user=user)
+    ]
 
-    options = generate_registration_options(
+    opts = generate_registration_options(
         rp_id=RP_ID,
         rp_name="CatCard App",
-        user_id=str(request.user.id).encode(),
-        user_name=request.user.username,
-        user_display_name=request.user.username,
+        user_id=str(user.id).encode(),
+        user_name=user.email,
+        user_display_name=user.username,
         authenticator_selection=AuthenticatorSelectionCriteria(
             authenticator_attachment=AuthenticatorAttachment.PLATFORM,
             resident_key=ResidentKeyRequirement.REQUIRED,
             user_verification=UserVerificationRequirement.REQUIRED,
             require_resident_key=True,
         ),
+        attestation=AttestationConveyancePreference.NONE,
+        exclude_credentials=exclude,
         timeout=60_000,
     )
 
-    request.session["reg_options"] = options_to_json(options)
-    return JsonResponse(json.loads(request.session["reg_options"]))
+    request.session["reg_opts"] = options_to_json(opts)
+    return JsonResponse(json.loads(request.session["reg_opts"]))
 
 
 @require_POST
-@login_required
 def register_complete(request):
     try:
-        data = json.loads(request.body)
-
-        reg_cred = parse_registration_credential_json(data)
-        expected = json.loads(request.session.pop("reg_options"))
+        reg_cred = parse_registration_credential_json(json.loads(request.body))
+        expected = json.loads(request.session.pop("reg_opts"))
 
         verified = verify_registration_response(
             credential=reg_cred,
@@ -75,31 +80,33 @@ def register_complete(request):
             sign_count=verified.sign_count,
         )
         return JsonResponse({"status": "ok"})
-    except Exception as e:
-        return HttpResponseBadRequest(str(e))
+    except Exception:
+        return redirect("webauthn_app:illegal_request")
 
 
+# ---------- 登录（无用户名，自发现凭证） ---------- #
 @require_GET
 def auth_options(request):
-    options = generate_authentication_options(
+    opts = generate_authentication_options(
         rp_id=RP_ID,
         user_verification=UserVerificationRequirement.REQUIRED,
+        # 不提供 allow_credentials → 浏览器根据 resident key 自动匹配
+        timeout=60_000,
     )
-    request.session["auth_options"] = options_to_json(options)
-    return JsonResponse(json.loads(request.session["auth_options"]))
+    request.session["auth_opts"] = options_to_json(opts)
+    return JsonResponse(json.loads(request.session["auth_opts"]))
 
 
 @require_POST
 def auth_complete(request):
     try:
-        data = json.loads(request.body)
+        auth_cred = parse_authentication_credential_json(json.loads(request.body))
+        expected = json.loads(request.session.pop("auth_opts"))
 
-        # Decode the credential ID so it matches the BinaryField
-        cred_id = base64url_to_bytes(data["id"])
-        cred = PasskeyCredential.objects.get(credential_id=cred_id)
-        expected = json.loads(request.session.pop("auth_options"))
+        cred = PasskeyCredential.objects.get(
+            credential_id=auth_cred.raw_id
+        )
 
-        auth_cred = parse_authentication_credential_json(data)
         verified = verify_authentication_response(
             credential=auth_cred,
             expected_challenge=base64url_to_bytes(expected["challenge"]),
@@ -114,5 +121,7 @@ def auth_complete(request):
         cred.save()
         login(request, cred.user)
         return JsonResponse({"status": "ok"})
-    except Exception as e:
-        return HttpResponseBadRequest(str(e))
+    except PasskeyCredential.DoesNotExist:
+        return HttpResponseBadRequest("unknown credential")
+    except Exception:
+        return redirect("webauthn_app:illegal_request")

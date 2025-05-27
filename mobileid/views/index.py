@@ -2,7 +2,6 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from mobileid.models import StudentInformation, UserBarcodeSettings
 
-
 @login_required
 def index(request):
     # make sure the user has a profile and setting before accessing the index page
@@ -22,3 +21,7 @@ def index(request):
         'name': name,
         'user_profile': user_profile
     })
+
+
+def account_disabled(request):
+    return render(request, 'index/account_disabled.html', {})

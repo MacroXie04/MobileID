@@ -1,0 +1,80 @@
+{% extends 'layout/layout_write.html' %}
+
+{% block content %}
+    <!-- Create & Transfer Barcode Form -->
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
+            <h3 class="text-center mb-4">Create & Transfer Barcode</h3>
+            i
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}<br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="mb-3">
+                    {{ form.source_type.label_tag }}
+                    {{ form.source_type }}
+                    {% if form.source_type.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.source_type.errors %}
+                                {{ error }}<br>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.input_value.label_tag }}
+                    {{ form.input_value }}
+                    {% if form.input_value.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.input_value.errors %}
+                                {{ error }}<br>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Barcode Scanner Section -->
+                <div id="barcode-scanner-section" style="display: none;">
+                    <style>
+                        /* 扫码区域样式 */
+                        #video-container {
+                            display: none;
+                            opacity: 0;
+                            transform: translateY(-10px);
+                            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+                            background: #fff;
+                            padding: 10px;
+                            border: 1px solid #ccc;
+                            margin-top: 10px;
+                        }
+
+                        #video-container.show {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    </style>
+                    <div class="mb-3">
+                        <input type="hidden" id="static-barcode" name="static_barcode">
+                        <button type="button" id="toggle-scan-btn" class="btn btn-info w-100 py-2 mt-2"
+                                onclick="toggleScan()">Scan CatCard
+                        </button>
+                        <div id="video-container">
+                            <video id="video" width="300" height="200"
+                                   style="border: 1px solid gray; display: block; margin: 0 auto;"></video>
+                        </div>
+                    </div>
+                </div>
+                <!-- End Barcode Scanner Section -->
+
+                <button type="submit" class="btn btn-primary w-100 py-2">Submit</button>
+                <br>
+                <a href="{% url 'index' %}" class="btn btn-secondary w-100 mt-2">Back</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}
