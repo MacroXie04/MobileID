@@ -4,6 +4,7 @@ from django.contrib.auth import login
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import redirect
 from django.views.decorators.http import require_POST, require_GET
+from django_ratelimit.decorators import ratelimit
 from webauthn import (
     generate_registration_options,
     generate_authentication_options,
@@ -31,6 +32,7 @@ ORIGIN = "https://catcard.online"
 
 
 @require_GET
+@ratelimit(key='user', rate='10/m', block=True)
 def register_options(request):
     user = request.user
     exclude = [
@@ -60,6 +62,7 @@ def register_options(request):
 
 
 @require_POST
+@ratelimit(key='user', rate='10/m', block=True)
 def register_complete(request):
     try:
         reg_cred = parse_registration_credential_json(json.loads(request.body))
@@ -86,6 +89,7 @@ def register_complete(request):
 
 # ---------- 登录（无用户名，自发现凭证） ---------- #
 @require_GET
+@ratelimit(key='ip', rate='20/m', block=True)
 def auth_options(request):
     opts = generate_authentication_options(
         rp_id=RP_ID,
@@ -98,6 +102,7 @@ def auth_options(request):
 
 
 @require_POST
+@ratelimit(key='ip', rate='10/m', block=True)
 def auth_complete(request):
     try:
         auth_cred = parse_authentication_credential_json(json.loads(request.body))

@@ -3,6 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
+from django_ratelimit.decorators import ratelimit
 from webauthn_app.forms.UserLoginForm import UserLoginForm
 from webauthn_app.forms.UserRegisterForm import UserRegisterForm
 
@@ -10,6 +11,7 @@ from webauthn_app.forms.UserRegisterForm import UserRegisterForm
 def illegal_request(request):
     return render(request, 'Illegal_request/reject.html')
 
+@ratelimit(key='ip', rate='5/h', method='POST', block=True)
 def register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
@@ -30,6 +32,7 @@ def register(request):
 
 
 @csrf_exempt
+@ratelimit(key='ip', rate='10/m', method='POST', block=True)
 def user_login(request):
     if request.method == 'POST':
         form = UserLoginForm(request, data=request.POST)
