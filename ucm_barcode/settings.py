@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', secrets.token_hex(32))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # Restrict allowed hosts to specific domains
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'catcard.online', 'www.catcard.online']
@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     "csp",
     # Django Axes for login attempt limiting
     "axes",
+
+    'django_extensions',
 
     "django.contrib.admin",
     "django.contrib.auth",
@@ -88,8 +90,6 @@ AXES_COOLOFF_TIME = 1
 AXES_LOCKOUT_TEMPLATE = None
 # No custom lockout URL
 AXES_LOCKOUT_URL = None
-# Only lock based on username, not IP
-AXES_ONLY_USER_FAILURES = True
 # Reset the failure count on successful login
 AXES_RESET_ON_SUCCESS = True
 
@@ -190,10 +190,12 @@ SESSION_SAVE_EVERY_REQUEST = True
 
 # Security settings
 if DEBUG:
-    SESSION_COOKIE_SECURE = False
-    SESSION_COOKIE_HTTPONLY = False
+    # Enable HTTPS in development mode
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
-    CSRF_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = True
+    # Don't force SSL redirect in development as it can cause issues with localhost
     SECURE_SSL_REDIRECT = False
     SECURE_HSTS_SECONDS = 0
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
@@ -226,8 +228,8 @@ else:
     X_FRAME_OPTIONS = 'DENY'  # Prevent site from being embedded in iframes
 
     # Content Security Policy
-    CSP_DEFAULT_SRC = ("'self'",)
-    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
-    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'")
-    CSP_IMG_SRC = ("'self'", "data:")
-    CSP_FONT_SRC = ("'self'", "data:")
+    CONTENT_SECURITY_POLICY = {'DIRECTIVES': {'default-src': ("'self'",),
+                'font-src': ("'self'", 'data:'),
+                'img-src': ("'self'", 'data:'),
+                'script-src': ("'self'", "'unsafe-inline'", "'unsafe-eval'"),
+                'style-src': ("'self'", "'unsafe-inline'")}}

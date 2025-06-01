@@ -11,14 +11,14 @@ passkey_patterns = [
     path('auth/options',  passkeys.auth_options,     name='auth_options'),
     path('auth/complete', passkeys.auth_complete,    name='auth_complete'),
 
-    path('/', manage.PasskeyListView.as_view(), name='manage_passkeys'),
-    path('/delete/<int:pk>/', manage.PasskeyDeleteView.as_view(), name='delete_passkey'),
+    path('', manage.PasskeyListView.as_view(), name='manage_passkeys'),
+    path('delete/<int:pk>/', manage.PasskeyDeleteView.as_view(), name='delete_passkey'),
 ]
 
 urlpatterns = [
     # Illegal request handling
     path('reject/', user_verification.illegal_request, name='illegal_request'),
-    
+
     # Login view for the webauthn app
     path('passkey/', include(passkey_patterns)),
 
@@ -32,4 +32,3 @@ urlpatterns = [
     path('', manage.manage_account, name='manage_account'),
     path('password/', manage.change_password, name='manage_password'),
 ]
-
