@@ -164,5 +164,4 @@ def parse_html_data(html_content):
         return mobile_id_rand_array, student_id, barcode
 
     except Exception as e:
-        print(f"Error while parsing HTML content: {e}")
         return None, None, None

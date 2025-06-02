@@ -94,7 +94,7 @@ Welcome to the **UC Merced-Barcode**!
 ### 3. Run the Server
 
 ```bash
-   python manage.py runserver
+   python manage.py runserver_plus --cert ssl/localhost.crt --key ssl/localhost.key
 ```
 
 

@@ -1,11 +1,24 @@
+import os
+import uuid
+
 from django.contrib.auth.models import User
 from django.db import models
+
+
+# function to generate a unique file path for user uploads
+def user_directory_path(instance, filename):
+    ext = filename.split('.')[-1]
+    unique_filename = f"{instance.user.username}_{uuid.uuid4().hex}.{ext}"
+    return os.path.join('profile_img', unique_filename)
+
 
 class UserProfile(models.Model):
     # foreign key link the user model
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
-
+    # additional user information
+    gender = models.CharField(max_length=100)
+    profile_img = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
 
 
 class PasskeyCredential(models.Model):

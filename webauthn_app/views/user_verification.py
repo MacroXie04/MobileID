@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django_ratelimit.decorators import ratelimit
 from webauthn_app.forms.UserLoginForm import UserLoginForm
 from webauthn_app.forms.UserRegisterForm import UserRegisterForm
+from webauthn_app.models import UserProfile
 
 
 def illegal_request(request):
@@ -14,11 +15,20 @@ def illegal_request(request):
 @ratelimit(key='ip', rate='5/h', method='POST', block=True)
 def register(request):
     if request.method == 'POST':
-        form = UserRegisterForm(request.POST)
+        form = UserRegisterForm(request.POST, request.FILES)
         if form.is_valid():
             user = form.save(commit=False)
             user.is_active = False
             user.save()
+
+            # Create UserProfile for the user
+            profile = UserProfile(
+                user=user,
+                gender=form.cleaned_data.get('gender'),
+                profile_img=form.cleaned_data.get('profile_img')
+            )
+            profile.save()
+
             # the user is created but not activated
             # TODO: user disable page
             # return redirect('user_disable_page')
