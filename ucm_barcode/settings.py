@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from django.core.exceptions import PermissionDenied
+import secrets
 
 LOGIN_URL = '/webauthn/login/'
 
@@ -18,18 +19,34 @@ LOGIN_URL = '/webauthn/login/'
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-3l146vm!dkmv_!bdr(mv^2+flq^%kh%_e&j82n1err8qzr_prf"
+# Get SECRET_KEY from environment variable or generate a secure one
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', secrets.token_hex(32))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+# Restrict allowed hosts to specific domains
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'catcard.online', 'www.catcard.online']
+
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    'https://catcard.online',
+    'https://www.catcard.online',
+]
+CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 INSTALLED_APPS = [
     "mobileid",
     "widget_tweaks",
     "corsheaders",
+
+    # Django Content Security Policy
+    "csp",
+    # Django Axes for login attempt limiting
+    "axes",
+
+    'django_extensions',
 
     "django.contrib.admin",
     "django.contrib.auth",
@@ -42,17 +59,45 @@ INSTALLED_APPS = [
     "webauthn_app.apps.WebauthnAppConfig"
 ]
 
+# Django Axes Configuration
+AUTHENTICATION_BACKENDS = [
+    # AxesStandaloneBackend should be the first backend in the AUTHENTICATION_BACKENDS list
+    'axes.backends.AxesStandaloneBackend',
+
+    # Django's default ModelBackend
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-
     "django.middleware.security.SecurityMiddleware",
+    "csp.middleware.CSPMiddleware",  # Content Security Policy middleware
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "axes.middleware.AxesMiddleware",  # Django Axes middleware for login attempt limiting
 ]
+
+# Django Axes Settings
+# Number of login attempts before lockout
+AXES_FAILURE_LIMIT = 5
+# Lockout time in hours
+AXES_COOLOFF_TIME = 1
+# Use the default lockout response
+AXES_LOCKOUT_TEMPLATE = None
+# No custom lockout URL
+AXES_LOCKOUT_URL = None
+# Reset the failure count on successful login
+AXES_RESET_ON_SUCCESS = True
+
+# Django Rate Limit Settings
+RATELIMIT_VIEW = 'webauthn_app.views.rate_limit.rate_limited_error'
+RATELIMIT_ENABLE = True
+RATELIMIT_USE_CACHE = 'default'
+RATELIMIT_FAIL_OPEN = False  # Block requests when the cache is unavailable
 
 ROOT_URLCONF = "ucm_barcode.urls"
 
@@ -82,6 +127,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+        "ATOMIC_REQUESTS": True,  # Wrap each HTTP request in a transaction
+        "CONN_MAX_AGE": 0,  # Close database connections at the end of each request
     }
 }
 
@@ -93,6 +140,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 12,  # Require at least 12 characters
+        }
     },
     {
         "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
@@ -100,6 +150,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
+]
+
+# Password hashers (more secure than the default)
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
 ]
 
 # Internationalization
@@ -124,3 +181,55 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Session settings
+# 1 hour in seconds
+SESSION_COOKIE_AGE = 3600
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# Update the session on every request, resetting the expiry time
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Security settings
+if DEBUG:
+    # Enable HTTPS in development mode
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SECURE = True
+    # Don't force SSL redirect in development as it can cause issues with localhost
+    SECURE_SSL_REDIRECT = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+    SECURE_REFERRER_POLICY = 'same-origin'
+else:
+    # Session cookie settings
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+
+    # CSRF cookie settings
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
+
+    # HTTPS settings
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # HSTS settings
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Other security headers
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    X_FRAME_OPTIONS = 'DENY'  # Prevent site from being embedded in iframes
+
+    # Content Security Policy
+    CONTENT_SECURITY_POLICY = {'DIRECTIVES': {'default-src': ("'self'",),
+                'font-src': ("'self'", 'data:'),
+                'img-src': ("'self'", 'data:'),
+                'script-src': ("'self'", "'unsafe-inline'", "'unsafe-eval'"),
+                'style-src': ("'self'", "'unsafe-inline'")}}

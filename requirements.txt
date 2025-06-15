@@ -1,5 +1,6 @@
 absl-py
 ace_tools
+argon2-cffi
 pytz
 aiohttp-session
 appdirs
@@ -13,6 +14,9 @@ Deprecated
 Django
 gunicorn
 django-cors-headers
+django-csp
+django-axes
+django-ratelimit
 django-widget-tweaks
 djangorestframework
 flatbuffers

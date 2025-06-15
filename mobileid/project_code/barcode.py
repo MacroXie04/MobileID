@@ -164,12 +164,4 @@ def parse_html_data(html_content):
         return mobile_id_rand_array, student_id, barcode
 
     except Exception as e:
-        print(f"Error while parsing HTML content: {e}")
         return None, None, None
-
-
-if __name__ == "__main__":
-    user_cookie = r"_scid=Ic_axybbNapcWu2KQbPQB0XUlkR3FPy2; _tt_enable_cookie=1; _ttp=01JN20PX96CN3HWEEDYE7SEZ03_.tt.1; _fbp=fb.1.1740603356486.499765120694379326; _mkto_trk=id:976-RKA-196&token:_mch-ucmerced.edu-bc9ac74da238b9517b062d67c0cf33be; _ga_MDV0RFSJ6H=GS1.1.1740731352.1.1.1740731475.0.0.0; _ga_ZNSTZ2YGVJ=GS1.1.1742529086.1.1.1742529115.0.0.0; _ScCbts=%5B%5D; _sctr=1%7C1743663600000; _ga_12VFZGH5J2=GS1.2.1743837418.5.0.1743837418.0.0.0; _gid=GA1.2.1624259111.1744140609; _ga=GA1.1.510264552.1740603356; _ga_TSE2LSBDQZ=GS1.1.1744140609.11.1.1744140723.60.0.0; _scid_r=L0_axybbNapcWu2KQbPQB0XUlkR3FPy2DKvteA; _uetsid=e2a114a014af11f09c689fff36e39247; _uetvid=13366c10f48411efb8ba870ea856949e; ttcsid=1744140609467.1.1744140723288; ttcsid_C8LNTT0H473GVAFU5FV0=1744140609466.1.1744140723497; session_for%3Aindex_php=ST-1744141275001-UwXxG4UdwqKfO4RR4Os1mufxS; _pk_ref.1.cb1f=%5B%22%22%2C%22%22%2C1744141276%2C%22https%3A%2F%2Fapi-70cee857.duosecurity.com%2F%22%5D; _pk_ses.1.cb1f=*; _pk_id.1.cb1f=da46508d627083ff.1742872489.34.1744143063.1744141276."
-
-    # print(auto_send_code(user_cookie))
-    # print(uc_merced_mobile_id(user_cookie))

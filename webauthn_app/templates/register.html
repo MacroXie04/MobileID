@@ -7,7 +7,7 @@
     <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
         <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
             <h3 class="text-center mb-4">Register</h3>
-            <form method="POST" novalidate>
+            <form method="POST" enctype="multipart/form-data" novalidate>
                 {% csrf_token %}
 
                 <div class="mb-3">
@@ -16,6 +16,56 @@
                     {% if form.username.errors %}
                         <div class="invalid-feedback d-block">
                             {{ form.username.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.email.label_tag }}
+                    {{ form.email|add_class:"form-control" }}
+                    {% if form.email.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.email.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.first_name.label_tag }}
+                    {{ form.first_name|add_class:"form-control" }}
+                    {% if form.first_name.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.first_name.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.last_name.label_tag }}
+                    {{ form.last_name|add_class:"form-control" }}
+                    {% if form.last_name.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.last_name.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.gender.label_tag }}
+                    {{ form.gender|add_class:"form-control" }}
+                    {% if form.gender.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.gender.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.profile_img.label_tag }}
+                    {{ form.profile_img|add_class:"form-control" }}
+                    {% if form.profile_img.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.profile_img.errors }}
                         </div>
                     {% endif %}
                 </div>
