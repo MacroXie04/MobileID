@@ -1,15 +1,5 @@
-import os
-import uuid
-
 from django.contrib.auth.models import User
 from django.db import models
-
-
-# function to generate a unique file path for user uploads
-def user_directory_path(instance, filename):
-    ext = filename.split('.')[-1]
-    unique_filename = f"{instance.user.username}_{uuid.uuid4().hex}.{ext}"
-    return os.path.join('avatars', unique_filename)
 
 
 # user information
@@ -20,7 +10,7 @@ class StudentInformation(models.Model):
     # student information
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=100)
-    avatar = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
+    user_profile_img = models.BinaryField()
 
     def __str__(self):
         return f"{self.name} - StudentID: **{self.student_id[-4:]}"
