@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {getCurrentUser, login} from './services/api';
+import {getCurrentUser, login} from '../services/api';
 
 function App() {
     const [username, setUsername] = useState('');
@@ -11,7 +11,7 @@ function App() {
             const {access} = await login(username, password);
             localStorage.setItem('access_token', access);  // 保存 token
             const userInfo = await getCurrentUser(access);
-            setUser(userInfo);  // 显示用户信息
+            setUser(userInfo);
         } catch (error) {
             alert('Login failed');
             console.error(error);
@@ -23,7 +23,6 @@ function App() {
             {user ? (
                 <div>
                     <h2>Welcome, {user.username}</h2>
-                    <p>Email: {user.email}</p>
                 </div>
             ) : (
                 <>

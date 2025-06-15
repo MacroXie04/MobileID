@@ -9,5 +9,4 @@ def current_user_view(request):
     return Response({
         'id': request.user.id,
         'username': request.user.username,
-        'email': request.user.email,
     })
