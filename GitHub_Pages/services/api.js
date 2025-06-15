@@ -1,12 +1,12 @@
 import axios from 'axios';
 
 const API = axios.create({
-    baseURL: 'http://localhost:8000/',
+    baseURL: 'http://localhost:8000/api/',  // Django 后端地址
 });
 
 export const login = async (username, password) => {
     const res = await API.post('token/', {username, password});
-    return res.data;
+    return res.data;  // { access, refresh }
 };
 
 export const getCurrentUser = async (accessToken) => {
@@ -15,5 +15,5 @@ export const getCurrentUser = async (accessToken) => {
             Authorization: `Bearer ${accessToken}`,
         },
     });
-    return res.data;
+    return res.data;  // { id, username, email }
 };
