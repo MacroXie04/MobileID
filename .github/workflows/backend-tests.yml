@@ -15,23 +15,14 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: [ '3.12' ]
+        python-version: ['3.12']
 
-    # services:
-    #   postgres:
-    #     image: postgres:16
-    #     env:
-    #       POSTGRES_USER: ci
-    #       POSTGRES_PASSWORD: ci
-    #       POSTGRES_DB: cidb
-    #     ports: ['5432:5432']
-    #     options: >-
-    #       --health-cmd pg_isready
-    #       --health-interval 10s
-    #       --health-timeout 5s
-    #       --health-retries 5
+    env:
+      PYTHONPATH: ${{ github.workspace }}/backend
+      DJANGO_SETTINGS_MODULE: mobileid.settings
 
     defaults:
       run:
@@ -40,8 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -53,19 +43,12 @@ jobs:
             pip install -r requirements.txt
           fi
           pip install "django>=4.2" coverage
-          pip install djangorestframework
-          pip install selenium
-
+            pip install "djangorestframework>=3.14" "django-cors-headers>=3.18" "django-filter>=23.1" "djangorestframework-simplejwt>=5.0"
 
       - name: Run migrations
-        env:
-          DJANGO_SETTINGS_MODULE: mobileid.settings
-        run: |
-          python manage.py migrate --noinput
+        run: python manage.py migrate --noinput
 
-      - name: Run unit tests with coverage
-        env:
-          DJANGO_SETTINGS_MODULE: mobileid.settings
+      - name: Run tests with coverage
         run: |
           coverage run manage.py test
           coverage xml
