@@ -1,46 +1,28 @@
-import React, {useState} from 'react';
-import {getCurrentUser, login} from '../services/api';
+import React from 'react';
+import {BrowserRouter, Navigate, Route, Routes} from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
 
 function App() {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [user, setUser] = useState(null);
+    const isLoggedIn = !!localStorage.getItem('access_token');
 
-    const handleLogin = async () => {
-        try {
-            const {access} = await login(username, password);
-            localStorage.setItem('access_token', access);  // 保存 token
-            const userInfo = await getCurrentUser(access);
-            setUser(userInfo);
-        } catch (error) {
-            alert('Login failed');
-            console.error(error);
-        }
-    };
+    // Check if we're running in development or production
+    const isDevelopment = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1';
+
+    // Use basename only in production (GitHub Pages deployment)
+    const basename = isDevelopment ? '/' : '/UCMerced-Barcode';
 
     return (
-        <div style={{padding: '2rem'}}>
-            {user ? (
-                <div>
-                    <h2>Welcome, {user.username}</h2>
-                </div>
-            ) : (
-                <>
-                    <h3>Login</h3>
-                    <input
-                        type="text"
-                        placeholder="Username"
-                        onChange={(e) => setUsername(e.target.value)}
-                    /><br/>
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        onChange={(e) => setPassword(e.target.value)}
-                    /><br/>
-                    <button onClick={handleLogin}>Login</button>
-                </>
-            )}
-        </div>
+        <BrowserRouter basename={basename}>
+            <Routes>
+                <Route path="/login" element={<LoginPage/>}/>
+                <Route
+                    path="/"
+                    element={isLoggedIn ? <HomePage/> : <Navigate to="/login"/>}
+                />
+            </Routes>
+        </BrowserRouter>
     );
 }
 
