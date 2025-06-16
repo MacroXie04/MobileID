@@ -1,0 +1,72 @@
+# Deploy the Vite front-end in GitHub_Pages/ to GitHub Pages
+name: Deploy front-end to GitHub Pages
+
+on:
+  # Trigger on every push to the default branch
+  push:
+    branches: ["main"]
+
+  # Allow manual runs in the Actions tab
+  workflow_dispatch:
+
+# The GITHUB_TOKEN must be allowed to read the repo and publish Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one Pages deployment should run at a time
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # ---------- Build job ----------
+  build:
+    runs-on: ubuntu-latest
+
+    # All npm commands execute inside GitHub_Pages/
+    defaults:
+      run:
+        working-directory: GitHub_Pages
+
+    steps:
+      # 1 – Fetch the source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2 – Install a recent Node.js and cache node_modules
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 3 – Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 4 – Create the production build (outputs GitHub_Pages/dist)
+      - name: Build front-end
+        run: npm run build
+
+      # 5 – Upload the build output as a Pages artifact
+      #     NOTE: `path` is relative to the repository root
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: GitHub_Pages/dist
+
+  # ---------- Deploy job ----------
+  deploy:
+    needs: build               # Wait for the build job to finish
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # 6 – Publish the artifact to GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
