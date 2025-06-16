@@ -1,0 +1,77 @@
+name: Django Backend CI
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.12' ]
+
+    # services:
+    #   postgres:
+    #     image: postgres:16
+    #     env:
+    #       POSTGRES_USER: ci
+    #       POSTGRES_PASSWORD: ci
+    #       POSTGRES_DB: cidb
+    #     ports: ['5432:5432']
+    #     options: >-
+    #       --health-cmd pg_isready
+    #       --health-interval 10s
+    #       --health-timeout 5s
+    #       --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          pip install "django>=4.2" coverage
+          pip install djangorestframework
+          pip install selenium
+
+
+      - name: Run migrations
+        env:
+          DJANGO_SETTINGS_MODULE: mobileid.settings
+        run: |
+          python manage.py migrate --noinput
+
+      - name: Run unit tests with coverage
+        env:
+          DJANGO_SETTINGS_MODULE: mobileid.settings
+        run: |
+          coverage run manage.py test
+          coverage xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: backend/coverage.xml
