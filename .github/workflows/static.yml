@@ -1,72 +1,71 @@
-# Deploy the Vite front-end in GitHub_Pages/ to GitHub Pages
+# .github/workflows/deploy-pages.yml
 name: Deploy front-end to GitHub Pages
 
 on:
-  # Trigger on every push to the default branch
+  # 推送到 main 分支时触发
   push:
     branches: ["main"]
-
-  # Allow manual runs in the Actions tab
+  # 允许在 Actions 页面手动触发
   workflow_dispatch:
 
-# The GITHUB_TOKEN must be allowed to read the repo and publish Pages
+# GITHUB_TOKEN 权限
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Only one Pages deployment should run at a time
+# 同一时间只允许一个 Pages 部署
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # ---------- Build job ----------
+  # ---------- Build ----------
   build:
     runs-on: ubuntu-latest
-
-    # All npm commands execute inside GitHub_Pages/
+    # 所有 npm 命令都在 GitHub_Pages/ 子目录执行
     defaults:
       run:
         working-directory: GitHub_Pages
 
     steps:
-      # 1 – Fetch the source code
+      # 1. 拉取代码
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2 – Install a recent Node.js and cache node_modules
+      # 2. 安装 Node.js 并启用缓存
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          # 指定锁文件路径，解决“lock file not found”报错
+          cache-dependency-path: GitHub_Pages/package-lock.json
 
-      # 3 – Install dependencies
+      # 3. 安装依赖
       - name: Install dependencies
         run: npm ci
 
-      # 4 – Create the production build (outputs GitHub_Pages/dist)
+      # 4. 生产构建，输出到 GitHub_Pages/dist
       - name: Build front-end
         run: npm run build
 
-      # 5 – Upload the build output as a Pages artifact
-      #     NOTE: `path` is relative to the repository root
+      # 5. 将 dist 上传为 Pages 工件
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: GitHub_Pages/dist
 
-  # ---------- Deploy job ----------
+  # ---------- Deploy ----------
   deploy:
-    needs: build               # Wait for the build job to finish
+    needs: build            # 依赖 build 任务
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      # 6 – Publish the artifact to GitHub Pages
+      # 6. 将工件发布到 GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
