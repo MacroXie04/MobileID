@@ -17,3 +17,7 @@ export const getCurrentUser = async (accessToken) => {
     });
     return res.data;
 };
+
+export const logout = () => {
+    localStorage.removeItem('access_token');
+};
