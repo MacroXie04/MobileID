@@ -22,7 +22,7 @@ jobs:
 
     env:
       PYTHONPATH: ${{ github.workspace }}/backend
-      DJANGO_SETTINGS_MODULE: mobileid.settings
+      DJANGO_SETTINGS_MODULE: barcode.settings
 
     defaults:
       run:
