@@ -1,13 +1,20 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView
-from .views import webauthn
+from .api.webauthn import register_view, current_user_view
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 app_name = "mobileid"
 
 urlpatterns = [
-    # 登录接口（用户名+密码 -> token）
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    # webauthn
+    path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
-    # 当前用户信息（需要 Authorization: Bearer <access>）
-    path('api/me/', webauthn.current_user_view),
+    # user registration (username+password+student info -> token)
+    path("register/", register_view, name="register"),
+
+    # get current user info (token -> user info)
+    path("current_user/", current_user_view, name="current_user"),
 ]

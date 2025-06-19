@@ -10,7 +10,7 @@ class StudentInformation(models.Model):
     # student information
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=100)
-    user_profile_img = models.BinaryField()
+    user_profile_img = models.TextField()
 
     def __str__(self):
         return f"{self.name} - StudentID: **{self.student_id[-4:]}"
