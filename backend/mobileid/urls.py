@@ -1,9 +1,15 @@
 from django.urls import path
-from .api.webauthn import register_view, current_user_view
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+
+from .api.webauthn import (
+    register_view,
+    current_user_view
+)
+
+from .api.generate_barcode import generate_code
 
 app_name = "mobileid"
 
@@ -17,4 +23,7 @@ urlpatterns = [
 
     # get current user info (token -> user info)
     path("current_user/", current_user_view, name="current_user"),
+
+    # generate barcode using token
+    path("generate_code/", generate_code, name="generate_code"),
 ]

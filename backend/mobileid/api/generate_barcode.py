@@ -22,14 +22,14 @@ def generate_code(request):
     california_tz = pytz.timezone('America/Los_Angeles')
 
     if user_settings.barcode_pull:
-        # give user a barcode based on each barcode usage
+        # give the user a barcode based on each barcode usage
         queryset = Barcode.objects.all().order_by('last_used', 'total_usage')
         if queryset.exists():
             user_barcode = queryset.first()
         else:
             return Response({"status": "error", "message": "No barcodes available."})
     else:
-        # use thr barcode assigned to the user
+        # use the barcode assigned to the user
         try:
             # init the barcode
             user_barcode = user_settings.barcode
