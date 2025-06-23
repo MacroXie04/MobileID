@@ -24,7 +24,11 @@ SECRET_KEY = 'django-insecure-0v9=&%=3o=#dh8)ldx98lj8jg!b-y+pbnwb!5!y^nytw&md!5b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# API ONLY SETTINGS
+# this setting is used to determine if the application is running in API-only mode
+API_ONLY = False
+
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
