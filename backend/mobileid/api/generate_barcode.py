@@ -1,119 +1,127 @@
+import random
+from datetime import datetime, timedelta
+
+import pytz
+from django.db import transaction
+from django.db.models import F, Value, IntegerField, DateTimeField
+from django.db.models.functions import Coalesce
+from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from datetime import datetime, timedelta
-import random
-import pytz
-from mobileid.project_code.barcode import auto_send_code
-from mobileid.models import StudentInformation, UserBarcodeSettings, Barcode
 
-@api_view(['GET'])
+from mobileid.models import (
+    Barcode,
+    BarcodeUsage,
+    UserBarcodeUsage,
+    UserBarcodeSettings,
+)
+from mobileid.project_code.barcode import auto_send_code
+
+CALIFORNIA_TZ = pytz.timezone("America/Los_Angeles")
+EPOCH = datetime(1970, 1, 1, tzinfo=pytz.UTC)  # default for “never-used” barcodes
+
+
+# ----------------------------------------------------------------------
+# Helper: record one barcode use (thread-safe)
+# ----------------------------------------------------------------------
+def update_usage(barcode: Barcode, user):
+    """
+    1. Insert a UserBarcodeUsage row (per-use log)
+    2. Atomically increment total_usage and refresh last_used in BarcodeUsage
+    """
+    with transaction.atomic():
+        # Per-use log
+        UserBarcodeUsage.objects.create(user=user, barcode=barcode)
+
+        # Aggregate counter (create if missing)
+        usage_row, _ = BarcodeUsage.objects.get_or_create(barcode=barcode)
+        BarcodeUsage.objects.filter(pk=usage_row.pk).update(
+            total_usage=F("total_usage") + 1  # auto_now=True handles last_used
+        )
+
+
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def generate_code(request):
-    # Retrieve user profile and settings with error handling
+    user = request.user
+
+    # ---------- Load user settings ----------
     try:
-        user_settings = UserBarcodeSettings.objects.get(user=request.user)
-    except (StudentInformation.DoesNotExist, UserBarcodeSettings.DoesNotExist):
+        user_settings = UserBarcodeSettings.objects.select_related("barcode").get(user=user)
+    except UserBarcodeSettings.DoesNotExist:
         return Response({"status": "error", "message": "User settings not found."})
 
-    # ---------------------------------------------
-    # init the barcode and message information
-    # ---------------------------------------------
-    california_tz = pytz.timezone('America/Los_Angeles')
-
-    if user_settings.barcode_pull:
-        # give the user a barcode based on each barcode usage
-        queryset = Barcode.objects.all().order_by('last_used', 'total_usage')
-        if queryset.exists():
-            user_barcode = queryset.first()
-        else:
+    # ---------- Pick a barcode ----------
+    if user_settings.barcode_pull:  # pooled selection
+        candidate = (
+            Barcode.objects.annotate(
+                usage_cnt=Coalesce("barcodeusage__total_usage", Value(0), output_field=IntegerField()),
+                last_used=Coalesce("barcodeusage__last_used", Value(EPOCH), output_field=DateTimeField()),
+            )
+            .order_by("usage_cnt", "last_used")
+            .first()
+        )
+        if not candidate:
             return Response({"status": "error", "message": "No barcodes available."})
+        barcode = candidate
     else:
-        # use the barcode assigned to the user
-        try:
-            # init the barcode
-            user_barcode = user_settings.barcode
-        except Barcode.DoesNotExist:
+        barcode = user_settings.barcode
+        if not barcode:
             return Response({"status": "error", "message": "No barcode assigned to user."})
 
-    # ---------------------------------------------
-    # Helper function to update barcode usage
-    # ---------------------------------------------
-    def update_usage(obj):
-        obj.total_usage += 1
-        obj.last_used = datetime.now(california_tz)
-        obj.save()
+    # ---------- Timestamp generation ----------
+    if user_settings.timestamp_verification:
+        time_stamp = timezone.now().astimezone(CALIFORNIA_TZ).strftime("%Y%m%d%H%M%S")
+    else:
+        start_date = timezone.now() - timedelta(days=365)
+        random_seconds = random.randint(0, int((timezone.now() - start_date).total_seconds()))
+        random_datetime = start_date + timedelta(seconds=random_seconds)
+        time_stamp = random_datetime.strftime("%Y%m%d%H%M%S")
 
-    # ---------------------------------------------
-    # process the static barcode
-    # ---------------------------------------------
-    if user_barcode.barcode_type.lower() == "static":
-        # update the usage
-        update_usage(user_barcode)
+    # ---------- Handle barcode types ----------
+    barcode_type = barcode.barcode_type.lower()
 
-        # response the barcode
-        return Response({
-            "status": "success",
-            "barcode_type": f"static",
-            "content": f"Static: Ending with {user_barcode.barcode[-4:]}",
-            "barcode": f"{user_barcode.barcode}",
-        })
+    if barcode_type == "static":
+        update_usage(barcode, user)
+        return Response(
+            {
+                "status": "success",
+                "barcode_type": "static",
+                "content": f"Static: Ending with {barcode.barcode[-4:]}",
+                "barcode": barcode.barcode,
+            }
+        )
 
-    # ---------------------------------------------
-    # process the dynamic barcode
-    # ---------------------------------------------
-    elif user_barcode.barcode_type.lower() == "dynamic":
-        # get the session information
-        user_session = user_barcode.session
-        extra_info = f'Dynamic: Ending with {user_barcode.barcode[-4:]}'
-
-        # init the timestamp
-        if user_settings.timestamp_verification:
-            # Set up timezone and current time
-            current_time = datetime.now(california_tz)
-            time_stamp = current_time.strftime('%Y%m%d%H%M%S')
-        else:
-            start_date = datetime.now() - timedelta(days=365)
-            random_seconds = random.randint(0, int((datetime.now() - start_date).total_seconds()))
-            random_datetime = start_date + timedelta(seconds=random_seconds)
-            time_stamp = random_datetime.strftime('%Y%m%d%H%M%S')
-
-        # student id server verification
+    if barcode_type == "dynamic":
+        # Optional server verification
+        content_msg = ""
         if user_settings.server_verification and not user_settings.barcode_pull:
-
-            # check session
-            if not user_session:
+            if not barcode.session:
                 content_msg = "Session is missing "
-
             else:
                 try:
-                    server_result = auto_send_code(user_session)
+                    server_result = auto_send_code(barcode.session)
                     if server_result["status"] == "success":
                         content_msg = f"Server Verification Success: {server_result['code']} "
                     else:
                         content_msg = "Server Verification Failed "
-                        user_barcode.session = None
-                        user_barcode.save()
-
-                except Exception as e:
+                        barcode.session = None
+                        barcode.save(update_fields=["session"])
+                except Exception:
                     content_msg = "Server Verification Error "
 
-        else:
-            # no server verification
-            content_msg = ""
+        # Record usage
+        update_usage(barcode, user)
 
-        update_usage(user_barcode)
+        return Response(
+            {
+                "status": "success",
+                "barcode_type": "dynamic",
+                "content": f"{content_msg}Dynamic: Ending with {barcode.barcode[-4:]}",
+                "barcode": f"{time_stamp}{barcode.barcode}",
+            }
+        )
 
-        # response the barcode
-        return Response({
-            "status": "success",
-            "barcode_type": f"dynamic",
-            "content": f"{content_msg}{extra_info}",
-            "barcode": f"{time_stamp}{user_barcode.barcode}",
-        })
-
-    else:
-        return Response({
-            "status": "error",
-            "message": "Invalid barcode type."
-        })
+    # ---------- Unsupported type ----------
+    return Response({"status": "error", "message": "Invalid barcode type."})
