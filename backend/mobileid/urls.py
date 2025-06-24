@@ -13,7 +13,6 @@ from mobileid.views import (
     webauthn,
     index,
 )
-from .api.generate_barcode import generate_code
 from .api.webauthn import (
     register_view,
     current_user_view
@@ -41,7 +40,10 @@ if API_ENABLED:
         path("api/current_user/", current_user_view, name="current_user"),
 
         # generate barcode using token
-        path("api/generate_code/", generate_code, name="generate_code"),
+        # path("api/generate_code/", generate_code, name="generate_code"),
+
+        # get the server status
+        # path("api/status/", status, name="status"),
     ]
 
 if WEBAPP_ENABLED:

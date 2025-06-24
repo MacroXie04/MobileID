@@ -29,6 +29,9 @@ DEBUG = True
 API_ENABLED = True
 WEBAPP_ENABLED = True
 
+# Enable selenium web scraping
+SELENIUM_ENABLED = False
+
 
 ALLOWED_HOSTS = ['*']
 

@@ -5,22 +5,17 @@ from mobileid.models import (
     UserBarcodeSettings
 )
 
-@login_required
+@login_required(login_url='/login')
 def index(request):
-    # make sure the user has a profile and setting before accessing the index page
     try:
-        user_profile = StudentInformation.objects.get(user=request.user)
-        user_settings = UserBarcodeSettings.objects.get(user=request.user)
-        student_id = user_profile.student_id
-        name = user_profile.name
+        info = StudentInformation.objects.get(user=request.user)
     except StudentInformation.DoesNotExist:
-        return redirect('setup')
-    except UserBarcodeSettings.DoesNotExist:
-        return redirect('settings')
+        return redirect("mobileid:web_register")
 
+    context = {
+        "name": info.name,
+        "student_id": info.student_id,
+        "user_profile_img": info.user_profile_img,
+    }
 
-    return render(request, 'index/index.html', {
-        'student_id': student_id,
-        'name': name,
-        'user_profile': user_profile
-    })
+    return render(request, "index/index.html", context)

@@ -41,7 +41,7 @@ def web_login(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('index')
+                return redirect('mobileid:index')
             else:
                 form.add_error(None, "Invalid username or password")
     else:
@@ -53,4 +53,4 @@ def web_login(request):
 @login_required(login_url='login')
 def web_logout(request):
     logout(request)
-    return redirect('')
+    return redirect('mobileid:web_login')

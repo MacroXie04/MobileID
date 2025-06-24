@@ -18,8 +18,11 @@ from mobileid.models import (
 )
 from mobileid.project_code.barcode import auto_send_code
 
+from barcode.settings import SELENIUM_ENABLED
+
 CALIFORNIA_TZ = pytz.timezone("America/Los_Angeles")
-EPOCH = datetime(1970, 1, 1, tzinfo=pytz.UTC)  # default for “never-used” barcodes
+# default for “never-used” barcodes
+EPOCH = datetime(1970, 1, 1, tzinfo=pytz.UTC)
 
 
 # ----------------------------------------------------------------------
@@ -37,14 +40,13 @@ def update_usage(barcode: Barcode, user):
         # Aggregate counter (create if missing)
         usage_row, _ = BarcodeUsage.objects.get_or_create(barcode=barcode)
         BarcodeUsage.objects.filter(pk=usage_row.pk).update(
-            total_usage=F("total_usage") + 1  # auto_now=True handles last_used
+            # auto_now=True handles last_used
+            total_usage=F("total_usage") + 1
         )
 
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def generate_code(request):
-    user = request.user
+def generate(user):
+
 
     # ---------- Load user settings ----------
     try:
