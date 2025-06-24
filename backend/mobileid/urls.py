@@ -4,26 +4,55 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
+from barcode.settings import (
+    API_ENABLED,
+    WEBAPP_ENABLED,
+)
+from mobileid.views import (
+    settings_error,
+    webauthn,
+    index,
+)
+from .api.generate_barcode import generate_code
 from .api.webauthn import (
     register_view,
     current_user_view
 )
 
-from .api.generate_barcode import generate_code
-
 app_name = "mobileid"
 
-urlpatterns = [
-    # webauthn
-    path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+urlpatterns = []
 
-    # user registration (username+password+student info -> token)
-    path("register/", register_view, name="register"),
+if not WEBAPP_ENABLED and not API_ENABLED:
+    urlpatterns = [
+        path("", settings_error.settings_error, name="settings_error"),
+    ]
 
-    # get current user info (token -> user info)
-    path("current_user/", current_user_view, name="current_user"),
+if API_ENABLED:
+    urlpatterns += [
+        # webauthn api
+        path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+        path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
-    # generate barcode using token
-    path("generate_code/", generate_code, name="generate_code"),
-]
+        # user registration (username+password+student info -> token)
+        path("api/register/", register_view, name="register"),
+
+        # get current user info (token -> user info)
+        path("api/current_user/", current_user_view, name="current_user"),
+
+        # generate barcode using token
+        path("api/generate_code/", generate_code, name="generate_code"),
+    ]
+
+if WEBAPP_ENABLED:
+    urlpatterns += [
+        # webauthn registration
+        path("register/", webauthn.web_register, name="web_register"),
+        # webauthn login
+        path("login/", webauthn.web_login, name="web_login"),
+        # webauthn logout
+        path("logout/", webauthn.web_logout, name="web_logout"),
+
+        # index page
+        path("", index.index, name="index"),
+    ]

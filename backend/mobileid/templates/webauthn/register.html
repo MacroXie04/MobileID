@@ -1,0 +1,189 @@
+{% extends 'layout/layout_write.html' %}
+{% load widget_tweaks static %}
+
+{% block title %}CatCard.online - Register{% endblock %}
+
+{# —— ① 额外样式：正方形预览 ———————————————— #}
+{% block extra_head %}
+    <style>
+        .avatar-preview {
+            width: 128px;
+            height: 128px;
+            object-fit: cover;
+            border-radius: .25rem; /* 与 img-thumbnail 的圆角保持一致 */
+            border: 1px solid #dee2e6; /* 简单边框，可按需去掉 */
+        }
+    </style>
+{% endblock %}
+
+{# —— ② 引入 Cropper.js ———————————————————— #}
+{% block cdn %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-5 d-flex justify-content-center align-items-start" style="min-height:75vh;">
+        <div class="card shadow-sm p-4" style="max-width:660px;width:100%;">
+            <h3 class="text-center mb-4 fw-semibold">Create Account</h3>
+
+            <form id="registerForm" method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                <div class="row g-3 align-items-start mb-3">
+                    <div class="col-sm-4 text-center">
+                        <img id="avatarPreview"
+                             class="avatar-preview mb-2"
+                             src="{% static 'images/avatar_placeholder.png' %}"
+                             alt="avatar preview">
+
+                        {{ form.user_profile_img|add_class:"form-control d-none" }}
+                        <button id="selectAvatarBtn" type="button" class="btn btn-outline-secondary w-100">
+                            Select Avatar
+                        </button>
+
+                        {% if form.user_profile_img.errors %}
+                            <div class="invalid-feedback d-block">{{ form.user_profile_img.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted d-block">JPEG/PNG · 方形最佳 · &lt; 2 MB</small>
+                    </div>
+
+                    <!-- 右侧字段 -->
+                    <div class="col-sm-8">
+                        <div class="mb-3">
+                            {{ form.username.label_tag }}
+                            {{ form.username|add_class:"form-control" }}
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.name.label_tag }}
+                            {{ form.name|add_class:"form-control" }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.student_id.label_tag }}
+                            {{ form.student_id|add_class:"form-control" }}
+                            {% if form.student_id.errors %}
+                                <div class="invalid-feedback d-block">{{ form.student_id.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div><!-- /row -->
+
+                <div class="mb-3">
+                    {{ form.password1.label_tag }}
+                    {{ form.password1|add_class:"form-control" }}
+                    {% if form.password1.errors %}
+                        <div class="invalid-feedback d-block">{{ form.password1.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.password2.label_tag }}
+                    {{ form.password2|add_class:"form-control" }}
+                    {% if form.password2.errors %}
+                        <div class="invalid-feedback d-block">{{ form.password2.errors }}</div>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="invalid-feedback d-block">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary w-100 py-2">Register</button>
+            </form>
+
+            <hr class="my-4"/>
+            <p class="text-center mb-0">
+                Already have an account? <a href="{% url 'mobileid:web_login' %}">Login here</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- 裁剪 Modal -->
+    <div class="modal fade" id="cropModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Crop Avatar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="ratio ratio-1x1">
+                        <img id="cropperImage" class="w-100" alt=""/>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button id="cropSaveBtn" type="button" class="btn btn-primary">Crop &amp; Use</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script>
+        (() => {
+            const fileInput = document.querySelector('input[name="user_profile_img"]');
+            const selectBtn = document.getElementById('selectAvatarBtn');
+            const previewImg = document.getElementById('avatarPreview');
+            const cropImg = document.getElementById('cropperImage');
+            const cropModal = new bootstrap.Modal(document.getElementById('cropModal'));
+            let cropper = null;
+
+            /* 触发文件选择 */
+            selectBtn.addEventListener('click', () => fileInput.click());
+
+            /* 选择后弹窗裁剪 */
+            fileInput.addEventListener('change', e => {
+                if (!e.target.files.length) return;
+                const file = e.target.files[0];
+                if (!/^image\/(jpe?g|png)$/i.test(file.type)) {
+                    alert('仅支持 JPG/PNG 文件');
+                    fileInput.value = '';
+                    return;
+                }
+                cropImg.src = URL.createObjectURL(file);
+                cropModal.show();
+            });
+
+            /* Modal 打开初始化 cropper */
+            document.getElementById('cropModal')
+                .addEventListener('shown.bs.modal', () => {
+                    cropper = new Cropper(cropImg, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        preview: '.avatar-preview'
+                    });
+                });
+
+            /* Modal 关闭销毁 */
+            document.getElementById('cropModal')
+                .addEventListener('hidden.bs.modal', () => {
+                    cropper?.destroy();
+                    cropper = null;
+                    URL.revokeObjectURL(cropImg.src);
+                });
+
+            /* 保存裁剪结果 */
+            document.getElementById('cropSaveBtn')
+                .addEventListener('click', () => {
+                    if (!cropper) return;
+                    cropper.getCroppedCanvas({width: 128, height: 128})
+                        .toBlob(blob => {
+                            const dt = new DataTransfer();
+                            dt.items.add(new File([blob], 'avatar.png', {type: 'image/png'}));
+                            fileInput.files = dt.files;
+                            previewImg.src = URL.createObjectURL(blob);
+                            cropModal.hide();
+                        }, 'image/png');
+                });
+        })();
+    </script>
+{% endblock %}

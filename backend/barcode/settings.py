@@ -24,9 +24,11 @@ SECRET_KEY = 'django-insecure-0v9=&%=3o=#dh8)ldx98lj8jg!b-y+pbnwb!5!y^nytw&md!5b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# API ONLY SETTINGS
-# this setting is used to determine if the application is running in API-only mode
-API_ONLY = False
+# Project API and webapp mode
+# SECURITY WARNING: enable one or both of these flags in production
+API_ENABLED = True
+WEBAPP_ENABLED = True
+
 
 ALLOWED_HOSTS = ['*']
 
@@ -40,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'widget_tweaks',
 
     # Default Django apps
     'django.contrib.admin',
@@ -51,7 +54,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # 必须放最前
+    'corsheaders.middleware.CorsMiddleware',
 
     # Default Django middleware
     'django.middleware.security.SecurityMiddleware',
