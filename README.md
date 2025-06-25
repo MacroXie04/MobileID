@@ -79,12 +79,13 @@ Welcome to the **UC Merced-Barcode**!
    cd UCMerced-Barcode
    python -m venv .venv
    source .venv/bin/activate
-   pip install -r requirements.txt
+   pip install -r backend/requirements.txt
 ```
 
 ### 2. Database Migration
 
 ```bash
+   cd backend
    python manage.py makemigrations mobileid
    python manage.py makemigrations webauthn_app
    python manage.py makemigrations
