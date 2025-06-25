@@ -1,0 +1,154 @@
+{% extends 'layout/layout_write.html' %}
+{% load widget_tweaks static %}
+
+{% block title %}CatCard.online – Edit Profile{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .avatar-preview {
+            width: 128px;
+            height: 128px;
+            object-fit: cover;
+            border-radius: .25rem;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+{% endblock %}
+
+{% block cdn %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
+            <h3 class="text-center mb-4 fw-semibold">Edit Profile</h3>
+
+            <form id="profileForm" method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                <!-- avatar -->
+                <div class="mb-3 text-center">
+                    {% if student_info.user_profile_img %}
+                        <img id="avatarPreview" class="avatar-preview mb-2"
+                             src="data:image/png;base64,{{ student_info.user_profile_img }}"
+                             alt="avatar preview">
+                    {% else %}
+                        <img id="avatarPreview" class="avatar-preview mb-2"
+                             src="{% static 'images/avatar_placeholder.png' %}" alt="avatar preview">
+                    {% endif %}
+
+                    {{ form.user_profile_img|add_class:"form-control d-none" }}
+
+                    <button id="selectAvatarBtn" type="button" class="btn btn-outline-secondary w-100">
+                        Select Avatar
+                    </button>
+
+                    {% if form.user_profile_img.errors %}
+                        <div class="invalid-feedback d-block text-start">
+                            {{ form.user_profile_img.errors|striptags }}
+                        </div>
+                    {% endif %}
+
+                    <small class="text-muted d-block">JPEG/PNG · &lt; 2 MB</small>
+                </div>
+
+                <!-- name -->
+                <div class="mb-3">
+                    {{ form.name.label_tag }}
+                    {{ form.name|add_class:"form-control" }}
+                    {% if form.name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- student id -->
+                <div class="mb-3">
+                    {{ form.student_id.label_tag }}
+                    {{ form.student_id|add_class:"form-control" }}
+                    {% if form.student_id.errors %}
+                        <div class="invalid-feedback d-block">{{ form.student_id.errors }}</div>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="invalid-feedback d-block">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary w-100 py-2">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- crop image modal -->
+    <div class="modal fade" id="cropModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Crop Avatar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="ratio ratio-1x1">
+                        <img id="cropperImage" class="w-100" alt=""/>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button id="cropSaveBtn" type="button" class="btn btn-primary">Crop & Use</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script>
+        (() => {
+            const fileInput = document.querySelector('input[name="user_profile_img"]');
+            const selectBtn = document.getElementById('selectAvatarBtn');
+            const previewImg = document.getElementById('avatarPreview');
+            const cropImg = document.getElementById('cropperImage');
+            const cropModalEl = document.getElementById('cropModal');
+            const cropModal = new bootstrap.Modal(cropModalEl);
+            let cropper = null;
+
+            /* trigger file choose */
+            selectBtn.addEventListener('click', () => fileInput.click());
+
+            /* open cropper on file select */
+            fileInput.addEventListener('change', e => {
+                if (!e.target.files.length) return;
+                const file = e.target.files[0];
+                if (!/^image\/(jpe?g|png)$/i.test(file.type)) {
+                    alert('Only support JPG/PNG');
+                    fileInput.value = '';
+                    return;
+                }
+                cropImg.src = URL.createObjectURL(file);
+                cropModal.show();
+            });
+
+            cropModalEl.addEventListener('shown.bs.modal', () => {
+                cropper = new Cropper(cropImg, {aspectRatio: 1, viewMode: 1, preview: '.avatar-preview'});
+            });
+            cropModalEl.addEventListener('hidden.bs.modal', () => {
+                cropper?.destroy();
+                cropper = null;
+                URL.revokeObjectURL(cropImg.src);
+            });
+
+            document.getElementById('cropSaveBtn').addEventListener('click', () => {
+                if (!cropper) return;
+                cropper.getCroppedCanvas({width: 128, height: 128}).toBlob(blob => {
+                    const dt = new DataTransfer();
+                    dt.items.add(new File([blob], 'avatar.png', {type: 'image/png'}));
+                    fileInput.files = dt.files;
+                    previewImg.src = URL.createObjectURL(blob);
+                    cropModal.hide();
+                }, 'image/png');
+            });
+        })();
+    </script>
+{% endblock %}

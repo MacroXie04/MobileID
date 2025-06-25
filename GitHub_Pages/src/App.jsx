@@ -2,6 +2,7 @@ import React from 'react';
 import {BrowserRouter, Navigate, Route, Routes} from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 
 function App() {
     const isLoggedIn = !!localStorage.getItem('access_token');
@@ -17,10 +18,8 @@ function App() {
         <BrowserRouter basename={basename}>
             <Routes>
                 <Route path="/login" element={<LoginPage/>}/>
-                <Route
-                    path="/"
-                    element={isLoggedIn ? <HomePage/> : <Navigate to="/login"/>}
-                />
+                <Route path="/register" element={<RegisterPage/>}/>
+                <Route path="/" element={isLoggedIn ? <HomePage/> : <Navigate to="/login"/>}/>
             </Routes>
         </BrowserRouter>
     );

@@ -1,111 +1,103 @@
 // src/pages/LoginPage.jsx
-import React, {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {getCurrentUser, login} from '../services/api';
+import React, {useState} from "react";
+import {useNavigate} from "react-router-dom";
+import {getCurrentUser, login} from "../services/api";
 
 function LoginPage() {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [form, setForm] = useState({username: "", password: ""});
     const [showPw, setShowPw] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
-    const [nonFieldError, setNonFieldError] = useState('');
+    const [nonFieldError, setNonFieldError] = useState("");
     const navigate = useNavigate();
 
-    const handleLogin = async e => {
+    // --- helpers --------------------------------------------------------------
+    const hasError = (field) => (fieldErrors[field] ? "is-invalid" : "");
+    const handleChange = (e) =>
+        setForm((f) => ({...f, [e.target.name]: e.target.value}));
+
+    // --- submit ---------------------------------------------------------------
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setFieldErrors({});
-        setNonFieldError('');
+        setNonFieldError("");
 
         try {
-            const {access} = await login(username, password);
-            localStorage.setItem('access_token', access);
-            navigate('/');
-
-            // 可选：后台拉取用户信息
-            getCurrentUser(access).catch(err =>
-                console.error('Error fetching user data:', err)
-            );
+            const {access} = await login(form.username, form.password);
+            localStorage.setItem("access_token", access);
+            navigate("/");
         } catch (err) {
             if (err.response?.status === 401) {
-                setNonFieldError('Invalid username or password.');
+                setNonFieldError("Invalid username or password.");
+            } else if (err.response?.data) {
+                // DRF field errors (rare on login, but handle anyway)
+                setFieldErrors(err.response.data);
             } else {
-                setNonFieldError('Login failed. Cannot connect to the server.');
+                setNonFieldError("Login failed. Server unreachable?");
             }
         }
     };
 
+    // --- render ---------------------------------------------------------------
     return (
         <div
             className="container mt-5 d-flex justify-content-center align-items-center"
-            style={{minHeight: '80vh'}}
+            style={{minHeight: "80vh"}}
         >
-            <div className="card p-4 shadow-sm" style={{maxWidth: 500, width: '100%'}}>
-                {/* 标题区域 */}
-                <h1 className="fw-bold text-center mb-1">Login</h1>
+            <div className="card p-4 shadow-sm" style={{maxWidth: 600, width: "100%"}}>
+                {/* title */}
+                <h4 className="fw-bold text-center mb-1">Sign In</h4>
+                <p className="text-muted text-center mb-4">login to continue</p>
 
-                {/*  */}
-                {nonFieldError && (
-                    <div className="alert alert-danger" role="alert">
-                        {nonFieldError}
-                    </div>
-                )}
+                {/* server / non-field error */}
+                {nonFieldError && <div className="alert alert-danger">{nonFieldError}</div>}
 
-                <form onSubmit={handleLogin} noValidate>
-                    {/* Username */}
+                <form onSubmit={handleSubmit} noValidate>
+                    {/* username */}
                     <div className="mb-3">
-                        <label htmlFor="username" className="form-label fw-semibold">
-                            Username <span className="text-danger">*</span>
-                        </label>
+                        <label className="form-label fw-semibold">Username *</label>
                         <input
-                            id="username"
-                            type="text"
-                            className={`form-control ${fieldErrors.username ? 'is-invalid' : ''}`}
-                            value={username}
-                            onChange={e => setUsername(e.target.value)}
+                            className={`form-control ${hasError("username")}`}
+                            name="username"
+                            value={form.username}
+                            onChange={handleChange}
                             required
                         />
                         {fieldErrors.username && (
-                            <div className="invalid-feedback d-block">
-                                {fieldErrors.username}
-                            </div>
+                            <div className="invalid-feedback d-block">{fieldErrors.username}</div>
                         )}
                     </div>
 
-                    {/* 密码 */}
+                    {/* password */}
                     <div className="mb-3">
-                        <label htmlFor="password" className="form-label fw-semibold">
-                            Password <span className="text-danger">*</span>
-                        </label>
+                        <label className="form-label fw-semibold">Password *</label>
                         <input
-                            id="password"
-                            type={showPw ? 'text' : 'password'}
-                            className={`form-control ${fieldErrors.password ? 'is-invalid' : ''}`}
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
+                            type={showPw ? "text" : "password"}
+                            className={`form-control ${hasError("password")}`}
+                            name="password"
+                            value={form.password}
+                            onChange={handleChange}
                             required
                         />
                         {fieldErrors.password && (
-                            <div className="invalid-feedback d-block">
-                                {fieldErrors.password}
-                            </div>
+                            <div className="invalid-feedback d-block">{fieldErrors.password}</div>
                         )}
                     </div>
 
-                    {/* 显示密码切换 */}
+                    {/* show-password toggle */}
                     <div className="form-check mb-3">
                         <input
                             id="showPw"
                             className="form-check-input"
                             type="checkbox"
                             checked={showPw}
-                            onChange={e => setShowPw(e.target.checked)}
+                            onChange={(e) => setShowPw(e.target.checked)}
                         />
                         <label className="form-check-label" htmlFor="showPw">
                             Show Password
                         </label>
                     </div>
 
-                    {/* 辅助链接 */}
+                    {/* auxiliary links */}
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <a href="/forgot-password" className="link-secondary">
                             Forgot Password
@@ -115,7 +107,6 @@ function LoginPage() {
             </span>
                     </div>
 
-                    {/* 登录按钮 */}
                     <button type="submit" className="btn btn-primary w-100">
                         Sign In
                     </button>

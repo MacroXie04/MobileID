@@ -10,18 +10,32 @@ class StudentInformation(models.Model):
     # student information
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=100)
-    user_profile_img = models.BinaryField()
+    user_profile_img = models.TextField()
 
     def __str__(self):
         return f"{self.name} - StudentID: **{self.student_id[-4:]}"
 
+
+# barcode total usage
+class BarcodeUsage(models.Model):
+    # foreign key to barcode
+    barcode = models.ForeignKey('Barcode', on_delete=models.CASCADE)
+
+    # total usage count
+    total_usage = models.PositiveIntegerField(default=0)
+
+    # last used timestamp
+    last_used = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Barcode ending with {self.barcode.barcode[-4:]} - Total Usage: {self.total_usage} - Last Used: {self.last_used}"
 
 # barcode information
 class Barcode(models.Model):
     # storage upload user
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    # barcode type (will be setup automatically)
+    # barcode type (will be set up automatically)
     BARCODE_TYPE_CHOICES = [
         ('Dynamic', 'Dynamic'),
         ('Static', 'Static'),
@@ -36,10 +50,6 @@ class Barcode(models.Model):
     # barcode information
     barcode = models.TextField()
     student_id = models.CharField(max_length=100, blank=True, null=True, default=None)
-
-    # usage information
-    total_usage = models.IntegerField(default=0)
-    last_used = models.DateTimeField(auto_now=False)
 
     # server verification information
     session = models.TextField(blank=True, null=True)
@@ -67,13 +77,3 @@ class UserBarcodeSettings(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Barcode Settings"
-
-
-# transfer information
-class Transfer(models.Model):
-    cookie = models.TextField()
-    unique_code = models.CharField(max_length=6, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"**{self.unique_code[-4:]} - cookie: *{self.cookie[-4:]}"

@@ -1,0 +1,53 @@
+{% extends 'layout/layout_write.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}
+    CatCard.online - Login
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
+            <h3 class="text-center mb-4">Login</h3>
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    {{ form.username.label_tag }}
+                    {{ form.username|add_class:"form-control" }}
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.username.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.password.label_tag }}
+                    {{ form.password|add_class:"form-control" }}
+                    {% if form.password.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.password.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
+            </form>
+
+            <div class="text-center mt-2">
+                <p>Don't have an account? <a href="{% url 'mobileid:web_register' %}">Register here</a></p>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}{% endblock %}

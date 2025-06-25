@@ -1,0 +1,156 @@
+{% extends 'layout/layout_write.html' %}
+
+{% block cdn %}
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+{% endblock %}
+
+{% block title %}
+    Create & Transfer Barcode
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
+        <h3 class="text-center mb-4">Create & Transfer Barcode</h3>
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% for err in form.non_field_errors %}
+                        {{ err }}<br>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="mb-3">
+                {{ form.source_type.label_tag }}
+                {{ form.source_type }}
+                {% for err in form.source_type.errors %}
+                    <div class="invalid-feedback d-block">{{ err }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.input_value.label_tag }}
+                {{ form.input_value }}
+                {% for err in form.input_value.errors %}
+                    <div class="invalid-feedback d-block">{{ err }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Barcode Scanner Section -->
+            <div id="barcode-scanner-section" style="display: none;">
+                <style>
+                    #video-container {
+                        display: none;
+                        opacity: 0;
+                        transform: translateY(-10px);
+                        transition: opacity .5s ease-in-out, transform .5s ease-in-out;
+                        background: #fff;
+                        padding: 10px;
+                        border: 1px solid #ccc;
+                        margin-top: 10px;
+                    }
+                    #video-container.show {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                </style>
+                <div class="mb-3">
+                    <input type="hidden" id="static-barcode" name="static_barcode">
+                    <button type="button" id="toggle-scan-btn"
+                            class="btn btn-info w-100 py-2 mt-2"
+                            onclick="toggleScan()">Scan CatCard</button>
+                    <div id="video-container">
+                        <video id="video"
+                               width="300"
+                               height="200"
+                               style="border:1px solid gray;display:block;margin:0 auto;"></video>
+                    </div>
+                </div>
+            </div>
+            <!-- End Barcode Scanner Section -->
+
+            <button type="submit" class="btn btn-primary w-100 py-2">Submit</button>
+            <a href="{% url 'mobileid:index' %}" class="btn btn-secondary w-100 mt-2">Back</a>
+        </form>
+
+        <!-- Delete-barcode list -->
+        <hr class="my-4">
+        <h4 class="text-center mb-3">Your Barcodes</h4>
+        {% if user_barcodes %}
+            <ul class="list-group mb-3">
+            {% for bc in user_barcodes %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ bc }}
+                    <form method="post" action="{% url 'mobileid:delete_barcode' bc.id %}" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="btn btn-danger btn-sm"
+                                onclick="return confirm('Delete this barcode?');">
+                            Delete
+                        </button>
+                    </form>
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted text-center">No barcodes yet.</p>
+        {% endif %}
+        <!-- End delete-barcode list -->
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+const codeReader = new ZXing.BrowserMultiFormatReader();
+let isScanning = false;
+
+function toggleScan() {
+    if (!isScanning) { startScanning(); }
+    else { stopScanning(); }
+}
+
+function startScanning() {
+    isScanning = true;
+    const btn = document.getElementById('toggle-scan-btn');
+    btn.textContent = 'Cancel Scan';
+    const container = document.getElementById('video-container');
+    container.style.display = 'block';
+    setTimeout(() => container.classList.add('show'), 10);
+
+    codeReader.decodeOnceFromVideoDevice(null, 'video')
+        .then(res => {
+            document.getElementById('id_input_value').value = res.text;
+            stopScanning();
+        })
+        .catch(err => {
+            console.error(err);
+            stopScanning();
+        });
+}
+
+function stopScanning() {
+    isScanning = false;
+    const btn = document.getElementById('toggle-scan-btn');
+    btn.textContent = 'Scan CatCard';
+    const container = document.getElementById('video-container');
+    container.classList.remove('show');
+    setTimeout(() => { container.style.display = 'none'; }, 500);
+    codeReader.reset();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const sourceTypeSelect = document.getElementById('id_source_type');
+    const scannerSection   = document.getElementById('barcode-scanner-section');
+
+    function toggleScannerSection() {
+        scannerSection.style.display =
+            sourceTypeSelect.value.toLowerCase() === 'barcode' ? 'block' : 'none';
+    }
+    toggleScannerSection();
+    sourceTypeSelect.addEventListener('change', toggleScannerSection);
+});
+</script>
+{% endblock %}
