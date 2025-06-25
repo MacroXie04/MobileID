@@ -3,3 +3,4 @@ djangorestframework
 djangorestframework-simplejwt
 django-cors-headers
 selenium
+django-widget-tweaks
