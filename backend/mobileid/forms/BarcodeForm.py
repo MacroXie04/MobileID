@@ -3,18 +3,20 @@ from django import forms
 class BarcodeForm(forms.Form):
     SOURCE_TYPE_CHOICES = [
         ('barcode', 'Barcode'),
-        ('transfer_code', 'Transfer Code'),
+        ('session', 'Session'),
     ]
 
     source_type = forms.ChoiceField(
         choices=SOURCE_TYPE_CHOICES,
         label="Barcode Type",
+        required=False,
         widget=forms.Select(attrs={
             'class': 'form-control'
         })
     )
     input_value = forms.CharField(
         label="Enter Value",
+        required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Enter barcode/session/transfer code'
@@ -36,9 +38,10 @@ class BarcodeForm(forms.Form):
         input_value = cleaned_data.get("input_value")
 
         if not input_value:
-            raise forms.ValidationError("Please enter a value.")
+            self.add_error("input_value", "This field is required.")
+            return
 
         if source_type == 'barcode' and not input_value.isdigit():
-            raise forms.ValidationError("Barcode only accepts digits.")
+            self.add_error("input_value", "Barcode only accepts digits.")
 
         return cleaned_data

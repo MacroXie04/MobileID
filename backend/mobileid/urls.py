@@ -9,9 +9,10 @@ from barcode.settings import (
     WEBAPP_ENABLED,
 )
 from mobileid.views import (
-    settings_error,
     webauthn,
     index,
+    barcode,
+    change_info,
 )
 from .api.webauthn import (
     register_view,
@@ -20,12 +21,11 @@ from .api.webauthn import (
 
 app_name = "mobileid"
 
-urlpatterns = []
+urlpatterns = [
+    # get the server status
+    # path("api/status/", status, name="status"),
+]
 
-if not WEBAPP_ENABLED and not API_ENABLED:
-    urlpatterns = [
-        path("", settings_error.settings_error, name="settings_error"),
-    ]
 
 if API_ENABLED:
     urlpatterns += [
@@ -41,13 +41,13 @@ if API_ENABLED:
 
         # generate barcode using token
         # path("api/generate_code/", generate_code, name="generate_code"),
-
-        # get the server status
-        # path("api/status/", status, name="status"),
     ]
 
 if WEBAPP_ENABLED:
     urlpatterns += [
+        # index page
+        path("", index.index, name="index"),
+
         # webauthn registration
         path("register/", webauthn.web_register, name="web_register"),
         # webauthn login
@@ -55,6 +55,11 @@ if WEBAPP_ENABLED:
         # webauthn logout
         path("logout/", webauthn.web_logout, name="web_logout"),
 
-        # index page
-        path("", index.index, name="index"),
+        # create barcode
+        path("create_barcode/", barcode.create_barcode, name="create_barcode"),
+
+        # edit profile
+        path("edit_profile/", change_info.edit_profile, name="edit_profile"),
+        # edit barcode settings
+        path("barcode_settings/", change_info.edit_barcode_settings, name="barcode_settings"),
     ]

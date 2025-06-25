@@ -48,7 +48,6 @@
                 <!-- Barcode Scanner Section -->
                 <div id="barcode-scanner-section" style="display: none;">
                     <style>
-                        /* 扫码区域样式 */
                         #video-container {
                             display: none;
                             opacity: 0;
@@ -73,10 +72,9 @@
                     </div>
                 </div>
                 <!-- End Barcode Scanner Section -->
-
                 <button type="submit" class="btn btn-primary w-100 py-2">Submit</button>
                 <br>
-                <a href="{% url 'index' %}" class="btn btn-secondary w-100 mt-2">Back</a>
+                <a href="{% url 'mobileid:index' %}" class="btn btn-secondary w-100 mt-2">Back</a>
             </form>
         </div>
     </div>

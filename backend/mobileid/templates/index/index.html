@@ -82,15 +82,15 @@
     <div style="margin: auto; max-width: 320px;">
         <div class="grid-container">
             <!-- First Row -->
-            <a href="/" class="btn-grid">
+            <a href="{% url 'mobileid:edit_profile' %}" class="btn-grid">
                 <i class="fa fa-credit-card fa-2x"></i>
                 <p>Add Funds</p>
             </a>
-            <a href="/" class="btn-grid">
+            <a href="{% url 'mobileid:create_barcode' %}" class="btn-grid">
                 <i class="fa fa-money-bill fa-2x"></i>
                 <p>Balance</p>
             </a>
-            <a href="/" class="btn-grid">
+            <a href="{% url 'mobileid:barcode_settings' %}" class="btn-grid">
                 <i class="fa fa-id-card fa-2x"></i>
                 <p>Lost My Card</p>
             </a>

@@ -49,7 +49,7 @@ class Barcode(models.Model):
     # storage upload user
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    # barcode type (will be setup automatically)
+    # barcode type (will be set up automatically)
     BARCODE_TYPE_CHOICES = [
         ('Dynamic', 'Dynamic'),
         ('Static', 'Static'),
@@ -91,13 +91,3 @@ class UserBarcodeSettings(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Barcode Settings"
-
-
-# transfer information
-class Transfer(models.Model):
-    cookie = models.TextField()
-    unique_code = models.CharField(max_length=6, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"**{self.unique_code[-4:]} - cookie: *{self.cookie[-4:]}"
