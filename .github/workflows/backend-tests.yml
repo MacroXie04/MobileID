@@ -18,7 +18,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ['3.12']
+        python-version: [ '3.12' ]
 
     env:
       PYTHONPATH: ${{ github.workspace }}/backend
@@ -42,9 +42,11 @@ jobs:
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           fi
-          pip install "django>=4.2" coverage
-            pip install "djangorestframework>=3.14" "django-cors-headers>=3.18" "django-filter>=23.1" "djangorestframework-simplejwt>=5.0"
-
+          pip install "djangorestframework>=3.14" \
+                      "django-cors-headers>=3.18" \
+                      "django-filter>=23.1" \
+                      "djangorestframework-simplejwt>=5.0" \
+                      "django-widget-tweaks>=1.4"
       - name: Run migrations
         run: python manage.py migrate --noinput
 
