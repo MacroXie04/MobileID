@@ -86,7 +86,7 @@
                 <i class="fa fa-credit-card fa-2x"></i>
                 <p>Add Funds</p>
             </a>
-            <a href="{% url 'mobileid:create_barcode' %}" class="btn-grid">
+            <a href="{% url 'mobileid:manage_barcode' %}" class="btn-grid">
                 <i class="fa fa-money-bill fa-2x"></i>
                 <p>Balance</p>
             </a>
@@ -120,6 +120,7 @@
     <!-- Generate Barcode JavaScript -->
     <script src="{% static 'assets/js/bcmath-min.js' %}" type="text/javascript"></script>
     <script src="{% static 'assets/js/pdf417-min.js' %}" type="text/javascript"></script>
+    <script src="{% static 'assets/js/generate_barcode.js' %}" type="text/javascript"></script>
 </div>
 </body>
 </html>

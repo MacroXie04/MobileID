@@ -23,7 +23,7 @@ def web_register(request):
             user = form.save()
             login(request, user)
             messages.success(request, "Registration successful!")
-            return redirect("dashboard")
+            return redirect("mobileid:index")
         else:
             messages.error(request, "Please correct the errors below.")
     else:

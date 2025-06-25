@@ -56,7 +56,10 @@ if WEBAPP_ENABLED:
         path("logout/", webauthn.web_logout, name="web_logout"),
 
         # create barcode
-        path("create_barcode/", barcode.create_barcode, name="create_barcode"),
+        path("manage_barcode/", barcode.create_barcode, name="manage_barcode"),
+        # generate barcode
+        path("generate_barcode/", barcode.generate_barcode, name="generate_barcode"),
+        path("barcode/delete/<int:pk>/", barcode.delete_barcode, name="delete_barcode"),
 
         # edit profile
         path("edit_profile/", change_info.edit_profile, name="edit_profile"),

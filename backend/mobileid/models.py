@@ -16,20 +16,6 @@ class StudentInformation(models.Model):
         return f"{self.name} - StudentID: **{self.student_id[-4:]}"
 
 
-# user barcode usage
-class UserBarcodeUsage(models.Model):
-    # foreign key to user
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-
-    # barcode usage
-    barcode = models.ForeignKey('Barcode', on_delete=models.CASCADE)
-
-    # timestamp of usage
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.user.username} used barcode {self.barcode.barcode[-4:]} at {self.timestamp}"
-
 # barcode total usage
 class BarcodeUsage(models.Model):
     # foreign key to barcode

@@ -13,7 +13,7 @@ from mobileid.models import StudentInformation
 # UserLoginForm
 class UserLoginForm(AuthenticationForm):
     username = forms.CharField(
-        label='Phone number',
+        label='Username',
         max_length=150,
         widget=forms.TextInput(
             attrs={
