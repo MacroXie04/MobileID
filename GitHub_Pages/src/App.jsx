@@ -1,28 +1,35 @@
-import React from 'react';
-import {BrowserRouter, Navigate, Route, Routes} from 'react-router-dom';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import { useState } from 'react'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
+import './App.css'
 
 function App() {
-    const isLoggedIn = !!localStorage.getItem('access_token');
+  const [count, setCount] = useState(0)
 
-    // Check if we're running in development or production
-    const isDevelopment = window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1';
-
-    // Use basename only in production (GitHub Pages deployment)
-    const basename = isDevelopment ? '/' : '/UCMerced-Barcode';
-
-    return (
-        <BrowserRouter basename={basename}>
-            <Routes>
-                <Route path="/login" element={<LoginPage/>}/>
-                <Route path="/register" element={<RegisterPage/>}/>
-                <Route path="/" element={isLoggedIn ? <HomePage/> : <Navigate to="/login"/>}/>
-            </Routes>
-        </BrowserRouter>
-    );
+  return (
+    <>
+      <div>
+        <a href="https://vite.dev" target="_blank">
+          <img src={viteLogo} className="logo" alt="Vite logo" />
+        </a>
+        <a href="https://react.dev" target="_blank">
+          <img src={reactLogo} className="logo react" alt="React logo" />
+        </a>
+      </div>
+      <h1>Vite + React</h1>
+      <div className="card">
+        <button onClick={() => setCount((count) => count + 1)}>
+          count is {count}
+        </button>
+        <p>
+          Edit <code>src/App.jsx</code> and save to test HMR
+        </p>
+      </div>
+      <p className="read-the-docs">
+        Click on the Vite and React logos to learn more
+      </p>
+    </>
+  )
 }
 
-export default App;
+export default App
