@@ -28,6 +28,7 @@ DEBUG = True
 # SECURITY WARNING: enable one or both of these flags in production
 API_ENABLED = True
 WEBAPP_ENABLED = True
+WEB_ADMIN = True
 
 # Enable selenium web scraping
 SELENIUM_ENABLED = False
@@ -41,10 +42,12 @@ INSTALLED_APPS = [
     # mobileid app
     'mobileid.apps.MobileidConfig',
 
-    # modules
+    # Django REST framework
     'rest_framework',
-    'rest_framework_simplejwt',
+    'rest_framework.authtoken',
     'corsheaders',
+
+    # modules
     'widget_tweaks',
 
     # Default Django apps
@@ -57,6 +60,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # CORS middleware must be placed before Django's security middleware
     'corsheaders.middleware.CorsMiddleware',
 
     # Default Django middleware
@@ -69,14 +73,22 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# URL configuration
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
 ]
 
+# CORS settings
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Use TokenAuthentication for API access
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        # By default, require users to be authenticated
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
 
 ROOT_URLCONF = 'barcode.urls'
