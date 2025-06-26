@@ -16,20 +16,21 @@ const router = createRouter({
     },
     {
       path: '/',
-        name
-    :
-      'home',
-        component
-    :
-      () => import('../views/HomeView.vue'),
-        meta
-    :
-      {
-        requiresAuth: true
-      }
+      name:
+        'home',
+      component:
+        () => import('../views/HomeView.vue'),
+      meta:
+        {requiresAuth: true}
+    },
+    {
+      path: '/profile_edit',
+      name: 'profile_edit',
+      component: () => import('../views/ProfileEditView.vue'),
+      meta: {requiresAuth: true}
     }
-,
-]
+    ,
+  ]
 })
 
 router.beforeEach((to, from, next) => {

@@ -153,7 +153,7 @@ function logout() {
 
     <!-- Grid -->
     <div class="grid-container">
-      <a href="#" class="btn-grid">
+      <a href="/profile_edit" class="btn-grid">
         <FontAwesomeIcon icon="credit-card"/>
         <p>Add Funds</p></a>
       <a href="#" class="btn-grid">

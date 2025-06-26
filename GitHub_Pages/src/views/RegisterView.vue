@@ -112,13 +112,11 @@ const form = reactive({
 const errors = ref({});
 
 // --- Image & Cropper Refs ---
-// 改动3: 初始值设为 null
 const avatarPreview = ref(null);
 const imageToCrop = ref(null);
 const fileInput = ref(null);
 const cropper = ref(null);
 
-// 改动4: 新增密码强度计算逻辑
 const passwordStrength = computed(() => {
   const p = form.password;
   let score = 0;
