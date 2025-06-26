@@ -1,8 +1,4 @@
 from django.urls import path
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
 
 from barcode.settings import (
     API_ENABLED,
@@ -19,7 +15,10 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from mobileid.api.user_api import UserInfoView
+from mobileid.api import (
+    webauthn_api,
+    user_api,
+)
 
 app_name = "mobileid"
 
@@ -35,8 +34,10 @@ if API_ENABLED:
         path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
         path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
-        # jwt token api
-        path("api/user/info/", UserInfoView.as_view()),
+        path("api/register/", webauthn_api.RegisterAPIView.as_view(), name="api_register"),
+
+        path('api/me/', user_api.UserProfileAPIView.as_view(), name='api_user_profile'),
+
     ]
 
 if WEBAPP_ENABLED:

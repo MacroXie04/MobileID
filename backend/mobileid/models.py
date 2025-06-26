@@ -10,6 +10,8 @@ class StudentInformation(models.Model):
     # student information
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=100)
+
+    # user profile image (base64 encoded png 128*128)
     user_profile_img = models.TextField()
 
     def __str__(self):

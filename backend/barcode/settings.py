@@ -28,7 +28,7 @@ DEBUG = True
 # Project API and webapp mode
 # SECURITY WARNING: enable one or both of these flags in production
 API_ENABLED = True
-WEBAPP_ENABLED = False
+WEBAPP_ENABLED = True
 WEB_ADMIN = True
 
 # Enable selenium web scraping
@@ -154,6 +154,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': { 'min_length': 8 }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',

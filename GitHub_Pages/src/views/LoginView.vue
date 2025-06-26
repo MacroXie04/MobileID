@@ -1,18 +1,57 @@
 <template>
-  <div class="login-container">
-    <form @submit.prevent="handleLogin">
-      <h1>Login</h1>
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" v-model="username" id="username" required/>
+  <div class="container mt-5 d-flex justify-content-center align-items-center"
+       style="min-height: 80vh;">
+    <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
+      <h3 class="text-center mb-4">Login</h3>
+
+      <form @submit.prevent="handleLogin" novalidate>
+
+        <div v-if="errors.detail" class="alert alert-danger">
+          {{ errors.detail }}
+        </div>
+
+        <div class="mb-3">
+          <label for="username" class="form-label">Username</label>
+          <input
+            type="text"
+            v-model="username"
+            id="username"
+            placeholder="Enter your username"
+            class="form-control"
+            :class="{ 'is-invalid': errors.username }"
+            required
+          />
+          <div v-if="errors.username" class="invalid-feedback">
+            {{ errors.username[0] }}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input
+            type="password"
+            v-model="password"
+            id="password"
+            placeholder="Enter your password"
+            class="form-control"
+            :class="{ 'is-invalid': errors.password }"
+            required
+          />
+          <div v-if="errors.password" class="invalid-feedback">
+            {{ errors.password[0] }}
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
+      </form>
+
+      <div class="text-center mt-2">
+        <p>Don't have an account?
+          <router-link to="/register">Register here</router-link>
+        </p>
       </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" v-model="password" id="password" required/>
-      </div>
-      <p v-if="error" class="error-message">{{ error }}</p>
-      <button type="submit">Login</button>
-    </form>
+
+    </div>
   </div>
 </template>
 
@@ -20,37 +59,39 @@
 import {ref} from 'vue';
 import axios from 'axios';
 import {useRouter} from 'vue-router';
+// 导入我们之前创建的 apiClient 实例会更好，但直接用 axios 也可以
+// import apiClient from '@/api';
 
 const username = ref('');
 const password = ref('');
-const error = ref('');
+const errors = ref({}); // 用一个对象来存储所有错误信息
 const router = useRouter();
 
 const handleLogin = async () => {
+  // 每次提交前，清空之前的错误
+  errors.value = {};
+
   try {
-    // 向 Django 后端发送登录请求
     const response = await axios.post('http://127.0.0.1:8000/api/token/', {
       username: username.value,
       password: password.value,
     });
 
-    // 登录成功
-    console.log(response.data);
-    error.value = '';
-
-    // 将 tokens 保存到 localStorage
     localStorage.setItem('access_token', response.data.access);
     localStorage.setItem('refresh_token', response.data.refresh);
 
-    // 跳转到主页或仪表盘页面
-    router.push('/'); // 或者你想要跳转的任何受保护页面
+    // 登录成功后，可以重定向到首页或设置全局认证状态
+    // 为了看到效果，我们先跳转到首页
+    await router.push('/');
 
   } catch (err) {
-    // 登录失败
-    if (err.response && err.response.status === 401) {
-      error.value = '用户名或密码错误。';
+    if (err.response && (err.response.status === 400 || err.response.status === 401)) {
+      // 将后端返回的错误信息直接赋值给 errors ref
+      // Django REST Framework 返回的错误格式正是 { "field_name": ["error message"], ... }
+      errors.value = err.response.data;
     } else {
-      error.value = '发生未知错误，请稍后再试。';
+      // 处理网络错误或其他未知错误
+      errors.value = {detail: 'An unexpected error occurred. Please try again.'};
     }
     console.error(err);
   }
@@ -58,19 +99,9 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-.login-container {
-  max-width: 400px;
-  margin: 50px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.error-message {
-  color: red;
+/* 我们可以保留一些微调样式，但大部分样式应来自 Bootstrap */
+.invalid-feedback {
+  /* 确保错误信息总是可见的，因为 Vue 的 v-if 已经控制了它的出现 */
+  display: block;
 }
 </style>
