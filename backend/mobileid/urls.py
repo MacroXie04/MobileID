@@ -14,9 +14,11 @@ from mobileid.views import (
     barcode,
     change_info,
 )
-from mobileid.api.webauthn_api import (
-    LoginView,
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
 )
+
 from mobileid.api.user_api import UserInfoView
 
 app_name = "mobileid"
@@ -29,8 +31,9 @@ urlpatterns = [
 
 if API_ENABLED:
     urlpatterns += [
-        # webauthn api
-        path("api/auth/login/", LoginView.as_view()),
+        # JWT webauthn api
+        path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+        path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
         # jwt token api
         path("api/user/info/", UserInfoView.as_view()),

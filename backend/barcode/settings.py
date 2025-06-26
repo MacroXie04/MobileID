@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
 
     # Django REST framework
     'rest_framework',
+    'rest_framework_simplejwt',
     'rest_framework.authtoken',
     'corsheaders',
 
@@ -94,16 +96,24 @@ CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the cookie
 
 # CORS settings
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        # Use TokenAuthentication for API access
-        'rest_framework.authentication.TokenAuthentication',
-        # Add SessionAuthentication for session-based login
-        'rest_framework.authentication.SessionAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        # By default, require users to be authenticated
+    # 设置默认的认证类为 JWT 认证
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    # 设置默认的权限，确保在没有认证的情况下无法访问
+    'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-    ],
+    ),
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
 }
 
 ROOT_URLCONF = 'barcode.urls'
