@@ -82,66 +82,6 @@ from mobileid.models import (
 )
 
 
-class StudentInformationUpdateForm(forms.ModelForm):
-    # Avatar is optional on update – keep existing one if nothing uploaded
-    user_profile_img = forms.ImageField(
-        required=False,
-        widget=forms.FileInput(attrs={
-            'class': 'form-control',
-            'accept': 'image/*'
-        })
-    )
-
-    class Meta:
-        model = StudentInformation
-        fields = ['name', 'student_id', 'user_profile_img']
-        widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Full name'
-            }),
-            'student_id': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Student ID'
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Ensure Bootstrap styling & error feedback
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = field.widget.attrs.get('class', '') + ' form-control'
-            if self.errors.get(field_name):
-                field.widget.attrs['class'] += ' is-invalid'
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-
-        img_file = self.cleaned_data.get('user_profile_img')
-
-        # If nothing uploaded (or already a base64 string) skip processing
-        if not img_file or isinstance(img_file, str):
-            if commit:
-                instance.save()
-            return instance
-
-        # Crop to square, resize to 128×128, encode as PNG base64
-        with Image.open(img_file) as im:
-            min_side = min(im.size)
-            left = (im.width - min_side) // 2
-            top = (im.height - min_side) // 2
-            im = im.crop((left, top, left + min_side, top + min_side))
-            im = im.resize((128, 128), Image.LANCZOS)
-
-            buffer = BytesIO()
-            im.save(buffer, format='PNG')
-            instance.user_profile_img = base64.b64encode(buffer.getvalue()).decode('utf-8')
-
-        if commit:
-            instance.save()
-        return instance
-
-
 class UserBarcodeSettingsForm(forms.ModelForm):
 
     # Common boolean dropdown choices

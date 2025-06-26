@@ -30,8 +30,8 @@ const router = createRouter({
       meta: {requiresAuth: true}
     },
     {
-      path: '/manage_barcodes',
-      name: 'manage_barcodes',
+      path: '/manage_barcode',
+      name: 'manage_barcode',
       component: () => import('../views/ManageBarcodesView.vue'),
       meta: {requiresAuth: true}
     }
