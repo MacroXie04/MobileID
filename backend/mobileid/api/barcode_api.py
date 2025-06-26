@@ -28,8 +28,8 @@ from barcode.settings import SELENIUM_ENABLED
 # --------------------------------------------------------------------------- #
 PACIFIC_TZ      = timezone.get_fixed_timezone(-480)  # America/Los_Angeles (UTC-8)
 CACHE_PREFIX    = "barcode_api"
-POOL_TTL        = 5           # seconds
-FLUSH_THRESHOLD = 10          # flush counter to DB every N hits
+POOL_TTL        = 5
+FLUSH_THRESHOLD = 10
 
 
 def incr_counter(key: str) -> int:
