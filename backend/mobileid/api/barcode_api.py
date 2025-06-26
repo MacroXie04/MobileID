@@ -9,7 +9,12 @@ from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import (
+    status,
+    serializers,
+    generics,
+)
+
 
 from mobileid.models import (
     Barcode,
@@ -19,6 +24,11 @@ from mobileid.models import (
 from mobileid.project_code.barcode import (
     uc_merced_mobile_id,
     auto_send_code,
+)
+
+from mobileid.serializers.barcode import (
+    BarcodeListSerializer,
+    BarcodeCreateSerializer,
 )
 
 from barcode.settings import SELENIUM_ENABLED
@@ -196,3 +206,33 @@ class GenerateBarcodeView(APIView):
             {"status": "error", "message": "Invalid barcode type."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+class BarcodeListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return BarcodeCreateSerializer
+        return BarcodeListSerializer
+
+    def get_queryset(self):
+        return Barcode.objects.filter(user=self.request.user).order_by('-id')
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
+class BarcodeDestroyAPIView(generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Barcode.objects.all()
+
+    def get_queryset(self):
+        # user can only delete their own barcodes
+        return super().get_queryset().filter(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        # remove barcode from user settings and delete usage records
+        UserBarcodeSettings.objects.filter(user=self.request.user, barcode=instance).update(barcode=None)
+        BarcodeUsage.objects.filter(barcode=instance).delete()
+        instance.delete()

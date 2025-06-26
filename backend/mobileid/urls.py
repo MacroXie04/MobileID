@@ -1,24 +1,24 @@
 from django.urls import path
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 from barcode.settings import (
     API_ENABLED,
     WEBAPP_ENABLED,
+    USER_REGISTRATION_ENABLED,
+)
+from mobileid.api import (
+    webauthn_api,
+    user_api,
+    barcode_api,
 )
 from mobileid.views import (
     webauthn,
     index,
     barcode,
     change_info,
-)
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
-
-from mobileid.api import (
-    webauthn_api,
-    user_api,
-    barcode_api,
 )
 
 app_name = "mobileid"
@@ -28,28 +28,30 @@ urlpatterns = [
     # path("api/status/", status, name="status"),
 ]
 
-
 if API_ENABLED:
     urlpatterns += [
         # JWT webauthn api
         path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
         path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
-        path("api/register/", webauthn_api.RegisterAPIView.as_view(), name="api_register"),
-
         path('api/me/', user_api.UserProfileAPIView.as_view(), name='api_user_profile'),
 
         path('api/generate_barcode/', barcode_api.GenerateBarcodeView.as_view(), name='api_generate_barcode'),
 
+        path('api/barcodes/', barcode_api.BarcodeListCreateAPIView.as_view(), name='api_barcode_list_create'),
+        path('api/barcodes/<int:pk>/', barcode_api.BarcodeDestroyAPIView.as_view(), name='api_barcode_destroy'),
+
     ]
+    if USER_REGISTRATION_ENABLED:
+        urlpatterns += [
+            path("api/register/", webauthn_api.RegisterAPIView.as_view(), name="api_register"),
+        ]
 
 if WEBAPP_ENABLED:
     urlpatterns += [
         # index page
         path("", index.index, name="index"),
 
-        # webauthn registration
-        path("register/", webauthn.web_register, name="web_register"),
         # webauthn login
         path("login/", webauthn.web_login, name="web_login"),
         # webauthn logout
@@ -66,3 +68,9 @@ if WEBAPP_ENABLED:
         # edit barcode settings
         path("barcode_settings/", change_info.edit_barcode_settings, name="barcode_settings"),
     ]
+
+    if USER_REGISTRATION_ENABLED:
+        urlpatterns += [
+            # webauthn registration
+            path("register/", webauthn.web_register, name="web_register"),
+        ]

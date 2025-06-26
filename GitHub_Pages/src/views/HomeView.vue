@@ -156,7 +156,7 @@ function logout() {
       <a href="/profile_edit" class="btn-grid">
         <FontAwesomeIcon icon="credit-card"/>
         <p>Add Funds</p></a>
-      <a href="#" class="btn-grid">
+      <a href="/manage_barcodes" class="btn-grid">
         <FontAwesomeIcon icon="money-bill"/>
         <p>Balance</p></a>
       <a href="#" class="btn-grid">

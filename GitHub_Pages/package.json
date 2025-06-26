@@ -14,6 +14,7 @@
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
+    "@zxing/library": "^0.21.3",
     "axios": "^1.10.0",
     "bootstrap": "^5.3.7",
     "bwip-js": "^4.6.0",

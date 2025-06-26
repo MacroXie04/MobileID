@@ -30,6 +30,7 @@ DEBUG = True
 API_ENABLED = True
 WEBAPP_ENABLED = True
 WEB_ADMIN = True
+USER_REGISTRATION_ENABLED = True
 
 # Enable selenium web scraping
 SELENIUM_ENABLED = False

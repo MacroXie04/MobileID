@@ -7,7 +7,7 @@ const apiClient = axios.create({
   }
 });
 
-// 添加一个请求拦截器
+// Add a request interceptor to include the token in headers
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');

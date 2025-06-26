@@ -28,8 +28,14 @@ const router = createRouter({
       name: 'profile_edit',
       component: () => import('../views/ProfileEditView.vue'),
       meta: {requiresAuth: true}
+    },
+    {
+      path: '/manage_barcodes',
+      name: 'manage_barcodes',
+      component: () => import('../views/ManageBarcodesView.vue'),
+      meta: {requiresAuth: true}
     }
-    ,
+
   ]
 })
 
