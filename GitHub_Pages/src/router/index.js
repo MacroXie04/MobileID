@@ -40,6 +40,11 @@ const router = createRouter({
       name: 'barcode_settings',
       component: () => import('../views/BarcodeSettingsView.vue'),
       meta: {requiresAuth: true}
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFoundView.vue')
     }
 
   ]
