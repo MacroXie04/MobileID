@@ -28,8 +28,12 @@ jobs:
     - name: Install dependencies
       run: pip install -r backend/requirements.txt
 
+    - name: Create Migrations
+      run: python backend/manage.py makemigrations mobileid
+
     - name: Run Migrations
       run: python backend/manage.py migrate
+
 
     - name: Run Django tests
       run: python backend/manage.py test
