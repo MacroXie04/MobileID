@@ -27,7 +27,7 @@ DEBUG = True
 # Project API and webapp mode
 # SECURITY WARNING: enable one or both of these flags in production
 API_ENABLED = True
-WEBAPP_ENABLED = True
+WEBAPP_ENABLED = False
 WEB_ADMIN = True
 
 # Enable selenium web scraping
@@ -76,14 +76,29 @@ MIDDLEWARE = [
 # URL configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
 ]
+
+# Allow credentials in CORS requests
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the cookie
 
 # CORS settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         # Use TokenAuthentication for API access
         'rest_framework.authentication.TokenAuthentication',
+        # Add SessionAuthentication for session-based login
+        'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         # By default, require users to be authenticated

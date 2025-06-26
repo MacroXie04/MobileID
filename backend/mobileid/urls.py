@@ -14,10 +14,10 @@ from mobileid.views import (
     barcode,
     change_info,
 )
-from .api.webauthn import (
-    register_view,
-    current_user_view
+from mobileid.api.webauthn_api import (
+    LoginView,
 )
+from mobileid.api.user_api import UserInfoView
 
 app_name = "mobileid"
 
@@ -30,17 +30,10 @@ urlpatterns = [
 if API_ENABLED:
     urlpatterns += [
         # webauthn api
-        path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-        path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+        path("api/auth/login/", LoginView.as_view()),
 
-        # user registration (username+password+student info -> token)
-        path("api/register/", register_view, name="register"),
-
-        # get current user info (token -> user info)
-        path("api/current_user/", current_user_view, name="current_user"),
-
-        # generate barcode using token
-        # path("api/generate_code/", generate_code, name="generate_code"),
+        # jwt token api
+        path("api/user/info/", UserInfoView.as_view()),
     ]
 
 if WEBAPP_ENABLED:
