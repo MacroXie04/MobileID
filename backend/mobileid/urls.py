@@ -18,6 +18,7 @@ from rest_framework_simplejwt.views import (
 from mobileid.api import (
     webauthn_api,
     user_api,
+    barcode_api,
 )
 
 app_name = "mobileid"
@@ -37,6 +38,8 @@ if API_ENABLED:
         path("api/register/", webauthn_api.RegisterAPIView.as_view(), name="api_register"),
 
         path('api/me/', user_api.UserProfileAPIView.as_view(), name='api_user_profile'),
+
+        path('api/generate_barcode/', barcode_api.GenerateBarcodeView.as_view(), name='api_generate_barcode'),
 
     ]
 

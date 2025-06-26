@@ -96,22 +96,29 @@ body {
   transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
-/* Barcode Progress Bar Style */
+.progress-bar {
+  height: 100%;
+  background-color: #bf9c44; /* 更新为截图中的金色 */
+  width: 100%;
+  border-radius: 10px;
+  /* 确保动画是 10 秒，并与我们的 JS 逻辑匹配 */
+  animation: progress-countdown 10s linear forwards;
+}
+
+/* 如果你的 main.css 中没有 .progress 规则，请一并添加它 */
 .progress {
   height: 8px;
-  width: 100%; /* Changed to 100% to fit modal */
+  width: 100%;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.2);
   overflow: hidden;
   box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
   position: relative;
 }
-.progress-bar {
-  height: 100%;
-  background-color: #f8b400;
-  width: 100%;
-  border-radius: 10px;
-  animation: progress-countdown 30s linear forwards; /* Added animation */
+
+@keyframes progress-countdown {
+  from { width: 100%; }
+  to { width: 0%; }
 }
 
 @keyframes progress-countdown {
