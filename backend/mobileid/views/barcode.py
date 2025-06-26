@@ -189,8 +189,8 @@ def incr_counter(key: str) -> int:
     """
     try:
         return cache.incr(key)
-    except ValueError:               # key absent
-        cache.add(key, 1, None)      # add only if not present
+    except ValueError:
+        cache.add(key, 1, None)
         return 1
 
 

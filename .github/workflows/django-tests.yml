@@ -1,0 +1,39 @@
+name: Django Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: backend/requirements.txt
+
+    - name: Install dependencies
+      run: pip install -r backend/requirements.txt
+
+    - name: Create Migrations
+      run: python backend/manage.py makemigrations mobileid
+
+    - name: Run Migrations
+      run: python backend/manage.py migrate
+
+
+    - name: Run Django tests
+      run: python backend/manage.py test

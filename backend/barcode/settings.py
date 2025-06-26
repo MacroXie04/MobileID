@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +29,8 @@ DEBUG = True
 # SECURITY WARNING: enable one or both of these flags in production
 API_ENABLED = True
 WEBAPP_ENABLED = True
+WEB_ADMIN = True
+USER_REGISTRATION_ENABLED = True
 
 # Enable selenium web scraping
 SELENIUM_ENABLED = False
@@ -41,10 +44,13 @@ INSTALLED_APPS = [
     # mobileid app
     'mobileid.apps.MobileidConfig',
 
-    # modules
+    # Django REST framework
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework.authtoken',
     'corsheaders',
+
+    # modules
     'widget_tweaks',
 
     # Default Django apps
@@ -57,6 +63,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # CORS middleware must be placed before Django's security middleware
     'corsheaders.middleware.CorsMiddleware',
 
     # Default Django middleware
@@ -69,14 +76,45 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# URL configuration
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
 ]
 
+# Allow credentials in CORS requests
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the cookie
+
+# CORS settings
 REST_FRAMEWORK = {
+    # 设置默认的认证类为 JWT 认证
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    # 设置默认的权限，确保在没有认证的情况下无法访问
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
 }
 
 ROOT_URLCONF = 'barcode.urls'
@@ -117,6 +155,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': { 'min_length': 8 }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
