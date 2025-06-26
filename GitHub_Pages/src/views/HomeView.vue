@@ -159,7 +159,7 @@ function logout() {
       <a href="/manage_barcode" class="btn-grid">
         <FontAwesomeIcon icon="money-bill"/>
         <p>Balance</p></a>
-      <a href="#" class="btn-grid">
+      <a href="/barcode_settings" class="btn-grid">
         <FontAwesomeIcon icon="id-card"/>
         <p>Lost My Card</p></a>
       <a href="#" class="btn-grid">

@@ -1,6 +1,8 @@
 <template>
+  <div class="container mt-5 d-flex justify-content-center align-items-center"
+       style="min-height: 80vh;">
     <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
-      <h3 class="text-center mb-4 fw-semibold">Create Account</h3>
+      <h3 class="text-center mb-4">Create Account</h3>
 
       <form @submit.prevent="handleRegister" novalidate>
         <div class="mb-3 text-center">
@@ -91,6 +93,7 @@
         <router-link to="/login">Login here</router-link>
       </p>
     </div>
+  </div>
 </template>
 
 <script setup>

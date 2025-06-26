@@ -41,6 +41,8 @@ if API_ENABLED:
         path('api/barcodes/', barcode_api.BarcodeListCreateAPIView.as_view(), name='api_barcode_list_create'),
         path('api/barcodes/<int:pk>/', barcode_api.BarcodeDestroyAPIView.as_view(), name='api_barcode_destroy'),
 
+        path('api/barcode_settings/', user_api.BarcodeSettingsAPIView.as_view(), name='api_barcode_settings'),
+
     ]
     if USER_REGISTRATION_ENABLED:
         urlpatterns += [
