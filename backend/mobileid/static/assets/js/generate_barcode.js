@@ -81,13 +81,12 @@ $('#show-info-button').click(function () {
                     y += bh;
                 }
 
-                // 根据当前显示状态决定动画逻辑
                 var isFaded = $('#show-info-button').css('display') == 'none';
                 if (isFaded) {
                     setTimeout(function () {
                         $('#show-info-button').fadeIn();
                     }, 400);
-                    $('#student-id').fadeOut();
+                    $('#id').fadeOut();
                     $('#qrcode-code').fadeOut();
                     $('#qrcode-div').fadeOut();
                 } else {
@@ -95,7 +94,7 @@ $('#show-info-button').click(function () {
                     setTimeout(function () {
                         $('#qrcode-div').fadeIn();
                         $('#qrcode-code').fadeIn();
-                        $('#student-id').fadeIn();
+                        $('#id').fadeIn();
 
                         // reset progress bar
                         $('.progress-bar').css({
