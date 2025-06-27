@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('barcode_type', models.CharField(choices=[('Dynamic', 'Dynamic'), ('Static', 'Static'), ('Others', 'Others')], default='Others', max_length=10)),
                 ('barcode', models.TextField()),
-                ('student_id', models.CharField(blank=True, default=None, max_length=100, null=True)),
+                ('linked_id', models.CharField(blank=True, default=None, max_length=100, null=True)),
                 ('session', models.TextField(blank=True, null=True)),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],

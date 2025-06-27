@@ -52,7 +52,7 @@ class Barcode(models.Model):
 
     # barcode information
     barcode = models.TextField()
-    student_id = models.CharField(max_length=100, blank=True, null=True, default=None)
+    linked_id = models.CharField(max_length=100, blank=True, null=True, default=None)
 
     # server verification information
     session = models.TextField(blank=True, null=True)

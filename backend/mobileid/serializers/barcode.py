@@ -22,7 +22,7 @@ from barcode.settings import SELENIUM_ENABLED
 class BarcodeListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Barcode
-        fields = ['information_id', 'barcode_type', 'barcode', 'student_id']
+        fields = ['information_id', 'barcode_type', 'barcode', 'linked_id']
 
 
 class BarcodeCreateSerializer(serializers.Serializer):

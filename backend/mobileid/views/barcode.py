@@ -33,7 +33,7 @@ from django.views.decorators.http import require_POST
 def create_barcode(request):
     form = BarcodeForm(request.POST or None)
     # current user barcodes for delete section
-    user_barcodes = Barcode.objects.filter(user=request.user).order_by('-information_id')
+    user_barcodes = Barcode.objects.filter(user=request.user).order_by('id')
 
     if request.method == "POST" and form.is_valid():
         src_type = form.cleaned_data["source_type"]
@@ -94,13 +94,6 @@ def _create_from_barcode(user, code: str, form):
     if not code.isdigit():
         form.add_error("input_value", "Digits only.")
         return None
-    if len(code) not in (16, 28):
-        form.add_error("input_value", "Barcode length not invalid.")
-        return None
-    if len(code) == 16:
-        if Barcode.objects.filter(barcode=code, user=user).exists():
-            form.add_error("input_value", "Barcode already exists.")
-            return None
     else:
         if Barcode.objects.filter(barcode=code[-14:], user=user).exists():
             form.add_error("input_value", "Barcode already exists.")
@@ -114,12 +107,20 @@ def _create_from_barcode(user, code: str, form):
             barcode=code,
             student_id="",
         )
-    else:
+    elif len(code) == 28:
         # single insert query
         barcode_obj = Barcode.objects.create(
             user=user,
             barcode_type="Dynamic",
             barcode=code[-14:],
+            student_id="",
+        )
+    else:
+        # single insert query
+        barcode_obj = Barcode.objects.create(
+            user=user,
+            barcode_type="Others",
+            barcode=code,
             student_id="",
         )
 
