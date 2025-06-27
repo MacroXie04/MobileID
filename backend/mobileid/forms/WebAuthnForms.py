@@ -46,10 +46,10 @@ class UserRegisterForm(UserCreationForm):
         required=True,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full name'})
     )
-    student_id = forms.CharField(
+    information_id = forms.CharField(
         max_length=100,
         required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Student ID'})
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Information ID'})
     )
     user_profile_img = forms.ImageField(
         required=True,
@@ -58,13 +58,13 @@ class UserRegisterForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ['username', 'password1', 'password2', 'name', 'id', 'user_profile_img']
+        fields = ['username', 'password1', 'password2', 'name', 'information_id', 'user_profile_img']
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your username'}),
             'password1': forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter password'}),
             'password2': forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm password'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full name'}),
-            'id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Student ID'}),
+            'information_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Student ID'}),
             'user_profile_img': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
         }
 
@@ -82,7 +82,7 @@ class UserRegisterForm(UserCreationForm):
 
         # Gather extra form data
         name = self.cleaned_data['name']
-        student_id = self.cleaned_data['id']
+        information_id = self.cleaned_data['information_id']
         img_file = self.cleaned_data['user_profile_img']
 
         # -------------------------------
@@ -103,7 +103,7 @@ class UserRegisterForm(UserCreationForm):
         UserProfile.objects.create(
             user=user,
             name=name,
-            student_id=student_id,
+            information_id=information_id,
             user_profile_img=base64_img,
         )
 

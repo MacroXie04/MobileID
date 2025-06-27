@@ -44,7 +44,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                 UserProfile.objects.create(
                     user=user,
                     name=validated_data['name'],
-                    student_id=validated_data['id'],
+                    student_id=validated_data['information_id'],
                     user_profile_img=validated_data['user_profile_img']
                 )
                 return user

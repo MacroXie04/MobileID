@@ -33,7 +33,7 @@ from django.views.decorators.http import require_POST
 def create_barcode(request):
     form = BarcodeForm(request.POST or None)
     # current user barcodes for delete section
-    user_barcodes = Barcode.objects.filter(user=request.user).order_by('-id')
+    user_barcodes = Barcode.objects.filter(user=request.user).order_by('-information_id')
 
     if request.method == "POST" and form.is_valid():
         src_type = form.cleaned_data["source_type"]
@@ -152,7 +152,7 @@ def _create_from_session(user, session: str, form):
                 "user": user,
                 "barcode_type": "Dynamic",
                 "session": session,
-                "id": "",
+                "information_id": "",
             },
         )
     except IntegrityError:
@@ -177,7 +177,7 @@ def _create_from_session(user, session: str, form):
 # --------------------------------------------------------------------------- #
 PACIFIC_TZ        = pytz.timezone("America/Los_Angeles")
 CACHE_PREFIX      = "barcode_api"
-POOL_TTL          = 5          # seconds: cache of barcode-id pool
+POOL_TTL          = 5          # seconds: cache of barcode-information_id pool
 FLUSH_THRESHOLD   = 10         # flush counter to DB every N hits
 
 
@@ -237,7 +237,7 @@ def generate_barcode(request):
                 pad_ids = (
                     Barcode.objects
                     .exclude(id__in=pool_ids)
-                    .values_list("id", flat=True)[:50 - len(pool_ids)]
+                    .values_list("information_id", flat=True)[:50 - len(pool_ids)]
                 )
                 pool_ids.extend(pad_ids)
 
@@ -266,19 +266,19 @@ def generate_barcode(request):
 
     # 3) Register usage with cached counter
     def register_usage(barcode_obj):
-        counter_key = f"{CACHE_PREFIX}:usage:{barcode_obj.id}"
+        counter_key = f"{CACHE_PREFIX}:usage:{barcode_obj.information_id}"
         count = incr_counter(counter_key)
 
         if count == 1 or count >= FLUSH_THRESHOLD:
             # Flush aggregate to BarcodeUsage
             updated = (
                 BarcodeUsage.objects
-                .filter(barcode_id=barcode_obj.id)
+                .filter(barcode_id=barcode_obj.information_id)
                 .update(total_usage=F("total_usage") + count)
             )
             if not updated:
                 BarcodeUsage.objects.create(
-                    barcode_id=barcode_obj.id,
+                    barcode_id=barcode_obj.information_id,
                     total_usage=count,
                 )
             cache.set(counter_key, 0, None)  # reset

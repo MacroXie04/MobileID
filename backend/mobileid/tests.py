@@ -37,4 +37,4 @@ class StudentInformationModelTest(TestCase):
         """Test that student information can be created"""
         self.assertEqual(self.student_info.user, self.user)
         self.assertEqual(self.student_info.name, 'Test Student')
-        self.assertEqual(self.student_info.id, '12345678')
+        self.assertEqual(self.student_info.information_id, '12345678')

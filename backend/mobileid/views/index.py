@@ -14,7 +14,7 @@ def index(request):
 
     context = {
         "name": info.name,
-        "id": info.id,
+        "information_id": info.information_id,
         "user_profile_img": info.user_profile_img,
     }
 

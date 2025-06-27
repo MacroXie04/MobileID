@@ -9,13 +9,13 @@ class UserProfile(models.Model):
 
     # student information
     name = models.CharField(max_length=100)
-    id = models.CharField(max_length=100)
+    information_id = models.CharField(max_length=100)
 
     # user profile image (base64 encoded png 128*128)
     user_profile_img = models.TextField()
 
     def __str__(self):
-        return f"{self.name} - StudentID: **{self.id[-4:]}"
+        return f"{self.name} - StudentID: **{self.information_id[-4:]}"
 
 
 # barcode total usage

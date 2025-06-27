@@ -12,7 +12,7 @@ from .barcode import BarcodeListSerializer
 
 class UserProfileSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='studentinformation.name', required=False, allow_blank=False)
-    student_id = serializers.CharField(source='studentinformation.id', required=False, allow_blank=False)
+    student_id = serializers.CharField(source='studentinformation.information_id', required=False, allow_blank=False)
 
     user_profile_img = serializers.CharField(source='studentinformation.user_profile_img', required=False,
                                              allow_blank=False)
@@ -31,7 +31,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         info_data = validated_data.pop('studentinformation', {})
         student_info = instance.studentinformation
         student_info.name = info_data.get('name', student_info.name)
-        student_info.id = info_data.get('id', student_info.id)
+        student_info.information_id = info_data.get('information_id', student_info.information_id)
         student_info.user_profile_img = info_data.get('user_profile_img', student_info.user_profile_img)
         student_info.save()
 

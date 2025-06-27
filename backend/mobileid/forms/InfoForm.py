@@ -23,13 +23,13 @@ class StudentInformationUpdateForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ['name', 'id', 'user_profile_img']
+        fields = ['name', 'information_id', 'user_profile_img']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Full name'
             }),
-            'id': forms.TextInput(attrs={
+            'information_id': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Student ID'
             }),
