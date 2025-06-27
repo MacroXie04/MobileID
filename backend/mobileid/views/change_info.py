@@ -8,14 +8,14 @@ from mobileid.forms.InfoForm import (
     UserBarcodeSettingsForm,
 )
 from mobileid.models import (
-    StudentInformation,
+    UserProfile,
     UserBarcodeSettings,
 )
 
 @login_required(login_url='/login')
 def edit_profile(request):
     # Ensure the student info record exists
-    student_info, _ = StudentInformation.objects.get_or_create(user=request.user)
+    student_info, _ = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
         form = StudentInformationUpdateForm(

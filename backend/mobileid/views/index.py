@@ -1,20 +1,20 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from mobileid.models import (
-    StudentInformation,
+    UserProfile,
     UserBarcodeSettings
 )
 
 @login_required(login_url='/login')
 def index(request):
     try:
-        info = StudentInformation.objects.get(user=request.user)
-    except StudentInformation.DoesNotExist:
+        info = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
         return redirect("mobileid:web_register")
 
     context = {
         "name": info.name,
-        "student_id": info.student_id,
+        "id": info.id,
         "user_profile_img": info.user_profile_img,
     }
 

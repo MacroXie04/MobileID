@@ -125,7 +125,7 @@ def _create_from_barcode(user, code: str, form):
 
     _create_usage_if_new(barcode_obj, True)
     _link_to_user(barcode_obj, user)
-    return redirect("mobileid:index")
+    return redirect("mobileid:manage_barcode")
 
 
 # ----- source_type == "session" ---------------------------------------
@@ -152,7 +152,7 @@ def _create_from_session(user, session: str, form):
                 "user": user,
                 "barcode_type": "Dynamic",
                 "session": session,
-                "student_id": "",
+                "id": "",
             },
         )
     except IntegrityError:

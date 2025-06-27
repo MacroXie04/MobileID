@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
-from mobileid.models import StudentInformation, UserBarcodeSettings
+from mobileid.models import UserProfile, UserBarcodeSettings
 
 class UserModelTest(TestCase):
     def setUp(self):
@@ -26,7 +26,7 @@ class StudentInformationModelTest(TestCase):
         )
 
         # Create student information for the user
-        self.student_info = StudentInformation.objects.create(
+        self.student_info = UserProfile.objects.create(
             user=self.user,
             name='Test Student',
             student_id='12345678',
@@ -37,4 +37,4 @@ class StudentInformationModelTest(TestCase):
         """Test that student information can be created"""
         self.assertEqual(self.student_info.user, self.user)
         self.assertEqual(self.student_info.name, 'Test Student')
-        self.assertEqual(self.student_info.student_id, '12345678')
+        self.assertEqual(self.student_info.id, '12345678')

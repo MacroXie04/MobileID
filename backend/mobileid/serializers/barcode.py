@@ -66,7 +66,7 @@ class BarcodeCreateSerializer(serializers.Serializer):
 
             barcode_obj, created = Barcode.objects.get_or_create(
                 barcode=code,
-                defaults={"user": user, "barcode_type": "Dynamic", "session": input_val, "student_id": ""}
+                defaults={"user": user, "barcode_type": "Dynamic", "session": input_val, "id": ""}
             )
             if not created:
                 barcode_obj.user = user

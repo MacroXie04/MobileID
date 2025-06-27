@@ -7,7 +7,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from mobileid.models import StudentInformation
+from mobileid.models import UserProfile
 
 
 # UserLoginForm
@@ -58,13 +58,13 @@ class UserRegisterForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ['username', 'password1', 'password2', 'name', 'student_id', 'user_profile_img']
+        fields = ['username', 'password1', 'password2', 'name', 'id', 'user_profile_img']
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your username'}),
             'password1': forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter password'}),
             'password2': forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm password'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full name'}),
-            'student_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Student ID'}),
+            'id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Student ID'}),
             'user_profile_img': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
         }
 
@@ -82,7 +82,7 @@ class UserRegisterForm(UserCreationForm):
 
         # Gather extra form data
         name = self.cleaned_data['name']
-        student_id = self.cleaned_data['student_id']
+        student_id = self.cleaned_data['id']
         img_file = self.cleaned_data['user_profile_img']
 
         # -------------------------------
@@ -99,8 +99,8 @@ class UserRegisterForm(UserCreationForm):
             im.save(buffer, format='PNG')
             base64_img = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
-        # Create StudentInformation
-        StudentInformation.objects.create(
+        # Create UserProfile
+        UserProfile.objects.create(
             user=user,
             name=name,
             student_id=student_id,
