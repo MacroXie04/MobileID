@@ -133,21 +133,29 @@ class GenerateBarcodeView(APIView):
 
         # 3) Helper to register usage counts
         def register_usage(barcode_obj):
+            # Skip if information_id is empty, None, or not a valid integer
+            if not barcode_obj.information_id or barcode_obj.information_id == '':
+                return
+
             counter_key = f"{CACHE_PREFIX}:usage:{barcode_obj.information_id}"
             count = incr_counter(counter_key)
 
             if count == 1 or count >= FLUSH_THRESHOLD:
-                updated = (
-                    BarcodeUsage.objects
-                    .filter(barcode_id=barcode_obj.information_id)
-                    .update(total_usage=F("total_usage") + count)
-                )
-                if not updated:
-                    BarcodeUsage.objects.create(
-                        barcode_id=barcode_obj.information_id,
-                        total_usage=count,
+                try:
+                    updated = (
+                        BarcodeUsage.objects
+                        .filter(barcode_id=barcode_obj.information_id)
+                        .update(total_usage=F("total_usage") + count)
                     )
-                cache.set(counter_key, 0, None)  # reset counter
+                    if not updated:
+                        BarcodeUsage.objects.create(
+                            barcode_id=barcode_obj.information_id,
+                            total_usage=count,
+                        )
+                    cache.set(counter_key, 0, None)  # reset counter
+                except ValueError:
+                    # Skip if information_id cannot be converted to an integer
+                    pass
 
         # 4) Build response for static barcodes
         if user_barcode.barcode_type.lower() == "static":

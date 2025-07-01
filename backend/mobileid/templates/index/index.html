@@ -1,126 +1,217 @@
 {% load static %}
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="format-detection" content="telephone=no">
     <title>MobileID</title>
-    <!-- Jquery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom CSS-->
-    <link href="{% static 'assets/css/mobileid.css' %}" rel="stylesheet">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
-          integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@material/web@1.4.1/all.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@material/web@1.4.1/dist/material-web.min.css" rel="stylesheet">
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <style>
+        :root {
+            /* Material You 主题颜色 */
+            --md-sys-color-primary: #0061A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #D1E4FF;
+            --md-sys-color-on-primary-container: #001D36;
+            --md-sys-color-secondary: #535F70;
+            --md-sys-color-on-secondary: #FFFFFF;
+            --md-sys-color-surface: #FFFFFF; /* 卡片背景色设为白色 */
+            --md-sys-color-on-surface: #191C20; /* 卡片上的文字颜色 */
+            --md-sys-color-surface-variant: #DFE2EB;
+            --md-sys-color-on-surface-variant: #43474E;
+            --md-sys-color-background: #FFFFFF; /* 页面背景色设为白色 */
+            --md-sys-color-on-background: #191C20;
+            --md-sys-color-outline: #73777F;
+            --md-sys-color-error: #BA1A1A;
+            --card-border-radius: 16px;
+        }
+
+        body {
+            margin: 0;
+            /* [改动] 背景设为白色 */
+            background: var(--md-sys-color-background);
+            font-family: "Roboto", sans-serif;
+            color: var(--md-sys-color-on-background);
+            min-height: 100dvh;
+            display: flex;
+            /* [改动] 水平和垂直居中卡片 */
+            justify-content: center;
+            align-items: center;
+            padding: 24px 16px;
+        }
+
+        /* 主要资料卡 */
+        .profile-card {
+            border-radius: var(--card-border-radius);
+            max-width: 420px;
+            width: 100%;
+            --md-elevation-level: 2; /* 使用阴影来区分层次 */
+            background-color: var(--md-sys-color-surface);
+            /* [新增] 添加一点过渡效果 */
+            transition: all 0.3s ease;
+        }
+
+        .profile-card-content {
+            padding: 24px;
+            text-align: center;
+        }
+
+        /* 用户头像 */
+        .profile-avatar {
+            width: 128px;
+            height: 128px;
+            border-radius: 50%;
+            object-fit: cover;
+            /* [改动] 移除了白色边框，在白色背景上更好看 */
+            border: 1px solid var(--md-sys-color-outline-variant, #CAC4D0);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* 将头像稍微向上移，但不再重叠，以适应居中布局 */
+            margin-top: -80px;
+            margin-bottom: 16px;
+        }
+
+        .profile-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        /* 字体排印 */
+        .profile-name {
+            font-size: 1.75rem;
+            font-weight: 500;
+            line-height: 1.2;
+            color: var(--md-sys-color-on-surface);
+            margin: 0;
+        }
+
+        .profile-id {
+            font-size: 1rem;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-top: 4px;
+            margin-bottom: 24px;
+        }
+
+        /* 条形码区域 */
+        #qrcode-div {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-top: 24px;
+        }
+        #qrcode-code {
+            padding: 0 16px;
+        }
+        #barcode-progress {
+            margin-top: 8px;
+            --md-linear-progress-active-indicator-color: var(--md-sys-color-primary);
+        }
+
+        /* 功能按钮网格 */
+        .grid-container {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 1fr 1fr;
+            margin-top: 24px;
+        }
+
+        .btn-grid {
+            text-decoration: none;
+        }
+
+        .btn-grid [class*="button"] {
+            width: 100%;
+        }
+        .btn-grid .material-symbols-outlined {
+            font-size: 20px;
+            vertical-align: bottom;
+        }
+
+        /* 登出按钮样式 */
+        .btn-logout {
+             --md-outlined-button-label-color: var(--md-sys-color-error);
+             --md-outlined-button-outline-color: var(--md-sys-color-error);
+             --md-outlined-button-hover-outline-color: var(--md-sys-color-error);
+             --md-sys-color-primary: var(--md-sys-color-error); /* Ripple color */
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-    <!-- Header -->
-    <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; position: relative;">
 
+    <div class="profile-card">
+        <div class="profile-card-content">
+            <img src="data:image/png;base64,{{ user_profile_img|safe }}" alt="用户头像" class="profile-avatar">
 
-        <div style="flex: 1;">
-            <a href="{% url 'mobileid:index' %}">
-                <img src="{% static 'images/ucm3.png' %}" alt="UC Merced Logo" style="height: 60px;"/>
-            </a>
-        </div>
+            <h1 class="profile-name">{{ name }}</h1>
+            <p id="student-id" class="profile-id">{{ student_id }}</p>
 
-        <div style="flex: 1; display: flex; justify-content: center;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="{% static 'images/mobileid_logo.png' %}" alt="Fingerprint" style="height: 60px;"/>
+            <div id="show-info-button">
+                <md-filled-button style="width: 100%; --md-filled-button-container-height: 48px;">
+                    <span class="material-symbols-outlined">qr_code_scanner</span>
+                    &nbsp;支付 / 签到
+                </md-filled-button>
             </div>
-        </div>
 
-        <div style="flex: 1;"></div>
-    </div>
-
-
-    <div style="border-top: 1px solid white; margin: 0 20px;"></div>
-
-    <!-- Centered Profile Section -->
-    <div class="text-center" style="margin-top: 2em;">
-        <a>
-            <img
-                    src="data:image/png;base64,{{ user_profile_img|safe }}"
-                    style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;
-           box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4);
-           transition: transform 0.3s ease-in-out;"
-                    class="img-circle"
-                    alt="User profile picture">
-        </a>
-
-        <h4 class="white-h4" style="margin-top: 0.5em; color: white !important;">
-            {{ name }} </h4>
-
-        <h4 id="information_id" class="white-h4" style="color: white !important;">
-            {{ information_id }} </h4>
-
-        <!-- Pay/Check-in Button -->
-        <div id="show-info-button" style="margin-top: 1em;">
-            <button type="button" class="btn btn-trans btn-trans-default"><b>PAY / Check-in</b></button>
-        </div>
-
-    </div>
-
-    <!-- Display Barcode -->
-    <div id="qrcode" class="text-center">
-        <div id="qrcode-div" style="display: none;">Barcode</div>
-        <br>
-        <div id="qrcode-code" style="display: none;">
-            <div class="progress" style="width: 70%; display: inline-block;">
-                <div class="progress-bar progress-bar-white" role="progressbar" aria-valuenow="100"
-                     aria-valuemin="0" aria-valuemax="100" style="width:100%">
+            <div id="qrcode" style="display:none;" class="text-center mt-3">
+                <div id="qrcode-div">条形码</div>
+                <div id="qrcode-code" class="mt-2">
+                     <md-linear-progress id="barcode-progress" value="1" four-color></md-linear-progress>
                 </div>
             </div>
+
+            <div class="grid-container">
+                <a href="{% url 'mobileid:edit_profile' %}" class="btn-grid">
+                    <md-filled-tonal-button>
+                        <span class="material-symbols-outlined">edit</span>&nbsp;资料
+                    </md-filled-tonal-button>
+                </a>
+                <a href="{% url 'mobileid:manage_barcode' %}" class="btn-grid">
+                    <md-filled-tonal-button>
+                        <span class="material-symbols-outlined">barcode</span>&nbsp;管理
+                    </md-filled-tonal-button>
+                </a>
+                <a href="{% url 'mobileid:barcode_settings' %}" class="btn-grid">
+                    <md-filled-tonal-button>
+                        <span class="material-symbols-outlined">settings</span>&nbsp;设置
+                    </md-filled-tonal-button>
+                </a>
+                <a href="{% url 'mobileid:web_logout' %}" class="btn-grid">
+                    <md-outlined-button class="btn-logout">
+                        <span class="material-symbols-outlined">logout</span>&nbsp;登出
+                    </md-outlined-button>
+                </a>
+            </div>
         </div>
-    </div>
-
-    <div style="margin: auto; max-width: 320px;">
-        <div class="grid-container">
-            <!-- First Row -->
-            <a href="{% url 'mobileid:edit_profile' %}" class="btn-grid">
-                <i class="fa fa-credit-card fa-2x"></i>
-                <p>Add Funds</p>
-            </a>
-            <a href="{% url 'mobileid:manage_barcode' %}" class="btn-grid">
-                <i class="fa fa-money-bill fa-2x"></i>
-                <p>Balance</p>
-            </a>
-            <a href="{% url 'mobileid:barcode_settings' %}" class="btn-grid">
-                <i class="fa fa-id-card fa-2x"></i>
-                <p>Lost My Card</p>
-            </a>
-
-            <!-- Second Row -->
-            <a href="/" class="btn-grid">
-                <i class="fa fa-exclamation-triangle fa-2x"></i>
-                <p id="server_status">Emergency</p>
-            </a>
-            <a href="/" class="btn-grid">
-                <i class="fa fa-dumbbell fa-2x"></i>
-                <p>Gym</p>
-            </a>
-            <a href="/" class="btn-grid">
-                <i class="fa fa-info fa-2x"></i>
-                <p>Resources</p>
-            </a>
-
-            <!-- Third Row -->
-            <a href="{% url 'mobileid:web_logout' %}" class="btn-grid">
-                <i class="fa fa-sign-out-alt fa-2x"></i>
-                <p>Log out</p>
-            </a>
-        </div>
-    </div>
-
-    <!-- Generate Barcode JavaScript -->
-    <script src="{% static 'assets/js/bcmath-min.js' %}" type="text/javascript"></script>
+    </div> <script src="{% static 'assets/js/bcmath-min.js' %}" type="text/javascript"></script>
     <script src="{% static 'assets/js/pdf417-min.js' %}" type="text/javascript"></script>
     <script src="{% static 'assets/js/generate_barcode.js' %}" type="text/javascript"></script>
-</div>
+
+    <script>
+        $(document).ready(function() {
+            $('#show-info-button').on('click', function() {
+                $(this).hide();
+                $('#qrcode').show();
+                const progressBar = document.getElementById('barcode-progress');
+                let progress = 1;
+                const interval = setInterval(() => {
+                    progress -= 0.01;
+                    progressBar.value = progress;
+                    if (progress <= 0) {
+                        clearInterval(interval);
+                        $('#qrcode-div').text('条码已过期');
+                    }
+                }, 300);
+            });
+        });
+    </script>
 </body>
 </html>

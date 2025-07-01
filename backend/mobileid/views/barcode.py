@@ -105,7 +105,7 @@ def _create_from_barcode(user, code: str, form):
             user=user,
             barcode_type="Static",
             barcode=code,
-            student_id="",
+            linked_id="",
         )
     elif len(code) == 28:
         # single insert query
@@ -113,7 +113,7 @@ def _create_from_barcode(user, code: str, form):
             user=user,
             barcode_type="Dynamic",
             barcode=code[-14:],
-            student_id="",
+            linked_id="",
         )
     else:
         # single insert query
@@ -121,7 +121,7 @@ def _create_from_barcode(user, code: str, form):
             user=user,
             barcode_type="Others",
             barcode=code,
-            student_id="",
+            linked_id="",
         )
 
     _create_usage_if_new(barcode_obj, True)
@@ -153,7 +153,7 @@ def _create_from_session(user, session: str, form):
                 "user": user,
                 "barcode_type": "Dynamic",
                 "session": session,
-                "information_id": "",
+                "linked_id": "",
             },
         )
     except IntegrityError:
@@ -178,7 +178,7 @@ def _create_from_session(user, session: str, form):
 # --------------------------------------------------------------------------- #
 PACIFIC_TZ        = pytz.timezone("America/Los_Angeles")
 CACHE_PREFIX      = "barcode_api"
-POOL_TTL          = 5          # seconds: cache of barcode-information_id pool
+POOL_TTL          = 5          # seconds: cache of barcode-linked_id pool
 FLUSH_THRESHOLD   = 10         # flush counter to DB every N hits
 
 
@@ -238,7 +238,7 @@ def generate_barcode(request):
                 pad_ids = (
                     Barcode.objects
                     .exclude(id__in=pool_ids)
-                    .values_list("information_id", flat=True)[:50 - len(pool_ids)]
+                    .values_list("linked_id", flat=True)[:50 - len(pool_ids)]
                 )
                 pool_ids.extend(pad_ids)
 
@@ -267,22 +267,30 @@ def generate_barcode(request):
 
     # 3) Register usage with cached counter
     def register_usage(barcode_obj):
-        counter_key = f"{CACHE_PREFIX}:usage:{barcode_obj.information_id}"
+        # Skip if linked_id is empty, None, or not a valid integer
+        if not barcode_obj.linked_id or barcode_obj.linked_id == '':
+            return
+
+        counter_key = f"{CACHE_PREFIX}:usage:{barcode_obj.linked_id}"
         count = incr_counter(counter_key)
 
         if count == 1 or count >= FLUSH_THRESHOLD:
             # Flush aggregate to BarcodeUsage
-            updated = (
-                BarcodeUsage.objects
-                .filter(barcode_id=barcode_obj.information_id)
-                .update(total_usage=F("total_usage") + count)
-            )
-            if not updated:
-                BarcodeUsage.objects.create(
-                    barcode_id=barcode_obj.information_id,
-                    total_usage=count,
+            try:
+                updated = (
+                    BarcodeUsage.objects
+                    .filter(barcode_id=barcode_obj.linked_id)
+                    .update(total_usage=F("total_usage") + count)
                 )
-            cache.set(counter_key, 0, None)  # reset
+                if not updated:
+                    BarcodeUsage.objects.create(
+                        barcode_id=barcode_obj.linked_id,
+                        total_usage=count,
+                    )
+                cache.set(counter_key, 0, None)  # reset
+            except ValueError:
+                # Skip if linked_id cannot be converted to an integer
+                pass
 
 
     # 4) Generate response
