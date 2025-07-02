@@ -15,6 +15,11 @@ from rest_framework import (
     generics,
 )
 
+from mobileid.throttling import (
+    BarcodeGenerationRateThrottle,
+    BarcodeManagementRateThrottle,
+)
+
 
 from mobileid.models import (
     Barcode,
@@ -65,6 +70,7 @@ class GenerateBarcodeView(APIView):
     aggregation logic are preserved from the original function-based view.
     """
     permission_classes = [IsAuthenticated]
+    throttle_classes = [BarcodeGenerationRateThrottle]
 
     @transaction.atomic
     def post(self, request):
@@ -218,6 +224,7 @@ class GenerateBarcodeView(APIView):
 
 class BarcodeListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [BarcodeManagementRateThrottle]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -233,6 +240,7 @@ class BarcodeListCreateAPIView(generics.ListCreateAPIView):
 
 class BarcodeDestroyAPIView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [BarcodeManagementRateThrottle]
     queryset = Barcode.objects.all()
 
     def get_queryset(self):
