@@ -29,7 +29,7 @@ DEBUG = True
 # SECURITY WARNING: enable one or both of these flags in production
 # When the API_SERVER is enabled, the django will only serve the API endpoints.
 # The url will not include the /api/ prefix.
-API_SERVER = True
+API_SERVER = False
 
 # When API_ENABLED is False, please set the following flags
 API_ENABLED = True
@@ -101,6 +101,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the cookie
+
+# Session settings
+SESSION_COOKIE_AGE = 86400  # 1 day in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Session will last until cookie expires
+SESSION_SAVE_EVERY_REQUEST = True  # Refresh the session cookie on every request
 
 # CORS settings
 REST_FRAMEWORK = {
@@ -175,7 +180,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Los_Angeles'
 
 USE_I18N = True
 
@@ -190,3 +195,7 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Account security settings
+MAX_FAILED_LOGIN_ATTEMPTS = 5  # Maximum number of failed login attempts before locking the account
+ACCOUNT_LOCKOUT_DURATION = 30  # Duration in minutes for which an account should be locked

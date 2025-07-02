@@ -64,14 +64,14 @@ def delete_barcode(request, pk):
     try:
         barcode_obj = Barcode.objects.select_for_update().get(pk=pk, user=request.user)
     except Barcode.DoesNotExist:
-        return redirect("mobileid:manage_barcode")
+        return redirect("mobileid:web_manage_barcode")
 
     # detach barcode from settings if attached
     UserBarcodeSettings.objects.filter(user=request.user, barcode=barcode_obj).update(barcode=None)
     # optional: clean up usage tracker
     BarcodeUsage.objects.filter(barcode=barcode_obj).delete()
     barcode_obj.delete()
-    return redirect("mobileid:manage_barcode")
+    return redirect("mobileid:web_manage_barcode")
 
 
 def _link_to_user(barcode_obj: Barcode, user) -> None:
@@ -126,7 +126,7 @@ def _create_from_barcode(user, code: str, form):
 
     _create_usage_if_new(barcode_obj, True)
     _link_to_user(barcode_obj, user)
-    return redirect("mobileid:manage_barcode")
+    return redirect("mobileid:web_manage_barcode")
 
 
 # ----- source_type == "session" ---------------------------------------
@@ -170,7 +170,7 @@ def _create_from_session(user, session: str, form):
 
     _create_usage_if_new(barcode_obj, created)
     _link_to_user(barcode_obj, user)
-    return redirect("index")
+    return redirect("mobileid:web_index")
 
 
 # --------------------------------------------------------------------------- #

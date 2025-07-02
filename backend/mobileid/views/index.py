@@ -10,7 +10,7 @@ def index(request):
     try:
         info = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
-        return redirect("mobileid:edit_profile")
+        return redirect("mobileid:web_edit_profile")
 
     context = {
         "name": info.name,

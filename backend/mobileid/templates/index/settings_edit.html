@@ -11,7 +11,6 @@
         <form method="post" novalidate>
             {% csrf_token %}
 
-            {# ───────── Barcode Pull (dropdown) ───────── #}
             <div class="mb-3">
                 {{ form.barcode_pull.label_tag }}
                 {{ form.barcode_pull|add_class:"form-select" }}
@@ -21,7 +20,6 @@
                 {% endif %}
             </div>
 
-            {# ───────── Barcode (select) ───────── #}
             <div id="barcodeSelectWrapper" class="mb-3">
                 {{ form.barcode.label_tag }}
                 {{ form.barcode|add_class:"form-select" }}
@@ -31,7 +29,6 @@
                 <small id="barcodeDisabledHint" class="text-muted d-none">Automatically select by Barcode Pull.</small>
             </div>
 
-            {# ───────── Server Verification (dropdown) ───────── #}
             <div class="mb-3">
                 {{ form.server_verification.label_tag }}
                 {{ form.server_verification|add_class:"form-select" }}
@@ -40,7 +37,6 @@
                 {% endif %}
             </div>
 
-            {# ───────── Timestamp Verification (dropdown) ───────── #}
             <div class="mb-4">
                 {{ form.timestamp_verification.label_tag }}
                 {{ form.timestamp_verification|add_class:"form-select" }}

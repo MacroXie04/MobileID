@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 
 # user information
@@ -13,6 +14,11 @@ class UserProfile(models.Model):
 
     # user profile image (base64 encoded png 128*128)
     user_profile_img = models.TextField()
+
+    # account security fields
+    failed_login_attempts = models.PositiveIntegerField(default=0)
+    is_locked = models.BooleanField(default=False)
+    locked_until = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} - StudentID: **{self.information_id[-4:]}"
@@ -80,16 +86,3 @@ class UserBarcodeSettings(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Barcode Settings"
-
-
-class UserDashboardSettings(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-    dashboard_theme = models.CharField(max_length=100, default="Default")
-
-    def __str__(self):
-        return f"{self.user.username}'s Dashboard Settings"
-
-
-
-
