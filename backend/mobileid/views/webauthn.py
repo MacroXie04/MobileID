@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.conf import settings
+from django.contrib.auth.models import User
 
 from django.contrib.auth import (
     login,
@@ -44,7 +45,6 @@ def web_login(request):
             password = form.cleaned_data.get('password')
 
             # Check if user exists
-            from django.contrib.auth.models import User
             try:
                 user_obj = User.objects.get(username=username)
 
