@@ -1,21 +1,27 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 
 # user information
-class StudentInformation(models.Model):
+class UserProfile(models.Model):
     # foreign key to user
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     # student information
     name = models.CharField(max_length=100)
-    student_id = models.CharField(max_length=100)
+    information_id = models.CharField(max_length=100)
 
     # user profile image (base64 encoded png 128*128)
     user_profile_img = models.TextField()
 
+    # account security fields
+    failed_login_attempts = models.PositiveIntegerField(default=0)
+    is_locked = models.BooleanField(default=False)
+    locked_until = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
-        return f"{self.name} - StudentID: **{self.student_id[-4:]}"
+        return f"{self.name} - StudentID: **{self.information_id[-4:]}"
 
 
 # barcode total usage
@@ -41,17 +47,18 @@ class Barcode(models.Model):
     BARCODE_TYPE_CHOICES = [
         ('Dynamic', 'Dynamic'),
         ('Static', 'Static'),
+        ('Others', 'Others'),
     ]
 
     barcode_type = models.CharField(
         max_length=10,
         choices=BARCODE_TYPE_CHOICES,
-        default='Static',
+        default='Others',
     )
 
     # barcode information
     barcode = models.TextField()
-    student_id = models.CharField(max_length=100, blank=True, null=True, default=None)
+    linked_id = models.CharField(max_length=100, blank=True, null=True, default=None)
 
     # server verification information
     session = models.TextField(blank=True, null=True)

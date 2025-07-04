@@ -4,12 +4,14 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from mobileid.serializers.webauthn import RegisterSerializer
+from mobileid.throttling import RegistrationRateThrottle
 
 
 class RegisterAPIView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = RegisterSerializer
+    throttle_classes = [RegistrationRateThrottle]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

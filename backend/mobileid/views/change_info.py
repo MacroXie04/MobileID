@@ -8,14 +8,14 @@ from mobileid.forms.InfoForm import (
     UserBarcodeSettingsForm,
 )
 from mobileid.models import (
-    StudentInformation,
+    UserProfile,
     UserBarcodeSettings,
 )
 
 @login_required(login_url='/login')
 def edit_profile(request):
     # Ensure the student info record exists
-    student_info, _ = StudentInformation.objects.get_or_create(user=request.user)
+    student_info, _ = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
         form = StudentInformationUpdateForm(
@@ -25,7 +25,7 @@ def edit_profile(request):
         )
         if form.is_valid():
             form.save()
-            return redirect('mobileid:index')  # Redirect to index after successful update
+            return redirect('mobileid:web_index')
     else:
         form = StudentInformationUpdateForm(instance=student_info)
 
@@ -54,7 +54,7 @@ def edit_barcode_settings(request):
         )
         if form.is_valid():
             form.save()
-            return redirect('mobileid:index')
+            return redirect('mobileid:web_index')
     else:
         form = UserBarcodeSettingsForm(
             instance=settings_obj,

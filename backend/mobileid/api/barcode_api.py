@@ -15,6 +15,11 @@ from rest_framework import (
     generics,
 )
 
+from mobileid.throttling import (
+    BarcodeGenerationRateThrottle,
+    BarcodeManagementRateThrottle,
+)
+
 
 from mobileid.models import (
     Barcode,
@@ -65,6 +70,7 @@ class GenerateBarcodeView(APIView):
     aggregation logic are preserved from the original function-based view.
     """
     permission_classes = [IsAuthenticated]
+    throttle_classes = [BarcodeGenerationRateThrottle]
 
     @transaction.atomic
     def post(self, request):
@@ -78,7 +84,7 @@ class GenerateBarcodeView(APIView):
                     "barcode_id",
                     "barcode__barcode", "barcode__barcode_type", "barcode__session",
                 )
-                .get(user_id=request.user.id)
+                .get(user_id=request.user.information_id)
             )
         except UserBarcodeSettings.DoesNotExist:
             return Response(
@@ -104,7 +110,7 @@ class GenerateBarcodeView(APIView):
                     pad_ids = (
                         Barcode.objects
                         .exclude(id__in=pool_ids)
-                        .values_list("id", flat=True)[:50 - len(pool_ids)]
+                        .values_list("information_id", flat=True)[:50 - len(pool_ids)]
                     )
                     pool_ids.extend(pad_ids)
 
@@ -133,21 +139,29 @@ class GenerateBarcodeView(APIView):
 
         # 3) Helper to register usage counts
         def register_usage(barcode_obj):
-            counter_key = f"{CACHE_PREFIX}:usage:{barcode_obj.id}"
+            # Skip if information_id is empty, None, or not a valid integer
+            if not barcode_obj.information_id or barcode_obj.information_id == '':
+                return
+
+            counter_key = f"{CACHE_PREFIX}:usage:{barcode_obj.information_id}"
             count = incr_counter(counter_key)
 
             if count == 1 or count >= FLUSH_THRESHOLD:
-                updated = (
-                    BarcodeUsage.objects
-                    .filter(barcode_id=barcode_obj.id)
-                    .update(total_usage=F("total_usage") + count)
-                )
-                if not updated:
-                    BarcodeUsage.objects.create(
-                        barcode_id=barcode_obj.id,
-                        total_usage=count,
+                try:
+                    updated = (
+                        BarcodeUsage.objects
+                        .filter(barcode_id=barcode_obj.information_id)
+                        .update(total_usage=F("total_usage") + count)
                     )
-                cache.set(counter_key, 0, None)  # reset counter
+                    if not updated:
+                        BarcodeUsage.objects.create(
+                            barcode_id=barcode_obj.information_id,
+                            total_usage=count,
+                        )
+                    cache.set(counter_key, 0, None)  # reset counter
+                except ValueError:
+                    # Skip if information_id cannot be converted to an integer
+                    pass
 
         # 4) Build response for static barcodes
         if user_barcode.barcode_type.lower() == "static":
@@ -210,6 +224,7 @@ class GenerateBarcodeView(APIView):
 
 class BarcodeListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [BarcodeManagementRateThrottle]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -217,7 +232,7 @@ class BarcodeListCreateAPIView(generics.ListCreateAPIView):
         return BarcodeListSerializer
 
     def get_queryset(self):
-        return Barcode.objects.filter(user=self.request.user).order_by('-id')
+        return Barcode.objects.filter(user=self.request.user).order_by('-information_id')
 
     def perform_create(self, serializer):
         serializer.save()
@@ -225,6 +240,7 @@ class BarcodeListCreateAPIView(generics.ListCreateAPIView):
 
 class BarcodeDestroyAPIView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [BarcodeManagementRateThrottle]
     queryset = Barcode.objects.all()
 
     def get_queryset(self):

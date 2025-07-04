@@ -33,7 +33,7 @@ from django.views.decorators.http import require_POST
 def create_barcode(request):
     form = BarcodeForm(request.POST or None)
     # current user barcodes for delete section
-    user_barcodes = Barcode.objects.filter(user=request.user).order_by('-id')
+    user_barcodes = Barcode.objects.filter(user=request.user).order_by('id')
 
     if request.method == "POST" and form.is_valid():
         src_type = form.cleaned_data["source_type"]
@@ -64,14 +64,14 @@ def delete_barcode(request, pk):
     try:
         barcode_obj = Barcode.objects.select_for_update().get(pk=pk, user=request.user)
     except Barcode.DoesNotExist:
-        return redirect("mobileid:manage_barcode")
+        return redirect("mobileid:web_manage_barcode")
 
     # detach barcode from settings if attached
     UserBarcodeSettings.objects.filter(user=request.user, barcode=barcode_obj).update(barcode=None)
     # optional: clean up usage tracker
     BarcodeUsage.objects.filter(barcode=barcode_obj).delete()
     barcode_obj.delete()
-    return redirect("mobileid:manage_barcode")
+    return redirect("mobileid:web_manage_barcode")
 
 
 def _link_to_user(barcode_obj: Barcode, user) -> None:
@@ -94,13 +94,6 @@ def _create_from_barcode(user, code: str, form):
     if not code.isdigit():
         form.add_error("input_value", "Digits only.")
         return None
-    if len(code) not in (16, 28):
-        form.add_error("input_value", "Barcode length not invalid.")
-        return None
-    if len(code) == 16:
-        if Barcode.objects.filter(barcode=code, user=user).exists():
-            form.add_error("input_value", "Barcode already exists.")
-            return None
     else:
         if Barcode.objects.filter(barcode=code[-14:], user=user).exists():
             form.add_error("input_value", "Barcode already exists.")
@@ -112,20 +105,28 @@ def _create_from_barcode(user, code: str, form):
             user=user,
             barcode_type="Static",
             barcode=code,
-            student_id="",
+            linked_id="",
         )
-    else:
+    elif len(code) == 28:
         # single insert query
         barcode_obj = Barcode.objects.create(
             user=user,
             barcode_type="Dynamic",
             barcode=code[-14:],
-            student_id="",
+            linked_id="",
+        )
+    else:
+        # single insert query
+        barcode_obj = Barcode.objects.create(
+            user=user,
+            barcode_type="Others",
+            barcode=code,
+            linked_id="",
         )
 
     _create_usage_if_new(barcode_obj, True)
     _link_to_user(barcode_obj, user)
-    return redirect("mobileid:index")
+    return redirect("mobileid:web_manage_barcode")
 
 
 # ----- source_type == "session" ---------------------------------------
@@ -152,7 +153,7 @@ def _create_from_session(user, session: str, form):
                 "user": user,
                 "barcode_type": "Dynamic",
                 "session": session,
-                "student_id": "",
+                "linked_id": "",
             },
         )
     except IntegrityError:
@@ -169,7 +170,7 @@ def _create_from_session(user, session: str, form):
 
     _create_usage_if_new(barcode_obj, created)
     _link_to_user(barcode_obj, user)
-    return redirect("index")
+    return redirect("mobileid:web_index")
 
 
 # --------------------------------------------------------------------------- #
@@ -177,7 +178,7 @@ def _create_from_session(user, session: str, form):
 # --------------------------------------------------------------------------- #
 PACIFIC_TZ        = pytz.timezone("America/Los_Angeles")
 CACHE_PREFIX      = "barcode_api"
-POOL_TTL          = 5          # seconds: cache of barcode-id pool
+POOL_TTL          = 5          # seconds: cache of barcode-linked_id pool
 FLUSH_THRESHOLD   = 10         # flush counter to DB every N hits
 
 
@@ -237,7 +238,7 @@ def generate_barcode(request):
                 pad_ids = (
                     Barcode.objects
                     .exclude(id__in=pool_ids)
-                    .values_list("id", flat=True)[:50 - len(pool_ids)]
+                    .values_list("linked_id", flat=True)[:50 - len(pool_ids)]
                 )
                 pool_ids.extend(pad_ids)
 
@@ -266,22 +267,30 @@ def generate_barcode(request):
 
     # 3) Register usage with cached counter
     def register_usage(barcode_obj):
-        counter_key = f"{CACHE_PREFIX}:usage:{barcode_obj.id}"
+        # Skip if linked_id is empty, None, or not a valid integer
+        if not barcode_obj.linked_id or barcode_obj.linked_id == '':
+            return
+
+        counter_key = f"{CACHE_PREFIX}:usage:{barcode_obj.linked_id}"
         count = incr_counter(counter_key)
 
         if count == 1 or count >= FLUSH_THRESHOLD:
             # Flush aggregate to BarcodeUsage
-            updated = (
-                BarcodeUsage.objects
-                .filter(barcode_id=barcode_obj.id)
-                .update(total_usage=F("total_usage") + count)
-            )
-            if not updated:
-                BarcodeUsage.objects.create(
-                    barcode_id=barcode_obj.id,
-                    total_usage=count,
+            try:
+                updated = (
+                    BarcodeUsage.objects
+                    .filter(barcode_id=barcode_obj.linked_id)
+                    .update(total_usage=F("total_usage") + count)
                 )
-            cache.set(counter_key, 0, None)  # reset
+                if not updated:
+                    BarcodeUsage.objects.create(
+                        barcode_id=barcode_obj.linked_id,
+                        total_usage=count,
+                    )
+                cache.set(counter_key, 0, None)  # reset
+            except ValueError:
+                # Skip if linked_id cannot be converted to an integer
+                pass
 
 
     # 4) Generate response

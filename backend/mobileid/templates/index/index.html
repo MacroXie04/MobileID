@@ -24,7 +24,7 @@
 
 
         <div style="flex: 1;">
-            <a href="{% url 'mobileid:index' %}">
+            <a href="{% url 'mobileid:web_index' %}">
                 <img src="{% static 'images/ucm3.png' %}" alt="UC Merced Logo" style="height: 60px;"/>
             </a>
         </div>
@@ -56,7 +56,7 @@
         <h4 class="white-h4" style="margin-top: 0.5em; color: white !important;">
             {{ name }} </h4>
 
-        <h4 id="student-id" class="white-h4" style="color: white !important;">
+        <h4 class="white-h4" style="color: white !important;">
             {{ student_id }} </h4>
 
         <!-- Pay/Check-in Button -->
@@ -82,15 +82,15 @@
     <div style="margin: auto; max-width: 320px;">
         <div class="grid-container">
             <!-- First Row -->
-            <a href="{% url 'mobileid:edit_profile' %}" class="btn-grid">
+            <a href="{% url 'mobileid:web_edit_profile' %}" class="btn-grid">
                 <i class="fa fa-credit-card fa-2x"></i>
                 <p>Add Funds</p>
             </a>
-            <a href="{% url 'mobileid:manage_barcode' %}" class="btn-grid">
+            <a href="{% url 'mobileid:web_manage_barcode' %}" class="btn-grid">
                 <i class="fa fa-money-bill fa-2x"></i>
                 <p>Balance</p>
             </a>
-            <a href="{% url 'mobileid:barcode_settings' %}" class="btn-grid">
+            <a href="{% url 'mobileid:web_barcode_settings' %}" class="btn-grid">
                 <i class="fa fa-id-card fa-2x"></i>
                 <p>Lost My Card</p>
             </a>

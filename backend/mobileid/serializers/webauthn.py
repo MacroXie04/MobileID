@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from mobileid.models import StudentInformation
+from mobileid.models import UserProfile
 from django.core.exceptions import ValidationError
 
 
@@ -41,10 +41,10 @@ class RegisterSerializer(serializers.ModelSerializer):
                     username=validated_data['username'],
                     password=validated_data['password']
                 )
-                StudentInformation.objects.create(
+                UserProfile.objects.create(
                     user=user,
                     name=validated_data['name'],
-                    student_id=validated_data['student_id'],
+                    student_id=validated_data['information_id'],
                     user_profile_img=validated_data['user_profile_img']
                 )
                 return user

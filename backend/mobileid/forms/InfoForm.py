@@ -5,7 +5,7 @@ from PIL import Image
 from django import forms
 
 from mobileid.models import (
-    StudentInformation,
+    UserProfile,
     UserBarcodeSettings,
     Barcode,
 )
@@ -22,14 +22,14 @@ class StudentInformationUpdateForm(forms.ModelForm):
     )
 
     class Meta:
-        model = StudentInformation
-        fields = ['name', 'student_id', 'user_profile_img']
+        model = UserProfile
+        fields = ['name', 'information_id', 'user_profile_img']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Full name'
             }),
-            'student_id': forms.TextInput(attrs={
+            'information_id': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Student ID'
             }),
@@ -76,7 +76,7 @@ from PIL import Image
 from django import forms
 
 from mobileid.models import (
-    StudentInformation,
+    UserProfile,
     UserBarcodeSettings,
     Barcode,
 )

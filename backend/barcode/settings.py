@@ -27,14 +27,20 @@ DEBUG = True
 
 # Project API and webapp mode
 # SECURITY WARNING: enable one or both of these flags in production
+# When the API_SERVER is enabled, the django will only serve the API endpoints.
+# The url will not include the /api/ prefix.
+API_SERVER = False
+
+# When API_ENABLED is False, please set the following flags
 API_ENABLED = True
 WEBAPP_ENABLED = True
+
+# Enable django default web admin interface
 WEB_ADMIN = True
 USER_REGISTRATION_ENABLED = True
 
 # Enable selenium web scraping
 SELENIUM_ENABLED = False
-
 
 ALLOWED_HOSTS = ['*']
 
@@ -83,28 +89,44 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-# Allow credentials in CORS requests
-CORS_ALLOW_CREDENTIALS = True
-
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
 ]
+
+# Allow credentials in CORS requests
+CORS_ALLOW_CREDENTIALS = True
+
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the cookie
 
+# Session settings
+SESSION_COOKIE_AGE = 86400  # 1 day in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Session will last until cookie expires
+SESSION_SAVE_EVERY_REQUEST = True  # Refresh the session cookie on every request
+
 # CORS settings
 REST_FRAMEWORK = {
-    # 设置默认的认证类为 JWT 认证
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    # 设置默认的权限，确保在没有认证的情况下无法访问
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day',
+        'registration': '5/day',
+        'barcode_generation': '100/hour',
+        'barcode_management': '50/hour',
+        'user_profile': '20/hour',
+    },
 }
 
 SIMPLE_JWT = {
@@ -170,7 +192,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Los_Angeles'
 
 USE_I18N = True
 
@@ -185,3 +207,7 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Account security settings
+MAX_FAILED_LOGIN_ATTEMPTS = 5  # Maximum number of failed login attempts before locking the account
+ACCOUNT_LOCKOUT_DURATION = 30  # Duration in minutes for which an account should be locked

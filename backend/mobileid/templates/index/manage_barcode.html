@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block title %}
-    Create & Transfer Barcode
+    Create & Manage Barcode
 {% endblock %}
 
 {% block content %}
@@ -71,8 +71,8 @@
             </div>
             <!-- End Barcode Scanner Section -->
 
-            <button type="submit" class="btn btn-primary w-100 py-2">Submit</button>
-            <a href="{% url 'mobileid:index' %}" class="btn btn-secondary w-100 mt-2">Back to Home</a>
+            <button type="submit" class="btn btn-primary w-100 py-2">Add Barcode</button>
+            <a href="{% url 'mobileid:web_index' %}" class="btn btn-secondary w-100 mt-2">Back to Home</a>
         </form>
 
         <!-- Delete-barcode list -->
@@ -83,7 +83,7 @@
             {% for bc in user_barcodes %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     {{ bc }}
-                    <form method="post" action="{% url 'mobileid:delete_barcode' bc.id %}" style="margin:0;">
+                    <form method="post" action="{% url 'mobileid:web_delete_barcode' bc.id %}" style="margin:0;">
                         {% csrf_token %}
                         <button type="submit"
                                 class="btn btn-danger btn-sm"
