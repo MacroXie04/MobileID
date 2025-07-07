@@ -17,8 +17,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
-  faCreditCard, faMoneyBill, faIdCard, faTriangleExclamation,
-  faDumbbell, faInfoCircle, faSignOutAlt,
+    faCreditCard, faMoneyBill, faIdCard, faTriangleExclamation,
+    faDumbbell, faInfoCircle, faSignOutAlt,
 );
 
 /* ------------------------------ State ------------------------------ */
@@ -32,7 +32,7 @@ const progressBar = ref(null);
 
 const buttonDisabled = computed(() => isRequesting.value);
 const buttonLabel = computed(() =>
-  isRequesting.value ? 'Processing' : 'PAY / Check-in',
+    isRequesting.value ? 'Processing' : 'PAY / Check-in',
 );
 
 /* ------------------------------ Fetch profile ---------------------- */
@@ -107,10 +107,10 @@ function logout() {
     <!-- Header -->
     <header class="app-header">
       <div class="logo-container">
-        <img src="@/assets/images/ucm3.png" class="logo" alt="UC Merced Logo"/>
+        <img alt="UC Merced Logo" class="logo" src="@/assets/images/ucm3.png"/>
       </div>
       <div class="logo-container-center">
-        <img src="@/assets/images/mobileid_logo.png" class="logo" alt="MobileID Logo"/>
+        <img alt="MobileID Logo" class="logo" src="@/assets/images/mobileid_logo.png"/>
       </div>
       <div class="logo-container"></div>
     </header>
@@ -119,12 +119,12 @@ function logout() {
     <!-- Profile -->
     <div v-if="user" class="profile-section">
       <img
-        :src="`data:image/png;base64,${user.user_profile_img}`"
-        class="profile-picture"
-        alt="User profile picture"
+          :src="`data:image/png;base64,${user.user_profile_img}`"
+          alt="User profile picture"
+          class="profile-picture"
       />
       <h4 class="white-h4 profile-info">{{ user.name }}</h4>
-      <h4 class="white-h4 profile-info" style="margin-top: 0 !important;">{{ user.student_id }}</h4>
+      <h4 class="white-h4 profile-info" style="margin-top: 0 !important;">{{ user.information_id }}</h4>
 
       <transition name="fade">
         <div v-if="showBarcode" class="barcode-wrapper">
@@ -134,17 +134,17 @@ function logout() {
 
       <transition name="fade">
         <div v-if="showBarcode" class="progress">
-          <div class="progress-bar" ref="progressBar"></div>
+          <div ref="progressBar" class="progress-bar"></div>
         </div>
       </transition>
 
       <transition name="fade">
         <button
-          v-if="!showBarcode"
-          @click="fetchAndShowBarcode"
-          class="btn-trans btn-trans-default"
-          :disabled="buttonDisabled"
-          style="margin-top: 20px"
+            v-if="!showBarcode"
+            :disabled="buttonDisabled"
+            class="btn-trans btn-trans-default"
+            style="margin-top: 20px"
+            @click="fetchAndShowBarcode"
         >
           <b>{{ buttonLabel }}</b>
         </button>
@@ -153,25 +153,25 @@ function logout() {
 
     <!-- Grid -->
     <div class="grid-container">
-      <a href="/profile_edit" class="btn-grid">
+      <a class="btn-grid" href="/profile_edit">
         <FontAwesomeIcon icon="credit-card"/>
         <p>Add Funds</p></a>
-      <a href="/manage_barcode" class="btn-grid">
+      <a class="btn-grid" href="/manage_barcode">
         <FontAwesomeIcon icon="money-bill"/>
         <p>Balance</p></a>
-      <a href="/barcode_settings" class="btn-grid">
+      <a class="btn-grid" href="/barcode_settings">
         <FontAwesomeIcon icon="id-card"/>
         <p>Lost My Card</p></a>
-      <a href="#" class="btn-grid">
+      <a class="btn-grid" href="#">
         <FontAwesomeIcon icon="triangle-exclamation"/>
         <p>{{ serverStatus }}</p></a>
-      <a href="#" class="btn-grid">
+      <a class="btn-grid" href="#">
         <FontAwesomeIcon icon="dumbbell"/>
         <p>Gym</p></a>
-      <a href="#" class="btn-grid">
+      <a class="btn-grid" href="#">
         <FontAwesomeIcon icon="info-circle"/>
         <p>Resources</p></a>
-      <a @click="logout" href="#" class="btn-grid">
+      <a class="btn-grid" href="#" @click="logout">
         <FontAwesomeIcon icon="sign-out-alt"/>
         <p>Log out</p></a>
     </div>

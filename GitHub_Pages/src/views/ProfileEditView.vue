@@ -8,55 +8,55 @@
         {{ successMessage }}
       </div>
 
-      <form @submit.prevent="handleUpdate" novalidate>
+      <form novalidate @submit.prevent="handleUpdate">
         <div class="mb-3 text-center">
-          <img v-if="avatarPreview" :src="avatarPreview" class="avatar-preview mb-2"
-               alt="Avatar Preview">
+          <img v-if="avatarPreview" :src="avatarPreview" alt="Avatar Preview"
+               class="avatar-preview mb-2">
           <div v-if="!imageToCrop">
-            <button type="button" @click="triggerFileInput" class="btn btn-outline-secondary w-100">
+            <button class="btn btn-outline-secondary w-100" type="button" @click="triggerFileInput">
               Change Avatar
             </button>
-            <input type="file" ref="fileInput" @change="onFileChange" accept="image/*"
-                   class="d-none">
+            <input ref="fileInput" accept="image/*" class="d-none" type="file"
+                   @change="onFileChange">
           </div>
         </div>
 
         <div v-if="imageToCrop" class="mb-3">
-          <vue-cropper ref="cropper" :src="imageToCrop" :aspect-ratio="1" view-mode="1"
-                       style="height: 400px;"></vue-cropper>
+          <vue-cropper ref="cropper" :aspect-ratio="1" :src="imageToCrop" style="height: 400px;"
+                       view-mode="1"></vue-cropper>
           <div class="d-flex justify-content-center mt-2">
-            <button type="button" class="btn btn-primary" @click="cropAndSetAvatar">Crop & Use
+            <button class="btn btn-primary" type="button" @click="cropAndSetAvatar">Crop & Use
             </button>
-            <button type="button" class="btn btn-link" @click="cancelCrop">Cancel</button>
+            <button class="btn btn-link" type="button" @click="cancelCrop">Cancel</button>
           </div>
         </div>
 
         <div class="mb-3">
           <label for="username">Username</label>
-          <input type="text" :value="form.username" id="username" class="form-control" disabled>
+          <input id="username" :value="form.username" class="form-control" disabled type="text">
           <small class="form-text text-muted">Username cannot be changed.</small>
         </div>
 
         <div class="mb-3">
           <label for="name">Full Name</label>
-          <input type="text" v-model="form.name" id="name" class="form-control"
-                 :class="{'is-invalid': errors.name}">
+          <input id="name" v-model="form.name" :class="{'is-invalid': errors.name}" class="form-control"
+                 type="text">
           <div v-if="errors.name" class="invalid-feedback">{{ errors.name[0] }}</div>
         </div>
         <div class="mb-3">
           <label for="student_id">Student ID</label>
-          <input type="text" v-model="form.student_id" id="student_id" class="form-control"
-                 :class="{'is-invalid': errors.student_id}">
+          <input id="student_id" v-model="form.student_id" :class="{'is-invalid': errors.student_id}" class="form-control"
+                 type="text">
           <div v-if="errors.student_id" class="invalid-feedback">{{ errors.student_id[0] }}</div>
         </div>
 
         <div v-if="errors.detail" class="alert alert-danger">{{ errors.detail }}</div>
 
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary py-2" :disabled="isSaving">
+          <button :disabled="isSaving" class="btn btn-primary py-2" type="submit">
             {{ isSaving ? 'Saving...' : 'Save Changes' }}
           </button>
-          <router-link to="/" class="btn btn-secondary">Back to Home</router-link>
+          <router-link class="btn btn-secondary" to="/">Back to Home</router-link>
         </div>
       </form>
     </div>

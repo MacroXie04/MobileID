@@ -4,17 +4,17 @@
     <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
       <h3 class="text-center mb-4">Create Account</h3>
 
-      <form @submit.prevent="handleRegister" novalidate>
+      <form novalidate @submit.prevent="handleRegister">
         <div class="mb-3 text-center">
-          <img v-if="avatarPreview" :src="avatarPreview" class="avatar-preview mb-2"
-               alt="Avatar Preview">
+          <img v-if="avatarPreview" :src="avatarPreview" alt="Avatar Preview"
+               class="avatar-preview mb-2">
 
           <div v-if="!imageToCrop">
-            <button type="button" @click="triggerFileInput" class="btn btn-outline-secondary w-100">
+            <button class="btn btn-outline-secondary w-100" type="button" @click="triggerFileInput">
               Select Avatar
             </button>
-            <input type="file" ref="fileInput" @change="onFileChange" accept="image/*"
-                   class="d-none">
+            <input ref="fileInput" accept="image/*" class="d-none" type="file"
+                   @change="onFileChange">
           </div>
 
           <div v-if="errors.user_profile_img" class="invalid-feedback d-block text-start">
@@ -24,44 +24,44 @@
 
         <div v-if="imageToCrop" class="mb-3">
           <vue-cropper
-            ref="cropper"
-            :src="imageToCrop"
-            :aspect-ratio="1"
-            view-mode="1"
-            style="height: 400px;"
+              ref="cropper"
+              :aspect-ratio="1"
+              :src="imageToCrop"
+              style="height: 400px;"
+              view-mode="1"
           ></vue-cropper>
           <div class="d-flex justify-content-center mt-2">
-            <button type="button" class="btn btn-primary" @click="cropAndSetAvatar">Crop & Use
+            <button class="btn btn-primary" type="button" @click="cropAndSetAvatar">Crop & Use
             </button>
-            <button type="button" class="btn btn-link" @click="cancelCrop">Cancel</button>
+            <button class="btn btn-link" type="button" @click="cancelCrop">Cancel</button>
           </div>
         </div>
 
         <div class="mb-3">
           <label for="username">Username</label>
-          <input type="text" v-model="form.username" id="username" class="form-control"
-                 :class="{'is-invalid': errors.username}" placeholder="Enter your username">
+          <input id="username" v-model="form.username" :class="{'is-invalid': errors.username}" class="form-control"
+                 placeholder="Enter your username" type="text">
           <div v-if="errors.username" class="invalid-feedback">{{ errors.username[0] }}</div>
         </div>
 
         <div class="mb-3">
           <label for="name">Full Name</label>
-          <input type="text" v-model="form.name" id="name" class="form-control"
-                 :class="{'is-invalid': errors.name}" placeholder="Full name">
+          <input id="name" v-model="form.name" :class="{'is-invalid': errors.name}" class="form-control"
+                 placeholder="Full name" type="text">
           <div v-if="errors.name" class="invalid-feedback">{{ errors.name[0] }}</div>
         </div>
 
         <div class="mb-3">
           <label for="student_id">Student ID</label>
-          <input type="text" v-model="form.student_id" id="student_id" class="form-control"
-                 :class="{'is-invalid': errors.student_id}" placeholder="Student ID">
+          <input id="student_id" v-model="form.student_id" :class="{'is-invalid': errors.student_id}" class="form-control"
+                 placeholder="Student ID" type="text">
           <div v-if="errors.student_id" class="invalid-feedback">{{ errors.student_id[0] }}</div>
         </div>
 
         <div class="mb-3">
           <label for="password">Password</label>
-          <input type="password" v-model="form.password" id="password" class="form-control"
-                 :class="{'is-invalid': errors.password}" placeholder="Enter password">
+          <input id="password" v-model="form.password" :class="{'is-invalid': errors.password}" class="form-control"
+                 placeholder="Enter password" type="password">
           <div v-if="errors.password" class="invalid-feedback">
             {{ Array.isArray(errors.password) ? errors.password[0] : errors.password }}
           </div>
@@ -77,14 +77,14 @@
 
         <div class="mb-3">
           <label for="password2">Confirm Password</label>
-          <input type="password" v-model="form.password2" id="password2" class="form-control"
-                 :class="{'is-invalid': errors.password2}" placeholder="Confirm password">
+          <input id="password2" v-model="form.password2" :class="{'is-invalid': errors.password2}" class="form-control"
+                 placeholder="Confirm password" type="password">
           <div v-if="errors.password2" class="invalid-feedback">{{ errors.password2[0] }}</div>
         </div>
 
         <div v-if="errors.detail" class="alert alert-danger">{{ errors.detail }}</div>
 
-        <button type="submit" class="btn btn-primary w-100 py-2">Register</button>
+        <button class="btn btn-primary w-100 py-2" type="submit">Register</button>
       </form>
 
       <hr class="my-4"/>

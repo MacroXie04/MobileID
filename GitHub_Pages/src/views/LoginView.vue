@@ -4,22 +4,22 @@
     <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
       <h3 class="text-center mb-4">Login</h3>
 
-      <form @submit.prevent="handleLogin" novalidate>
+      <form novalidate @submit.prevent="handleLogin">
 
         <div v-if="errors.detail" class="alert alert-danger">
           {{ errors.detail }}
         </div>
 
         <div class="mb-3">
-          <label for="username" class="form-label">Username</label>
+          <label class="form-label" for="username">Username</label>
           <input
-            type="text"
-            v-model="username"
-            id="username"
-            placeholder="Enter your username"
-            class="form-control"
-            :class="{ 'is-invalid': errors.username }"
-            required
+              id="username"
+              v-model="username"
+              :class="{ 'is-invalid': errors.username }"
+              class="form-control"
+              placeholder="Enter your username"
+              required
+              type="text"
           />
           <div v-if="errors.username" class="invalid-feedback">
             {{ errors.username[0] }}
@@ -27,22 +27,22 @@
         </div>
 
         <div class="mb-3">
-          <label for="password" class="form-label">Password</label>
+          <label class="form-label" for="password">Password</label>
           <input
-            type="password"
-            v-model="password"
-            id="password"
-            placeholder="Enter your password"
-            class="form-control"
-            :class="{ 'is-invalid': errors.password }"
-            required
+              id="password"
+              v-model="password"
+              :class="{ 'is-invalid': errors.password }"
+              class="form-control"
+              placeholder="Enter your password"
+              required
+              type="password"
           />
           <div v-if="errors.password" class="invalid-feedback">
             {{ errors.password[0] }}
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
+        <button class="btn btn-primary w-100 py-2" type="submit">Login</button>
       </form>
 
       <div class="text-center mt-2">

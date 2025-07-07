@@ -3,24 +3,24 @@
        style="min-height: 80vh;">
     <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
       <h3 class="text-center mb-4">Create & Manage Barcode</h3>
-      <form @submit.prevent="handleSubmit" novalidate>
+      <form novalidate @submit.prevent="handleSubmit">
         <div v-if="errors.non_field_errors" class="alert alert-danger">{{
             errors.non_field_errors[0]
           }}
         </div>
 
         <div class="mb-3">
-          <label for="source_type" class="form-label">Source Type</label>
-          <select v-model="form.source_type" id="source_type" class="form-select">
+          <label class="form-label" for="source_type">Source Type</label>
+          <select id="source_type" v-model="form.source_type" class="form-select">
             <option value="barcode">Barcode</option>
             <option value="session">Session</option>
           </select>
         </div>
 
         <div class="mb-3">
-          <label for="input_value" class="form-label">Input Value</label>
-          <input type="text" v-model="form.input_value" id="input_value" class="form-control"
-                 :class="{'is-invalid': errors.input_value}">
+          <label class="form-label" for="input_value">Input Value</label>
+          <input id="input_value" v-model="form.input_value" :class="{'is-invalid': errors.input_value}" class="form-control"
+                 type="text">
           <div v-if="errors.input_value" class="invalid-feedback">
             {{ Array.isArray(errors.input_value) ? errors.input_value[0] : errors.input_value }}
           </div>
@@ -28,7 +28,7 @@
 
         <!-- Scan Barcode -->
         <div v-if="form.source_type === 'barcode'" class="mb-3">
-          <button type="button" @click="toggleScan" class="btn btn-info w-100 py-2">
+          <button class="btn btn-info w-100 py-2" type="button" @click="toggleScan">
             {{ isScanning ? 'Cancel Scan' : 'Scan CatCard' }}
           </button>
           <div v-show="isScanning" class="video-container mt-2">
@@ -37,10 +37,10 @@
         </div>
 
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary py-2" :disabled="isSubmitting">
+          <button :disabled="isSubmitting" class="btn btn-primary py-2" type="submit">
             {{ isSubmitting ? 'Submitting...' : 'Submit' }}
           </button>
-          <router-link to="/" class="btn btn-secondary">Back to Home</router-link>
+          <router-link class="btn btn-secondary" to="/">Back to Home</router-link>
         </div>
       </form>
 
@@ -54,8 +54,8 @@
             <span>{{ bc.barcode_type }} Barcode Ending With {{
                 bc.barcode.slice(-4)
               }}</span>
-            <button @click="handleDelete(bc.id)" class="btn btn-danger btn-sm"
-                    :disabled="isDeleting === bc.id">
+            <button :disabled="isDeleting === bc.id" class="btn btn-danger btn-sm"
+                    @click="handleDelete(bc.id)">
               {{ isDeleting === bc.id ? '...' : 'Delete' }}
             </button>
           </li>

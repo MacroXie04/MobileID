@@ -11,25 +11,48 @@
         </p>
         <div class="log-details">
           <div class="log-entry"><span class="log-separator">--- Event Details ---</span></div>
-          <div class="log-entry"><span class="log-key">EVENT ID:</span><span class="log-value">{{ userInfo.eventId }}</span></div>
-          <div class="log-entry"><span class="log-key">TIMESTAMP (UTC):</span><span class="log-value">{{ userInfo.timestamp }}</span></div>
-          <div class="log-entry"><span class="log-key">RULE TRIGGERED:</span><span class="log-value">{{ userInfo.rule }}</span></div>
+          <div class="log-entry"><span class="log-key">EVENT ID:</span><span class="log-value">{{
+              userInfo.eventId
+            }}</span></div>
+          <div class="log-entry"><span class="log-key">TIMESTAMP (UTC):</span><span
+              class="log-value">{{ userInfo.timestamp }}</span></div>
+          <div class="log-entry"><span class="log-key">RULE TRIGGERED:</span><span class="log-value">{{
+              userInfo.rule
+            }}</span></div>
 
           <div class="log-entry"><span class="log-separator">--- Network Trace ---</span></div>
-          <div class="log-entry"><span class="log-key">PROTOCOL:</span><span class="log-value">{{ userInfo.protocol }}</span></div>
-          <div class="log-entry"><span class="log-key">IP ADDRESS:</span><span class="log-value">{{ userInfo.ip }}</span></div>
-          <div class="log-entry"><span class="log-key">SOURCE PORT:</span><span class="log-value">{{ userInfo.sourcePort }}</span></div>
-          <div class="log-entry"><span class="log-key">ISP:</span><span class="log-value">{{ userInfo.isp }}</span></div>
+          <div class="log-entry"><span class="log-key">PROTOCOL:</span><span class="log-value">{{
+              userInfo.protocol
+            }}</span></div>
+          <div class="log-entry"><span class="log-key">IP ADDRESS:</span><span class="log-value">{{
+              userInfo.ip
+            }}</span></div>
+          <div class="log-entry"><span class="log-key">SOURCE PORT:</span><span class="log-value">{{
+              userInfo.sourcePort
+            }}</span></div>
+          <div class="log-entry"><span class="log-key">ISP:</span><span class="log-value">{{ userInfo.isp }}</span>
+          </div>
 
           <div class="log-entry"><span class="log-separator">--- Geolocation &amp; Path ---</span></div>
-          <div class="log-entry"><span class="log-key">CITY:</span><span class="log-value">{{ userInfo.city }}</span></div>
-          <div class="log-entry"><span class="log-key">LOCATION:</span><span class="log-value">{{ userInfo.location }}</span></div>
-          <div class="log-entry"><span class="log-key">ATTEMPTED PATH:</span><span class="log-value">{{ userInfo.path }}</span></div>
-          <div class="log-entry"><span class="log-key">REFERER:</span><span class="log-value">{{ userInfo.referer }}</span></div>
+          <div class="log-entry"><span class="log-key">CITY:</span><span class="log-value">{{ userInfo.city }}</span>
+          </div>
+          <div class="log-entry"><span class="log-key">LOCATION:</span><span class="log-value">{{
+              userInfo.location
+            }}</span></div>
+          <div class="log-entry"><span class="log-key">ATTEMPTED PATH:</span><span class="log-value">{{
+              userInfo.path
+            }}</span></div>
+          <div class="log-entry"><span class="log-key">REFERER:</span><span class="log-value">{{
+              userInfo.referer
+            }}</span></div>
 
           <div class="log-entry"><span class="log-separator">--- Client Fingerprint ---</span></div>
-          <div class="log-entry"><span class="log-key">BROWSER:</span><span class="log-value">{{ userInfo.browser }}</span></div>
-          <div class="log-entry"><span class="log-key">DEVICE:</span><span class="log-value">{{ userInfo.device }}</span></div>
+          <div class="log-entry"><span class="log-key">BROWSER:</span><span class="log-value">{{
+              userInfo.browser
+            }}</span></div>
+          <div class="log-entry"><span class="log-key">DEVICE:</span><span class="log-value">{{
+              userInfo.device
+            }}</span></div>
           <div class="log-entry">
             <span class="log-key">USER-AGENT:</span>
             <pre class="log-value ua-formatted">{{ userInfo.userAgent }}</pre>
@@ -41,9 +64,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-import { UAParser } from 'ua-parser-js';
+import {onMounted, ref} from 'vue';
+import {useRoute} from 'vue-router';
+import {UAParser} from 'ua-parser-js';
 
 const userInfo = ref({
   city: 'Resolving...',
