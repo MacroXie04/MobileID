@@ -98,7 +98,7 @@
 
 <script setup>
 import {computed, reactive, ref} from 'vue'; // 引入 computed
-import axios from 'axios';
+import apiClient from '@/api';
 import {useRouter} from 'vue-router';
 import VueCropper from 'vue-cropperjs';
 
@@ -183,7 +183,7 @@ const cancelCrop = () => {
 const handleRegister = async () => {
   errors.value = {};
   try {
-    const response = await axios.post('http://127.0.0.1:8000/api/register/', form);
+    const response = await apiClient.post('api/register/', form);
     const {access, refresh} = response.data.tokens;
     localStorage.setItem('access_token', access);
     localStorage.setItem('refresh_token', refresh);

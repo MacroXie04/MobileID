@@ -57,22 +57,19 @@
 
 <script setup>
 import {ref} from 'vue';
-import axios from 'axios';
+import apiClient from '@/api';
 import {useRouter} from 'vue-router';
-// 导入我们之前创建的 apiClient 实例会更好，但直接用 axios 也可以
-// import apiClient from '@/api';
 
 const username = ref('');
 const password = ref('');
-const errors = ref({}); // 用一个对象来存储所有错误信息
+const errors = ref({});
 const router = useRouter();
 
 const handleLogin = async () => {
-  // 每次提交前，清空之前的错误
   errors.value = {};
 
   try {
-    const response = await axios.post('http://127.0.0.1:8000/api/token/', {
+    const response = await apiClient.post('token/', {
       username: username.value,
       password: password.value,
     });
@@ -80,17 +77,13 @@ const handleLogin = async () => {
     localStorage.setItem('access_token', response.data.access);
     localStorage.setItem('refresh_token', response.data.refresh);
 
-    // 登录成功后，可以重定向到首页或设置全局认证状态
-    // 为了看到效果，我们先跳转到首页
     await router.push('/');
 
   } catch (err) {
     if (err.response && (err.response.status === 400 || err.response.status === 401)) {
-      // 将后端返回的错误信息直接赋值给 errors ref
-      // Django REST Framework 返回的错误格式正是 { "field_name": ["error message"], ... }
+
       errors.value = err.response.data;
     } else {
-      // 处理网络错误或其他未知错误
       errors.value = {detail: 'An unexpected error occurred. Please try again.'};
     }
     console.error(err);
@@ -99,9 +92,7 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* 我们可以保留一些微调样式，但大部分样式应来自 Bootstrap */
 .invalid-feedback {
-  /* 确保错误信息总是可见的，因为 Vue 的 v-if 已经控制了它的出现 */
   display: block;
 }
 </style>
