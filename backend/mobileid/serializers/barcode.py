@@ -22,7 +22,7 @@ from barcode.settings import SELENIUM_ENABLED
 class BarcodeListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Barcode
-        fields = ['information_id', 'barcode_type', 'barcode', 'linked_id']
+        fields = ['id', 'barcode_type', 'barcode', 'linked_id']
 
 
 class BarcodeCreateSerializer(serializers.Serializer):
@@ -52,7 +52,7 @@ class BarcodeCreateSerializer(serializers.Serializer):
             barcode_value = input_val if len(input_val) == 16 else input_val[-14:]
 
             barcode_obj = Barcode.objects.create(
-                user=user, barcode_type=barcode_type, barcode=barcode_value, student_id=""
+                user=user, barcode_type=barcode_type, barcode=barcode_value, linked_id=""
             )
 
         elif src_type == "session":
@@ -66,7 +66,7 @@ class BarcodeCreateSerializer(serializers.Serializer):
 
             barcode_obj, created = Barcode.objects.get_or_create(
                 barcode=code,
-                defaults={"user": user, "barcode_type": "Dynamic", "session": input_val, "information_id": ""}
+                defaults={"user": user, "barcode_type": "Dynamic", "session": input_val, "linked_id": ""}
             )
             if not created:
                 barcode_obj.user = user
@@ -79,4 +79,3 @@ class BarcodeCreateSerializer(serializers.Serializer):
         BarcodeUsage.objects.get_or_create(barcode=barcode_obj)
 
         return barcode_obj
-
