@@ -12,32 +12,37 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-0v9=&%=3o=#dh8)ldx98lj8jg!b-y+pbnwb!5!y^nytw&md!5b'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 # Project API and webapp mode
 # SECURITY WARNING: enable one or both of these flags in production
 # When the API_SERVER is enabled, the django will only serve the API endpoints.
 # The url will not include the /api/ prefix.
-API_SERVER = False
+API_SERVER = True
 
 # When API_ENABLED is False, please set the following flags
 API_ENABLED = True
-WEBAPP_ENABLED = True
+WEBAPP_ENABLED = False
 
 # Enable django default web admin interface
 WEB_ADMIN = True
-USER_REGISTRATION_ENABLED = True
+USER_REGISTRATION_ENABLED = False
 
 # Enable selenium web scraping
 SELENIUM_ENABLED = False

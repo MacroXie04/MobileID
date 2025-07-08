@@ -22,7 +22,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             'username',
             'name',
-            'student_id',
+            'information_id',
             'user_profile_img'
         ]
         read_only_fields = ['username']
