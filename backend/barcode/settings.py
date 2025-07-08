@@ -42,7 +42,7 @@ WEBAPP_ENABLED = False
 
 # Enable django default web admin interface
 WEB_ADMIN = True
-USER_REGISTRATION_ENABLED = False
+USER_REGISTRATION_ENABLED = True
 
 # Enable selenium web scraping
 SELENIUM_ENABLED = False
@@ -127,6 +127,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/day',
         'user': '1000/day',
+        'login': '5/minute',
         'registration': '5/day',
         'barcode_generation': '100/hour',
         'barcode_management': '50/hour',

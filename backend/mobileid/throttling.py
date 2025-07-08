@@ -1,5 +1,12 @@
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
+class LoginRateThrottle(AnonRateThrottle):
+    """
+    Throttle for login endpoint to prevent brute force attacks.
+    Limits anonymous users to 5 login attempts per minute.
+    """
+    scope = 'login'
+
 class RegistrationRateThrottle(AnonRateThrottle):
     """
     Throttle for registration endpoint to prevent abuse.

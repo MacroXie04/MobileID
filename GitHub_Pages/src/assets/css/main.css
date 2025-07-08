@@ -12,9 +12,9 @@ body {
 
 .white-h4 {
     color: #fff !important;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 1px;
+    font-family: inherit;
+    font-weight: 500;
+    line-height: 1.1;
 }
 
 .grid-container {

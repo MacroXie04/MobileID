@@ -6,8 +6,17 @@
 
       <form novalidate @submit.prevent="handleLogin">
 
-        <div v-if="errors.detail" class="alert alert-danger">
+        <div v-if="errors.detail && !errors.is_locked && !errors.failed_attempts" class="alert alert-danger">
           {{ errors.detail }}
+        </div>
+
+        <div v-if="errors.failed_attempts && !errors.is_locked" class="alert alert-warning">
+          Warning: {{ errors.failed_attempts }} failed login attempts. 
+          {{ errors.attempts_remaining }} attempts remaining before your account is locked.
+        </div>
+
+        <div v-if="errors.is_locked" class="alert alert-danger">
+          Your account is locked. Please try again later.
         </div>
 
         <div class="mb-3">

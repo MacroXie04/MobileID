@@ -20,6 +20,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/day',
         'user': '1000/day',
+        'login': '5/minute',
         'registration': '5/day',
         'barcode_generation': '100/hour',
         'barcode_management': '50/hour',
@@ -32,19 +33,21 @@ REST_FRAMEWORK = {
 
 Custom throttle classes are defined in `backend/mobileid/throttling.py`:
 
-1. `RegistrationRateThrottle` - Limits anonymous users to 5 registration attempts per day
-2. `BarcodeGenerationRateThrottle` - Limits authenticated users to 100 barcode generation requests per hour
-3. `BarcodeManagementRateThrottle` - Limits authenticated users to 50 barcode management requests per hour
-4. `UserProfileRateThrottle` - Limits authenticated users to 20 profile update requests per hour
+1. `LoginRateThrottle` - Limits anonymous users to 5 login attempts per minute
+2. `RegistrationRateThrottle` - Limits anonymous users to 5 registration attempts per day
+3. `BarcodeGenerationRateThrottle` - Limits authenticated users to 100 barcode generation requests per hour
+4. `BarcodeManagementRateThrottle` - Limits authenticated users to 50 barcode management requests per hour
+5. `UserProfileRateThrottle` - Limits authenticated users to 20 profile update requests per hour
 
 ## Applied Rate Limits
 
 The following API endpoints have rate limiting applied:
 
-1. Registration endpoint (`RegisterAPIView`) - Limited to 5 requests per day per IP address
-2. Barcode generation endpoint (`GenerateBarcodeView`) - Limited to 100 requests per hour per user
-3. Barcode management endpoints (`BarcodeListCreateAPIView`, `BarcodeDestroyAPIView`) - Limited to 50 requests per hour per user
-4. User profile endpoints (`UserProfileAPIView`, `BarcodeSettingsAPIView`) - Limited to 20 requests per hour per user
+1. Login endpoint (`ThrottledTokenObtainPairView`) - Limited to 5 requests per minute per IP address
+2. Registration endpoint (`RegisterAPIView`) - Limited to 5 requests per day per IP address
+3. Barcode generation endpoint (`GenerateBarcodeView`) - Limited to 100 requests per hour per user
+4. Barcode management endpoints (`BarcodeListCreateAPIView`, `BarcodeDestroyAPIView`) - Limited to 50 requests per hour per user
+5. User profile endpoints (`UserProfileAPIView`, `BarcodeSettingsAPIView`) - Limited to 20 requests per hour per user
 
 ## Testing Rate Limiting
 

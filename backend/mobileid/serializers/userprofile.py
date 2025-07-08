@@ -6,33 +6,35 @@ from rest_framework import (
 from mobileid.models import (
     Barcode,
     UserBarcodeSettings,
+    UserProfile,
 )
 from .barcode import BarcodeListSerializer
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source='studentinformation.name', required=False, allow_blank=False)
-    student_id = serializers.CharField(source='studentinformation.information_id', required=False, allow_blank=False)
+class StudentInformationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['name', 'information_id', 'user_profile_img']
 
-    user_profile_img = serializers.CharField(source='studentinformation.user_profile_img', required=False,
-                                             allow_blank=False)
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    userprofile = StudentInformationSerializer()
 
     class Meta:
         model = User
-        fields = [
-            'username',
-            'name',
-            'student_id',
-            'user_profile_img'
-        ]
+        fields = ['username', 'userprofile']
         read_only_fields = ['username']
 
     def update(self, instance, validated_data):
-        info_data = validated_data.pop('studentinformation', {})
-        student_info = instance.studentinformation
-        student_info.name = info_data.get('name', student_info.name)
-        student_info.information_id = info_data.get('information_id', student_info.information_id)
-        student_info.user_profile_img = info_data.get('user_profile_img', student_info.user_profile_img)
+        info_data = validated_data.pop('userprofile', {})
+
+        student_info = getattr(instance, 'userprofile', None)
+        if not student_info:
+            student_info = UserProfile.objects.create(user=instance)
+
+        for attr in ['name', 'information_id', 'user_profile_img']:
+            if attr in info_data:
+                setattr(student_info, attr, info_data[attr])
         student_info.save()
 
         return super().update(instance, validated_data)
