@@ -6,15 +6,15 @@
 
       <div v-if="isLoading" class="text-center">Loading...</div>
 
-      <form v-else @submit.prevent="handleSubmit" novalidate>
+      <form v-else novalidate @submit.prevent="handleSubmit">
         <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
 
         <div v-if="errors.detail" class="alert alert-danger">{{ errors.detail }}</div>
 
         <div class="mb-3">
-          <label for="barcode_pull" class="form-label">Enable Barcode Pull</label>
-          <select v-model="settings.barcode_pull" id="barcode_pull" class="form-select"
-                  :disabled="isPullDisabled">
+          <label class="form-label" for="barcode_pull">Enable Barcode Pull</label>
+          <select id="barcode_pull" v-model="settings.barcode_pull" :disabled="isPullDisabled"
+                  class="form-select">
             <option :value="true">Yes</option>
             <option :value="false">No</option>
           </select>
@@ -23,9 +23,9 @@
         </div>
 
         <div class="mb-3">
-          <label for="barcode" class="form-label">Active Barcode</label>
-          <select v-model="settings.barcode" id="barcode" class="form-select"
-                  :disabled="isBarcodeSelectDisabled" :class="{'is-invalid': errors.barcode}">
+          <label class="form-label" for="barcode">Active Barcode</label>
+          <select id="barcode" v-model="settings.barcode" :class="{'is-invalid': errors.barcode}"
+                  :disabled="isBarcodeSelectDisabled" class="form-select">
             <option :value="null">-- None --</option>
             <option v-for="bc in availableBarcodes" :key="bc.id" :value="bc.id">
               {{ bc.barcode_type }} ending with **{{ bc.barcode.slice(-4) }}**
@@ -37,8 +37,8 @@
         </div>
 
         <div class="mb-3">
-          <label for="server_verification" class="form-label">Server Verification</label>
-          <select v-model="settings.server_verification" id="server_verification"
+          <label class="form-label" for="server_verification">Server Verification</label>
+          <select id="server_verification" v-model="settings.server_verification"
                   class="form-select">
             <option :value="true">Yes</option>
             <option :value="false">No</option>
@@ -46,8 +46,8 @@
         </div>
 
         <div class="mb-4">
-          <label for="timestamp_verification" class="form-label">Timestamp Verification</label>
-          <select v-model="settings.timestamp_verification" id="timestamp_verification"
+          <label class="form-label" for="timestamp_verification">Timestamp Verification</label>
+          <select id="timestamp_verification" v-model="settings.timestamp_verification"
                   class="form-select">
             <option :value="true">Yes</option>
             <option :value="false">No</option>
@@ -55,10 +55,10 @@
         </div>
 
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary w-100 py-2" :disabled="isSubmitting">
+          <button :disabled="isSubmitting" class="btn btn-primary w-100 py-2" type="submit">
             {{ isSubmitting ? 'Saving...' : 'Save Settings' }}
           </button>
-          <router-link to="/" class="btn btn-secondary">Back to Home</router-link>
+          <router-link class="btn btn-secondary" to="/">Back to Home</router-link>
         </div>
       </form>
     </div>
@@ -95,7 +95,7 @@ const fetchSettings = async () => {
     Object.assign(settings, data);
     availableBarcodes.value = data.available_barcodes;
 
-    // 如果用户没有 barcode，强制开启 pull
+    // if there are no available barcodes, enable barcode pull by default
     if (hasNoBarcodes.value) {
       settings.barcode_pull = true;
     }

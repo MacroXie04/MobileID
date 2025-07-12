@@ -12,35 +12,40 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-0v9=&%=3o=#dh8)ldx98lj8jg!b-y+pbnwb!5!y^nytw&md!5b'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-development-key-change-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 # Project API and webapp mode
 # SECURITY WARNING: enable one or both of these flags in production
 # When the API_SERVER is enabled, the django will only serve the API endpoints.
 # The url will not include the /api/ prefix.
-API_SERVER = False
+API_SERVER = os.getenv('API_SERVER', 'False').lower() == 'true'
 
 # When API_ENABLED is False, please set the following flags
-API_ENABLED = True
-WEBAPP_ENABLED = True
+API_ENABLED = os.getenv('API_ENABLED', 'True').lower() == 'true'
+WEBAPP_ENABLED = os.getenv('WEBAPP_ENABLED', 'True').lower() == 'true'
 
 # Enable django default web admin interface
-WEB_ADMIN = True
-USER_REGISTRATION_ENABLED = True
+WEB_ADMIN = os.getenv('WEB_ADMIN', 'True').lower() == 'true'
+USER_REGISTRATION_ENABLED = os.getenv('USER_REGISTRATION_ENABLED', 'True').lower() == 'true'
 
 # Enable selenium web scraping
-SELENIUM_ENABLED = False
+SELENIUM_ENABLED = os.getenv('SELENIUM_ENABLED', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = ['*']
 
@@ -80,6 +85,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    # Custom middleware for user status check
+    'mobileid.middleware.UserStatusMiddleware',
 ]
 
 # URL configuration
@@ -122,6 +130,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/day',
         'user': '1000/day',
+        'login': '5/minute',
         'registration': '5/day',
         'barcode_generation': '100/hour',
         'barcode_management': '50/hour',

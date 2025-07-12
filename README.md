@@ -1,125 +1,332 @@
 # Barcode Manager
 
-This is a full-stack web application for managing barcodes. The backend is built with Django and the frontend is built with Vue.js.
+A powerful full-stack barcode management application with barcode generation, user authentication, profile management, and more. Built with Django backend and Vue.js frontend.
+
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [API Documentation](#api-documentation)
+- [Deployment Guide](#deployment-guide)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
-*   **Barcode Generation:** Create and manage barcodes.
-*   **User Authentication:** Secure user authentication system with WebAuthn support.
-*   **User Profile Management:** Users can edit their profiles.
-*   **Style Selection:** Users can choose different styles for the UI.
-*   **API:** A RESTful API for interacting with the backend.
+### User Authentication
+- **WebAuthn Support**: Modern biometric and hardware key authentication
+- **Secure Login**: Brute force protection with login attempt limiting
+- **Session Management**: Secure user session handling
+
+### Barcode Management
+- **Multiple Formats**: Support for PDF417, Code128, QR Code, and more
+- **Batch Generation**: Create and manage barcodes in bulk
+- **Barcode Preview**: Real-time preview of generated barcodes
+- **Export Functionality**: Export barcode images
+
+### User Management
+- **Profile Management**: Users can edit and manage personal information
+- **Settings Management**: Personalized application settings and preferences
+- **Access Control**: Role-based access control
+
+### Interface Design
+- **Responsive Design**: Adapts to desktop and mobile devices
+- **Theme Switching**: Support for multiple UI themes
+- **Modern Interface**: Built with Bootstrap and Font Awesome icons
 
 ## Tech Stack
 
-### Backend
+### Backend Technologies
+- **[Django 4.x](https://www.djangoproject.com/)**: Powerful Python web framework
+- **[Django REST Framework](https://www.django-rest-framework.org/)**: Building RESTful APIs
+- **[Django-cors-headers](https://github.com/adamchainz/django-cors-headers)**: Handling CORS requests
+- **[WebAuthn](https://pypi.org/project/webauthn/)**: Modern web authentication standard
+- **[PostgreSQL](https://www.postgresql.org/)**: Enterprise-grade relational database
 
-*   [Django](https://www.djangoproject.com/)
-*   [Django REST Framework](https://www.django-rest-framework.org/)
-*   [Django-cors-headers](https://github.com/adamchainz/django-cors-headers)
-*   [WebAuthn](https://pypi.org/project/webauthn/)
-*   [PostgreSQL](https://www.postgresql.org/)
+### Frontend Technologies
+- **[Vue.js 3](https://vuejs.org/)**: Progressive JavaScript framework
+- **[Vue Router](https://router.vuejs.org/)**: Official router for Vue.js
+- **[Vite](https://vitejs.dev/)**: Next-generation frontend build tool
+- **[Axios](https://axios-http.com/)**: HTTP client library
+- **[Bootstrap 5](https://getbootstrap.com/)**: CSS framework
+- **[Font Awesome](https://fontawesome.com/)**: Icon library
 
-### Frontend
-
-*   [Vue.js](https://vuejs.org/)
-*   [Vue Router](https://router.vuejs.org/)
-*   [Vite](https://vitejs.dev/)
-*   [Axios](https://axios-http.com/)
-*   [Bootstrap](https://getbootstrap.com/)
-*   [Font Awesome](https://fontawesome.com/)
-
-## Getting Started
+## Quick Start
 
 ### Prerequisites
 
-*   Python 3.10+
-*   Node.js 20.x
-*   PostgreSQL
+- **Python**: 3.10 or higher
+- **Node.js**: 20.x or higher
+- **PostgreSQL**: 12 or higher
+- **Git**: For version control
 
 ### Backend Setup
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/your-username/Barcode_Manager.git
-    cd Barcode_Manager/backend
-    ```
-2.  Create a virtual environment and activate it:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate
-    ```
-3.  Install the dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-4.  Set up the database:
-    *   Create a PostgreSQL database.
-    *   Copy the `.env.example` file to `.env` and update the database credentials.
-5.  Run the database migrations:
-    ```bash
-    python manage.py migrate
-    ```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/Barcode_Manager.git
+   cd Barcode_Manager/backend
+   ```
+
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/macOS
+   # or
+   venv\Scripts\activate     # Windows
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure database**
+   ```bash
+   # Create PostgreSQL database
+   createdb barcode_manager
+   
+   # Copy environment configuration file
+   cp .env.example .env
+   # Edit .env file and update database connection details
+   ```
+
+5. **Run database migrations**
+   ```bash
+   python manage.py migrate
+   ```
+
+6. **Create superuser** (optional)
+   ```bash
+   python manage.py createsuperuser
+   ```
 
 ### Frontend Setup
 
-1.  Navigate to the frontend directory:
-    ```bash
-    cd ../GitHub_Pages
-    ```
-2.  Install the dependencies:
-    ```bash
-    npm install
-    ```
+1. **Navigate to frontend directory**
+   ```bash
+   cd ../GitHub_Pages
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
 ## Running the Application
 
-### Backend
+### Start Backend Server
 
-To run the backend server, run the following command from the `backend` directory:
+Run from the `backend` directory:
 
 ```bash
 python manage.py runserver
 ```
 
-The backend server will be running at `http://127.0.0.1:8000`.
+Backend server will be running at `http://127.0.0.1:8000`
 
-### Frontend
+### Start Frontend Server
 
-To run the frontend development server, run the following command from the `GitHub_Pages` directory:
+Run from the `GitHub_Pages` directory:
 
 ```bash
 npm run dev
 ```
 
-The frontend development server will be running at `http://localhost:5173`.
+Frontend development server will be running at `http://localhost:5173`
 
-## Running Tests
-
-### Backend
-
-To run the backend tests, run the following command from the `backend` directory:
+### Production Build
 
 ```bash
+npm run build
+```
+
+## Project Structure
+
+```
+Barcode_Manager/
+├── backend/                 # Django backend
+│   ├── barcode/            # Django project configuration
+│   ├── mobileid/           # Main application
+│   │   ├── api/            # API views
+│   │   ├── forms/          # Form definitions
+│   │   ├── models.py       # Data models
+│   │   ├── serializers/    # API serializers
+│   │   ├── static/         # Static files
+│   │   ├── templates/      # HTML templates
+│   │   └── views/          # View functions
+│   └── requirements.txt    # Python dependencies
+├── GitHub_Pages/           # Vue.js frontend
+│   ├── src/
+│   │   ├── views/          # Page components
+│   │   ├── router/         # Route configuration
+│   │   └── assets/         # Static assets
+│   └── package.json        # Node.js dependencies
+└── README.md              # Project documentation
+```
+
+## 📚 API Documentation
+
+### Authentication API
+
+#### User Registration
+```http
+POST /api/auth/register/
+Content-Type: application/json
+
+{
+  "username": "user@example.com",
+  "password": "secure_password"
+}
+```
+
+#### User Login
+```http
+POST /api/auth/login/
+Content-Type: application/json
+
+{
+  "username": "user@example.com",
+  "password": "secure_password"
+}
+```
+
+### Barcode API
+
+#### Generate Barcode
+```http
+POST /api/barcode/generate/
+Content-Type: application/json
+
+{
+  "content": "123456789",
+  "format": "PDF417",
+  "width": 300,
+  "height": 100
+}
+```
+
+#### Get Barcode List
+```http
+GET /api/barcode/list/
+Authorization: Bearer <token>
+```
+
+### User API
+
+#### Get User Profile
+```http
+GET /api/user/profile/
+Authorization: Bearer <token>
+```
+
+#### Update User Profile
+```http
+PUT /api/user/profile/
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john.doe@example.com"
+}
+```
+
+## 🧪 Testing
+
+### Backend Testing
+
+```bash
+cd backend
 pytest
 ```
 
-### Frontend
-
-To run the frontend tests, run the following command from the `GitHub_Pages` directory:
+### Frontend Testing
 
 ```bash
+cd GitHub_Pages
 npm run test
 ```
 
-## Deployment
+### Code Quality Checks
 
-The frontend is automatically deployed to GitHub Pages whenever changes are pushed to the `main` branch. The backend needs to be deployed manually.
+```bash
+# Backend
+cd backend
+flake8 .
+black .
 
-## Contributing
+# Frontend
+cd GitHub_Pages
+npm run lint
+```
 
-Contributions are welcome! Please open an issue or submit a pull request.
+## 🚀 Deployment Guide
+
+### Frontend Deployment
+
+The project is configured for automatic GitHub Pages deployment:
+
+1. Push code to the `main` branch
+2. GitHub Actions will automatically build and deploy to GitHub Pages
+3. Access at `https://your-username.github.io/Barcode_Manager`
+
+### Backend Deployment
+
+Recommended deployment methods:
+
+1. **Docker Deployment**
+   ```bash
+   docker build -t barcode-manager .
+   docker run -p 8000:8000 barcode-manager
+   ```
+
+2. **Traditional Deployment**
+   - Use Gunicorn as WSGI server
+   - Configure Nginx as reverse proxy
+   - Set environment variables and database connections
+
+## 🤝 Contributing
+
+We welcome all forms of contributions!
+
+### Contribution Process
+
+1. **Fork the project**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. **Commit your changes**
+   ```bash
+   git commit -m 'Add some amazing feature'
+   ```
+4. **Push to the branch**
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+5. **Create a Pull Request**
+
+### Development Standards
+
+- Follow PEP 8 Python code standards
+- Use ESLint for JavaScript code checking
+- Write test cases for new features
+- Update relevant documentation
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contact Us
+
+- **Project Homepage**: [GitHub Repository](https://github.com/your-username/Barcode_Manager)
+- **Issue Reports**: [Issues](https://github.com/your-username/Barcode_Manager/issues)
+- **Feature Requests**: [Discussions](https://github.com/your-username/Barcode_Manager/discussions)
+
+---
+
+⭐ If this project helps you, please give us a star!

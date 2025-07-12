@@ -14,12 +14,14 @@ from mobileid.api import (
     webauthn_api,
     user_api,
     barcode_api,
+    auth_api,
 )
 from mobileid.views import (
     webauthn,
     index,
     barcode,
     change_info,
+    account_disabled,
 )
 
 app_name = "mobileid"
@@ -30,7 +32,7 @@ if API_SERVER:
     urlpatterns += [
         # urlpatterns
         # JWT webauthn api
-        path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+        path('token/', auth_api.ThrottledTokenObtainPairView.as_view(), name='token_obtain_pair'),
         path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
         path('me/', user_api.UserProfileAPIView.as_view(), name='api_user_profile'),
@@ -45,14 +47,14 @@ if API_SERVER:
 
     if USER_REGISTRATION_ENABLED:
         urlpatterns += [
-            path("api/register/", webauthn_api.RegisterAPIView.as_view(), name="api_register"),
+            path("register/", webauthn_api.RegisterAPIView.as_view(), name="api_register"),
         ]
 
 else:
     if API_ENABLED:
         urlpatterns += [
             # JWT webauthn api
-            path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+            path('api/token/', auth_api.ThrottledTokenObtainPairView.as_view(), name='token_obtain_pair'),
             path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
             path('api/me/', user_api.UserProfileAPIView.as_view(), name='api_user_profile'),
@@ -97,3 +99,8 @@ else:
                 # webauthn registration
                 path("register/", webauthn.web_register, name="web_register"),
             ]
+        
+# Account disabled page
+urlpatterns += [
+    path("account-disabled/", account_disabled.account_disabled, name="account_disabled"),
+]

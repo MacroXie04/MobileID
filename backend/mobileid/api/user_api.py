@@ -5,8 +5,10 @@ from rest_framework.permissions import IsAuthenticated
 
 from mobileid.throttling import UserProfileRateThrottle
 
-from mobileid.serializers.userprofile import UserBarcodeSettingsSerializer
-from mobileid.serializers.userprofile import UserProfileSerializer
+from mobileid.serializers.userprofile import (
+    UserBarcodeSettingsSerializer,
+    UserProfileSerializer,
+)
 
 from mobileid.models import UserBarcodeSettings
 

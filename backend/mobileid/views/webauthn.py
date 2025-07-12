@@ -26,9 +26,7 @@ def web_register(request):
 
         if form.is_valid():
             user = form.save()
-            login(request, user)
-            messages.success(request, "Registration successful!")
-            return redirect("mobileid:index")
+            return redirect("mobileid:web_login")
         else:
             messages.error(request, "Please correct the errors below.")
     else:
@@ -69,6 +67,11 @@ def web_login(request):
                 # Attempt authentication
                 user = authenticate(request, username=username, password=password)
                 if user is not None:
+                    # Check if user is active
+                    if not user.is_active:
+                        form.add_error(None, "Your account is currently disabled.")
+                        return render(request, 'webauthn/login.html', {'form': form})
+                    
                     # Reset failed login attempts on successful login
                     user_profile.failed_login_attempts = 0
                     user_profile.save()

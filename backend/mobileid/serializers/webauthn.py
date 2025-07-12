@@ -8,13 +8,13 @@ from django.core.exceptions import ValidationError
 
 class RegisterSerializer(serializers.ModelSerializer):
     name = serializers.CharField(write_only=True, required=True, max_length=100)
-    student_id = serializers.CharField(write_only=True, required=True, max_length=100)
+    information_id = serializers.CharField(write_only=True, required=True, max_length=100)
     user_profile_img = serializers.CharField(write_only=True, required=True)
     password2 = serializers.CharField(write_only=True, required=True, label="Confirm Password")
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'password2', 'name', 'student_id', 'user_profile_img']
+        fields = ['username', 'password', 'password2', 'name', 'information_id', 'user_profile_img']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -39,12 +39,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             with transaction.atomic():
                 user = User.objects.create_user(
                     username=validated_data['username'],
-                    password=validated_data['password']
+                    password=validated_data['password'],
+                    # new user is not active
+                    is_active=False
                 )
                 UserProfile.objects.create(
                     user=user,
                     name=validated_data['name'],
-                    student_id=validated_data['information_id'],
+                    information_id=validated_data['information_id'],
                     user_profile_img=validated_data['user_profile_img']
                 )
                 return user

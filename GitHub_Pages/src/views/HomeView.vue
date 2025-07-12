@@ -17,8 +17,13 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
-  faCreditCard, faMoneyBill, faIdCard, faTriangleExclamation,
-  faDumbbell, faInfoCircle, faSignOutAlt,
+    faCreditCard,
+    faMoneyBill,
+    faIdCard,
+    faTriangleExclamation,
+    faDumbbell,
+    faInfoCircle,
+    faSignOutAlt,
 );
 
 /* ------------------------------ State ------------------------------ */
@@ -32,14 +37,20 @@ const progressBar = ref(null);
 
 const buttonDisabled = computed(() => isRequesting.value);
 const buttonLabel = computed(() =>
-  isRequesting.value ? 'Processing' : 'PAY / Check-in',
+    isRequesting.value ? 'Processing' : 'PAY / Check-in',
 );
 
 /* ------------------------------ Fetch profile ---------------------- */
 onMounted(async () => {
   try {
     const {data} = await apiClient.get('/me/');
-    user.value = data;
+    console.log('User profile fetched:', data);
+    // provide default values if userprofile is not found
+    user.value = data.userprofile || {
+      name: 'Unknown User',
+      information_id: 'N/A',
+      user_profile_img: ''
+    };
   } catch (err) {
     console.error('Fetch profile failed:', err);
     if (err.response?.status === 401) logout();
@@ -69,13 +80,14 @@ async function fetchAndShowBarcode() {
       backgroundcolor: 'FFFFFF',
     });
 
+    // 进度条动画：10 秒归零
     progressBar.value.style.transition = 'none';
     progressBar.value.style.width = '100%';
     requestAnimationFrame(() => {
       progressBar.value.style.transition = 'width 10s linear';
       progressBar.value.style.width = '0%';
     });
-    setTimeout(resetDisplay, 10400);
+    setTimeout(resetDisplay, 10_400);
 
     serverStatus.value = data.content || 'OK';
   } catch (err) {
@@ -107,24 +119,27 @@ function logout() {
     <!-- Header -->
     <header class="app-header">
       <div class="logo-container">
-        <img src="@/assets/images/ucm3.png" class="logo" alt="UC Merced Logo"/>
+        <img alt="UC Merced Logo" class="logo" src="@/assets/images/ucm3.png"/>
       </div>
       <div class="logo-container-center">
-        <img src="@/assets/images/mobileid_logo.png" class="logo" alt="MobileID Logo"/>
+        <img alt="MobileID Logo" class="logo" src="@/assets/images/mobileid_logo.png"/>
       </div>
-      <div class="logo-container"></div>
+      <div class="logo-container"/>
     </header>
-    <div class="header-divider"></div>
+    <div class="header-divider"/>
 
-    <!-- Profile -->
+    <!-- Profile information -->
     <div v-if="user" class="profile-section">
-      <img
-        :src="`data:image/png;base64,${user.user_profile_img}`"
-        class="profile-picture"
-        alt="User profile picture"
-      />
-      <h4 class="white-h4 profile-info">{{ user.name }}</h4>
-      <h4 class="white-h4 profile-info" style="margin-top: 0 !important;">{{ user.student_id }}</h4>
+      <a href="/profile_edit">
+        <img
+            :src="`data:image/png;base64,${user.user_profile_img}`"
+            class="profile-picture"
+            alt="User profile picture"
+        />
+      </a>
+
+      <h4 class="white-h4" style="padding-top: 10px">{{ user.name }}</h4>
+      <h4 id="student-id" class="white-h4">{{ user.information_id }}</h4>
 
       <transition name="fade">
         <div v-if="showBarcode" class="barcode-wrapper">
@@ -134,17 +149,17 @@ function logout() {
 
       <transition name="fade">
         <div v-if="showBarcode" class="progress">
-          <div class="progress-bar" ref="progressBar"></div>
+          <div ref="progressBar" class="progress-bar"></div>
         </div>
       </transition>
 
       <transition name="fade">
         <button
-          v-if="!showBarcode"
-          @click="fetchAndShowBarcode"
-          class="btn-trans btn-trans-default"
-          :disabled="buttonDisabled"
-          style="margin-top: 20px"
+            v-if="!showBarcode"
+            :disabled="buttonDisabled"
+            class="btn-trans btn-trans-default"
+            style="margin-top: 10px"
+            @click="fetchAndShowBarcode"
         >
           <b>{{ buttonLabel }}</b>
         </button>
@@ -153,27 +168,34 @@ function logout() {
 
     <!-- Grid -->
     <div class="grid-container">
-      <a href="/profile_edit" class="btn-grid">
+      <a class="btn-grid" href="/profile_edit">
         <FontAwesomeIcon icon="credit-card"/>
-        <p>Add Funds</p></a>
-      <a href="/manage_barcode" class="btn-grid">
+        <p>Add Funds</p>
+      </a>
+      <a class="btn-grid" href="/manage_barcode">
         <FontAwesomeIcon icon="money-bill"/>
-        <p>Balance</p></a>
-      <a href="/barcode_settings" class="btn-grid">
+        <p>Balance</p>
+      </a>
+      <a class="btn-grid" href="/barcode_settings">
         <FontAwesomeIcon icon="id-card"/>
-        <p>Lost My Card</p></a>
-      <a href="#" class="btn-grid">
+        <p>Lost My Card</p>
+      </a>
+      <a class="btn-grid" href="#">
         <FontAwesomeIcon icon="triangle-exclamation"/>
-        <p>{{ serverStatus }}</p></a>
-      <a href="#" class="btn-grid">
+        <p>{{ serverStatus }}</p>
+      </a>
+      <a class="btn-grid" href="#">
         <FontAwesomeIcon icon="dumbbell"/>
-        <p>Gym</p></a>
-      <a href="#" class="btn-grid">
+        <p>Gym</p>
+      </a>
+      <a class="btn-grid" href="#">
         <FontAwesomeIcon icon="info-circle"/>
-        <p>Resources</p></a>
-      <a @click="logout" href="#" class="btn-grid">
+        <p>Resources</p>
+      </a>
+      <a class="btn-grid" href="#" @click="logout">
         <FontAwesomeIcon icon="sign-out-alt"/>
-        <p>Log out</p></a>
+        <p>Log out</p>
+      </a>
     </div>
   </div>
 </template>
