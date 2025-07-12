@@ -19,14 +19,10 @@ class RegisterAPIView(generics.CreateAPIView):
 
         user = serializer.save()
 
-        refresh = RefreshToken.for_user(user)
-        tokens = {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }
-
+        # do not return token, because user is not active
         response_data = serializer.data
-        response_data['tokens'] = tokens
+        response_data['message'] = 'Registration successful!'
+        response_data['is_active'] = False
 
         headers = self.get_success_headers(serializer.data)
 

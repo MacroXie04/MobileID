@@ -79,6 +79,10 @@ class UserRegisterForm(UserCreationForm):
     def save(self, commit=True):
         # Save the User instance first
         user = super().save(commit=commit)
+        
+        # new user is not active
+        user.is_active = False
+        user.save()
 
         # Gather extra form data
         name = self.cleaned_data['name']

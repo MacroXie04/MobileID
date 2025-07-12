@@ -244,9 +244,18 @@ const handleRegister = async () => {
   errors.value = {};
   try {
     const { data } = await apiClient.post("/register/", form);
-    localStorage.setItem("access_token", data.tokens.access);
-    localStorage.setItem("refresh_token", data.tokens.refresh);
-    await router.push("/");
+    
+    // Check if registration was successful but user is disabled
+    if (data.is_active === false) {
+      // Show success message and redirect to login
+      alert("Registration successful! Your account needs to be activated by an administrator before you can log in.");
+      await router.push("/login");
+    } else {
+      // User is active, proceed with login
+      localStorage.setItem("access_token", data.tokens.access);
+      localStorage.setItem("refresh_token", data.tokens.refresh);
+      await router.push("/");
+    }
   } catch (err) {
     if (err.response?.status === 400) {
       errors.value = err.response.data;

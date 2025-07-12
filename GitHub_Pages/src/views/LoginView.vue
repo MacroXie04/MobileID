@@ -86,11 +86,22 @@ const handleLogin = async () => {
     localStorage.setItem('access_token', response.data.access);
     localStorage.setItem('refresh_token', response.data.refresh);
 
+    // Check user status after successful login
+    try {
+      const userResponse = await apiClient.get('/me/');
+      if (userResponse.data.is_active === false) {
+        // User is disabled, redirect to account disabled page
+        await router.push('/account-disabled');
+        return;
+      }
+    } catch (userErr) {
+      console.error('Error checking user status:', userErr);
+    }
+
     await router.push('/');
 
   } catch (err) {
     if (err.response && (err.response.status === 400 || err.response.status === 401)) {
-
       errors.value = err.response.data;
     } else {
       errors.value = {detail: 'An unexpected error occurred. Please try again.'};

@@ -39,7 +39,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             with transaction.atomic():
                 user = User.objects.create_user(
                     username=validated_data['username'],
-                    password=validated_data['password']
+                    password=validated_data['password'],
+                    # new user is not active
+                    is_active=False
                 )
                 UserProfile.objects.create(
                     user=user,

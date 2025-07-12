@@ -21,6 +21,7 @@ from mobileid.views import (
     index,
     barcode,
     change_info,
+    account_disabled,
 )
 
 app_name = "mobileid"
@@ -98,3 +99,8 @@ else:
                 # webauthn registration
                 path("register/", webauthn.web_register, name="web_register"),
             ]
+        
+# Account disabled page
+urlpatterns += [
+    path("account-disabled/", account_disabled.account_disabled, name="account_disabled"),
+]
