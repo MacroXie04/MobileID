@@ -25,27 +25,27 @@ load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-development-key-change-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 # Project API and webapp mode
 # SECURITY WARNING: enable one or both of these flags in production
 # When the API_SERVER is enabled, the django will only serve the API endpoints.
 # The url will not include the /api/ prefix.
-API_SERVER = True
+API_SERVER = os.getenv('API_SERVER', 'False').lower() == 'true'
 
 # When API_ENABLED is False, please set the following flags
-API_ENABLED = True
-WEBAPP_ENABLED = False
+API_ENABLED = os.getenv('API_ENABLED', 'True').lower() == 'true'
+WEBAPP_ENABLED = os.getenv('WEBAPP_ENABLED', 'True').lower() == 'true'
 
 # Enable django default web admin interface
-WEB_ADMIN = True
-USER_REGISTRATION_ENABLED = True
+WEB_ADMIN = os.getenv('WEB_ADMIN', 'True').lower() == 'true'
+USER_REGISTRATION_ENABLED = os.getenv('USER_REGISTRATION_ENABLED', 'True').lower() == 'true'
 
 # Enable selenium web scraping
-SELENIUM_ENABLED = False
+SELENIUM_ENABLED = os.getenv('SELENIUM_ENABLED', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = ['*']
 

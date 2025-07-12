@@ -45,7 +45,12 @@ onMounted(async () => {
   try {
     const {data} = await apiClient.get('/me/');
     console.log('User profile fetched:', data);
-    user.value = data.userprofile;
+    // provide default values if userprofile is not found
+    user.value = data.userprofile || {
+      name: 'Unknown User',
+      information_id: 'N/A',
+      user_profile_img: ''
+    };
   } catch (err) {
     console.error('Fetch profile failed:', err);
     if (err.response?.status === 401) logout();

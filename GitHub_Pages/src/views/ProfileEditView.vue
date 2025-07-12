@@ -148,10 +148,12 @@ onMounted(async () => {
   try {
     const {data} = await apiClient.get("/me/");
     form.username = data.username;
-    form.name = data.userprofile?.name || "";
-    form.information_id = data.userprofile?.information_id || "";
-    originalData.value = {...data.userprofile}; // name, information_id, user_profile_img
-    avatarPreview.value = `data:image/png;base64,${data.userprofile?.user_profile_img || ""}`;
+    // provide default values if userprofile is not found
+    const userProfile = data.userprofile || {};
+    form.name = userProfile.name || "";
+    form.information_id = userProfile.information_id || "";
+    originalData.value = {...userProfile}; // name, information_id, user_profile_img
+    avatarPreview.value = `data:image/png;base64,${userProfile.user_profile_img || ""}`;
   } catch (err) {
     console.error("Failed to load profile", err);
     errors.value = {detail: "Could not load your profile data."};
@@ -204,7 +206,8 @@ const handleUpdate = async () => {
       userprofile: userprofilePayload,
     });
 
-    originalData.value = {...data.userprofile};
+    // 提供默认值，避免当userprofile为null时出现运行时错误
+    originalData.value = {...(data.userprofile || {})};
     newAvatarData = null;
     successMessage.value = "Profile updated successfully!";
   } catch (err) {
