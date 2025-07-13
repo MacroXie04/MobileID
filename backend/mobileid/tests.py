@@ -13,6 +13,7 @@ from mobileid.models import UserProfile, UserBarcodeSettings, Barcode, BarcodeUs
 from mobileid.forms.BarcodeForm import BarcodeForm
 from mobileid.forms.InfoForm import StudentInformationUpdateForm
 
+# test case only for GitHub Action
 
 class BaseTestCase(TestCase):
     """Base test class providing common setup methods"""

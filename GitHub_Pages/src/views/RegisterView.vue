@@ -248,8 +248,7 @@ const handleRegister = async () => {
     // Check if registration was successful but user is disabled
     if (data.is_active === false) {
       // Show success message and redirect to login
-      alert("Registration successful! Your account needs to be activated by an administrator before you can log in.");
-      await router.push("/login");
+      await router.push("/");
     } else {
       // User is active, proceed with login
       localStorage.setItem("access_token", data.tokens.access);

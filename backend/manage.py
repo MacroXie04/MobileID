@@ -2,6 +2,7 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import dotenv
 
 
 def main():
@@ -18,5 +19,18 @@ def main():
     execute_from_command_line(sys.argv)
 
 
+def print_env():
+    print("Environment variables:")
+    print("DEBUG: ", os.getenv('DEBUG'))
+    print("ALLOWED_HOSTS: ", os.getenv('ALLOWED_HOSTS'))
+    print("DATABASE_URL: ", os.getenv('DATABASE_URL'))
+    print("EMAIL_HOST: ", os.getenv('EMAIL_HOST'))
+    print("EMAIL_PORT: ", os.getenv('EMAIL_PORT'))
+    print("EMAIL_HOST_USER: ", os.getenv('EMAIL_HOST_USER'))
+    print("EMAIL_HOST_PASSWORD: ", os.getenv('EMAIL_HOST_PASSWORD'))
+
+
+
 if __name__ == '__main__':
+    print_env()
     main()
