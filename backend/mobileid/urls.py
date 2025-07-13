@@ -1,29 +1,12 @@
 from django.urls import path
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
+from rest_framework_simplejwt.views import (TokenObtainPairView,
+                                            TokenRefreshView)
 
-from barcode.settings import (
-    API_ENABLED,
-    WEBAPP_ENABLED,
-    USER_REGISTRATION_ENABLED,
-    API_SERVER,
-)
-from mobileid.api import (
-    webauthn_api,
-    user_api,
-    barcode_api,
-    auth_api,
-)
-from mobileid.views import (
-    webauthn,
-    index,
-    barcode,
-    change_info,
-    account_disabled,
-    health,
-)
+from barcode.settings import (API_ENABLED, API_SERVER,
+                              USER_REGISTRATION_ENABLED, WEBAPP_ENABLED)
+from mobileid.api import auth_api, barcode_api, user_api, webauthn_api
+from mobileid.views import (account_disabled, barcode, change_info, health,
+                            index, webauthn)
 
 app_name = "mobileid"
 

@@ -1,42 +1,23 @@
 # views.py
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
 
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import F
-from django.core.cache import cache
 from django.utils import timezone
-from rest_framework.views import APIView
+from rest_framework import generics, serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import (
-    status,
-    serializers,
-    generics,
-)
-
-from mobileid.throttling import (
-    BarcodeGenerationRateThrottle,
-    BarcodeManagementRateThrottle,
-)
-
-
-from mobileid.models import (
-    Barcode,
-    BarcodeUsage,
-    UserBarcodeSettings,
-)
-from mobileid.project_code.barcode import (
-    uc_merced_mobile_id,
-    auto_send_code,
-)
-
-from mobileid.serializers.barcode import (
-    BarcodeListSerializer,
-    BarcodeCreateSerializer,
-)
+from rest_framework.views import APIView
 
 from barcode.settings import SELENIUM_ENABLED
+from mobileid.models import Barcode, BarcodeUsage, UserBarcodeSettings
+from mobileid.project_code.barcode import auto_send_code, uc_merced_mobile_id
+from mobileid.serializers.barcode import (BarcodeCreateSerializer,
+                                          BarcodeListSerializer)
+from mobileid.throttling import (BarcodeGenerationRateThrottle,
+                                 BarcodeManagementRateThrottle)
 
 # --------------------------------------------------------------------------- #
 # Constants and helpers (reuse the originals)

@@ -1,14 +1,10 @@
 import base64
 from io import BytesIO
 
-from PIL import Image
 from django import forms
+from PIL import Image
 
-from mobileid.models import (
-    UserProfile,
-    UserBarcodeSettings,
-    Barcode,
-)
+from mobileid.models import Barcode, UserBarcodeSettings, UserProfile
 
 
 class StudentInformationUpdateForm(forms.ModelForm):
@@ -71,14 +67,10 @@ class StudentInformationUpdateForm(forms.ModelForm):
 import base64
 from io import BytesIO
 
-from PIL import Image
 from django import forms
+from PIL import Image
 
-from mobileid.models import (
-    UserProfile,
-    UserBarcodeSettings,
-    Barcode,
-)
+from mobileid.models import Barcode, UserBarcodeSettings, UserProfile
 
 
 class UserBarcodeSettingsForm(forms.ModelForm):

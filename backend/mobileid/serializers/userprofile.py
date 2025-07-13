@@ -1,13 +1,8 @@
 from django.contrib.auth.models import User
-from rest_framework import (
-    serializers,
-)
+from rest_framework import serializers
 
-from mobileid.models import (
-    Barcode,
-    UserBarcodeSettings,
-    UserProfile,
-)
+from mobileid.models import Barcode, UserBarcodeSettings, UserProfile
+
 from .barcode import BarcodeListSerializer
 
 

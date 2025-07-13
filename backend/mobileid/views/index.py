@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
-from mobileid.models import UserProfile, UserBarcodeSettings
+
+from mobileid.models import UserBarcodeSettings, UserProfile
 
 
 @login_required(login_url="/login")

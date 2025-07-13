@@ -1,18 +1,13 @@
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-
-from django.contrib.auth import login, authenticate, logout
+from django.shortcuts import redirect, render
+from django.utils import timezone
 
 # import forms
-from mobileid.forms.WebAuthnForms import (
-    UserRegisterForm,
-    UserLoginForm,
-)
-
+from mobileid.forms.WebAuthnForms import UserLoginForm, UserRegisterForm
 from mobileid.models import UserProfile
 
 

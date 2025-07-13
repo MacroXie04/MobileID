@@ -1,22 +1,9 @@
 from django.contrib.auth.models import User
-
-from rest_framework import (
-    serializers,
-    generics,
-)
-
-from mobileid.project_code.barcode import (
-    uc_merced_mobile_id,
-    auto_send_code,
-)
-
-from mobileid.models import (
-    Barcode,
-    BarcodeUsage,
-    UserBarcodeSettings,
-)
+from rest_framework import generics, serializers
 
 from barcode.settings import SELENIUM_ENABLED
+from mobileid.models import Barcode, BarcodeUsage, UserBarcodeSettings
+from mobileid.project_code.barcode import auto_send_code, uc_merced_mobile_id
 
 
 class BarcodeListSerializer(serializers.ModelSerializer):

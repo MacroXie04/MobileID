@@ -1,16 +1,10 @@
-from rest_framework import (
-    generics,
-)
+from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
-from mobileid.throttling import UserProfileRateThrottle
-
-from mobileid.serializers.userprofile import (
-    UserBarcodeSettingsSerializer,
-    UserProfileSerializer,
-)
-
 from mobileid.models import UserBarcodeSettings
+from mobileid.serializers.userprofile import (UserBarcodeSettingsSerializer,
+                                              UserProfileSerializer)
+from mobileid.throttling import UserProfileRateThrottle
 
 
 class UserProfileAPIView(generics.RetrieveUpdateAPIView):

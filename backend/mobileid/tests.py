@@ -1,17 +1,20 @@
-import json
 import base64
+import json
 from datetime import timedelta
-from django.test import TestCase, Client
-from django.contrib.auth.models import User
-from django.utils import timezone
-from django.urls import reverse
+
 from django.conf import settings
-from rest_framework.test import APITestCase, APIClient
+from django.contrib.auth.models import User
+from django.test import Client, TestCase
+from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
+from rest_framework.test import APIClient, APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
-from mobileid.models import UserProfile, UserBarcodeSettings, Barcode, BarcodeUsage
+
 from mobileid.forms.BarcodeForm import BarcodeForm
 from mobileid.forms.InfoForm import StudentInformationUpdateForm
+from mobileid.models import (Barcode, BarcodeUsage, UserBarcodeSettings,
+                             UserProfile)
 
 # test case only for GitHub Action
 

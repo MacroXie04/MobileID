@@ -1,13 +1,16 @@
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework.response import Response
-from rest_framework import status
+from datetime import timedelta
+
 from django.contrib.auth.models import User
 from django.utils import timezone
-from datetime import timedelta
-from mobileid.throttling import LoginRateThrottle
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+from barcode.settings import (ACCOUNT_LOCKOUT_DURATION,
+                              MAX_FAILED_LOGIN_ATTEMPTS)
 from mobileid.models import UserProfile
-from barcode.settings import MAX_FAILED_LOGIN_ATTEMPTS, ACCOUNT_LOCKOUT_DURATION
+from mobileid.throttling import LoginRateThrottle
 
 
 class ThrottledTokenObtainPairView(TokenObtainPairView):

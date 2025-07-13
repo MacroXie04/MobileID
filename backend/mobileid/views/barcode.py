@@ -4,28 +4,16 @@ from datetime import datetime, timedelta
 import pytz
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
-from django.db import IntegrityError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import F
 from django.http import JsonResponse
-from django.shortcuts import (
-    render,
-    redirect,
-)
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 
 from barcode.settings import SELENIUM_ENABLED
 from mobileid.forms.BarcodeForm import BarcodeForm
-from mobileid.models import (
-    Barcode,
-    BarcodeUsage,
-    UserBarcodeSettings,
-)
-from mobileid.project_code.barcode import (
-    uc_merced_mobile_id,
-    auto_send_code,
-)
-
-from django.views.decorators.http import require_POST
+from mobileid.models import Barcode, BarcodeUsage, UserBarcodeSettings
+from mobileid.project_code.barcode import auto_send_code, uc_merced_mobile_id
 
 
 @login_required(login_url="/login")
