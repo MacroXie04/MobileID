@@ -61,6 +61,9 @@ class RegisterSerializer(serializers.ModelSerializer):
                 )
                 return user
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("An error occurred during registration", exc_info=e)
             raise serializers.ValidationError(
-                {"detail": f"An error occurred during registration: {str(e)}"}
+                {"detail": "An internal error occurred during registration. Please try again later."}
             )
