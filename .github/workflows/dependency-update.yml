@@ -23,13 +23,39 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install pip-tools
-      run: pip install pip-tools
+    - name: Install dependencies
+      run: pip install -r requirements.txt
 
     - name: Update Python dependencies
       run: |
-        pip-compile --upgrade requirements.in --output-file requirements.txt
-        pip install -r requirements.txt
+        # Extract package names from requirements.txt (excluding comments)
+        packages=$(grep -v '^#' requirements.txt | sed 's/[>=].*//' | tr '\n' ' ')
+        
+        # Update all packages to their latest versions
+        pip install --upgrade $packages
+        
+        # Generate new requirements.txt with current versions
+        pip freeze > requirements.txt.new
+        
+        # Create updated requirements.txt with original format but updated versions
+        > requirements.txt.updated
+        while IFS= read -r line; do
+          if [[ "$line" =~ ^[[:space:]]*# ]]; then
+            echo "$line" >> requirements.txt.updated
+          elif [[ -n "$line" ]]; then
+            package=$(echo "$line" | sed 's/[>=].*//')
+            version=$(grep -i "^$package==" requirements.txt.new | head -1 | sed 's/.*==//')
+            if [[ -n "$version" ]]; then
+              echo "$package>=$version" >> requirements.txt.updated
+            else
+              echo "$line" >> requirements.txt.updated
+            fi
+          fi
+        done < requirements.txt
+        
+        # Replace the original requirements.txt
+        mv requirements.txt.updated requirements.txt
+        rm -f requirements.txt.new
 
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v5

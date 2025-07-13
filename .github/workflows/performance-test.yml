@@ -92,8 +92,16 @@ jobs:
     - name: Install Lighthouse CI
       run: npm install -g @lhci/cli@0.12.x
 
-    - name: Run Lighthouse CI
+    - name: Install serve
+      run: npm install -g serve
+
+    - name: Start server and run Lighthouse CI
       run: |
+        # Start serving the built files
+        serve -s dist -l 3000 &
+        sleep 10
+        
+        # Run Lighthouse CI against the served files
         lhci autorun --config .lighthouserc.json || true
 
     - name: Upload Lighthouse report
