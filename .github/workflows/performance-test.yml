@@ -1,0 +1,104 @@
+name: Performance Test
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'GitHub_Pages/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'GitHub_Pages/**'
+  workflow_dispatch:
+
+jobs:
+  api-performance:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: backend/requirements.txt
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install locust pytest-benchmark
+
+    - name: Set up environment variables
+      run: |
+        echo "SECRET_KEY=django-insecure-test-key-for-ci" >> $GITHUB_ENV
+        echo "DEBUG=True" >> $GITHUB_ENV
+        echo "API_SERVER=False" >> $GITHUB_ENV
+        echo "API_ENABLED=True" >> $GITHUB_ENV
+        echo "WEBAPP_ENABLED=True" >> $GITHUB_ENV
+        echo "WEB_ADMIN=True" >> $GITHUB_ENV
+        echo "USER_REGISTRATION_ENABLED=True" >> $GITHUB_ENV
+        echo "SELENIUM_ENABLED=False" >> $GITHUB_ENV
+
+    - name: Run Migrations
+      run: python manage.py migrate
+
+    - name: Start Django server
+      run: |
+        python manage.py runserver 0.0.0.0:8000 &
+        sleep 10
+
+    - name: Run API performance tests
+      run: |
+        locust -f performance_tests/locustfile.py --headless --users 10 --spawn-rate 2 --run-time 30s --host http://localhost:8000
+
+    - name: Upload performance report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: api-performance-report
+        path: backend/locust-report.html
+
+  frontend-performance:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: GitHub_Pages
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: GitHub_Pages/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: npm run build
+
+    - name: Install Lighthouse CI
+      run: npm install -g @lhci/cli@0.12.x
+
+    - name: Run Lighthouse CI
+      run: |
+        lhci autorun --config .lighthouserc.json || true
+
+    - name: Upload Lighthouse report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lighthouse-report
+        path: GitHub_Pages/.lighthouseci/ 
