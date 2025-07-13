@@ -120,12 +120,10 @@
 
 <script setup>
 import {onMounted, reactive, ref} from "vue";
-import {useRouter} from "vue-router";
 import apiClient from "@/api";
 import VueCropper from "vue-cropperjs";
 
 // -------------------- State --------------------
-const router = useRouter();
 const form = reactive({
   username: "",
   name: "",
