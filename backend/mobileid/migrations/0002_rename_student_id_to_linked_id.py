@@ -6,12 +6,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mobileid', '0001_initial'),
+        ("mobileid", "0001_initial"),
     ]
 
     operations = [
         migrations.RunSQL(
-            sql='''
+            sql="""
                 -- Check if the column exists before attempting to rename it
                 SELECT CASE 
                     WHEN EXISTS (
@@ -20,8 +20,8 @@ class Migration(migrations.Migration):
                     THEN 'ALTER TABLE mobileid_barcode RENAME COLUMN student_id TO linked_id;'
                     ELSE 'SELECT 1;' -- Do nothing if the column doesn't exist
                 END;
-            ''',
-            reverse_sql='''
+            """,
+            reverse_sql="""
                 -- Check if the column exists before attempting to rename it
                 SELECT CASE 
                     WHEN EXISTS (
@@ -30,6 +30,6 @@ class Migration(migrations.Migration):
                     THEN 'ALTER TABLE mobileid_barcode RENAME COLUMN linked_id TO student_id;'
                     ELSE 'SELECT 1;' -- Do nothing if the column doesn't exist
                 END;
-            ''',
+            """,
         ),
     ]

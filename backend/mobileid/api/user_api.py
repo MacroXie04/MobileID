@@ -29,5 +29,7 @@ class BarcodeSettingsAPIView(generics.RetrieveUpdateAPIView):
     throttle_classes = [UserProfileRateThrottle]
 
     def get_object(self):
-        settings, created = UserBarcodeSettings.objects.get_or_create(user=self.request.user)
+        settings, created = UserBarcodeSettings.objects.get_or_create(
+            user=self.request.user
+        )
         return settings

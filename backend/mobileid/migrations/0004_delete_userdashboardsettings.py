@@ -6,11 +6,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mobileid', '0003_userprofile_failed_login_attempts_and_more'),
+        ("mobileid", "0003_userprofile_failed_login_attempts_and_more"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='UserDashboardSettings',
+            name="UserDashboardSettings",
         ),
     ]

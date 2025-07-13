@@ -20,81 +20,80 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-development-key-change-in-production')
+SECRET_KEY = os.getenv(
+    "SECRET_KEY", "django-insecure-development-key-change-in-production"
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
 # Project API and webapp mode
 # SECURITY WARNING: enable one or both of these flags in production
 # When the API_SERVER is enabled, the django will only serve the API endpoints.
 # The url will not include the /api/ prefix.
-API_SERVER = os.getenv('API_SERVER', 'False').lower() == 'true'
+API_SERVER = os.getenv("API_SERVER", "False").lower() == "true"
 
 # When API_ENABLED is False, please set the following flags
-API_ENABLED = os.getenv('API_ENABLED', 'True').lower() == 'true'
-WEBAPP_ENABLED = os.getenv('WEBAPP_ENABLED', 'True').lower() == 'true'
+API_ENABLED = os.getenv("API_ENABLED", "True").lower() == "true"
+WEBAPP_ENABLED = os.getenv("WEBAPP_ENABLED", "True").lower() == "true"
 
 # For tests, ensure both API and web app are available
-if 'test' in sys.argv:
+if "test" in sys.argv:
     API_SERVER = False
     API_ENABLED = True
     WEBAPP_ENABLED = True
 
 # Enable django default web admin interface
-WEB_ADMIN = os.getenv('WEB_ADMIN', 'True').lower() == 'true'
-USER_REGISTRATION_ENABLED = os.getenv('USER_REGISTRATION_ENABLED', 'True').lower() == 'true'
+WEB_ADMIN = os.getenv("WEB_ADMIN", "True").lower() == "true"
+USER_REGISTRATION_ENABLED = (
+    os.getenv("USER_REGISTRATION_ENABLED", "True").lower() == "true"
+)
 
 # Enable selenium web scraping
-SELENIUM_ENABLED = os.getenv('SELENIUM_ENABLED', 'False').lower() == 'true'
+SELENIUM_ENABLED = os.getenv("SELENIUM_ENABLED", "False").lower() == "true"
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
 INSTALLED_APPS = [
     # mobileid app
-    'mobileid.apps.MobileidConfig',
-
+    "mobileid.apps.MobileidConfig",
     # Django REST framework
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework.authtoken',
-    'corsheaders',
-
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework.authtoken",
+    "corsheaders",
     # modules
-    'widget_tweaks',
-
+    "widget_tweaks",
     # Default Django apps
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
 ]
 
 MIDDLEWARE = [
     # CORS middleware must be placed before Django's security middleware
-    'corsheaders.middleware.CorsMiddleware',
-
+    "corsheaders.middleware.CorsMiddleware",
     # Default Django middleware
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Custom middleware for user status check
-    'mobileid.middleware.UserStatusMiddleware',
+    "mobileid.middleware.UserStatusMiddleware",
 ]
 
 # URL configuration
@@ -114,7 +113,7 @@ CSRF_TRUSTED_ORIGINS = [
 # Allow credentials in CORS requests
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the cookie
 
 # Session settings
@@ -124,24 +123,22 @@ SESSION_SAVE_EVERY_REQUEST = True  # Refresh the session cookie on every request
 
 # CORS settings
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
     ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day',
-        'login': '5/minute',
-        'registration': '5/day',
-        'barcode_generation': '100/hour',
-        'barcode_management': '50/hour',
-        'user_profile': '20/hour',
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/day",
+        "user": "1000/day",
+        "login": "5/minute",
+        "registration": "5/day",
+        "barcode_generation": "100/hour",
+        "barcode_management": "50/hour",
+        "user_profile": "20/hour",
     },
 }
 
@@ -150,37 +147,36 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
-
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
 }
 
-ROOT_URLCONF = 'barcode.urls'
+ROOT_URLCONF = "barcode.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'barcode.wsgi.application'
+WSGI_APPLICATION = "barcode.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -189,26 +185,26 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': { 'min_length': 8 }
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 8},
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'America/Los_Angeles'
+TIME_ZONE = "America/Los_Angeles"
 
 USE_I18N = True
 
@@ -217,35 +213,39 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Account security settings
-MAX_FAILED_LOGIN_ATTEMPTS = 5  # Maximum number of failed login attempts before locking the account
-ACCOUNT_LOCKOUT_DURATION = 30  # Duration in minutes for which an account should be locked
+MAX_FAILED_LOGIN_ATTEMPTS = (
+    5  # Maximum number of failed login attempts before locking the account
+)
+ACCOUNT_LOCKOUT_DURATION = (
+    30  # Duration in minutes for which an account should be locked
+)
 
 # Cache configuration
 # Use a simpler cache backend for tests to avoid Redis connection issues
-if 'test' in sys.argv:
+if "test" in sys.argv:
     CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         }
     }
     # Use database sessions for tests
-    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
 else:
     CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': 'redis://redis:6379/1',
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://redis:6379/1",
         }
     }
     # Use Redis for session storage
-    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-    SESSION_CACHE_ALIAS = 'default'
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"

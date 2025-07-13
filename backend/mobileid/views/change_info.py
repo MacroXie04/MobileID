@@ -12,31 +12,30 @@ from mobileid.models import (
     UserBarcodeSettings,
 )
 
-@login_required(login_url='/login')
+
+@login_required(login_url="/login")
 def edit_profile(request):
     # Ensure the student info record exists
     student_info, _ = UserProfile.objects.get_or_create(user=request.user)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = StudentInformationUpdateForm(
-            request.POST,
-            request.FILES,
-            instance=student_info
+            request.POST, request.FILES, instance=student_info
         )
         if form.is_valid():
             form.save()
-            return redirect('mobileid:web_index')
+            return redirect("mobileid:web_index")
     else:
         form = StudentInformationUpdateForm(instance=student_info)
 
     context = {
-        'form': form,
-        'student_info': student_info,
+        "form": form,
+        "student_info": student_info,
     }
-    return render(request, 'index/profile_edit.html', context)
+    return render(request, "index/profile_edit.html", context)
 
 
-@login_required(login_url='/login')
+@login_required(login_url="/login")
 def edit_barcode_settings(request):
     """
     Allow the logged‑in user to configure their personal barcode behaviour.
@@ -46,25 +45,18 @@ def edit_barcode_settings(request):
     """
     settings_obj, _ = UserBarcodeSettings.objects.get_or_create(user=request.user)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = UserBarcodeSettingsForm(
-            request.POST,
-            instance=settings_obj,
-            user=request.user
+            request.POST, instance=settings_obj, user=request.user
         )
         if form.is_valid():
             form.save()
-            return redirect('mobileid:web_index')
+            return redirect("mobileid:web_index")
     else:
-        form = UserBarcodeSettingsForm(
-            instance=settings_obj,
-            user=request.user
-        )
+        form = UserBarcodeSettingsForm(instance=settings_obj, user=request.user)
 
     context = {
-        'form': form,
-        'settings': settings_obj,
+        "form": form,
+        "settings": settings_obj,
     }
-    return render(request, 'index/settings_edit.html', context)
-
-
+    return render(request, "index/settings_edit.html", context)

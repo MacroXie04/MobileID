@@ -21,8 +21,8 @@ class RegisterAPIView(generics.CreateAPIView):
 
         # do not return token, because user is not active
         response_data = serializer.data
-        response_data['message'] = 'Registration successful!'
-        response_data['is_active'] = False
+        response_data["message"] = "Registration successful!"
+        response_data["is_active"] = False
 
         headers = self.get_success_headers(serializer.data)
 

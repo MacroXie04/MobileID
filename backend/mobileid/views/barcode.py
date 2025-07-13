@@ -33,7 +33,7 @@ from django.views.decorators.http import require_POST
 def create_barcode(request):
     form = BarcodeForm(request.POST or None)
     # current user barcodes for delete section
-    user_barcodes = Barcode.objects.filter(user=request.user).order_by('id')
+    user_barcodes = Barcode.objects.filter(user=request.user).order_by("id")
 
     if request.method == "POST" and form.is_valid():
         src_type = form.cleaned_data["source_type"]
@@ -67,7 +67,9 @@ def delete_barcode(request, pk):
         return redirect("mobileid:web_manage_barcode")
 
     # detach barcode from settings if attached
-    UserBarcodeSettings.objects.filter(user=request.user, barcode=barcode_obj).update(barcode=None)
+    UserBarcodeSettings.objects.filter(user=request.user, barcode=barcode_obj).update(
+        barcode=None
+    )
     # optional: clean up usage tracker
     BarcodeUsage.objects.filter(barcode=barcode_obj).delete()
     barcode_obj.delete()
@@ -89,6 +91,7 @@ def _create_usage_if_new(barcode_obj: Barcode, is_new: bool) -> None:
 
 
 # ----- source_type == "barcode" ---------------------------------------
+
 
 def _create_from_barcode(user, code: str, form):
     if not code.isdigit():
@@ -130,6 +133,7 @@ def _create_from_barcode(user, code: str, form):
 
 
 # ----- source_type == "session" ---------------------------------------
+
 
 def _create_from_session(user, session: str, form):
     if not SELENIUM_ENABLED:
@@ -176,10 +180,10 @@ def _create_from_session(user, session: str, form):
 # --------------------------------------------------------------------------- #
 # Constants and helpers
 # --------------------------------------------------------------------------- #
-PACIFIC_TZ        = pytz.timezone("America/Los_Angeles")
-CACHE_PREFIX      = "barcode_api"
-POOL_TTL          = 5          # seconds: cache of barcode-linked_id pool
-FLUSH_THRESHOLD   = 10         # flush counter to DB every N hits
+PACIFIC_TZ = pytz.timezone("America/Los_Angeles")
+CACHE_PREFIX = "barcode_api"
+POOL_TTL = 5  # seconds: cache of barcode-linked_id pool
+FLUSH_THRESHOLD = 10  # flush counter to DB every N hits
 
 
 def incr_counter(key: str) -> int:
@@ -205,12 +209,15 @@ def generate_barcode(request):
     # 1) Always fetch fresh user settings (no cache to reflect immediate changes)
     try:
         user_settings = (
-            UserBarcodeSettings.objects
-            .select_related("barcode")
+            UserBarcodeSettings.objects.select_related("barcode")
             .only(
-                "barcode_pull", "timestamp_verification", "server_verification",
+                "barcode_pull",
+                "timestamp_verification",
+                "server_verification",
                 "barcode_id",
-                "barcode__barcode", "barcode__barcode_type", "barcode__session",
+                "barcode__barcode",
+                "barcode__barcode_type",
+                "barcode__session",
             )
             .get(user_id=request.user.id)
         )
@@ -228,18 +235,16 @@ def generate_barcode(request):
         if pool_ids is None:
             # Build pool from BarcodeUsage only (cheap)
             pool_ids = list(
-                BarcodeUsage.objects
-                .order_by("last_used", "total_usage")
-                .values_list("barcode_id", flat=True)[:50]
+                BarcodeUsage.objects.order_by("last_used", "total_usage").values_list(
+                    "barcode_id", flat=True
+                )[:50]
             )
 
             # Pad with unused barcodes if pool too small
             if len(pool_ids) < 50:
-                pad_ids = (
-                    Barcode.objects
-                    .exclude(id__in=pool_ids)
-                    .values_list("linked_id", flat=True)[:50 - len(pool_ids)]
-                )
+                pad_ids = Barcode.objects.exclude(id__in=pool_ids).values_list(
+                    "linked_id", flat=True
+                )[: 50 - len(pool_ids)]
                 pool_ids.extend(pad_ids)
 
             cache.set(pool_key, pool_ids, POOL_TTL)
@@ -250,10 +255,8 @@ def generate_barcode(request):
             )
 
         barcode_id = pool_ids[0]
-        user_barcode = (
-            Barcode.objects
-            .only("barcode", "barcode_type", "session")
-            .get(id=barcode_id)
+        user_barcode = Barcode.objects.only("barcode", "barcode_type", "session").get(
+            id=barcode_id
         )
 
     else:
@@ -268,7 +271,7 @@ def generate_barcode(request):
     # 3) Register usage with cached counter
     def register_usage(barcode_obj):
         # Skip if linked_id is empty, None, or not a valid integer
-        if not barcode_obj.linked_id or barcode_obj.linked_id == '':
+        if not barcode_obj.linked_id or barcode_obj.linked_id == "":
             return
 
         counter_key = f"{CACHE_PREFIX}:usage:{barcode_obj.linked_id}"
@@ -277,11 +280,9 @@ def generate_barcode(request):
         if count == 1 or count >= FLUSH_THRESHOLD:
             # Flush aggregate to BarcodeUsage
             try:
-                updated = (
-                    BarcodeUsage.objects
-                    .filter(barcode_id=barcode_obj.linked_id)
-                    .update(total_usage=F("total_usage") + count)
-                )
+                updated = BarcodeUsage.objects.filter(
+                    barcode_id=barcode_obj.linked_id
+                ).update(total_usage=F("total_usage") + count)
                 if not updated:
                     BarcodeUsage.objects.create(
                         barcode_id=barcode_obj.linked_id,
@@ -292,16 +293,17 @@ def generate_barcode(request):
                 # Skip if linked_id cannot be converted to an integer
                 pass
 
-
     # 4) Generate response
     if user_barcode.barcode_type.lower() == "static":
         register_usage(user_barcode)
-        return JsonResponse({
-            "status": "success",
-            "barcode_type": "static",
-            "content": f"Static: {user_barcode.barcode[-4:]}",
-            "barcode": user_barcode.barcode,
-        })
+        return JsonResponse(
+            {
+                "status": "success",
+                "barcode_type": "static",
+                "content": f"Static: {user_barcode.barcode[-4:]}",
+                "barcode": user_barcode.barcode,
+            }
+        )
 
     if user_barcode.barcode_type.lower() == "dynamic":
         # Timestamp
@@ -338,12 +340,14 @@ def generate_barcode(request):
             content_msg = "Server verification skipped in pull mode "
 
         register_usage(user_barcode)
-        return JsonResponse({
-            "status": "success",
-            "barcode_type": "dynamic",
-            "content": f"Dynamic: {user_barcode.barcode[-4:]}",
-            "barcode": f"{ts}{user_barcode.barcode}",
-        })
+        return JsonResponse(
+            {
+                "status": "success",
+                "barcode_type": "dynamic",
+                "content": f"Dynamic: {user_barcode.barcode[-4:]}",
+                "barcode": f"{ts}{user_barcode.barcode}",
+            }
+        )
 
     # Fallback
     return JsonResponse(
