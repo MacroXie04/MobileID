@@ -846,3 +846,49 @@ class EdgeCaseTest(BaseTestCase):
         
         self.user_profile.refresh_from_db()
         self.assertEqual(self.user_profile.name, unicode_string)
+
+
+class HealthCheckTest(TestCase):
+    """Health check endpoint tests"""
+    
+    def test_health_check_endpoint(self):
+        """Test health check endpoint returns healthy status"""
+        response = self.client.get('/health/')
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        
+        data = json.loads(response.content)
+        self.assertEqual(data['status'], 'healthy')
+        self.assertIn('checks', data)
+        self.assertEqual(data['checks']['database'], 'healthy')
+        self.assertEqual(data['checks']['application'], 'healthy')
+    
+    def test_health_check_method_not_allowed(self):
+        """Test health check endpoint only allows GET requests"""
+        response = self.client.post('/health/')
+        self.assertEqual(response.status_code, 405)
+        
+        response = self.client.put('/health/')
+        self.assertEqual(response.status_code, 405)
+        
+        response = self.client.delete('/health/')
+        self.assertEqual(response.status_code, 405)
+    
+    def test_health_check_response_structure(self):
+        """Test health check response has correct structure"""
+        response = self.client.get('/health/')
+        data = json.loads(response.content)
+        
+        # Check required fields
+        self.assertIn('status', data)
+        self.assertIn('checks', data)
+        self.assertIn('database', data['checks'])
+        self.assertIn('cache', data['checks'])
+        self.assertIn('application', data['checks'])
+        
+        # Check status values
+        self.assertIn(data['status'], ['healthy', 'unhealthy'])
+        self.assertIn(data['checks']['database'], ['healthy', 'unhealthy'])
+        self.assertIn(data['checks']['cache'], ['healthy', 'unhealthy'])
+        self.assertIn(data['checks']['application'], ['healthy', 'unhealthy'])

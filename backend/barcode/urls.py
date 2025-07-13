@@ -20,8 +20,10 @@ from django.urls import (
     include,
 )
 from .settings import WEB_ADMIN
+from mobileid.views.health import health_check
 
 urlpatterns = [
+    path('health/', health_check, name='health_check'),
     path('', include('mobileid.urls')),
 ]
 

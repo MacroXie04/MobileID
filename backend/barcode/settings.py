@@ -211,6 +211,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -220,3 +221,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Account security settings
 MAX_FAILED_LOGIN_ATTEMPTS = 5  # Maximum number of failed login attempts before locking the account
 ACCOUNT_LOCKOUT_DURATION = 30  # Duration in minutes for which an account should be locked
+
+# Cache configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://redis:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+# Use Redis for session storage
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
