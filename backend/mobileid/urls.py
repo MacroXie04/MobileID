@@ -22,6 +22,7 @@ from mobileid.views import (
     barcode,
     change_info,
     account_disabled,
+    health,
 )
 
 app_name = "mobileid"
@@ -100,6 +101,11 @@ else:
                 path("register/", webauthn.web_register, name="web_register"),
             ]
         
+# Health check endpoint (always available)
+urlpatterns += [
+    path("health/", health.health_check, name="health_check"),
+]
+
 # Account disabled page
 urlpatterns += [
     path("account-disabled/", account_disabled.account_disabled, name="account_disabled"),

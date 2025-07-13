@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+import sys
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -39,6 +40,12 @@ API_SERVER = os.getenv('API_SERVER', 'False').lower() == 'true'
 # When API_ENABLED is False, please set the following flags
 API_ENABLED = os.getenv('API_ENABLED', 'True').lower() == 'true'
 WEBAPP_ENABLED = os.getenv('WEBAPP_ENABLED', 'True').lower() == 'true'
+
+# For tests, ensure both API and web app are available
+if 'test' in sys.argv:
+    API_SERVER = False
+    API_ENABLED = True
+    WEBAPP_ENABLED = True
 
 # Enable django default web admin interface
 WEB_ADMIN = os.getenv('WEB_ADMIN', 'True').lower() == 'true'
@@ -223,16 +230,22 @@ MAX_FAILED_LOGIN_ATTEMPTS = 5  # Maximum number of failed login attempts before 
 ACCOUNT_LOCKOUT_DURATION = 30  # Duration in minutes for which an account should be locked
 
 # Cache configuration
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://redis:6379/1',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+# Use a simpler cache backend for tests to avoid Redis connection issues
+if 'test' in sys.argv:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         }
     }
-}
-
-# Use Redis for session storage
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
+    # Use database sessions for tests
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': 'redis://redis:6379/1',
+        }
+    }
+    # Use Redis for session storage
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    SESSION_CACHE_ALIAS = 'default'

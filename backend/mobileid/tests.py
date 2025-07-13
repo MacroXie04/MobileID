@@ -540,7 +540,10 @@ class APITest(APITestCase):
         response = self.client.put('/api/me/', update_data, format='json')
         if response.status_code != status.HTTP_200_OK:
             print(f"Response status: {response.status_code}")
-            print(f"Response data: {response.data}")
+            if hasattr(response, 'data'):
+                print(f"Response data: {response.data}")
+            else:
+                print(f"Response content: {response.content}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['userprofile']['name'], 'Updated API User')
     
