@@ -9,7 +9,7 @@
         <!-- Account disabled error (highest priority) -->
         <div v-if="errors.account_disabled" class="alert alert-danger">
           <i class="fas fa-ban me-2"></i>
-          Your account is disabled. Please contact administrator for assistance.
+          Your account is disabled.
         </div>
 
         <!-- Account locked error -->
@@ -164,14 +164,30 @@ const handleLogin = async () => {
       const errorData = err.response.data;
       const status = err.response.status;
       
-      // Check if account is disabled
+      console.log('Error response:', { status, errorData });
+      
+      // Check if account is disabled FIRST (before setting any errors)
       if (errorData.account_disabled) {
         console.log('Account is disabled, redirecting to account disabled page');
-        await router.push('/account-disabled');
+        console.log('Router object:', router);
+        console.log('Current route:', router.currentRoute.value);
+        
+        try {
+          // Don't set errors, just redirect
+          await router.push('/account-disabled');
+          console.log('Redirect successful');
+        } catch (redirectError) {
+          console.error('Redirect failed:', redirectError);
+          // Fallback: set error and let user see the message
+          errors.value = {
+            detail: 'Account is disabled. Please contact administrator.',
+            account_disabled: true
+          };
+        }
         return;
       }
       
-      // Handle different error statuses
+      // Handle different error statuses (only if not disabled)
       if (status === 429) {
         // Rate limiting/throttling error
         errors.value = {
