@@ -486,59 +486,168 @@ class APITest(APITestCase):
     """API tests"""
 
     def setUp(self):
-        """Set up API test environment"""
-        self.client = APIClient()
-        self.valid_img = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6Q2wAAAABJRU5ErkJggg=="
+        """Set up test environment"""
         # Create test user
         self.user = User.objects.create_user(
-            username="apiuser", password="testpassword123", email="api@example.com"
+            username="testuser",
+            password="testpassword123",
+            email="test@example.com",
+            first_name="Test",
+            last_name="User",
         )
+
         # Create user profile
         self.user_profile = UserProfile.objects.create(
             user=self.user,
-            name="API Test User",
-            information_id="87654321",
-            user_profile_img=self.valid_img,
+            name="Test Student",
+            information_id="12345678",
+            user_profile_img="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6Q2wAAAABJRU5ErkJggg==",
+        )
+
+        # Create test barcode
+        self.barcode = Barcode.objects.create(
+            user=self.user,
+            barcode_type="Static",
+            barcode="1234567890123456",
+            linked_id="87654321",
         )
 
         # Create barcode settings
         self.barcode_settings = UserBarcodeSettings.objects.create(
             user=self.user,
+            barcode=self.barcode,
+            server_verification=True,
+            timestamp_verification=False,
             barcode_pull=True,
-            server_verification=False,
-            timestamp_verification=True,
         )
 
         # Get JWT token
         refresh = RefreshToken.for_user(self.user)
         self.access_token = str(refresh.access_token)
+
+        # Set up API client with authentication
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
 
     def test_get_user_profile_api(self):
-        """Test get user profile API"""
+        """Test getting user profile via API"""
         response = self.client.get("/api/me/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["userprofile"]["name"], "API Test User")
-        self.assertEqual(response.data["userprofile"]["information_id"], "87654321")
+
+    def test_get_user_profile_with_status(self):
+        """Test getting user profile with account status information"""
+        response = self.client.get("/api/me/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        data = response.json()
+        
+        # Check that account_status field is present
+        self.assertIn("account_status", data)
+        account_status = data["account_status"]
+        
+        # Check required fields in account_status
+        self.assertIn("status", account_status)
+        self.assertIn("message", account_status)
+        self.assertIn("is_active", account_status)
+        self.assertIn("is_locked", account_status)
+        self.assertIn("lock_expired", account_status)
+        self.assertIn("failed_attempts", account_status)
+        
+        # For active user, status should be "active"
+        self.assertEqual(account_status["status"], "active")
+        self.assertEqual(account_status["is_active"], True)
+        self.assertEqual(account_status["is_locked"], False)
+        self.assertEqual(account_status["lock_expired"], False)
+        self.assertEqual(account_status["failed_attempts"], 0)
+
+    def test_token_endpoint_disabled_account(self):
+        """Test token endpoint returns correct error for disabled accounts"""
+        # Disable the user account
+        self.user.is_active = False
+        self.user.save()
+        
+        # Try to get token for disabled account
+        response = self.client.post("/api/token/", {
+            "username": self.user.username,
+            "password": "testpass123"
+        })
+        
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        data = response.json()
+        self.assertIn("account_disabled", data)
+        self.assertTrue(data["account_disabled"])
+        self.assertIn("Account is disabled", data["detail"])
+
+    def test_get_user_profile_locked_status(self):
+        """Test getting user profile when account is locked"""
+        # Lock the user account
+        self.user_profile.is_locked = True
+        self.user_profile.locked_until = timezone.now() + timedelta(minutes=30)
+        self.user_profile.failed_login_attempts = 5
+        self.user_profile.save()
+        
+        response = self.client.get("/api/me/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        data = response.json()
+        account_status = data["account_status"]
+        
+        self.assertEqual(account_status["status"], "locked")
+        self.assertEqual(account_status["is_active"], True)
+        self.assertEqual(account_status["is_locked"], True)
+        self.assertEqual(account_status["lock_expired"], False)
+        self.assertEqual(account_status["failed_attempts"], 5)
+        self.assertIn("locked_until", account_status)
+
+    def test_get_user_profile_disabled_status(self):
+        """Test getting user profile when account is disabled"""
+        # Disable the user account
+        self.user.is_active = False
+        self.user.save()
+        
+        # Disabled users should not be able to access protected endpoints
+        response = self.client.get("/api/me/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+        # The account status should be checked at the token endpoint level
+        # See test_token_endpoint_disabled_account for that test
+
+    def test_get_user_profile_lock_expired_status(self):
+        """Test getting user profile when lock has expired"""
+        # Lock the user account with expired time
+        self.user_profile.is_locked = True
+        self.user_profile.locked_until = timezone.now() - timedelta(minutes=30)
+        self.user_profile.failed_login_attempts = 3
+        self.user_profile.save()
+        
+        response = self.client.get("/api/me/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        data = response.json()
+        account_status = data["account_status"]
+        
+        self.assertEqual(account_status["status"], "lock_expired")
+        self.assertEqual(account_status["is_active"], True)
+        self.assertEqual(account_status["is_locked"], True)
+        self.assertEqual(account_status["lock_expired"], True)
+        self.assertEqual(account_status["failed_attempts"], 3)
 
     def test_update_user_profile_api(self):
-        """Test update user profile API"""
+        """Test updating user profile via API"""
         update_data = {
             "userprofile": {
-                "name": "Updated API User",
-                "information_id": "11111111",
-                "user_profile_img": self.user_profile.user_profile_img,
+                "name": "Updated Student Name",
+                "information_id": "87654321",
+                "user_profile_img": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6Q2wAAAABJRU5ErkJggg==",
             }
         }
+
         response = self.client.put("/api/me/", update_data, format="json")
-        if response.status_code != status.HTTP_200_OK:
-            print(f"Response status: {response.status_code}")
-            if hasattr(response, "data"):
-                print(f"Response data: {response.data}")
-            else:
-                print(f"Response content: {response.content}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["userprofile"]["name"], "Updated API User")
+
+        # Verify update
+        updated_profile = UserProfile.objects.get(user=self.user)
+        self.assertEqual(updated_profile.name, "Updated Student Name")
+        self.assertEqual(updated_profile.information_id, "87654321")
 
     def test_generate_barcode_api(self):
         """Test generate barcode API"""

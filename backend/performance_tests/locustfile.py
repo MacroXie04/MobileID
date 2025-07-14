@@ -310,14 +310,73 @@ class BarcodeAPIUser(HttpUser):
 
     @task(1)
     def get_user_profile(self):
-        """Get user profile information"""
+        """Get user profile information with status checking"""
         try:
             response = self.client.get(
                 "/api/me/",
                 headers=self.get_auth_headers()
             )
             
-            if response.status_code >= 400:
+            if response.status_code == 200:
+                try:
+                    user_data = response.json()
+                    
+                    # Check account status for different scenarios
+                    if "account_status" in user_data:
+                        account_status = user_data["account_status"]
+                        status_type = account_status.get("status", "unknown")
+                        
+                        # Log different status types for monitoring
+                        if status_type == "locked":
+                            events.request.fire(
+                                request_type="GET",
+                                name="user_profile_locked",
+                                response_time=response.elapsed.total_seconds() * 1000,
+                                response_length=len(response.content),
+                                exception=None,
+                                context=self.context()
+                            )
+                        elif status_type == "disabled":
+                            events.request.fire(
+                                request_type="GET",
+                                name="user_profile_disabled",
+                                response_time=response.elapsed.total_seconds() * 1000,
+                                response_length=len(response.content),
+                                exception=None,
+                                context=self.context()
+                            )
+                        elif status_type == "active":
+                            events.request.fire(
+                                request_type="GET",
+                                name="user_profile_active",
+                                response_time=response.elapsed.total_seconds() * 1000,
+                                response_length=len(response.content),
+                                exception=None,
+                                context=self.context()
+                            )
+                    
+                    # Check if user is active (for backward compatibility)
+                    if user_data.get("is_active") == False:
+                        events.request.fire(
+                            request_type="GET",
+                            name="user_profile_inactive",
+                            response_time=response.elapsed.total_seconds() * 1000,
+                            response_length=len(response.content),
+                            exception=None,
+                            context=self.context()
+                        )
+                        
+                except Exception as e:
+                    # Handle JSON parsing errors
+                    events.request.fire(
+                        request_type="GET",
+                        name="user_profile_parse_error",
+                        response_time=response.elapsed.total_seconds() * 1000,
+                        response_length=len(response.content),
+                        exception=e,
+                        context=self.context()
+                    )
+            elif response.status_code >= 400:
                 self.handle_api_error(response, "get_user_profile")
                 
         except Exception as e:

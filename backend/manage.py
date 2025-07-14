@@ -23,12 +23,11 @@ def main():
 def print_env():
     print("Environment variables:")
     print("DEBUG: ", os.getenv("DEBUG"))
-    print("ALLOWED_HOSTS: ", os.getenv("ALLOWED_HOSTS"))
-    print("DATABASE_URL: ", os.getenv("DATABASE_URL"))
-    print("EMAIL_HOST: ", os.getenv("EMAIL_HOST"))
-    print("EMAIL_PORT: ", os.getenv("EMAIL_PORT"))
-    print("EMAIL_HOST_USER: ", os.getenv("EMAIL_HOST_USER"))
-    print("EMAIL_HOST_PASSWORD: ", os.getenv("EMAIL_HOST_PASSWORD"))
+    print("API_SERVER: ", os.getenv("API_SERVER"))
+    print("API_ENABLED: ", os.getenv("API_ENABLED"))
+    print("WEBAPP_ENABLED: ", os.getenv("WEBAPP_ENABLED"))
+    print("USER_REGISTRATION_ENABLED: ", os.getenv("USER_REGISTRATION_ENABLED"))
+
 
 
 if __name__ == "__main__":

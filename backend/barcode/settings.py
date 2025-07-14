@@ -231,22 +231,11 @@ ACCOUNT_LOCKOUT_DURATION = (
 )
 
 # Cache configuration
-# Use a simpler cache backend for tests to avoid Redis connection issues
-if "test" in sys.argv:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        }
+# Use only local memory cache and database session backend (no Redis support)
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "unique-snowflake",
     }
-    # Use database sessions for tests
-    SESSION_ENGINE = "django.contrib.sessions.backends.db"
-else:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": "redis://redis:6379/1",
-        }
-    }
-    # Use Redis for session storage
-    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-    SESSION_CACHE_ALIAS = "default"
+}
+SESSION_ENGINE = "django.contrib.sessions.backends.db"

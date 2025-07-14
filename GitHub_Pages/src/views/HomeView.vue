@@ -3,6 +3,7 @@ import {computed, nextTick, onMounted, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import apiClient from '@/api';
 import bwipjs from 'bwip-js';
+import { getUserStatusSummary, refreshUserStatus } from '../utils/userStatus.js';
 
 import {library} from '@fortawesome/fontawesome-svg-core';
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome';
@@ -14,6 +15,10 @@ import {
   faMoneyBill,
   faSignOutAlt,
   faTriangleExclamation,
+  faCheckCircle,
+  faLock,
+  faBan,
+  faExclamationTriangle,
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
@@ -24,6 +29,10 @@ library.add(
     faDumbbell,
     faInfoCircle,
     faSignOutAlt,
+    faCheckCircle,
+    faLock,
+    faBan,
+    faExclamationTriangle,
 );
 
 /* ------------------------------ State ------------------------------ */
@@ -34,23 +43,70 @@ const isRequesting = ref(false);
 const showBarcode = ref(false);
 const barcodeCanvas = ref(null);
 const progressBar = ref(null);
+const userStatus = ref(null);
 
 const buttonDisabled = computed(() => isRequesting.value);
 const buttonLabel = computed(() =>
     isRequesting.value ? 'Processing' : 'PAY / Check-in',
 );
 
+// Computed properties for user status display
+const statusIcon = computed(() => {
+  if (!userStatus.value) return 'exclamation-triangle';
+  
+  switch (userStatus.value.status.status) {
+    case 'active':
+      return 'check-circle';
+    case 'locked':
+      return 'lock';
+    case 'disabled':
+      return 'ban';
+    default:
+      return 'exclamation-triangle';
+  }
+});
+
+const statusClass = computed(() => {
+  if (!userStatus.value) return 'text-warning';
+  
+  switch (userStatus.value.status.status) {
+    case 'active':
+      return 'text-success';
+    case 'locked':
+      return 'text-warning';
+    case 'disabled':
+      return 'text-danger';
+    default:
+      return 'text-warning';
+  }
+});
+
+const statusMessage = computed(() => {
+  if (!userStatus.value) return 'Status Unknown';
+  
+  return userStatus.value.status.message || 'No status message';
+});
+
 /* ------------------------------ Fetch profile ---------------------- */
 onMounted(async () => {
   try {
-    const {data} = await apiClient.get('/me/');
+    const {data} = await apiClient.get('/api/me/');
     console.log('User profile fetched:', data);
+    
     // provide default values if userprofile is not found
     user.value = data.userprofile || {
       name: 'Unknown User',
       information_id: 'N/A',
       user_profile_img: ''
     };
+    
+    // Get user status information
+    userStatus.value = getUserStatusSummary();
+    
+    // Refresh status from API to ensure it's current
+    await refreshUserStatus();
+    userStatus.value = getUserStatusSummary();
+    
   } catch (err) {
     console.error('Fetch profile failed:', err);
     if (err.response?.status === 401) logout();
@@ -64,7 +120,7 @@ async function fetchAndShowBarcode() {
   serverStatus.value = 'Processing';
 
   try {
-    const {data} = await apiClient.post('/generate_barcode/');
+    const {data} = await apiClient.post('/api/generate_barcode/');
     if (data.status !== 'success') throw new Error(data.message);
 
     showBarcode.value = true;
@@ -110,6 +166,8 @@ function resetDisplay() {
 function logout() {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user_profile');
+  localStorage.removeItem('user_status');
   router.push('/login');
 }
 </script>
@@ -140,6 +198,12 @@ function logout() {
 
       <h4 class="white-h4" style="padding-top: 10px">{{ user.name }}</h4>
       <h4 id="student-id" class="white-h4">{{ user.information_id }}</h4>
+      
+      <!-- User Status Indicator -->
+      <div v-if="userStatus" class="status-indicator" :class="statusClass">
+        <FontAwesomeIcon :icon="statusIcon" class="status-icon" />
+        <span class="status-text">{{ statusMessage }}</span>
+      </div>
 
       <transition name="fade">
         <div v-if="showBarcode" class="barcode-wrapper">
@@ -202,4 +266,42 @@ function logout() {
 
 <style scoped>
 @import '@/assets/css/HomeView.css';
+
+/* Add styles for status indicator */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-icon {
+  font-size: 1rem;
+}
+
+.status-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* Responsive adjustments for status indicator */
+@media (max-width: 768px) {
+  .status-indicator {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+  
+  .status-text {
+    max-width: 150px;
+  }
+}
 </style>
