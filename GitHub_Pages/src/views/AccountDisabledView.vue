@@ -2,10 +2,10 @@
   <div class="container mt-5 d-flex justify-content-center align-items-center"
        style="min-height: 80vh;">
     <div class="card p-4 shadow-sm" style="max-width: 800px; width: 100%;">
-      <h3 class="text-center mb-4">🚫 Account Access Denied</h3>
+      <h3 class="text-center mb-4">Access Denied</h3>
 
       <div class="security-warning">
-        <h5 :class="alertHeaderClass">{{ securityIcon }} Account Security Alert</h5>
+        <h5 :class="alertHeaderClass">Security Alert</h5>
         <p class="text-muted small">
           Access to this account has been restricted for security reasons. All access attempts are logged and monitored.
         </p>
@@ -116,19 +116,6 @@ const alertHeaderClass = computed(() => {
       return 'text-danger';
     default:
       return 'text-warning';
-  }
-});
-
-const securityIcon = computed(() => {
-  if (!accountStatus.value) return '⚠️';
-  
-  switch (accountStatus.value.status) {
-    case 'locked':
-      return '🔒';
-    case 'disabled':
-      return '🚫';
-    default:
-      return '⚠️';
   }
 });
 
