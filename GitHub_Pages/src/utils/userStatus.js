@@ -4,6 +4,8 @@
  */
 
 import apiClient from '../api.js';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 /**
  * Get current user status from localStorage or API
@@ -263,5 +265,136 @@ export const getUserStatusSummary = () => {
     canRetry: canRetryLogin(),
     message: getUserStatusMessage(),
     styling: getStatusStyling()
+  };
+}; 
+
+/**
+ * Vue composable for user status management
+ * Provides reactive user status monitoring and automatic redirection for disabled accounts
+ * @returns {Object} Reactive user status and utility functions
+ */
+export const useUserStatus = () => {
+  const router = useRouter();
+  const userStatus = ref(null);
+  const isLoading = ref(true);
+  const error = ref(null);
+
+  /**
+   * Check user status and handle disabled accounts
+   */
+  const checkUserStatus = async () => {
+    try {
+      isLoading.value = true;
+      error.value = null;
+      
+      // Get current status from localStorage first
+      userStatus.value = getUserStatusSummary();
+      
+      // If we have a token, refresh status from API
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        const updatedStatus = await refreshUserStatus();
+        if (updatedStatus) {
+          userStatus.value = getUserStatusSummary();
+        }
+      }
+      
+      // Check if account is disabled or locked
+      if (userStatus.value && (userStatus.value.isDisabled || 
+          (userStatus.value.isLocked && !userStatus.value.lockExpired))) {
+        console.log('User account is disabled/locked, redirecting to account-disabled');
+        
+        // Only redirect if not already on account-disabled page
+        if (router.currentRoute.value.name !== 'account-disabled') {
+          await router.push('/account-disabled');
+        }
+      }
+      
+    } catch (err) {
+      console.error('Error checking user status:', err);
+      error.value = err;
+      
+      // Check if this is an account disabled error
+      if (err.response?.status === 401 && 
+          (err.response.data?.account_disabled || 
+           err.response.data?.detail?.includes('disabled'))) {
+        
+        // Store error-based status
+        localStorage.setItem('user_status', JSON.stringify({
+          status: 'disabled',
+          message: err.response.data.detail || 'Account is disabled',
+          account_disabled: true
+        }));
+        
+        // Redirect to account-disabled page
+        if (router.currentRoute.value.name !== 'account-disabled') {
+          await router.push('/account-disabled');
+        }
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Set up periodic status checking
+   */
+  let statusCheckInterval = null;
+  
+  const startStatusMonitoring = (intervalMs = 30000) => {
+    // Clear any existing interval
+    if (statusCheckInterval) {
+      clearInterval(statusCheckInterval);
+    }
+    
+    // Set up periodic checking
+    statusCheckInterval = setInterval(checkUserStatus, intervalMs);
+  };
+
+  const stopStatusMonitoring = () => {
+    if (statusCheckInterval) {
+      clearInterval(statusCheckInterval);
+      statusCheckInterval = null;
+    }
+  };
+
+  /**
+   * Handle logout and cleanup
+   */
+  const handleLogout = () => {
+    clearUserData();
+    stopStatusMonitoring();
+    router.push('/login');
+  };
+
+  // Set up automatic checking when composable is used
+  onMounted(() => {
+    checkUserStatus();
+    // Start monitoring if user is logged in
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      startStatusMonitoring();
+    }
+  });
+
+  // Cleanup on unmount
+  onUnmounted(() => {
+    stopStatusMonitoring();
+  });
+
+  return {
+    userStatus,
+    isLoading,
+    error,
+    checkUserStatus,
+    startStatusMonitoring,
+    stopStatusMonitoring,
+    handleLogout,
+    // Computed getters for convenience
+    isActive: () => userStatus.value?.isActive || false,
+    isDisabled: () => userStatus.value?.isDisabled || false,
+    isLocked: () => userStatus.value?.isLocked || false,
+    canRetry: () => userStatus.value?.canRetry || false,
+    statusMessage: () => userStatus.value?.message || 'Unknown status'
   };
 }; 
