@@ -1,77 +1,58 @@
 <template>
   <div class="container mt-5 d-flex justify-content-center align-items-center"
        style="min-height: 80vh;">
-    <div class="card shadow" style="max-width: 700px; width: 100%; border-radius: 15px; border: none;">
-      <!-- Card Header -->
-      <div class="card-header text-white text-center" 
-           :style="headerStyle"
-           style="border-radius: 15px 15px 0 0;">
-        <h4 class="mb-0">
-          <i :class="headerIcon" class="me-2"></i>
-          {{ headerTitle }}
-        </h4>
-      </div>
+    <div class="card p-4 shadow-sm" style="max-width: 800px; width: 100%;">
+      <h3 class="text-center mb-4">🚫 Account Access Denied</h3>
 
-      <!-- Card Body -->
-      <div class="card-body text-center p-4">
-        <!-- Status Icon -->
-        <div class="mb-4">
-          <i :class="statusIcon" :style="iconStyle"></i>
-        </div>
-        
-        <!-- Main Message -->
-        <h5 class="card-title mb-3" :class="titleClass">{{ mainMessage }}</h5>
-        
-        <!-- Status Details -->
-        <div v-if="accountStatus" class="status-details mb-4">
-          <div class="alert" :class="alertClass" role="alert" style="border-radius: 10px; border: none;">
-            <div class="row">
-              <div class="col-md-6 text-start">
-                <strong>Status:</strong> {{ accountStatus.status }}
-              </div>
-              <div class="col-md-6 text-start">
-                <strong>Failed Attempts:</strong> {{ accountStatus.failed_attempts }}
-              </div>
-            </div>
-            <div v-if="accountStatus.locked_until" class="row mt-2">
-              <div class="col-12 text-start">
-                <strong>Locked Until:</strong> {{ formatLockTime(accountStatus.locked_until) }}
-              </div>
-            </div>
-            <div class="row mt-2">
-              <div class="col-12 text-start">
-                <strong>Message:</strong> {{ accountStatus.message }}
-              </div>
-            </div>
+      <div class="security-warning">
+        <h5 :class="alertHeaderClass">{{ securityIcon }} Account Security Alert</h5>
+        <p class="text-muted small">
+          Access to this account has been restricted for security reasons. All access attempts are logged and monitored.
+        </p>
+        <div class="log-details">
+          <div class="log-entry"><span class="log-separator">--- Account Status Report ---</span></div>
+          <div class="log-entry"><span class="log-key">EVENT ID:</span><span class="log-value">{{ eventId }}</span></div>
+          <div class="log-entry"><span class="log-key">TIMESTAMP (UTC):</span><span class="log-value">{{ currentTime }}</span></div>
+          <div class="log-entry"><span class="log-key">STATUS CODE:</span><span class="log-value">{{ statusCode }}</span></div>
+          <div class="log-entry"><span class="log-key">RESTRICTION TYPE:</span><span class="log-value">{{ restrictionType }}</span></div>
+
+          <div class="log-entry"><span class="log-separator">--- Account Details ---</span></div>
+          <div class="log-entry"><span class="log-key">USERNAME:</span><span class="log-value">{{ username || 'N/A' }}</span></div>
+          <div class="log-entry"><span class="log-key">ACCOUNT STATUS:</span><span class="log-value">{{ accountStatus?.status || 'UNKNOWN' }}</span></div>
+          <div class="log-entry"><span class="log-key">FAILED ATTEMPTS:</span><span class="log-value">{{ accountStatus?.failed_attempts || 0 }}</span></div>
+          <div v-if="accountStatus?.locked_until" class="log-entry">
+            <span class="log-key">LOCKED UNTIL:</span><span class="log-value">{{ formatLockTime(accountStatus.locked_until) }}</span>
+          </div>
+
+          <div class="log-entry"><span class="log-separator">--- Session Information ---</span></div>
+          <div class="log-entry"><span class="log-key">SESSION ID:</span><span class="log-value">{{ sessionId }}</span></div>
+          <div class="log-entry"><span class="log-key">IP ADDRESS:</span><span class="log-value">{{ clientInfo.ip }}</span></div>
+          <div class="log-entry"><span class="log-key">USER AGENT:</span><span class="log-value">{{ clientInfo.browser }}</span></div>
+          <div class="log-entry"><span class="log-key">LOCATION:</span><span class="log-value">{{ clientInfo.location }}</span></div>
+
+          <div class="log-entry"><span class="log-separator">--- Security Message ---</span></div>
+          <div class="log-entry">
+            <span class="log-key">REASON:</span>
+            <pre class="log-value message-formatted">{{ securityMessage }}</pre>
+          </div>
+          
+          <div v-if="accountStatus?.status === 'locked'" class="log-entry">
+            <span class="log-key">NEXT ACTION:</span>
+            <span class="log-value">{{ nextActionMessage }}</span>
           </div>
         </div>
         
-        <!-- Description -->
-        <p class="card-text text-muted mb-4">
-          {{ description }}
-        </p>
-        
         <!-- Action Buttons -->
-        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-          <button @click="handleLogout" class="btn btn-primary me-2" 
-                  style="border-radius: 25px; padding: 10px 30px; font-weight: 500; transition: all 0.3s ease;">
+        <div class="action-buttons mt-4">
+          <button @click="handleLogout" class="btn btn-primary me-2">
             <i class="fas fa-sign-out-alt me-2"></i>
-            Logout
+            Return to Login
           </button>
-          <button v-if="canRetry" @click="handleRetry" class="btn btn-secondary" 
-                  style="border-radius: 25px; padding: 10px 30px; font-weight: 500; transition: all 0.3s ease;">
+          <button v-if="canRetry" @click="handleRetry" class="btn btn-secondary">
             <i class="fas fa-redo me-2"></i>
-            Try Again
+            Retry Access
           </button>
         </div>
-      </div>
-      
-      <!-- Card Footer -->
-      <div class="card-footer text-center text-muted">
-        <small>
-          <i class="fas fa-clock me-1"></i>
-          Page generated at: {{ currentTime }}
-        </small>
       </div>
     </div>
   </div>
@@ -80,80 +61,52 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { UAParser } from 'ua-parser-js';
 import { 
   getCurrentUserStatus, 
   formatLockTime, 
-  clearUserData,
-  getStatusStyling 
+  clearUserData
 } from '../utils/userStatus.js';
 
 const router = useRouter();
 const currentTime = ref('');
 const accountStatus = ref(null);
+const eventId = ref('');
+const sessionId = ref('');
+const username = ref('');
+const clientInfo = ref({
+  ip: 'Resolving...',
+  browser: 'N/A',
+  location: 'Resolving...'
+});
+
+// Generate unique identifiers
+const generateEventId = () => {
+  return 'ACC-' + crypto.randomUUID().substring(0, 8).toUpperCase();
+};
+
+const generateSessionId = () => {
+  return 'SES-' + crypto.randomUUID().substring(0, 12).toUpperCase();
+};
 
 // Get account status from utility function
 const getUserStatus = () => {
   accountStatus.value = getCurrentUserStatus();
+  
+  // Try to get username from localStorage
+  const userProfile = localStorage.getItem('user_profile');
+  if (userProfile) {
+    try {
+      const profile = JSON.parse(userProfile);
+      username.value = profile.name || profile.username || 'Unknown User';
+    } catch (error) {
+      console.error('Error parsing user profile:', error);
+    }
+  }
 };
 
-// Computed properties for dynamic styling and content
-const headerStyle = computed(() => {
-  if (!accountStatus.value) return 'background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);';
-  
-  switch (accountStatus.value.status) {
-    case 'locked':
-      return 'background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);';
-    case 'disabled':
-      return 'background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);';
-    default:
-      return 'background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);';
-  }
-});
-
-const headerIcon = computed(() => {
-  if (!accountStatus.value) return 'fas fa-ban';
-  
-  switch (accountStatus.value.status) {
-    case 'locked':
-      return 'fas fa-lock';
-    case 'disabled':
-      return 'fas fa-ban';
-    default:
-      return 'fas fa-exclamation-triangle';
-  }
-});
-
-const headerTitle = computed(() => {
-  if (!accountStatus.value) return 'Account Disabled';
-  
-  switch (accountStatus.value.status) {
-    case 'locked':
-      return 'Account Locked';
-    case 'disabled':
-      return 'Account Disabled';
-    default:
-      return 'Account Issue';
-  }
-});
-
-const statusIcon = computed(() => {
-  if (!accountStatus.value) return 'fas fa-exclamation-triangle text-warning';
-  
-  switch (accountStatus.value.status) {
-    case 'locked':
-      return 'fas fa-lock text-warning';
-    case 'disabled':
-      return 'fas fa-ban text-danger';
-    default:
-      return 'fas fa-exclamation-triangle text-warning';
-  }
-});
-
-const iconStyle = computed(() => {
-  return { fontSize: '4rem' };
-});
-
-const titleClass = computed(() => {
+// Computed properties for dynamic content
+const alertHeaderClass = computed(() => {
   if (!accountStatus.value) return 'text-danger';
   
   switch (accountStatus.value.status) {
@@ -166,44 +119,69 @@ const titleClass = computed(() => {
   }
 });
 
-const mainMessage = computed(() => {
-  if (!accountStatus.value) return 'Your account is currently disabled';
+const securityIcon = computed(() => {
+  if (!accountStatus.value) return '⚠️';
   
   switch (accountStatus.value.status) {
     case 'locked':
-      return 'Your account is currently locked';
+      return '🔒';
     case 'disabled':
-      return 'Your account is currently disabled';
+      return '🚫';
     default:
-      return 'There is an issue with your account';
+      return '⚠️';
   }
 });
 
-const description = computed(() => {
+const statusCode = computed(() => {
+  if (!accountStatus.value) return 'ACC-403-UNKNOWN';
+  
+  switch (accountStatus.value.status) {
+    case 'locked':
+      return 'ACC-423-LOCKED';
+    case 'disabled':
+      return 'ACC-403-DISABLED';
+    default:
+      return 'ACC-403-RESTRICTED';
+  }
+});
+
+const restrictionType = computed(() => {
+  if (!accountStatus.value) return 'UNKNOWN_RESTRICTION';
+  
+  switch (accountStatus.value.status) {
+    case 'locked':
+      return 'TEMPORARY_LOCK';
+    case 'disabled':
+      return 'ADMINISTRATIVE_DISABLE';
+    default:
+      return 'ACCESS_RESTRICTION';
+  }
+});
+
+const securityMessage = computed(() => {
   if (!accountStatus.value) {
-    return "We're sorry, but your account is currently disabled and you cannot access system features. Please contact an administrator for more information.";
+    return "Account access has been restricted.\nContact system administrator for assistance.";
   }
   
   switch (accountStatus.value.status) {
     case 'locked':
-      return "Your account has been temporarily locked due to multiple failed login attempts. Please wait for the lock to expire or contact an administrator for assistance.";
+      return `Account temporarily locked due to ${accountStatus.value.failed_attempts || 0} failed login attempts.\nLock will expire automatically or contact administrator.`;
     case 'disabled':
-      return "We're sorry, but your account is currently disabled and you cannot access system features. Please contact an administrator for more information.";
+      return "Account has been administratively disabled.\nContact system administrator to restore access.";
     default:
-      return "There is an issue with your account status. Please contact an administrator for assistance.";
+      return accountStatus.value.message || "Account access restriction in effect.\nContact administrator for details.";
   }
 });
 
-const alertClass = computed(() => {
-  if (!accountStatus.value) return 'alert-info';
+const nextActionMessage = computed(() => {
+  if (!accountStatus.value || accountStatus.value.status !== 'locked') return '';
   
-  switch (accountStatus.value.status) {
-    case 'locked':
-      return 'alert-warning';
-    case 'disabled':
-      return 'alert-danger';
-    default:
-      return 'alert-info';
+  if (accountStatus.value.lock_expired) {
+    return 'Lock has expired - retry access available';
+  } else if (accountStatus.value.locked_until) {
+    return `Wait until ${formatLockTime(accountStatus.value.locked_until)} or contact administrator`;
+  } else {
+    return 'Contact administrator to unlock account';
   }
 });
 
@@ -217,6 +195,40 @@ const canRetry = computed(() => {
   
   return false;
 });
+
+// Parse client information
+const parseClientInfo = () => {
+  const parser = new UAParser();
+  const result = parser.getResult();
+  const browserName = result.browser.name || 'Unknown';
+  const browserVersion = result.browser.version || '';
+  clientInfo.value.browser = `${browserName} ${browserVersion}`.trim();
+};
+
+// Fetch client IP and location
+const fetchClientInfo = async () => {
+  try {
+    const [geoResponse, ipResponse] = await Promise.all([
+      fetch('https://api.bigdatacloud.net/data/reverse-geocode-client'),
+      fetch('http://ip-api.com/json')
+    ]);
+
+    if (geoResponse.ok) {
+      const geoData = await geoResponse.json();
+      const locationParts = [geoData.city, geoData.principalSubdivision, geoData.countryName].filter(Boolean);
+      clientInfo.value.location = locationParts.length > 0 ? locationParts.join(', ') : 'Unavailable';
+    }
+
+    if (ipResponse.ok) {
+      const ipData = await ipResponse.json();
+      clientInfo.value.ip = ipData.query || 'Unavailable';
+    }
+  } catch (error) {
+    console.error('Error fetching client info:', error);
+    clientInfo.value.ip = 'Unavailable';
+    clientInfo.value.location = 'Unavailable';
+  }
+};
 
 // Handle logout action
 const handleLogout = () => {
@@ -234,38 +246,87 @@ const handleRetry = () => {
   router.push('/');
 };
 
-// Set current time when component mounts
-onMounted(() => {
+// Set current time and initialize data when component mounts
+onMounted(async () => {
   const now = new Date();
-  currentTime.value = now.toLocaleString();
+  currentTime.value = now.toISOString();
+  eventId.value = generateEventId();
+  sessionId.value = generateSessionId();
+  
   getUserStatus();
-});
-
-// Add hover effect for buttons
-const addHoverEffect = () => {
-  const buttons = document.querySelectorAll('.btn');
-  buttons.forEach(button => {
-    button.addEventListener('mouseenter', () => {
-      button.style.transform = 'translateY(-2px)';
-      button.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-    });
-    
-    button.addEventListener('mouseleave', () => {
-      button.style.transform = 'translateY(0)';
-      button.style.boxShadow = 'none';
-    });
-  });
-};
-
-onMounted(() => {
-  addHoverEffect();
+  parseClientInfo();
+  await fetchClientInfo();
 });
 </script>
 
 <style scoped>
-/* Custom styles for the account disabled page */
-.card {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.security-warning {
+  border: 1px solid #dc3545;
+  border-radius: 0.25rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  background-color: #f8f9fa;
+}
+
+.security-warning h5 {
+  font-weight: bold;
+}
+
+.log-details {
+  background-color: #e9ecef;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.85em;
+  color: #212529;
+  margin-bottom: 1rem;
+}
+
+.log-entry {
+  display: flex;
+  line-height: 1.6;
+}
+
+.log-key {
+  color: #6c757d;
+  font-weight: bold;
+  flex-shrink: 0;
+  width: 160px;
+}
+
+.log-value {
+  word-break: break-all;
+  color: #212529;
+}
+
+.log-separator {
+  flex-basis: 100%;
+  text-align: center;
+  color: #adb5bd;
+  margin: 0.5rem 0;
+  font-weight: bold;
+}
+
+.message-formatted {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  background: none;
+  border: none;
+}
+
+.action-buttons {
+  text-align: center;
+}
+
+.btn {
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .btn-primary {
@@ -275,6 +336,7 @@ onMounted(() => {
 
 .btn-primary:hover {
   background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
@@ -284,29 +346,7 @@ onMounted(() => {
 
 .btn-secondary:hover {
   background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-}
-
-.alert {
-  background-color: #d1ecf1;
-  color: #0c5460;
-}
-
-.alert-warning {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.fas {
-  font-size: 1.1em;
-}
-
-.status-details {
-  text-align: left;
+  transform: translateY(-1px);
 }
 
 /* Responsive adjustments */
@@ -315,17 +355,19 @@ onMounted(() => {
     margin: 1rem;
   }
   
-  .card-body {
-    padding: 1.5rem;
+  .log-key {
+    width: 140px;
+    font-size: 0.8em;
   }
   
-  .status-details .row {
-    margin: 0;
+  .log-value {
+    font-size: 0.8em;
   }
   
-  .status-details .col-md-6,
-  .status-details .col-12 {
-    padding: 0.25rem 0;
+  .action-buttons .btn {
+    display: block;
+    width: 100%;
+    margin: 0.25rem 0;
   }
 }
 </style> 
