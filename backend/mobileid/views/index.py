@@ -17,4 +17,7 @@ def index(request):
         "user_profile_img": info.user_profile_img,
     }
 
+    if request.user.useraccount.account_type == "School":
+        return render(request, "index/index.html", context)
+
     return render(request, "index/index_user.html", context)

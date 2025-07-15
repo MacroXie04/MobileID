@@ -4,102 +4,60 @@
 {% block title %}Mobile ID{% endblock %}
 
 {% block cdn %}
-<link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-<style>
-  :root{
-    --brand:#0d6efd;        /* Bootstrap primary */
-    --bg:#f8f9fa;           /* 统一浅灰背景 */
-    --card-radius:18px;
-  }
-  body{background:var(--bg);}
-
-  /* 主卡片 */
-  .mobile-card{
-    max-width:420px;width:100%;
-    border:none;border-radius:var(--card-radius);
-    box-shadow:0 0.75rem 1.5rem rgba(0,0,0,.08);
-  }
-
-  /* 圆形图标背景（无 hover 动效） */
-  .icon-circle{
-    width:64px;height:64px;margin:0 auto .5rem;
-    display:flex;align-items:center;justify-content:center;
-    border-radius:50%;
-    background:rgba(var(--bs-primary-rgb),0.1);
-    color:var(--brand);
-  }
-
-  /* 条码 canvas 清晰边框 */
-  canvas.pdf417{image-rendering:pixelated;border:1px solid #dee2e6;}
-
-  /* 主按钮静态渐变（无动画） */
-  .btn-gradient{
-    background:linear-gradient(135deg,var(--brand),#5b9bff);
-    border:none;
-  }
-  .btn-gradient:hover{filter:brightness(.96);}
-</style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'assets/css/mobileid_user.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-  <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="card p-4 mobile-card">
+            <div class="text-center mb-4">
+                <img src="data:image/png;base64,{{ user_profile_img|safe }}" alt="avatar" class="rounded-circle shadow"
+                     style="width:112px;height:112px;object-fit:cover;">
+                <h4 class="mt-3 mb-1 fw-semibold">{{ name }}</h4>
+                <p class="text-muted small mb-0">{{ information_id }}</p>
+            </div>
 
-    <!-- profile info -->
-    <div class="text-center mb-4">
-      <img src="data:image/png;base64,{{ user_profile_img|safe }}"
-           alt="avatar"
-           class="rounded-circle shadow"
-           style="width:112px;height:112px;object-fit:cover;">
-      <h4 class="mt-3 mb-1 fw-semibold">{{ name }}</h4>
-      <p class="text-muted small mb-0">{{ information_id }}</p>
-    </div>
+            <div id="barcode-container" class="text-center mb-3" style="display:none;"></div>
 
-    <!-- main action -->
-    <button id="show-info-button" class="btn btn-gradient text-white w-100 py-3 fw-semibold mb-4">PAY / Check-in
-    </button>
+            <div class="button-container">
+                <button id="show-barcode-button" class="btn main-button text-white w-100 py-3 fw-semibold">
+                    <div class="progress-overlay" id="progress-overlay"></div>
+                    <div class="button-content" id="button-content">
+                        <span id="button-text">PAY / Check-in</span>
+                    </div>
+                </button>
+            </div>
 
-    <!-- barcode area -->
-    <div id="qrcode" class="text-center mb-4">
-      <div id="qrcode-div" style="display:none;">Barcode</div>
-      <div id="qrcode-code" style="display:none;">
-        <div class="progress mx-auto" style="width:70%;height:8px;">
-          <div class="progress-bar bg-primary" style="width:100%"></div>
+            <div class="row gy-3 text-center">
+                <div class="col-4">
+                    <a href="{% url 'mobileid:web_edit_profile' %}" class="text-decoration-none text-dark d-block">
+                        <div class="icon-circle"><i class="fa-solid fa-user fa-lg"></i></div>
+                        <span class="small fw-semibold d-block">Edit Profile</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="{% url 'mobileid:web_manage_barcode' %}" class="text-decoration-none text-dark d-block">
+                        <div class="icon-circle"><i class="fa-solid fa-barcode fa-lg"></i></div>
+                        <span class="small fw-semibold d-block">Manage Barcode</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="{% url 'mobileid:web_logout' %}"
+                       class="text-decoration-none text-danger d-inline-flex flex-column align-items-center">
+                        <div class="icon-circle" style="background:rgba(220,53,69,.15);color:#dc3545;">
+                            <i class="fa-solid fa-right-from-bracket fa-lg"></i>
+                        </div>
+                        <span class="small fw-semibold">Log out</span>
+                    </a>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-
-    <!-- grid navigation -->
-    <div class="row gy-3 text-center">
-      <div class="col-4">
-        <a href="{% url 'mobileid:web_edit_profile' %}" class="text-decoration-none text-dark d-block">
-          <div class="icon-circle"><i class="fa-solid fa-user fa-lg"></i></div>
-          <span class="small fw-semibold d-block">Edit Profile</span>
-        </a>
-      </div>
-      <div class="col-4">
-        <a href="{% url 'mobileid:web_manage_barcode' %}" class="text-decoration-none text-dark d-block">
-          <div class="icon-circle"><i class="fa-solid fa-barcode fa-lg"></i></div>
-          <span class="small fw-semibold d-block">Manage Barcode</span>
-        </a>
-      </div>
-      <div class="col-4">
-        <a href="{% url 'mobileid:web_logout' %}" class="text-decoration-none text-danger d-inline-flex flex-column align-items-center">
-          <div class="icon-circle" style="background:rgba(220,53,69,.15);color:#dc3545;">
-            <i class="fa-solid fa-right-from-bracket fa-lg"></i>
-          </div>
-          <span class="small fw-semibold mt-1">Log out</span>
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
 {% endblock %}
 
 {% block script %}
-<script src="{% static 'assets/js/bcmath-min.js' %}"></script>
-<script src="{% static 'assets/js/pdf417-min.js' %}"></script>
-<script src="{% static 'assets/js/generate_barcode.js' %}"></script>
+    <script src="{% static 'assets/js/bcmath-min.js' %}"></script>
+    <script src="{% static 'assets/js/pdf417-min.js' %}"></script>
+    <script src="{% static 'assets/js/generate_barcode_user.js' %}"></script>
 {% endblock %}

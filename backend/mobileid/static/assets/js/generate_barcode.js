@@ -32,7 +32,7 @@ $.ajaxSetup({
 $('#show-info-button').click(function () {
     // set button to processing
     $('#server_status').text("Processing");
-    $('#show-info-button').prop('disabled', true);
+    $('#show-info-button button').prop('disabled', true);
     $.ajax({
         type: "POST",
         url: "generate_barcode/",
@@ -40,9 +40,16 @@ $('#show-info-button').click(function () {
         success: function (response) {
             console.log(response);
 
-            $('#server_status').text(response.content);
+            // save the message from the server
+            var serverMessage = response.message;
+            $('#server_status').text(serverMessage);
 
             if (response.status === "success") {
+                // set server status to success
+                setTimeout(function() {
+                    $('#server_status').text("Emergency");
+                }, 10000);
+
                 // if the server returns success, we can proceed to generate the barcode
                 var magstripWithTimestamp = response.barcode;
                 // init PDF417
@@ -113,8 +120,8 @@ $('#show-info-button').click(function () {
                         $('#qrcode-code').fadeOut(400);
                         $('#information_id').fadeOut(400);
 
-                        $('#show-info-button').prop('disabled', false);
-                        $('#server_status').text("Emergency");
+                        $('#show-info-button button').prop('disabled', false);
+                        // 不需要在这里重置server_status，因为上面已经设置了10秒定时器
                         setTimeout(function () {
                             $('#show-info-button').fadeIn();
                         }, 400);
@@ -122,11 +129,11 @@ $('#show-info-button').click(function () {
                 }
             } else {
                 // show error message
-                $('#show-info-button').prop('disabled', false);
+                $('#show-info-button button').prop('disabled', false);
             }
         },
         error: function (xhr, status, error) {
-            $('#show-info-button').prop('disabled', false);
+            $('#show-info-button button').prop('disabled', false);
             $('#server_status').text("Error");
         }
     });
