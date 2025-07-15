@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Barcode, UserBarcodeSettings, UserProfile, UserAccount, UserBarcodeUsageHistory, BarcodeUsage
+from .models import Barcode, UserBarcodeSettings, UserProfile, UserAccount, BarcodeUsage
 
 admin.site.site_header = "MobileID Admin"
 admin.site.site_title = "MobileID Admin Portal"
@@ -18,15 +18,11 @@ class UserProfileAdmin(admin.ModelAdmin):
 class UserBarcodeSettingsAdmin(admin.ModelAdmin):
     list_display = ['user', 'barcode', 'server_verification', 'timestamp_verification', 'barcode_pull']
 
-class UserBarcodeUsageHistoryAdmin(admin.ModelAdmin):
-    list_display = ['user', 'barcode', 'timestamp']
-
 class BarcodeUsageAdmin(admin.ModelAdmin):
     list_display = ['barcode', 'total_usage', 'last_used']
 
 admin.site.register(Barcode, BarcodeAdmin)
 admin.site.register(UserAccount, UserAccountAdmin)
-admin.site.register(UserBarcodeUsageHistory, UserBarcodeUsageHistoryAdmin)
 admin.site.register(UserBarcodeSettings, UserBarcodeSettingsAdmin)
 admin.site.register(BarcodeUsage, BarcodeUsageAdmin)
 admin.site.register(UserProfile, UserProfileAdmin)

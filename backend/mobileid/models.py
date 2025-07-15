@@ -24,21 +24,6 @@ class UserAccount(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.account_type} Account"
 
-
-class UserBarcodeUsageHistory(models.Model):
-    # foreign key to user
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-
-    # barcode usage history
-    barcode = models.ForeignKey('Barcode', on_delete=models.CASCADE)
-
-    # timestamp of usage
-    timestamp = models.BigIntegerField(default=None, null=True)
-
-    def __str__(self):
-        return f"{self.user.username} - {self.timestamp}"
-
-
 # user information
 class UserProfile(models.Model):
     # foreign key to user
@@ -104,7 +89,7 @@ class Barcode(models.Model):
 
     def __str__(self):
         if self.barcode_type == "DynamicBarcode":
-            return f"Dynamic Barcode: barcode ending with {self.barcode[-4:]}"
+            return f"Dynamic barcode ending with {self.barcode[-4:]}"
         elif self.barcode_type == "Identification":
             return f"{self.user.username}'s identification Barcode"
         return f"Barcode ending with {self.barcode[-4:]}"

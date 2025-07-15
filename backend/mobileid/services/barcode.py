@@ -1,216 +1,205 @@
+from __future__ import annotations
+
 import random
-import time
 from datetime import datetime, timedelta
+from typing import Final, Literal
+
 from django.db import transaction
-from django.utils import timezone
 from django.db.models import F
-from mobileid.models import UserBarcodeSettings, Barcode, UserAccount, BarcodeUsage
+from django.utils import timezone
+
+from mobileid.models import (
+    Barcode,
+    BarcodeUsage,
+    UserAccount,
+    UserBarcodeSettings,
+)
 from mobileid.project_code.barcode import auto_send_code
 from barcode.settings import SELENIUM_ENABLED
 
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+ACCOUNT_STAFF: Final[str] = "staff"
+ACCOUNT_USER: Final[str] = "user"
+ACCOUNT_SCHOOL: Final[str] = "school"
 
-def generate_unique_identification_barcode():
-    """
-    Generate a unique 28-digit identification barcode.
-    Uses a while loop to ensure uniqueness by checking against existing barcodes.
-    """
-    while True:
-        code = ''.join([str(random.randint(0, 9)) for _ in range(28)])
+BARCODE_IDENTIFICATION: Final[str] = "Identification"
+BARCODE_DYNAMIC: Final[str] = "DynamicBarcode"
+
+RESULT_TEMPLATE = {
+    "status": "error",  # default until overwritten
+    "message": "Unexpected error",
+    "barcode_type": None,
+    "barcode": None,
+}
+
+# ---------------------------------------------------------------------------
+# Helper functions
+# ---------------------------------------------------------------------------
+
+def _generate_random_digits(length: int) -> str:
+    """Return a random string of *length* numeric digits."""
+    return "".join(str(random.randint(0, 9)) for _ in range(length))
+
+
+def generate_unique_identification_barcode(max_attempts: int = 50) -> str:
+    """Return a unique 28-digit barcode, retrying up to *max_attempts* times."""
+    for _ in range(max_attempts):
+        code = _generate_random_digits(28)
         if not Barcode.objects.filter(barcode=code).exists():
             return code
+    raise RuntimeError("Unable to generate unique identification barcode after"
+                       f" {max_attempts} attempts.")
 
 
-def update_user_identification_barcode(user):
-    """
-    Get user identification barcode (function appears incomplete).
-    """
-    user_identification_barcode = Barcode.objects.filter(
-        user=user, barcode_type="Identification"
+def _create_identification_barcode(user) -> Barcode:
+    """Create and return a fresh identification barcode for *user*."""
+    return Barcode.objects.create(
+        user=user,
+        barcode_type=BARCODE_IDENTIFICATION,
+        barcode=generate_unique_identification_barcode(),
     )
 
 
-def get_dynamic_barcode():
-    """
-    Get the least used dynamic barcode based on usage statistics.
-    Returns the barcode with lowest total_usage and oldest last_used timestamp.
-    """
-    # Select dynamic barcodes with their usage statistics in a single query
-    barcode_with_usage = BarcodeUsage.objects.filter(
-        barcode__barcode_type="DynamicBarcode"
-    ).select_related('barcode').order_by('total_usage', 'last_used')
+def _select_least_used_dynamic_barcode() -> Barcode | None:
+    """Return the least-used dynamic barcode (or *None* if none exist)."""
+    usage_qs = (
+        BarcodeUsage.objects.select_related("barcode")
+        .filter(barcode__barcode_type=BARCODE_DYNAMIC)
+        .order_by("total_usage", "last_used")
+    )
+    return usage_qs.first().barcode if usage_qs.exists() else None
 
-    if barcode_with_usage.exists():
-        selected_usage = barcode_with_usage.first()
-        return selected_usage.barcode
-    else:
-        return None
-    
 
-def update_dynamic_barcode_usage(barcode):
-    """
-    Update barcode usage statistics atomically.
-    Uses F() expressions to avoid race conditions and reduce database queries.
-    """
-    barcode_usage, created = BarcodeUsage.objects.get_or_create(
+def _touch_barcode_usage(barcode: Barcode) -> None:
+    """Increment *barcode* usage counters atomically."""
+    now = timezone.now()
+    BarcodeUsage.objects.update_or_create(
         barcode=barcode,
-        defaults={'total_usage': 0, 'last_used': timezone.now()}
+        defaults={"last_used": now},
     )
-    
-    # Use F() expression for atomic update to prevent race conditions
     BarcodeUsage.objects.filter(barcode=barcode).update(
-        total_usage=F('total_usage') + 1,
-        last_used=timezone.now()
+        total_usage=F("total_usage") + 1, last_used=now
     )
 
+
+def _timestamp_for_school(randomised: bool) -> str:
+    """Return a timestamp string for school barcodes.
+
+    If *randomised* is *True*, generate a random timestamp within the past year.
+    Otherwise, use *now*.
+    """
+    tz = timezone.get_current_timezone()
+    now = timezone.now().astimezone(tz)
+
+    if randomised:
+        start = now - timedelta(days=365)
+        seconds_offset = random.randint(0, int((now - start).total_seconds()))
+        ts = (start + timedelta(seconds=seconds_offset)).strftime("%Y%m%d%H%M%S")
+    else:
+        ts = now.strftime("%Y%m%d%H%M%S")
+    return ts
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
 @transaction.atomic
-def generate_barcode(user):
+def generate_barcode(user) -> dict:
+    """Generate or retrieve a barcode for *user* based on their account type.
+
+    Returns a dict with keys: ``status``, ``message``, ``barcode_type``,
+    ``barcode``. The function is fully transactional to guarantee consistency
+    even under concurrent access.
     """
-    Generate barcode for user based on their account type.
-    Uses database transaction to ensure data consistency.
-    Optimized to reduce database queries by using select_related.
-    """
-    # Get user account and settings in optimized queries
-    try:
-        user_account = UserAccount.objects.get(user=user)
-    except UserAccount.DoesNotExist:
-        # Create default user account if it doesn't exist
-        user_account = UserAccount.objects.create(
-            user=user,
-            account_type="User",
-        )
+    result = RESULT_TEMPLATE.copy()
 
-    # Get or create user settings with related barcode in single query
-    try:
-        user_settings = UserBarcodeSettings.objects.select_related('barcode').get(user=user)
-    except UserBarcodeSettings.DoesNotExist:
-        # Create identification barcode and user settings
-        user_identification_barcode = Barcode.objects.create(
-            user=user,
-            barcode_type="Identification",
-            barcode=generate_unique_identification_barcode(),
-        )
-
-        user_settings = UserBarcodeSettings.objects.create(
-            user=user,
-            barcode=user_identification_barcode,
-            server_verification=False,
-            barcode_pull=False,
-        )
-
-    # Handle different account types
+    # 1. Ensure the user has an account object.
+    user_account, _ = UserAccount.objects.get_or_create(
+        user=user, defaults={"account_type": ACCOUNT_USER.capitalize()}
+    )
     account_type = user_account.account_type.lower()
-    
-    if account_type == "staff":
-        result = {
-            "status": 'Error',
-            "message": 'Staff accounts cannot generate barcodes.',
-            "barcode_type": None,
-            "barcode": None,
-        }
 
-    elif account_type == "user":
-        # Generate new identification barcode for regular users
-        new_barcode_code = generate_unique_identification_barcode()
+    # 2. Ensure the user has settings (and identification barcode if missing).
+    settings, _ = UserBarcodeSettings.objects.select_for_update().get_or_create(
+        user=user,
+        defaults={
+            "barcode": _create_identification_barcode(user),
+            "server_verification": False,
+            "barcode_pull": False,
+        },
+    )
 
-        # delete existing identification barcode
-        Barcode.objects.filter(user=user, barcode_type="Identification").delete()
-        identification_barcode = Barcode.objects.create(
-            user=user,
-            barcode_type="Identification",
-            barcode=new_barcode_code,
+    # ---------------------------------------------------------------------
+    # Branch per account type
+    # ---------------------------------------------------------------------
+
+    # --- STAFF -----------------------------------------------------------
+    if account_type == ACCOUNT_STAFF:
+        result.update(
+            status="error",
+            message="Staff accounts cannot generate barcodes.",
         )
-        user_settings.barcode = identification_barcode
+        return result
 
-        user_settings.save(update_fields=['barcode'])
+    # --- USER ------------------------------------------------------------
+    if account_type == ACCOUNT_USER:
+        # Replace existing identification barcode with a new one.
+        Barcode.objects.filter(user=user, barcode_type=BARCODE_IDENTIFICATION).delete()
+        identification_barcode = _create_identification_barcode(user)
+        settings.barcode = identification_barcode
+        settings.save(update_fields=["barcode"])
 
-        result = {
-            "status": 'success',
-            "message": 'Temporary identification barcode generated successfully.',
-            "barcode_type": 'Identification',
-            "barcode": new_barcode_code,
-        }
+        result.update(
+            status="success",
+            message="Identification barcode generated successfully.",
+            barcode_type=BARCODE_IDENTIFICATION,
+            barcode=identification_barcode.barcode,
+        )
+        return result
 
-    elif account_type == "school":
-        print("School account found")
-        # Generate timestamp for school accounts
-        if user_settings.timestamp_verification:
-            ts = datetime.now(timezone.get_current_timezone()).strftime("%Y%m%d%H%M%S")
+    # --- SCHOOL ----------------------------------------------------------
+    if account_type == ACCOUNT_SCHOOL:
+        # 1. Determine timestamp prefix.
+        ts_prefix = _timestamp_for_school(randomised=not settings.timestamp_verification)
+
+        # 2. Select or pull a dynamic barcode.
+        if settings.barcode and settings.barcode.barcode_type == BARCODE_DYNAMIC:
+            dynamic_barcode = settings.barcode
         else:
-            # Generate random timestamp within the last year
-            start = datetime.now() - timedelta(days=365)
-            ts_rand = random.randint(
-                0, int((datetime.now() - start).total_seconds())
-            )
-            ts = (start + timedelta(seconds=ts_rand)).strftime("%Y%m%d%H%M%S")
-        
-        # Handle dynamic barcode assignment
-        if user_settings.barcode.barcode_type.lower() == "identification":
-            print("Identification barcode found")
-            Barcode.objects.filter(user=user, barcode_type="Identification").delete()
-
-        if not user_settings.barcode.barcode_type.lower() == "dynamicbarcode":
-            # User doesn't have assigned barcode, get one from pool
-            user_settings.barcode_pull = True
-            
-            dynamic_barcode = get_dynamic_barcode()
-
+            settings.barcode_pull = True
+            settings.save(update_fields=["barcode_pull"])
+            dynamic_barcode = _select_least_used_dynamic_barcode()
             if dynamic_barcode is None:
-                result = {
-                    "status": 'Error',
-                    "message": 'No dynamic barcode available.',
-                    "barcode_type": None,
-                    "barcode": None,
-                }
-            else:
-                # Assign barcode to user and update usage
-                user_settings.barcode = dynamic_barcode
-                user_settings.save(update_fields=['barcode', 'barcode_pull'])
-                update_dynamic_barcode_usage(dynamic_barcode)
+                result.update(
+                    status="error",
+                    message="No dynamic barcode available.",
+                )
+                return result
+            # Track that this user now owns this barcode (optional business rule)
+            settings.barcode = dynamic_barcode
+            settings.save(update_fields=["barcode"])
 
-                result = {
-                    "status": 'success',
-                    "message": f"Dynamic: Ending with {dynamic_barcode.barcode[-4:]}",
-                    "barcode_type": 'Dynamic Barcode',
-                    "barcode": f"{ts}{dynamic_barcode.barcode}",
-                }
-        else:
-            # User already has assigned barcode
-            dynamic_barcode = user_settings.barcode
-            update_dynamic_barcode_usage(dynamic_barcode)
+        # 3. Update usage statistics.
+        _touch_barcode_usage(dynamic_barcode)
 
-            # Handle server verification if enabled
-            if SELENIUM_ENABLED and user_settings.server_verification:
-                server_result = auto_send_code(dynamic_barcode.barcode)
+        # 4. Optional server verification.
+        server_msg = ""
+        if SELENIUM_ENABLED and settings.server_verification:
+            srv_res = auto_send_code(dynamic_barcode.session)
+            server_msg = f" Server: {srv_res['code']}" if srv_res else ""
 
-                if server_result["status"] == "success":
-                    result = {
-                        "status": 'success',
-                        "message": f"Dynamic: Server: {server_result['code']}",
-                        "barcode_type": 'Dynamic Barcode',
-                        "barcode": f"{ts}{dynamic_barcode.barcode}",
-                    }
-                else:
-                    result = {
-                        "status": 'success',
-                        "message": f"Dynamic: Ending with {dynamic_barcode.barcode[-4:]}",
-                        "barcode_type": 'Dynamic Barcode',
-                        "barcode": f"{ts}{dynamic_barcode.barcode}",
-                    }
-            else:
-                result = {
-                    "status": 'success',
-                    "message": f"Dynamic: Ending with {dynamic_barcode.barcode[-4:]}",
-                    "barcode_type": 'Dynamic Barcode',
-                    "barcode": f"{ts}{dynamic_barcode.barcode}",
-                }
-    else:
-        # Handle unknown account types
-        result = {
-            "status": 'Error',
-            "message": f'Unknown account type: {account_type}',
-            "barcode_type": None,
-            "barcode": None,
-        }
+        # 5. Compose result.
+        full_barcode = f"{ts_prefix}{dynamic_barcode.barcode}"
+        result.update(
+            status="success",
+            message=f"Dynamic: {dynamic_barcode.barcode[-4:]}{server_msg}",
+            barcode_type=BARCODE_DYNAMIC,
+            barcode=full_barcode,
+        )
+        return result
 
+    # --- Unknown account type -------------------------------------------
+    result.update(message="Invalid account type.")
     return result
