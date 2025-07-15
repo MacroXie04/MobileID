@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import (TokenRefreshView)
 
 from barcode.settings import (API_SERVER)
 from mobileid.api import auth_api, barcode_api, user_api, webauthn_api
-from mobileid.views import (barcode, change_info, health, index, webauthn)
+from mobileid.views import (barcode, change_info, health, index, webauthn, manage)
 
 app_name = "mobileid"
 
@@ -54,27 +54,30 @@ else:
         path("login/", webauthn.web_login, name="web_login"),
         # webauthn logout
         path("logout/", webauthn.web_logout, name="web_logout"),
-        # create barcode
-        path("manage_barcode/", barcode.create_barcode, name="web_manage_barcode"),
         # generate barcode
         path(
             "generate_barcode/",
             barcode.generate_barcode_view,
             name="web_generate_barcode",
         ),
-        path(
-            "barcode/delete/<int:pk>/",
-            barcode.delete_barcode,
-            name="web_delete_barcode",
-        ),
         # edit profile
         path("edit_profile/", change_info.edit_profile, name="web_edit_profile"),
+
+
+
+
         # edit barcode settings
         path(
             "barcode_settings/",
-            change_info.edit_barcode_settings,
+            manage.manage_barcode,
             name="web_barcode_settings",
         ),
+
+        path('delete-barcode/<int:barcode_id>/', manage.delete_barcode, name='web_delete_barcode'),
+
+        path('barcode-info/<int:barcode_id>/', manage.get_barcode_info, name='web_barcode_info'),
+
+
         # webauthn registration
         path("register/", webauthn.web_register, name="web_register"),
     ]
