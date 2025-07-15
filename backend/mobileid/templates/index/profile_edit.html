@@ -1,4 +1,4 @@
-{% extends 'layout/layout_write.html' %}
+{% extends "layout/layout_write.html" %}
 {% load widget_tweaks static %}
 
 {% block title %}CatCard.online – Edit Profile{% endblock %}
@@ -22,7 +22,7 @@
 
 {% block content %}
     <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-        <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
+        <div class="card p-4 shadow-sm" style="max-width:500px; width:100%;">
             <h3 class="text-center mb-4 fw-semibold">Edit Profile</h3>
 
             <form id="profileForm" method="post" enctype="multipart/form-data" novalidate>
@@ -30,16 +30,12 @@
 
                 <!-- avatar -->
                 <div class="mb-3 text-center">
-                    {% if student_info.user_profile_img %}
-                        <img id="avatarPreview" class="avatar-preview mb-2"
-                             src="data:image/png;base64,{{ student_info.user_profile_img }}"
-                             alt="avatar preview">
-                    {% else %}
-                        <img id="avatarPreview" class="avatar-preview mb-2"
-                             src="{% static 'images/avatar_placeholder.png' %}" alt="avatar preview">
-                    {% endif %}
+                    <img id="avatarPreview" class="avatar-preview mb-2"
+                         src="{% if profile.user_profile_img %}data:image/png;base64,{{ profile.user_profile_img }}{% else %}{% static 'images/avatar_placeholder.png' %}{% endif %}"
+                         alt="avatar preview">
 
-                    {{ form.user_profile_img|add_class:"form-control d-none" }}
+                    {{ form.user_profile_img|add_class:"d-none" }}
+                    {{ form.user_profile_img_base64 }}{# hidden field #}
 
                     <button id="selectAvatarBtn" type="button" class="btn btn-outline-secondary w-100">
                         Select Avatar
@@ -50,38 +46,33 @@
                             {{ form.user_profile_img.errors|striptags }}
                         </div>
                     {% endif %}
-
                     <small class="text-muted d-block">JPEG/PNG · &lt; 2 MB</small>
                 </div>
 
                 <!-- name -->
                 <div class="mb-3">
-                    {{ form.name.label_tag }}
-                    {{ form.name|add_class:"form-control" }}
+                    {{ form.name.label_tag }} {{ form.name|add_class:"form-control" }}
                     {% if form.name.errors %}
-                        <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
-                    {% endif %}
+                        <div class="invalid-feedback d-block">{{ form.name.errors }}</div>{% endif %}
                 </div>
 
-                <!-- student information_id -->
+                <!-- student ID -->
                 <div class="mb-3">
-                    {{ form.information_id.label_tag }}
-                    {{ form.information_id|add_class:"form-control" }}
+                    {{ form.information_id.label_tag }} {{ form.information_id|add_class:"form-control" }}
                     {% if form.information_id.errors %}
-                        <div class="invalid-feedback d-block">{{ form.information_id.errors }}</div>
-                    {% endif %}
+                        <div class="invalid-feedback d-block">{{ form.information_id.errors }}</div>{% endif %}
                 </div>
 
                 {% if form.non_field_errors %}
                     <div class="invalid-feedback d-block">{{ form.non_field_errors }}</div>
                 {% endif %}
 
-                <button type="submit" class="btn btn-primary w-100 py-2">Save Changes</button>
+                <button class="btn btn-primary w-100 py-2" type="submit">Save Changes</button>
             </form>
         </div>
     </div>
 
-    <!-- crop image modal -->
+    <!-- cropper modal -->
     <div class="modal fade" id="cropModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -90,9 +81,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="ratio ratio-1x1">
-                        <img id="cropperImage" class="w-100" alt=""/>
-                    </div>
+                    <div class="ratio ratio-1x1"><img id="cropperImage" class="w-100" alt=""></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -106,7 +95,9 @@
 {% block script %}
     <script>
         (() => {
+            /* DOM refs */
             const fileInput = document.querySelector('input[name="user_profile_img"]');
+            const base64Input = document.querySelector('input[name="user_profile_img_base64"]');
             const selectBtn = document.getElementById('selectAvatarBtn');
             const previewImg = document.getElementById('avatarPreview');
             const cropImg = document.getElementById('cropperImage');
@@ -114,15 +105,22 @@
             const cropModal = new bootstrap.Modal(cropModalEl);
             let cropper = null;
 
-            /* trigger file choose */
+            /* Restore preview after failed POST */
+            document.addEventListener('DOMContentLoaded', () => {
+                if (base64Input.value) {
+                    previewImg.src = 'data:image/png;base64,' + base64Input.value;
+                }
+            });
+
+            /* Native file dialog */
             selectBtn.addEventListener('click', () => fileInput.click());
 
-            /* open cropper on file select */
+            /* Load file → Cropper */
             fileInput.addEventListener('change', e => {
                 if (!e.target.files.length) return;
                 const file = e.target.files[0];
                 if (!/^image\/(jpe?g|png)$/i.test(file.type)) {
-                    alert('Only support JPG/PNG');
+                    alert('Only JPG / PNG images are supported.');
                     fileInput.value = '';
                     return;
                 }
@@ -130,6 +128,7 @@
                 cropModal.show();
             });
 
+            /* Init / destroy Cropper */
             cropModalEl.addEventListener('shown.bs.modal', () => {
                 cropper = new Cropper(cropImg, {aspectRatio: 1, viewMode: 1, preview: '.avatar-preview'});
             });
@@ -139,15 +138,15 @@
                 URL.revokeObjectURL(cropImg.src);
             });
 
+            /* Save cropped PNG → Base64 */
             document.getElementById('cropSaveBtn').addEventListener('click', () => {
                 if (!cropper) return;
-                cropper.getCroppedCanvas({width: 128, height: 128}).toBlob(blob => {
-                    const dt = new DataTransfer();
-                    dt.items.add(new File([blob], 'avatar.png', {type: 'image/png'}));
-                    fileInput.files = dt.files;
-                    previewImg.src = URL.createObjectURL(blob);
-                    cropModal.hide();
-                }, 'image/png');
+                const canvas = cropper.getCroppedCanvas({width: 128, height: 128});
+                const dataURL = canvas.toDataURL('image/png');          // data:image/png;base64,...
+                base64Input.value = dataURL.split(',')[1];              // pure Base64
+                previewImg.src = dataURL;
+                fileInput.value = '';                                 // clear raw file
+                cropModal.hide();
             });
         })();
     </script>

@@ -84,7 +84,7 @@ def auto_send_code(user_cookies):
 
     for mobile_id_rand in server_result["mobile_id_rand_array"]:
         response = send_otc(
-            mobile_id_rand, server_result["information_id"], server_result["barcode"]
+            mobile_id_rand, server_result["student_id"], server_result["barcode"]
         )
         if response["status"] == "success":
             return {
@@ -102,7 +102,7 @@ def uc_merced_mobile_id(user_cookie):
     mobile_id_rand_array, student_id, barcode = parse_html_data(html_source)
     return {
         "mobile_id_rand_array": mobile_id_rand_array,
-        "information_id": student_id,
+        "student_id": student_id,
         "barcode": barcode,
     }
 
@@ -145,7 +145,7 @@ def parse_html_data(html_content):
     try:
         # get mobile_id_rand_array
         array_pattern = r"var\s+mobileid_rand_array\s*=\s*(\[[^\]]*\])"
-        # get information_id
+        # get student_id
         student_id_pattern = r"studentid:\s*\"(.*?)\""
         # get barcode
         barcode_pattern = r"barcode:\s*\"(.*?)\""

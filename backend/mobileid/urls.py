@@ -3,8 +3,7 @@ from rest_framework_simplejwt.views import (TokenRefreshView)
 
 from barcode.settings import (API_SERVER)
 from mobileid.api import auth_api, barcode_api, user_api, webauthn_api
-from mobileid.views import (account_disabled, barcode, change_info, health,
-                            index, webauthn)
+from mobileid.views import (barcode, change_info, health, index, webauthn)
 
 app_name = "mobileid"
 

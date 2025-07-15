@@ -1,33 +1,29 @@
 # views.py
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
-from mobileid.forms.InfoForm import (StudentInformationUpdateForm,
+from mobileid.forms.InfoForm import (InformationUpdateForm,
                                      UserBarcodeSettingsForm)
 from mobileid.models import UserBarcodeSettings, UserProfile
 
 
 @login_required(login_url="/login")
 def edit_profile(request):
-    # Ensure the student info record exists
-    student_info, _ = UserProfile.objects.get_or_create(user=request.user)
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
-        form = StudentInformationUpdateForm(
-            request.POST, request.FILES, instance=student_info
-        )
+        form = InformationUpdateForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
             form.save()
             return redirect("mobileid:web_index")
     else:
-        form = StudentInformationUpdateForm(instance=student_info)
+        # Pre-load current avatar into hidden Base64 field
+        form = InformationUpdateForm(
+            instance=profile,
+            initial={"user_profile_img_base64": profile.user_profile_img},
+        )
 
-    context = {
-        "form": form,
-        "student_info": student_info,
-    }
-    return render(request, "index/profile_edit.html", context)
+    return render(request, "index/profile_edit.html", {"form": form, "profile": profile})
 
 
 @login_required(login_url="/login")

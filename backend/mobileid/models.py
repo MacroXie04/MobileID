@@ -44,7 +44,7 @@ class UserProfile(models.Model):
     # foreign key to user
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
-    # student information
+    # information
     name = models.CharField(max_length=100)
     information_id = models.CharField(max_length=100)
 
@@ -52,7 +52,7 @@ class UserProfile(models.Model):
     user_profile_img = models.TextField()
 
     def __str__(self):
-        return f"{self.name} - StudentID: **{self.information_id[-4:]}"
+        return f"{self.name} - ID: **{self.information_id[-4:]}"
 
 
 # barcode total usage

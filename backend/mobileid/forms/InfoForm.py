@@ -1,67 +1,71 @@
-import base64
-from io import BytesIO
-
 from django import forms
+
+from mobileid.models import UserProfile
+
+from io import BytesIO
+import base64
 from PIL import Image
+from django.core.files.uploadedfile import UploadedFile
+from django import forms
+from mobileid.models import UserProfile
 
-from mobileid.models import Barcode, UserBarcodeSettings, UserProfile
+def _pil_to_base64(pil):
+    s = min(pil.size)
+    x0 = (pil.width - s) // 2
+    y0 = (pil.height - s) // 2
+    pil = pil.crop((x0, y0, x0 + s, y0 + s)).resize((128, 128), Image.LANCZOS)
+    buf = BytesIO()
+    pil.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode()
 
 
-class StudentInformationUpdateForm(forms.ModelForm):
-    # Avatar is optional on update – keep existing one if nothing uploaded
-    user_profile_img = forms.ImageField(
+class InformationUpdateForm(forms.ModelForm):
+    # New upload (hidden via CSS)
+    user_profile_img = forms.ImageField(required=False, label="")
+    # Base64 copy of current / cropped avatar
+    user_profile_img_base64 = forms.CharField(
         required=False,
-        widget=forms.FileInput(attrs={"class": "form-control", "accept": "image/*"}),
+        widget=forms.HiddenInput(),
+        label="",
     )
 
     class Meta:
         model = UserProfile
-        fields = ["name", "information_id", "user_profile_img"]
-        widgets = {
-            "name": forms.TextInput(
-                attrs={"class": "form-control", "placeholder": "Full name"}
-            ),
-            "information_id": forms.TextInput(
-                attrs={"class": "form-control", "placeholder": "Student ID"}
-            ),
-        }
+        fields = ("name", "information_id", "user_profile_img", "user_profile_img_base64")
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Ensure Bootstrap styling & error feedback
-        for field_name, field in self.fields.items():
-            field.widget.attrs["class"] = (
-                field.widget.attrs.get("class", "") + " form-control"
-            )
-            if self.errors.get(field_name):
-                field.widget.attrs["class"] += " is-invalid"
+    # ---------- helpers ---------- #
+    @staticmethod
+    def _pil_to_base64(pil_img):
+        """128 × 128 PNG → Base64 (strip header)."""
+        s = min(pil_img.size)
+        x0 = (pil_img.width - s) // 2
+        y0 = (pil_img.height - s) // 2
+        pil_img = pil_img.crop((x0, y0, x0 + s, y0 + s)).resize((128, 128), Image.LANCZOS)
+        buf = BytesIO()
+        pil_img.save(buf, format="PNG")
+        return base64.b64encode(buf.getvalue()).decode()
 
+    # ---------- main save ---------- #
     def save(self, commit=True):
-        instance = super().save(commit=False)
+        profile = super().save(commit=False)
 
-        img_file = self.cleaned_data.get("user_profile_img")
+        img_file  = self.cleaned_data.get("user_profile_img")
+        base64str = self.cleaned_data.get("user_profile_img_base64")
 
-        if not img_file or isinstance(img_file, str):
-            if commit:
-                instance.save()
-            return instance
+        # --- Case 1: user picked a *new* file -------------------------
+        if isinstance(img_file, UploadedFile):
+            with Image.open(img_file) as im:
+                profile.user_profile_img = _pil_to_base64(im)
 
-        with Image.open(img_file) as im:
-            min_side = min(im.size)
-            left = (im.width - min_side) // 2
-            top = (im.height - min_side) // 2
-            im = im.crop((left, top, left + min_side, top + min_side))
-            im = im.resize((128, 128), Image.LANCZOS)
+        # --- Case 2: keep / update existing Base64 --------------------
+        elif base64str:
+            profile.user_profile_img = base64str
 
-            buffer = BytesIO()
-            im.save(buffer, format="PNG")
-            instance.user_profile_img = base64.b64encode(buffer.getvalue()).decode(
-                "utf-8"
-            )
+        # Case 3: neither changed → leave avatar untouched
 
         if commit:
-            instance.save()
-        return instance
+            profile.save()
+        return profile
 
 
 import base64
@@ -70,11 +74,15 @@ from io import BytesIO
 from django import forms
 from PIL import Image
 
-from mobileid.models import Barcode, UserBarcodeSettings, UserProfile
+from mobileid.models import Barcode, UserBarcodeSettings
+
+
+
+
+
 
 
 class UserBarcodeSettingsForm(forms.ModelForm):
-
     # Common boolean dropdown choices
     BOOL_CHOICES = (
         (True, "Yes"),
