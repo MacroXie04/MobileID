@@ -34,6 +34,7 @@
                          src="{% static 'images/avatar_placeholder.png' %}" alt="avatar preview">
 
                     {{ form.user_profile_img|add_class:"form-control d-none" }}
+                    {{ form.user_profile_img_base64 }}{# hidden Base64 field #}
 
                     <button id="selectAvatarBtn" type="button" class="btn btn-outline-secondary w-100">
                         Select Avatar
@@ -44,8 +45,7 @@
                             {{ form.user_profile_img.errors|striptags }}
                         </div>
                     {% endif %}
-
-                    <small class="text-muted d-block">JPEG/PNG · &lt; 2 MB</small>
+                    <small class="text-muted d-block">JPEG/PNG · &lt; 2&nbsp;MB</small>
                 </div>
 
                 <!-- username -->
@@ -107,7 +107,7 @@
         </div>
     </div>
 
-    <!-- cut image modal -->
+    <!-- crop image modal -->
     <div class="modal fade" id="cropModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -122,7 +122,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button id="cropSaveBtn" type="button" class="btn btn-primary">Crop &amp; Use</button>
+                    <button id="cropSaveBtn" type="button" class="btn btn-primary">Crop&nbsp;&amp;&nbsp;Use</button>
                 </div>
             </div>
         </div>
@@ -130,55 +130,87 @@
 {% endblock %}
 
 {% block script %}
-    <script>
-        (() => {
-            const fileInput = document.querySelector('input[name="user_profile_img"]');
-            const selectBtn = document.getElementById('selectAvatarBtn');
-            const previewImg = document.getElementById('avatarPreview');
-            const cropImg = document.getElementById('cropperImage');
-            const cropModalEl = document.getElementById('cropModal');
-            const cropModal = new bootstrap.Modal(cropModalEl);
-            let cropper = null;
+<script>
+(() => {
+    /* --- DOM references --- */
+    const fileInput   = document.querySelector('input[name="user_profile_img"]');        // hidden <input type="file">
+    const base64Input = document.querySelector('input[name="user_profile_img_base64"]'); // hidden Base64 <input>
+    const selectBtn   = document.getElementById('selectAvatarBtn');                      // “Select Avatar” button
+    const previewImg  = document.getElementById('avatarPreview');                        // <img> 128×128 preview
+    const cropImg     = document.getElementById('cropperImage');                         // <img> inside modal
+    const cropModalEl = document.getElementById('cropModal');
+    const cropModal   = new bootstrap.Modal(cropModalEl);
+    let cropper = null;
 
-            /* 触发文件选择 */
-            selectBtn.addEventListener('click', () => fileInput.click());
+    /* -------------------------------------------------------------- */
+    /* 1) Restore preview after server-side validation fails          */
+    /* -------------------------------------------------------------- */
+    document.addEventListener('DOMContentLoaded', () => {
+        // If the hidden Base64 field already has data, use it as the preview source.
+        if (base64Input.value) {
+            previewImg.src = 'data:image/png;base64,' + base64Input.value;
+        }
+    });
 
-            /* 选择文件后弹窗裁剪 */
-            fileInput.addEventListener('change', e => {
-                if (!e.target.files.length) return;
-                const file = e.target.files[0];
-                if (!/^image\/(jpe?g|png)$/i.test(file.type)) {
-                    alert('仅支持 JPG/PNG 文件');
-                    fileInput.value = '';
-                    return;
-                }
-                cropImg.src = URL.createObjectURL(file);
-                cropModal.show();
-            });
+    /* -------------------------------------------------------------- */
+    /* 2) Trigger native file dialog                                  */
+    /* -------------------------------------------------------------- */
+    selectBtn.addEventListener('click', () => fileInput.click());
 
-            /* 初始化 cropper */
-            cropModalEl.addEventListener('shown.bs.modal', () => {
-                cropper = new Cropper(cropImg, {aspectRatio: 1, viewMode: 1, preview: '.avatar-preview'});
-            });
+    /* -------------------------------------------------------------- */
+    /* 3) After file selection, open Cropper modal                    */
+    /* -------------------------------------------------------------- */
+    fileInput.addEventListener('change', e => {
+        if (!e.target.files.length) return;
 
-            /* 销毁 cropper */
-            cropModalEl.addEventListener('hidden.bs.modal', () => {
-                cropper?.destroy();
-                cropper = null;
-                URL.revokeObjectURL(cropImg.src);
-            });
+        const file = e.target.files[0];
+        // Accept only JPG or PNG files
+        if (!/^image\/(jpe?g|png)$/i.test(file.type)) {
+            alert('Only JPG / PNG images are supported.');
+            fileInput.value = '';   // reset invalid selection
+            return;
+        }
+        cropImg.src = URL.createObjectURL(file);
+        cropModal.show();
+    });
 
-            /* 保存裁剪结果 */
-            document.getElementById('cropSaveBtn').addEventListener('click', () => {
-                if (!cropper) return;
-                cropper.getCroppedCanvas({width: 128, height: 128}).toBlob(blob => {
-                    const dt = new DataTransfer();
-                    dt.items.add(new File([blob], 'avatar.png', {type: 'image/png'}));
-                    fileInput.files = dt.files;
-                    previewImg.src = URL.createObjectURL(blob);
-                    cropModal.hide();
-                }, 'image/png');
-            });
-        })();
-    </script>
+    /* -------------------------------------------------------------- */
+    /* 4) Initialize Cropper when modal is shown                      */
+    /* -------------------------------------------------------------- */
+    cropModalEl.addEventListener('shown.bs.modal', () => {
+        cropper = new Cropper(cropImg, {
+            aspectRatio: 1,
+            viewMode: 1,
+            preview: '.avatar-preview', // live preview inside main form
+        });
+    });
+
+    /* -------------------------------------------------------------- */
+    /* 5) Destroy Cropper and clean up when modal is hidden           */
+    /* -------------------------------------------------------------- */
+    cropModalEl.addEventListener('hidden.bs.modal', () => {
+        cropper?.destroy();
+        cropper = null;
+        URL.revokeObjectURL(cropImg.src);
+    });
+
+    /* -------------------------------------------------------------- */
+    /* 6) Save cropped avatar → Base64 + preview + clear raw file     */
+    /* -------------------------------------------------------------- */
+    document.getElementById('cropSaveBtn').addEventListener('click', () => {
+        if (!cropper) return;
+
+        // Generate 128×128 PNG
+        const canvas  = cropper.getCroppedCanvas({ width: 128, height: 128 });
+        const dataURL = canvas.toDataURL('image/png');
+        base64Input.value = dataURL.split(',')[1];
+        previewImg.src    = dataURL;
+
+        // Clear the raw file so the server only receives Base64
+        fileInput.value = '';
+
+        cropModal.hide();
+    });
+})();
+</script>
 {% endblock %}
