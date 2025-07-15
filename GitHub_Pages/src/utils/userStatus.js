@@ -143,7 +143,7 @@ export const formatLockTime = (lockTime) => {
  */
 export const refreshUserStatus = async () => {
   try {
-    const response = await apiClient.get('/api/me/');
+    const response = await apiClient.get('/me/');
     
     if (response.status === 200) {
       const userData = response.data;

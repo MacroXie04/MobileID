@@ -17,12 +17,20 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include, path
-
-from .settings import WEB_ADMIN
+from django.conf.urls.static import static
+from django.conf import settings
+from .settings import (
+    WEB_ADMIN,
+    STATIC_URL,
+    STATIC_ROOT,
+)
 
 urlpatterns = [
     path("", include("mobileid.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(STATIC_URL, document_root=STATIC_ROOT)
 
 if WEB_ADMIN:
     urlpatterns += [

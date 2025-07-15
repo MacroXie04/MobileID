@@ -41,18 +41,6 @@
             <span class="log-value">{{ nextActionMessage }}</span>
           </div>
         </div>
-        
-        <!-- Action Buttons -->
-        <div class="action-buttons mt-4">
-          <button @click="handleLogout" class="btn btn-primary me-2">
-            <i class="fas fa-sign-out-alt me-2"></i>
-            Return to Login
-          </button>
-          <button v-if="canRetry" @click="handleRetry" class="btn btn-secondary">
-            <i class="fas fa-redo me-2"></i>
-            Retry Access
-          </button>
-        </div>
       </div>
     </div>
   </div>

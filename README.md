@@ -235,7 +235,7 @@ Content-Type: application/json
 }
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Backend Testing
 
@@ -264,7 +264,7 @@ cd GitHub_Pages
 npm run lint
 ```
 
-## 🚀 Deployment Guide
+## Deployment Guide
 
 ### Frontend Deployment
 
@@ -289,7 +289,7 @@ Recommended deployment methods:
    - Configure Nginx as reverse proxy
    - Set environment variables and database connections
 
-## 🤝 Contributing
+## Contributing
 
 We welcome all forms of contributions!
 

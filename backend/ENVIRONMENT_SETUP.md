@@ -20,12 +20,9 @@ DEBUG=True
 # Project API and Web application modes
 # When API_SERVER is enabled, Django only provides API endpoints
 API_SERVER=False
-API_ENABLED=True
-WEBAPP_ENABLED=True
 
 # Enable Django default web admin interface
 WEB_ADMIN=True
-USER_REGISTRATION_ENABLED=True
 
 # Enable Selenium web scraping
 SELENIUM_ENABLED=False
@@ -41,10 +38,7 @@ SELENIUM_ENABLED=False
 
 - `DEBUG`: Debug mode (default: True)
 - `API_SERVER`: API-only server mode (default: False)
-- `API_ENABLED`: Enable API functionality (default: True)
-- `WEBAPP_ENABLED`: Enable web application functionality (default: True)
 - `WEB_ADMIN`: Enable Django admin interface (default: True)
-- `USER_REGISTRATION_ENABLED`: Enable user registration (default: True)
 - `SELENIUM_ENABLED`: Enable Selenium functionality (default: False)
 
 ## Production Environment Configuration
@@ -56,9 +50,7 @@ In production environments, it's recommended to use the following settings:
 SECRET_KEY=your-production-secret-key
 DEBUG=False
 API_SERVER=True
-WEBAPP_ENABLED=False
-WEB_ADMIN=False
-USER_REGISTRATION_ENABLED=False
+WEB_ADMIN=True
 SELENIUM_ENABLED=False
 ```
 

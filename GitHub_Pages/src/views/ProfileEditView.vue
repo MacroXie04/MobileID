@@ -203,8 +203,6 @@ const handleUpdate = async () => {
     const {data} = await apiClient.patch("/me/", {
       userprofile: userprofilePayload,
     });
-
-    // 提供默认值，避免当userprofile为null时出现运行时错误
     originalData.value = {...(data.userprofile || {})};
     newAvatarData = null;
     successMessage.value = "Profile updated successfully!";

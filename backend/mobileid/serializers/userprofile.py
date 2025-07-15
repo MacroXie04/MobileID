@@ -22,13 +22,29 @@ class StudentInformationSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    userprofile = StudentInformationSerializer()
+    userprofile = serializers.SerializerMethodField()
     account_status = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ["username", "userprofile", "is_active", "account_status"]
         read_only_fields = ["username", "is_active", "account_status"]
+
+    def get_userprofile(self, obj):
+        """Get user profile data, creating default if none exists"""
+        try:
+            user_profile = obj.userprofile
+            return StudentInformationSerializer(user_profile).data
+        except UserProfile.DoesNotExist:
+            # Return default profile data if no profile exists
+            return {
+                "name": "Unknown User",
+                "information_id": "N/A", 
+                "user_profile_img": "",
+                "is_locked": False,
+                "failed_login_attempts": 0,
+                "locked_until": None
+            }
 
     def get_account_status(self, obj):
         """Get comprehensive account status for frontend"""
@@ -94,10 +110,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         info_data = validated_data.pop("userprofile", {})
 
-        student_info = getattr(instance, "userprofile", None)
-        if not student_info:
-            student_info = UserProfile.objects.create(user=instance)
+        # Get or create user profile
+        try:
+            student_info = instance.userprofile
+        except UserProfile.DoesNotExist:
+            student_info = UserProfile.objects.create(
+                user=instance,
+                name="Unknown User",
+                information_id="N/A",
+                user_profile_img=""
+            )
 
+        # Update profile fields if provided
         for attr in ["name", "information_id", "user_profile_img"]:
             if attr in info_data:
                 setattr(student_info, attr, info_data[attr])

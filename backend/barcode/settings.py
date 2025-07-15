@@ -27,39 +27,32 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv(
-    "SECRET_KEY", "django-insecure-development-key-change-in-production"
-)
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is required")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 # Project API and webapp mode
-# SECURITY WARNING: enable one or both of these flags in production
-# When the API_SERVER is enabled, the django will only serve the API endpoints.
-# The url will not include the /api/ prefix.
 API_SERVER = os.getenv("API_SERVER", "False").lower() == "true"
 
 # When API_ENABLED is False, please set the following flags
 API_ENABLED = os.getenv("API_ENABLED", "True").lower() == "true"
 WEBAPP_ENABLED = os.getenv("WEBAPP_ENABLED", "True").lower() == "true"
 
-# For tests, ensure both API and web app are available
-if "test" in sys.argv:
-    API_SERVER = False
-    API_ENABLED = True
-    WEBAPP_ENABLED = True
-
 # Enable django default web admin interface
 WEB_ADMIN = os.getenv("WEB_ADMIN", "True").lower() == "true"
-USER_REGISTRATION_ENABLED = (
-    os.getenv("USER_REGISTRATION_ENABLED", "True").lower() == "true"
-)
 
 # Enable selenium web scraping
 SELENIUM_ENABLED = os.getenv("SELENIUM_ENABLED", "False").lower() == "true"
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+# If running in test mode, set environment variables accordingly
+if "test" in sys.argv:
+    API_SERVER = False
+    WEBAPP_ENABLED = True
 
 # Application definition
 
@@ -99,28 +92,30 @@ MIDDLEWARE = [
 
 # URL configuration
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
+    origin.strip() for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS", 
+        "http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:3000"
+    ).split(",") if origin.strip()
 ]
 
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
+    origin.strip() for origin in os.getenv(
+        "CSRF_TRUSTED_ORIGINS", 
+        "http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:3000"
+    ).split(",") if origin.strip()
 ]
 
 # Allow credentials in CORS requests
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
-CSRF_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the cookie
+CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "Lax")
+CSRF_COOKIE_HTTPONLY = os.getenv("CSRF_COOKIE_HTTPONLY", "False").lower() == "true"
 
 # Session settings
-SESSION_COOKIE_AGE = 86400  # 1 day in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Session will last until cookie expires
-SESSION_SAVE_EVERY_REQUEST = True  # Refresh the session cookie on every request
+SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", "86400"))  # 1 day in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv("SESSION_EXPIRE_AT_BROWSER_CLOSE", "False").lower() == "true"
+SESSION_SAVE_EVERY_REQUEST = os.getenv("SESSION_SAVE_EVERY_REQUEST", "True").lower() == "true"
 
 # CORS settings
 REST_FRAMEWORK = {
@@ -144,11 +139,11 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
-    "ALGORITHM": "HS256",
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", "15"))),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "1"))),
+    "ROTATE_REFRESH_TOKENS": os.getenv("JWT_ROTATE_REFRESH_TOKENS", "False").lower() == "true",
+    "BLACKLIST_AFTER_ROTATION": os.getenv("JWT_BLACKLIST_AFTER_ROTATION", "False").lower() == "true",
+    "ALGORITHM": os.getenv("JWT_ALGORITHM", "HS256"),
     "SIGNING_KEY": SECRET_KEY,
 }
 
@@ -174,10 +169,15 @@ WSGI_APPLICATION = "barcode.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Default to SQLite for development, allow override with environment variables
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
+        "USER": os.getenv("DB_USER", ""),
+        "PASSWORD": os.getenv("DB_PASSWORD", ""),
+        "HOST": os.getenv("DB_HOST", ""),
+        "PORT": os.getenv("DB_PORT", ""),
     }
 }
 
@@ -223,19 +223,22 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Account security settings
-MAX_FAILED_LOGIN_ATTEMPTS = (
-    5  # Maximum number of failed login attempts before locking the account
-)
-ACCOUNT_LOCKOUT_DURATION = (
-    30  # Duration in minutes for which an account should be locked
-)
+MAX_FAILED_LOGIN_ATTEMPTS = int(os.getenv("MAX_FAILED_LOGIN_ATTEMPTS", "5"))
+ACCOUNT_LOCKOUT_DURATION = int(os.getenv("ACCOUNT_LOCKOUT_DURATION", "30"))
 
 # Cache configuration
 # Use only local memory cache and database session backend (no Redis support)
+CACHE_BACKEND = os.getenv("CACHE_BACKEND", "django.core.cache.backends.locmem.LocMemCache")
+CACHE_LOCATION = os.getenv("CACHE_LOCATION", "unique-snowflake")
+
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "unique-snowflake",
+        "BACKEND": CACHE_BACKEND,
+        "LOCATION": CACHE_LOCATION,
     }
 }
-SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_ENGINE = os.getenv("SESSION_ENGINE", "django.contrib.sessions.backends.db")
+
+STATICFILES_DIRS = [
+    BASE_DIR / "mobileid" / "static",
+]

@@ -4,6 +4,7 @@ import {useRouter} from 'vue-router';
 import apiClient from '@/api';
 import bwipjs from 'bwip-js';
 import { getUserStatusSummary, refreshUserStatus } from '../utils/userStatus.js';
+import avatarPlaceholder from '@/assets/images/avatar_placeholder.png';
 
 import {library} from '@fortawesome/fontawesome-svg-core';
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome';
@@ -90,22 +91,24 @@ const statusMessage = computed(() => {
 /* ------------------------------ Fetch profile ---------------------- */
 onMounted(async () => {
   try {
-    const {data} = await apiClient.get('/api/me/');
-    console.log('User profile fetched:', data);
+    // Get user status information first from localStorage if available
+    userStatus.value = getUserStatusSummary();
     
-    // provide default values if userprofile is not found
-    user.value = data.userprofile || {
+    // Refresh status from API to ensure it's current and get updated user data
+    await refreshUserStatus();
+    
+    // Get updated status and user profile from localStorage after refresh
+    userStatus.value = getUserStatusSummary();
+    const currentUserProfile = userStatus.value.profile;
+    
+    // Set user data with default values if userprofile is not found
+    user.value = currentUserProfile && Object.keys(currentUserProfile).length > 0 ? currentUserProfile : {
       name: 'Unknown User',
       information_id: 'N/A',
       user_profile_img: ''
     };
     
-    // Get user status information
-    userStatus.value = getUserStatusSummary();
-    
-    // Refresh status from API to ensure it's current
-    await refreshUserStatus();
-    userStatus.value = getUserStatusSummary();
+    console.log('User profile loaded:', user.value);
     
   } catch (err) {
     console.error('Fetch profile failed:', err);
@@ -120,7 +123,7 @@ async function fetchAndShowBarcode() {
   serverStatus.value = 'Processing';
 
   try {
-    const {data} = await apiClient.post('/api/generate_barcode/');
+    const {data} = await apiClient.post('/generate_barcode/');
     if (data.status !== 'success') throw new Error(data.message);
 
     showBarcode.value = true;
@@ -136,7 +139,7 @@ async function fetchAndShowBarcode() {
       backgroundcolor: 'FFFFFF',
     });
 
-    // 进度条动画：10 秒归零
+    // progress bar animation: 10 seconds to 0%
     progressBar.value.style.transition = 'none';
     progressBar.value.style.width = '100%';
     requestAnimationFrame(() => {
@@ -156,6 +159,11 @@ async function fetchAndShowBarcode() {
 }
 
 /* ------------------------------ Helpers ---------------------------- */
+function handleImageError(event) {
+  // Set a fallback image if the profile image fails to load
+  event.target.src = avatarPlaceholder;
+}
+
 function resetDisplay() {
   showBarcode.value = false;
   serverStatus.value = 'Emergency';
@@ -190,20 +198,15 @@ function logout() {
     <div v-if="user" class="profile-section">
       <a href="/profile_edit">
         <img
-            :src="`data:image/png;base64,${user.user_profile_img}`"
+            :src="user.user_profile_img ? `data:image/png;base64,${user.user_profile_img}` : avatarPlaceholder"
             class="profile-picture"
             alt="User profile picture"
+            @error="handleImageError"
         />
       </a>
 
       <h4 class="white-h4" style="padding-top: 10px">{{ user.name }}</h4>
       <h4 id="student-id" class="white-h4">{{ user.information_id }}</h4>
-      
-      <!-- User Status Indicator -->
-      <div v-if="userStatus" class="status-indicator" :class="statusClass">
-        <FontAwesomeIcon :icon="statusIcon" class="status-icon" />
-        <span class="status-text">{{ statusMessage }}</span>
-      </div>
 
       <transition name="fade">
         <div v-if="showBarcode" class="barcode-wrapper">

@@ -54,13 +54,13 @@ jobs:
 
     - name: Test migration rollback
       run: |
-        # 创建测试数据库
+        # create a test database
         python manage.py migrate
         
-        # 检查是否可以回滚到上一个迁移
+        # simulate a rollback
         python manage.py migrate --plan
         
-        # 验证数据库状态
+        # rollback to the initial state
         python manage.py check --database default
 
     - name: Check for missing migrations

@@ -1,6 +1,48 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
+import uuid, time
+
+class UserAccount(models.Model):
+    # foreign key to user
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    # account verification
+    account_verification = models.BooleanField(default=False)
+
+    # user account type settings
+    ACCOUNT_TYPE_CHOICES = [
+        ("School", "School"),
+        ("Student", "Student"),
+        ("Staff", "Staff"),
+    ]
+
+    account_type = models.CharField(
+        max_length=10,
+        choices=ACCOUNT_TYPE_CHOICES,
+        default="Student",
+    )
+
+    def __str__(self):
+        if self.account_type == "School":
+            return f"{self.user.username} - School Account"
+        elif self.account_verification:
+            return f"{self.user.username} - Verified"
+        return f"{self.user.username} - Not Verified"
+
+
+class UserBarcodeUsageHistory(models.Model):
+    # foreign key to user
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # barcode usage history
+    barcode = models.ForeignKey('Barcode', on_delete=models.CASCADE)
+
+    # timestamp of usage
+    timestamp = models.BigIntegerField(default=None, null=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.timestamp}"
 
 
 # user information
@@ -44,15 +86,19 @@ class Barcode(models.Model):
     # storage upload user
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
+    # unique identifier for the barcode
+    barcode_id = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, null=True
+    )
+
     # barcode type (will be set up automatically)
     BARCODE_TYPE_CHOICES = [
-        ("Dynamic", "Dynamic"),
-        ("Static", "Static"),
+        ("DynamicBarcode", "DynamicBarcode"),
         ("Others", "Others"),
     ]
 
     barcode_type = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=BARCODE_TYPE_CHOICES,
         default="Others",
     )
@@ -65,7 +111,9 @@ class Barcode(models.Model):
     session = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.barcode_type} barcode ending with {self.barcode[-4:]}"
+        if self.barcode_type == "DynamicBarcode":
+            return f"Dynamic Barcode: barcode ending with {self.barcode[-4:]}"
+        return f"Barcode ending with {self.barcode[-4:]}"
 
 
 # user barcode settings

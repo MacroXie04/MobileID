@@ -3,8 +3,6 @@
 import os
 import sys
 
-import dotenv
-
 
 def main():
     """Run administrative tasks."""
@@ -21,13 +19,9 @@ def main():
 
 
 def print_env():
-    print("Environment variables:")
-    print("DEBUG: ", os.getenv("DEBUG"))
-    print("API_SERVER: ", os.getenv("API_SERVER"))
-    print("API_ENABLED: ", os.getenv("API_ENABLED"))
-    print("WEBAPP_ENABLED: ", os.getenv("WEBAPP_ENABLED"))
-    print("USER_REGISTRATION_ENABLED: ", os.getenv("USER_REGISTRATION_ENABLED"))
-
+    for var in ["DEBUG", "API_SERVER", "SELENIUM_ENABLED"]:
+        if value := os.environ.get(var):
+            print(f"{var}: {value}")
 
 
 if __name__ == "__main__":
