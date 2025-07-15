@@ -41,14 +41,11 @@ if API_SERVER:
             user_api.BarcodeSettingsAPIView.as_view(),
             name="api_barcode_settings",
         ),
-    ]
-
-    # user registration API
-    urlpatterns += [
         path(
             "register/", webauthn_api.RegisterAPIView.as_view(), name="api_register"
         ),
     ]
+
 
 else:
     urlpatterns += [
@@ -79,22 +76,12 @@ else:
             change_info.edit_barcode_settings,
             name="web_barcode_settings",
         ),
-    ]
-
-    # user registration views
-    urlpatterns += [
         # webauthn registration
         path("register/", webauthn.web_register, name="web_register"),
     ]
 
+
 # Health check endpoint (always available)
 urlpatterns += [
     path("health/", health.health_check, name="health_check"),
-]
-
-# Account disabled page
-urlpatterns += [
-    path(
-        "account_disabled/", account_disabled.account_disabled, name="account_disabled"
-    ),
 ]
