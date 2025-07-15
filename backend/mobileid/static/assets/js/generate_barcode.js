@@ -32,7 +32,7 @@ $.ajaxSetup({
 $('#show-info-button').click(function () {
     // set button to processing
     $('#server_status').text("Processing");
-    $('#show-info-button button').prop('disabled', true);
+    $('#show-info-button').prop('disabled', true);
     $.ajax({
         type: "POST",
         url: "generate_barcode/",
@@ -113,7 +113,7 @@ $('#show-info-button').click(function () {
                         $('#qrcode-code').fadeOut(400);
                         $('#information_id').fadeOut(400);
 
-                        $('#show-info-button button').prop('disabled', false);
+                        $('#show-info-button').prop('disabled', false);
                         $('#server_status').text("Emergency");
                         setTimeout(function () {
                             $('#show-info-button').fadeIn();
@@ -122,11 +122,11 @@ $('#show-info-button').click(function () {
                 }
             } else {
                 // show error message
-                $('#show-info-button button').prop('disabled', false);
+                $('#show-info-button').prop('disabled', false);
             }
         },
         error: function (xhr, status, error) {
-            $('#show-info-button button').prop('disabled', false);
+            $('#show-info-button').prop('disabled', false);
             $('#server_status').text("Error");
         }
     });

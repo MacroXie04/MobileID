@@ -125,7 +125,7 @@ def generate_barcode(user):
         user_settings.save(update_fields=['barcode'])
 
         result = {
-            "status": 'Success',
+            "status": 'success',
             "message": 'Temporary identification barcode generated successfully.',
             "barcode_type": 'Identification',
             "barcode": new_barcode_code,
@@ -169,7 +169,7 @@ def generate_barcode(user):
                 update_dynamic_barcode_usage(dynamic_barcode)
 
                 result = {
-                    "status": 'Success',
+                    "status": 'success',
                     "message": f"Dynamic: Ending with {dynamic_barcode.barcode[-4:]}",
                     "barcode_type": 'Dynamic Barcode',
                     "barcode": f"{ts}{dynamic_barcode.barcode}",
@@ -185,21 +185,21 @@ def generate_barcode(user):
 
                 if server_result["status"] == "success":
                     result = {
-                        "status": 'Success',
+                        "status": 'success',
                         "message": f"Dynamic: Server: {server_result['code']}",
                         "barcode_type": 'Dynamic Barcode',
                         "barcode": f"{ts}{dynamic_barcode.barcode}",
                     }
                 else:
                     result = {
-                        "status": 'Success',
+                        "status": 'success',
                         "message": f"Dynamic: Ending with {dynamic_barcode.barcode[-4:]}",
                         "barcode_type": 'Dynamic Barcode',
                         "barcode": f"{ts}{dynamic_barcode.barcode}",
                     }
             else:
                 result = {
-                    "status": 'Success',
+                    "status": 'success',
                     "message": f"Dynamic: Ending with {dynamic_barcode.barcode[-4:]}",
                     "barcode_type": 'Dynamic Barcode',
                     "barcode": f"{ts}{dynamic_barcode.barcode}",

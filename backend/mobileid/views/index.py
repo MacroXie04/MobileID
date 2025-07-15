@@ -17,4 +17,4 @@ def index(request):
         "user_profile_img": info.user_profile_img,
     }
 
-    return render(request, "index/index.html", context)
+    return render(request, "index/index_user.html", context)

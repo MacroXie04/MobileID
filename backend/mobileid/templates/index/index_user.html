@@ -1,142 +1,105 @@
+{% extends "layout/layout_write.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="format-detection" content="telephone=no">
-  <title>MobileID</title>
 
-  <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+{% block title %}Mobile ID{% endblock %}
 
-  <!-- Font Awesome 6 (icons) -->
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+{% block cdn %}
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-  <!-- Page-specific tweaks -->
-  <style>
-    body { background:#fff; }
-    .card-hover:hover{
-      transform:translateY(-4px);
-      box-shadow:0 0.5rem 1rem rgba(0,0,0,.15);
-      transition:.2s;
-    }
-    /* crisp PDF 417 barcode */
-    canvas.pdf417{image-rendering:pixelated;border:1px solid #dee2e6;}
-  </style>
-</head>
+<style>
+  :root{
+    --brand:#0d6efd;        /* Bootstrap primary */
+    --bg:#f8f9fa;           /* 统一浅灰背景 */
+    --card-radius:18px;
+  }
+  body{background:var(--bg);}
 
-<body>
-<!-- Center everything -->
-<div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height:80vh;">
-  <div class="card p-4 shadow-sm" style="max-width:500px;width:100%;">
-    <!-- Avatar + basic info -->
+  /* 主卡片 */
+  .mobile-card{
+    max-width:420px;width:100%;
+    border:none;border-radius:var(--card-radius);
+    box-shadow:0 0.75rem 1.5rem rgba(0,0,0,.08);
+  }
+
+  /* 圆形图标背景（无 hover 动效） */
+  .icon-circle{
+    width:64px;height:64px;margin:0 auto .5rem;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;
+    background:rgba(var(--bs-primary-rgb),0.1);
+    color:var(--brand);
+  }
+
+  /* 条码 canvas 清晰边框 */
+  canvas.pdf417{image-rendering:pixelated;border:1px solid #dee2e6;}
+
+  /* 主按钮静态渐变（无动画） */
+  .btn-gradient{
+    background:linear-gradient(135deg,var(--brand),#5b9bff);
+    border:none;
+  }
+  .btn-gradient:hover{filter:brightness(.96);}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
+
+    <!-- profile info -->
     <div class="text-center mb-4">
       <img src="data:image/png;base64,{{ user_profile_img|safe }}"
-           class="rounded-circle shadow-sm"
-           style="width:110px;height:110px;object-fit:cover;" alt="avatar">
-      <h4 class="mt-3 mb-0">{{ name }}</h4>
-      <p class="text-muted mb-3">{{ information_id }}</p>
+           alt="avatar"
+           class="rounded-circle shadow"
+           style="width:112px;height:112px;object-fit:cover;">
+      <h4 class="mt-3 mb-1 fw-semibold">{{ name }}</h4>
+      <p class="text-muted small mb-0">{{ information_id }}</p>
     </div>
 
-    <!-- Main action (ID preserved) -->
-    <button id="show-info-button" class="btn btn-primary w-100 py-2 mb-3"><b>PAY / Check-in</b></button>
+    <!-- main action -->
+    <button id="show-info-button" class="btn btn-gradient text-white w-100 py-3 fw-semibold mb-4">PAY / Check-in
+    </button>
 
-    <!-- Barcode placeholder (IDs untouched) -->
+    <!-- barcode area -->
     <div id="qrcode" class="text-center mb-4">
       <div id="qrcode-div" style="display:none;">Barcode</div>
       <div id="qrcode-code" style="display:none;">
-        <div class="progress mx-auto" style="width:70%;">
-          <div class="progress-bar" role="progressbar" style="width:100%;"></div>
+        <div class="progress mx-auto" style="width:70%;height:8px;">
+          <div class="progress-bar bg-primary" style="width:100%"></div>
         </div>
       </div>
     </div>
 
-    <!-- Grid nav rebuilt with Bootstrap row/col cards -->
-    <div class="row g-3">
-      <!-- Row 1 -->
+    <!-- grid navigation -->
+    <div class="row gy-3 text-center">
       <div class="col-4">
-        <a href="{% url 'mobileid:web_edit_profile' %}" class="text-decoration-none">
-          <div class="card border-0 text-center card-hover h-100">
-            <div class="card-body d-flex flex-column align-items-center justify-content-center">
-              <i class="fa-solid fa-credit-card fa-2x mb-2"></i>
-              <span class="small fw-semibold">Add&nbsp;Funds</span>
-            </div>
-          </div>
+        <a href="{% url 'mobileid:web_edit_profile' %}" class="text-decoration-none text-dark d-block">
+          <div class="icon-circle"><i class="fa-solid fa-user fa-lg"></i></div>
+          <span class="small fw-semibold d-block">Edit Profile</span>
         </a>
       </div>
       <div class="col-4">
-        <a href="{% url 'mobileid:web_manage_barcode' %}" class="text-decoration-none">
-          <div class="card border-0 text-center card-hover h-100">
-            <div class="card-body d-flex flex-column align-items-center justify-content-center">
-              <i class="fa-solid fa-money-bill fa-2x mb-2"></i>
-              <span class="small fw-semibold">Balance</span>
-            </div>
-          </div>
+        <a href="{% url 'mobileid:web_manage_barcode' %}" class="text-decoration-none text-dark d-block">
+          <div class="icon-circle"><i class="fa-solid fa-barcode fa-lg"></i></div>
+          <span class="small fw-semibold d-block">Manage Barcode</span>
         </a>
       </div>
       <div class="col-4">
-        <a href="{% url 'mobileid:web_barcode_settings' %}" class="text-decoration-none">
-          <div class="card border-0 text-center card-hover h-100">
-            <div class="card-body d-flex flex-column align-items-center justify-content-center">
-              <i class="fa-solid fa-id-card fa-2x mb-2"></i>
-              <span class="small fw-semibold">Lost&nbsp;Card</span>
-            </div>
+        <a href="{% url 'mobileid:web_logout' %}" class="text-decoration-none text-danger d-inline-flex flex-column align-items-center">
+          <div class="icon-circle" style="background:rgba(220,53,69,.15);color:#dc3545;">
+            <i class="fa-solid fa-right-from-bracket fa-lg"></i>
           </div>
-        </a>
-      </div>
-      <!-- Row 2 -->
-      <div class="col-4">
-        <a href="/" class="text-decoration-none">
-          <div class="card border-0 text-center card-hover h-100">
-            <div class="card-body d-flex flex-column align-items-center justify-content-center">
-              <i class="fa-solid fa-exclamation-triangle fa-2x mb-2"></i>
-              <span class="small fw-semibold">Emergency</span>
-            </div>
-          </div>
-        </a>
-      </div>
-      <div class="col-4">
-        <a href="/" class="text-decoration-none">
-          <div class="card border-0 text-center card-hover h-100">
-            <div class="card-body d-flex flex-column align-items-center justify-content-center">
-              <i class="fa-solid fa-dumbbell fa-2x mb-2"></i>
-              <span class="small fw-semibold">Gym</span>
-            </div>
-          </div>
-        </a>
-      </div>
-      <div class="col-4">
-        <a href="/" class="text-decoration-none">
-          <div class="card border-0 text-center card-hover h-100">
-            <div class="card-body d-flex flex-column align-items-center justify-content-center">
-              <i class="fa-solid fa-info fa-2x mb-2"></i>
-              <span class="small fw-semibold">Resources</span>
-            </div>
-          </div>
-        </a>
-      </div>
-      <!-- Row 3 -->
-      <div class="col-4 mx-auto">
-        <a href="{% url 'mobileid:web_logout' %}" class="text-decoration-none">
-          <div class="card border-0 text-center card-hover h-100">
-            <div class="card-body d-flex flex-column align-items-center justify-content-center">
-              <i class="fa-solid fa-sign-out-alt fa-2x mb-2"></i>
-              <span class="small fw-semibold">Log&nbsp;out</span>
-            </div>
-          </div>
+          <span class="small fw-semibold mt-1">Log out</span>
         </a>
       </div>
     </div>
   </div>
 </div>
+{% endblock %}
 
-<!-- JS (order: jQuery → Bootstrap → barcode libs) -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% block script %}
 <script src="{% static 'assets/js/bcmath-min.js' %}"></script>
 <script src="{% static 'assets/js/pdf417-min.js' %}"></script>
 <script src="{% static 'assets/js/generate_barcode.js' %}"></script>
-</body>
-</html>
+{% endblock %}
