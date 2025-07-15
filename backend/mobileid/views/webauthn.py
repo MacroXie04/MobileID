@@ -11,8 +11,8 @@ def web_register(request):
     if request.method == "POST":
         form = UserRegisterForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            login(user=request.user, request=request)
+            user = form.save()
+            login(request, user)
             return redirect("mobileid:web_index")
         messages.error(request, "Please correct the highlighted errors.")
     else:

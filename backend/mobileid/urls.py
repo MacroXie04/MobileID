@@ -59,7 +59,7 @@ else:
         # generate barcode
         path(
             "generate_barcode/",
-            barcode.generate_barcode,
+            barcode.generate_barcode_view,
             name="web_generate_barcode",
         ),
         path(

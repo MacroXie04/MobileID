@@ -75,6 +75,9 @@ class Barcode(models.Model):
     # storage upload user
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
+    # timestamp of creation
+    time_created = models.DateTimeField(auto_now_add=True, null=True, verbose_name="time created")
+
     # unique identifier for the barcode
     barcode_uuid = models.UUIDField(
         default=uuid.uuid4, editable=False, unique=True, null=True
