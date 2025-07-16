@@ -77,7 +77,7 @@ class UserBarcodeSettingsForm(ModelForm):
                 self.fields['barcode_pull'].widget = forms.HiddenInput()
 
 
-@login_required
+@login_required(login_url='/login/')
 def manage_barcode(request):
     try:
         user_account = UserAccount.objects.get(user=request.user)
@@ -118,7 +118,7 @@ def manage_barcode(request):
             if settings_form.is_valid():
                 settings_form.save()
                 messages.success(request, "Barcode settings updated successfully!")
-                return redirect('manage_barcode')
+                return redirect('mobileid:web_barcode_settings')
             else:
                 messages.error(request, "Please correct the errors in the settings form.")
 

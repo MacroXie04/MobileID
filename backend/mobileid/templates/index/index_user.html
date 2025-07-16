@@ -3,8 +3,7 @@
 
 {% block title %}Mobile ID{% endblock %}
 
-{% block cdn %}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+{% block stylesheet %}
     <link rel="stylesheet" href="{% static 'assets/css/mobileid_user.css' %}">
 {% endblock %}
 
@@ -37,7 +36,7 @@
                     </a>
                 </div>
                 <div class="col-4">
-                    <a href="{% url 'mobileid:web_manage_barcode' %}" class="text-decoration-none text-dark d-block">
+                    <a href="{% url 'mobileid:web_barcode_settings' %}" class="text-decoration-none text-dark d-block">
                         <div class="icon-circle"><i class="fa-solid fa-barcode fa-lg"></i></div>
                         <span class="small fw-semibold d-block">Manage Barcode</span>
                     </a>

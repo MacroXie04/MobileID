@@ -11,7 +11,6 @@ urlpatterns = []
 
 if API_SERVER:
     urlpatterns += [
-        # urlpatterns
         # JWT webauthn api
         path(
             "token/",
@@ -50,21 +49,21 @@ else:
     urlpatterns += [
         # index page
         path("", index.index, name="web_index"),
-        # webauthn login
+
+        # webauthn
         path("login/", webauthn.web_login, name="web_login"),
-        # webauthn logout
         path("logout/", webauthn.web_logout, name="web_logout"),
+        path("register/", webauthn.web_register, name="web_register"),
+
         # generate barcode
         path(
             "generate_barcode/",
             barcode.generate_barcode_view,
             name="web_generate_barcode",
         ),
+
         # edit profile
         path("edit_profile/", change_info.edit_profile, name="web_edit_profile"),
-
-
-
 
         # edit barcode settings
         path(
@@ -73,15 +72,8 @@ else:
             name="web_barcode_settings",
         ),
 
-        path('delete-barcode/<int:barcode_id>/', manage.delete_barcode, name='web_delete_barcode'),
-
-        path('barcode-info/<int:barcode_id>/', manage.get_barcode_info, name='web_barcode_info'),
-
-
-        # webauthn registration
-        path("register/", webauthn.web_register, name="web_register"),
+        path('delete_barcode/<int:barcode_id>/', manage.delete_barcode, name='web_delete_barcode'),
     ]
-
 
 # Health check endpoint (always available)
 urlpatterns += [

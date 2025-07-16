@@ -158,6 +158,7 @@ def generate_barcode(user) -> dict:
 
     # SCHOOL — uses Dynamic barcodes
     if account_type == ACCOUNT_SCHOOL:
+
         ts_prefix = _school_timestamp(randomised=not settings.timestamp_verification)
 
         # Pick existing Dynamic barcode or pull a new one
