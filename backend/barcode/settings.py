@@ -88,7 +88,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     
     # Custom middleware for account type routing
-    "mobileid.middleware.AccountTypeRoutingMiddleware",
+    "mobileid.middleware.routing.AccountTypeRoutingMiddleware",
 ]
 
 # URL configuration
