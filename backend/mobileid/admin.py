@@ -16,7 +16,7 @@ class UserProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'name', 'information_id']
 
 class UserBarcodeSettingsAdmin(admin.ModelAdmin):
-    list_display = ['user', 'barcode', 'server_verification', 'timestamp_verification', 'barcode_pull']
+    list_display = ['user', 'barcode', 'server_verification', 'barcode_pull']
 
 class BarcodeUsageAdmin(admin.ModelAdmin):
     list_display = ['barcode', 'total_usage', 'last_used']

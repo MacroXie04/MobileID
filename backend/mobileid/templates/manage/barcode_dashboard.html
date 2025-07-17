@@ -1,0 +1,554 @@
+{% extends "layout/layout_write.html" %}
+{% load widget_tweaks static %}
+
+{% block title %}Barcode Dashboard{% endblock %}
+
+{% block cdn %}
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+{% endblock %}
+
+{% block extra_head %}
+    <style>
+        #video-container {
+            display: none;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity .5s ease-in-out, transform .5s ease-in-out;
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: .25rem;
+            margin-top: 10px;
+            overflow: hidden;
+            box-sizing: border-box;
+            max-width: 100%;
+        }
+        #video-container.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Video wrapper with strict containment */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            height: 240px;
+            margin: 0 auto;
+            border-radius: .25rem;
+            overflow: hidden;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            box-sizing: border-box;
+        }
+
+        #scanner-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            border: none;
+            border-radius: calc(.25rem - 1px);
+            background-color: #000;
+        }
+
+        /* Loading state for video */
+        .video-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='25' fill='none' stroke='%23666' stroke-width='2' stroke-dasharray='40 20' stroke-linecap='round'%3E%3CanimateTransform attributeName='transform' type='rotate' values='0 30 30;360 30 30' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #scanner-video[src] + .video-wrapper::before,
+        #scanner-video:not([src=""]) + .video-wrapper::before {
+            display: none;
+        }
+
+        /* Scanning indicator overlay */
+        .scanning-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 2px solid rgba(0, 123, 255, 0.8);
+            border-radius: .25rem;
+            pointer-events: none;
+            z-index: 2;
+            animation: scanningPulse 2s infinite;
+        }
+
+        @keyframes scanningPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Container constraint to prevent overflow */
+        .barcode-scanner-container {
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .video-wrapper {
+                max-width: 280px;
+                height: 210px;
+            }
+
+            #video-container {
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .video-wrapper {
+                max-width: 260px;
+                height: 195px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="card p-4 shadow-sm" style="max-width:800px; width:100%;">
+            <h3 class="text-center mb-4 fw-semibold">Barcode Dashboard</h3>
+
+            <!-- Flash Messages -->
+            {% if messages %}
+                <div class="mb-4">
+                    {% for m in messages %}
+                        <div class="alert alert-{{ m.tags }} alert-dismissible fade show" role="alert">
+                            {{ m }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Settings Form -->
+            <div class="mb-4">
+                <h5 class="mb-3 fw-semibold">Barcode Settings</h5>
+                <form method="post" id="settings-form" novalidate>
+                    {% csrf_token %}
+                    {{ settings_form.management_form }}
+
+                    <div class="row g-3">
+                        <!-- Pull Setting -->
+                        <div class="col-md-4">
+                            {{ settings_form.barcode_pull.label_tag }}
+                            {{ settings_form.barcode_pull|add_class:"form-control" }}
+                            {% if settings_form.barcode_pull.errors %}
+                                <div class="invalid-feedback d-block">{{ settings_form.barcode_pull.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Server Verification -->
+                        <div class="col-md-4">
+                            {{ settings_form.server_verification.label_tag }}
+                            {{ settings_form.server_verification|add_class:"form-control" }}
+                            {% if settings_form.server_verification.errors %}
+                                <div class="invalid-feedback d-block">{{ settings_form.server_verification.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Barcode Select -->
+                        <div class="col-md-4" id="barcode-select-wrapper">
+                            {{ settings_form.barcode.label_tag }}
+                            {{ settings_form.barcode|add_class:"form-control" }}
+                            {% if settings_form.barcode.errors %}
+                                <div class="invalid-feedback d-block">{{ settings_form.barcode.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if settings_form.non_field_errors %}
+                        <div class="invalid-feedback d-block mt-2">{{ settings_form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <button type="submit" name="settings-submit" class="btn btn-primary w-100 py-2 mt-3">
+                        Save Settings
+                    </button>
+                </form>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Add Barcode Form -->
+            <div class="mb-4">
+                <h5 class="mb-3 fw-semibold">Add New Barcode</h5>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ add_form.management_form }}
+
+                    {% for field in add_form %}
+                        <div class="mb-3">
+                            {{ field.label_tag }}
+                            {{ field|add_class:"form-control" }}
+                            {% if field.errors %}
+                                <div class="invalid-feedback d-block">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <!-- Barcode Scanner Section -->
+                    <div class="mb-3 barcode-scanner-container">
+                        <button type="button" id="toggle-scan-btn"
+                                class="btn btn-outline-secondary w-100 py-2">
+                            Scan Barcode
+                        </button>
+                        <div id="video-container" style="display: none;">
+                            <div class="video-wrapper">
+                                <video id="scanner-video"
+                                       autoplay
+                                       muted
+                                       playsinline
+                                       webkit-playsinline></video>
+                                <div class="scanning-overlay" id="scanning-overlay" style="display: none;"></div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <small class="text-muted">
+                                    <span id="scanner-status">Position the barcode within the camera view</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- End Barcode Scanner Section -->
+
+                    {% if add_form.non_field_errors %}
+                        <div class="invalid-feedback d-block">{{ add_form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <button type="submit" name="add-submit" class="btn btn-primary w-100 py-2">
+                        Add Barcode
+                    </button>
+                </form>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Barcodes List -->
+            <div>
+                <h5 class="mb-3 fw-semibold">Barcodes</h5>
+                {% if barcodes %}
+                    <div class="row g-3">
+                        {% for b in barcodes %}
+                            <div class="col-12">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body d-flex justify-content-between align-items-center py-3">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 fw-semibold">
+                                                {% if b.barcode_type == "DynamicBarcode" %}
+                                                    Dynamic Barcode
+                                                {% else %}
+                                                    Static Barcode
+                                                {% endif %}
+                                            </h6>
+                                            <small class="text-muted">ending with {{ b.barcode|slice:"-4:" }}</small>
+                                        </div>
+                                        <div class="flex-shrink-0">
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="delete-barcode-pk" value="{{ b.pk }}">
+                                                <button type="submit" name="delete-submit"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        onclick="return confirm('Delete this barcode?');">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <div class="bg-light rounded p-4">
+                            <p class="mb-0">No barcodes yet.</p>
+                            <small class="text-muted">Add your first barcode using the form above.</small>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let codeReader = null;
+            let isScanning = false;
+
+            // Debug: Check if ZXing is available
+            console.log('ZXing available:', typeof ZXing);
+            console.log('Window object keys containing "ZX":', Object.keys(window).filter(k => k.includes('ZX')));
+
+            // Wait for ZXing library to be available with better detection
+            function waitForZXing() {
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 100; // 10 seconds total
+
+                    function check() {
+                        // Check multiple possible ways ZXing might be exposed
+                        const zxing = window.ZXing || window.zxing || (window.ZXingBrowser && window.ZXingBrowser);
+
+                        if (zxing && (zxing.BrowserMultiFormatReader || zxing.BrowserCodeReader)) {
+                            console.log('ZXing found:', zxing);
+                            resolve(zxing);
+                        } else if (attempts < maxAttempts) {
+                            attempts++;
+                            setTimeout(check, 100);
+                        } else {
+                            console.error('Available global objects:', Object.keys(window).filter(k => k.toLowerCase().includes('zx')));
+                            reject(new Error('ZXing library failed to load after ' + (maxAttempts * 100) + 'ms'));
+                        }
+                    }
+                    check();
+                });
+            }
+
+            // Initialize scanner when ZXing is ready
+            waitForZXing().then((ZXingLib) => {
+                try {
+                    // Try different constructor patterns
+                    if (ZXingLib.BrowserMultiFormatReader) {
+                        codeReader = new ZXingLib.BrowserMultiFormatReader();
+                    } else if (ZXingLib.BrowserCodeReader) {
+                        codeReader = new ZXingLib.BrowserCodeReader();
+                    } else {
+                        throw new Error('No suitable reader found in ZXing library');
+                    }
+                    console.log('ZXing scanner initialized successfully:', codeReader);
+                } catch (error) {
+                    console.error('Failed to create scanner:', error);
+                    codeReader = null;
+                }
+            }).catch(err => {
+                console.error('Failed to initialize scanner:', err);
+                // Show user-friendly error
+                const scanButton = document.getElementById('toggle-scan-btn');
+                if (scanButton) {
+                    scanButton.innerHTML = 'Scanner Unavailable';
+                    scanButton.disabled = true;
+                    scanButton.classList.remove('btn-outline-secondary');
+                    scanButton.classList.add('btn-outline-danger');
+                }
+            });
+
+            // Attach event listener to scan button
+            const scanButton = document.getElementById('toggle-scan-btn');
+            if (scanButton) {
+                scanButton.addEventListener('click', function() {
+                    if (!scanButton.disabled) {
+                        toggleScan();
+                    }
+                });
+            }
+
+            function toggleScan() {
+                if (!isScanning) {
+                    startScanning();
+                } else {
+                    stopScanning();
+                }
+            }
+
+            function startScanning() {
+                if (!codeReader) {
+                    alert('Scanner not ready. The barcode scanning library failed to load. Please refresh the page and try again.');
+                    return;
+                }
+
+                isScanning = true;
+                const btn = document.getElementById('toggle-scan-btn');
+                const container = document.getElementById('video-container');
+                const video = document.getElementById('scanner-video');
+                const overlay = document.getElementById('scanning-overlay');
+                const status = document.getElementById('scanner-status');
+
+                if (btn) {
+                    btn.innerHTML = 'Cancel Scan';
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.add('btn-outline-danger');
+                }
+
+                if (status) {
+                    status.textContent = 'Starting camera...';
+                }
+
+                if (container) {
+                    // Show container with animation
+                    container.style.display = 'block';
+                    // Force reflow to ensure display:block is applied
+                    container.offsetHeight;
+                    setTimeout(() => container.classList.add('show'), 10);
+                }
+
+                // Clear any previous video source
+                if (video) {
+                    video.srcObject = null;
+                    // Set explicit dimensions to prevent overflow
+                    video.style.width = '100%';
+                    video.style.height = '100%';
+                }
+
+                codeReader.decodeOnceFromVideoDevice(null, 'scanner-video')
+                    .then(result => {
+                        console.log('Scanned result:', result.text);
+
+                        if (status) {
+                            status.textContent = 'Barcode detected! Processing...';
+                        }
+
+                        // Try to find the appropriate input field
+                        const textInputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea');
+                        let targetInput = null;
+
+                        // Look for input with barcode-related names
+                        for (let input of textInputs) {
+                            const name = input.name.toLowerCase();
+                            const id = input.id.toLowerCase();
+                            if (name.includes('barcode') || name.includes('code') ||
+                                id.includes('barcode') || id.includes('code') ||
+                                name.includes('input_value') || name.includes('value')) {
+                                targetInput = input;
+                                break;
+                            }
+                        }
+
+                        // Fallback to last text input
+                        if (!targetInput && textInputs.length > 0) {
+                            targetInput = textInputs[textInputs.length - 1];
+                        }
+
+                        if (targetInput) {
+                            targetInput.value = result.text;
+                            targetInput.focus();
+                            targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+
+                        stopScanning();
+                    })
+                    .catch(err => {
+                        console.error('Scanning error:', err);
+
+                        if (status) {
+                            if (err.name === 'NotAllowedError') {
+                                status.textContent = 'Camera access denied';
+                            } else if (err.name === 'NotFoundError') {
+                                status.textContent = 'No camera found';
+                            } else {
+                                status.textContent = 'Scanning failed';
+                            }
+                        }
+
+                        if (err.name !== 'NotFoundError' && err.name !== 'NotAllowedError') {
+                            // Don't alert for common errors
+                            setTimeout(() => {
+                                alert('Scanning failed: ' + err.message);
+                            }, 100);
+                        } else if (err.name === 'NotAllowedError') {
+                            setTimeout(() => {
+                                alert('Camera access denied. Please allow camera permissions and try again.');
+                            }, 100);
+                        }
+
+                        setTimeout(() => stopScanning(), 2000);
+                    });
+
+                // Show scanning overlay after video starts
+                setTimeout(() => {
+                    if (overlay && isScanning) {
+                        overlay.style.display = 'block';
+                        if (status) {
+                            status.textContent = 'Looking for barcode...';
+                        }
+                    }
+                }, 1000);
+            }
+
+            function stopScanning() {
+                isScanning = false;
+                const btn = document.getElementById('toggle-scan-btn');
+                const container = document.getElementById('video-container');
+                const video = document.getElementById('scanner-video');
+                const overlay = document.getElementById('scanning-overlay');
+                const status = document.getElementById('scanner-status');
+
+                if (btn) {
+                    btn.innerHTML = 'Scan Barcode';
+                    btn.classList.remove('btn-outline-danger');
+                    btn.classList.add('btn-outline-secondary');
+                }
+
+                if (overlay) {
+                    overlay.style.display = 'none';
+                }
+
+                if (status) {
+                    status.textContent = 'Position the barcode within the camera view';
+                }
+
+                if (container) {
+                    container.classList.remove('show');
+                    setTimeout(() => {
+                        container.style.display = 'none';
+                    }, 500);
+                }
+
+                // Stop video stream and clear source
+                if (video && video.srcObject) {
+                    const stream = video.srcObject;
+                    const tracks = stream.getTracks();
+                    tracks.forEach(track => {
+                        track.stop();
+                        console.log('Stopped camera track:', track.kind);
+                    });
+                    video.srcObject = null;
+                    video.src = '';
+                    video.load(); // Reset video element
+                }
+
+                if (codeReader) {
+                    try {
+                        codeReader.reset();
+                    } catch (err) {
+                        console.warn('Error resetting scanner:', err);
+                    }
+                }
+            }
+
+            /* Disable barcode <select> when pull == "Yes" */
+            const pull = document.querySelector('#id_settings-barcode_pull');
+            const select = document.querySelector('#id_settings-barcode');
+
+            function toggleSelect() {
+                if (!pull || !select) return;
+                select.disabled = pull.value === "True";
+            }
+
+            if (pull) {
+                toggleSelect();
+                pull.addEventListener('change', toggleSelect);
+            }
+        });
+    </script>
+{% endblock %}

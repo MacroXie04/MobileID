@@ -67,12 +67,10 @@ else:
 
         # edit barcode settings
         path(
-            "barcode_settings/",
-            manage.manage_barcode,
-            name="web_barcode_settings",
+            "barcode_dashboard/",
+            manage.barcode_dashboard,
+            name="web_barcode_dashboard",
         ),
-
-        path('delete_barcode/<int:barcode_id>/', manage.delete_barcode, name='web_delete_barcode'),
     ]
 
 # Health check endpoint (always available)

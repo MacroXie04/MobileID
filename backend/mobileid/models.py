@@ -1,8 +1,8 @@
+import uuid
+
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils import timezone
-import uuid, time
-from django.core.exceptions import ValidationError
+
 
 class UserAccount(models.Model):
     # foreign key to user
@@ -23,6 +23,7 @@ class UserAccount(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.account_type} Account"
+
 
 # user information
 class UserProfile(models.Model):
@@ -107,9 +108,6 @@ class UserBarcodeSettings(models.Model):
 
     # server verification settings
     server_verification = models.BooleanField(default=False)
-
-    # timestamp verification
-    timestamp_verification = models.BooleanField(default=True)
 
     # barcode pull settings
     barcode_pull = models.BooleanField(default=True)
