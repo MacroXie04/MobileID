@@ -1,29 +1,14 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
-from mobileid.models import UserProfile, UserAccount
+from django.shortcuts import redirect
 
 
 @login_required(login_url="/login")
 def index(request):
-    # load user profile
-    try:
-        info = UserProfile.objects.get(user=request.user)
-    except UserProfile.DoesNotExist:
-        return redirect("mobileid:web_edit_profile")
-
-    context = {
-        "name": info.name,
-        "information_id": info.information_id,
-        "user_profile_img": info.user_profile_img,
-    }
-
-    user_account_type = request.user.useraccount.account_type
-    # TODO: handle account with out user account settings
-
-
-    if user_account_type == "School":
-        return render(request, "index/index.html", context)
-    elif user_account_type == "User":
-        return render(request, "index/index_user.html", context)
-    else:
-        return render(request, "index/index_user.html", context)
+    """
+    首页视图 - 主要逻辑已移至 AccountTypeRoutingMiddleware 中间件
+    这个视图现在主要作为fallback，正常情况下不应该被调用到
+    因为中间件会拦截并处理根路径的请求
+    """
+    # 如果到达这里，说明中间件没有处理请求，可能出现了异常
+    # 作为fallback，重定向到登录页面
+    return redirect("mobileid:web_login")

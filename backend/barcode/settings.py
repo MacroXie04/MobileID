@@ -86,8 +86,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # Custom middleware for user status check
-    "mobileid.middleware.UserStatusMiddleware",
+    
+    # Custom middleware for account type routing
+    "mobileid.middleware.AccountTypeRoutingMiddleware",
 ]
 
 # URL configuration
