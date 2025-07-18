@@ -1,49 +1,30 @@
 # views.py
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
 
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import F
-from django.core.cache import cache
 from django.utils import timezone
-from rest_framework.views import APIView
+from rest_framework import generics, serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import (
-    status,
-    serializers,
-    generics,
-)
-
-from mobileid.throttling import (
-    BarcodeGenerationRateThrottle,
-    BarcodeManagementRateThrottle,
-)
-
-
-from mobileid.models import (
-    Barcode,
-    BarcodeUsage,
-    UserBarcodeSettings,
-)
-from mobileid.project_code.barcode import (
-    uc_merced_mobile_id,
-    auto_send_code,
-)
-
-from mobileid.serializers.barcode import (
-    BarcodeListSerializer,
-    BarcodeCreateSerializer,
-)
+from rest_framework.views import APIView
 
 from barcode.settings import SELENIUM_ENABLED
+from mobileid.models import Barcode, BarcodeUsage, UserBarcodeSettings
+from mobileid.project_code.barcode import auto_send_code, uc_merced_mobile_id
+from mobileid.serializers.barcode import (BarcodeCreateSerializer,
+                                          BarcodeListSerializer)
+from mobileid.throttling import (BarcodeGenerationRateThrottle,
+                                 BarcodeManagementRateThrottle)
 
 # --------------------------------------------------------------------------- #
 # Constants and helpers (reuse the originals)
 # --------------------------------------------------------------------------- #
-PACIFIC_TZ      = timezone.get_fixed_timezone(-480)  # America/Los_Angeles (UTC-8)
-CACHE_PREFIX    = "barcode_api"
-POOL_TTL        = 5
+PACIFIC_TZ = timezone.get_fixed_timezone(-480)  # America/Los_Angeles (UTC-8)
+CACHE_PREFIX = "barcode_api"
+POOL_TTL = 5
 FLUSH_THRESHOLD = 10
 
 
@@ -69,6 +50,7 @@ class GenerateBarcodeView(APIView):
     Pull-mode selection, timestamp / server verification, and usage
     aggregation logic are preserved from the original function-based view.
     """
+
     permission_classes = [IsAuthenticated]
     throttle_classes = [BarcodeGenerationRateThrottle]
 
@@ -77,12 +59,15 @@ class GenerateBarcodeView(APIView):
         # 1) Fetch user settings (no cache)
         try:
             user_settings = (
-                UserBarcodeSettings.objects
-                .select_related("barcode")
+                UserBarcodeSettings.objects.select_related("barcode")
                 .only(
-                    "barcode_pull", "timestamp_verification", "server_verification",
+                    "barcode_pull",
+                    "timestamp_verification",
+                    "server_verification",
                     "barcode_id",
-                    "barcode__barcode", "barcode__barcode_type", "barcode__session",
+                    "barcode__barcode",
+                    "barcode__barcode_type",
+                    "barcode__session",
                 )
                 .get(user_id=request.user.id)
             )
@@ -100,18 +85,16 @@ class GenerateBarcodeView(APIView):
             if pool_ids is None:
                 # Build pool from BarcodeUsage
                 pool_ids = list(
-                    BarcodeUsage.objects
-                    .order_by("last_used", "total_usage")
-                    .values_list("barcode_id", flat=True)[:50]
+                    BarcodeUsage.objects.order_by(
+                        "last_used", "total_usage"
+                    ).values_list("barcode_id", flat=True)[:50]
                 )
 
                 # Pad with unused barcodes if pool too small
                 if len(pool_ids) < 50:
-                    pad_ids = (
-                        Barcode.objects
-                        .exclude(id__in=pool_ids)
-                        .values_list("id", flat=True)[:50 - len(pool_ids)]
-                    )
+                    pad_ids = Barcode.objects.exclude(id__in=pool_ids).values_list(
+                        "id", flat=True
+                    )[: 50 - len(pool_ids)]
                     pool_ids.extend(pad_ids)
 
                 cache.set(pool_key, pool_ids, POOL_TTL)
@@ -123,11 +106,9 @@ class GenerateBarcodeView(APIView):
                 )
 
             barcode_id = pool_ids[0]
-            user_barcode = (
-                Barcode.objects
-                .only("barcode", "barcode_type", "session")
-                .get(id=barcode_id)
-            )
+            user_barcode = Barcode.objects.only(
+                "barcode", "barcode_type", "session"
+            ).get(id=barcode_id)
         else:
             # Non-pull mode
             user_barcode = user_settings.barcode
@@ -148,11 +129,9 @@ class GenerateBarcodeView(APIView):
 
             if count == 1 or count >= FLUSH_THRESHOLD:
                 try:
-                    updated = (
-                        BarcodeUsage.objects
-                        .filter(barcode_id=barcode_obj.id)
-                        .update(total_usage=F("total_usage") + count)
-                    )
+                    updated = BarcodeUsage.objects.filter(
+                        barcode_id=barcode_obj.id
+                    ).update(total_usage=F("total_usage") + count)
                     if not updated:
                         BarcodeUsage.objects.create(
                             barcode_id=barcode_obj.id,
@@ -166,12 +145,14 @@ class GenerateBarcodeView(APIView):
         # 4) Build response for static barcodes
         if user_barcode.barcode_type.lower() == "static":
             register_usage(user_barcode)
-            return Response({
-                "status": "success",
-                "barcode_type": "static",
-                "content": f"Static: {user_barcode.barcode[-4:]}",
-                "barcode": user_barcode.barcode,
-            })
+            return Response(
+                {
+                    "status": "success",
+                    "barcode_type": "static",
+                    "content": f"Static: {user_barcode.barcode[-4:]}",
+                    "barcode": user_barcode.barcode,
+                }
+            )
 
         # 5) Build response for dynamic barcodes
         if user_barcode.barcode_type.lower() == "dynamic":
@@ -180,7 +161,9 @@ class GenerateBarcodeView(APIView):
                 ts = datetime.now(PACIFIC_TZ).strftime("%Y%m%d%H%M%S")
             else:
                 start = datetime.now() - timedelta(days=365)
-                ts_rand = random.randint(0, int((datetime.now() - start).total_seconds()))
+                ts_rand = random.randint(
+                    0, int((datetime.now() - start).total_seconds())
+                )
                 ts = (start + timedelta(seconds=ts_rand)).strftime("%Y%m%d%H%M%S")
 
             # Optional server verification
@@ -208,12 +191,14 @@ class GenerateBarcodeView(APIView):
                 content_msg = "Server verification skipped in pull mode "
 
             register_usage(user_barcode)
-            return Response({
-                "status": "success",
-                "barcode_type": "dynamic",
-                "content": f"Dynamic: {user_barcode.barcode[-4:]} {content_msg}".strip(),
-                "barcode": f"{ts}{user_barcode.barcode}",
-            })
+            return Response(
+                {
+                    "status": "success",
+                    "barcode_type": "dynamic",
+                    "content": f"Dynamic: {user_barcode.barcode[-4:]} {content_msg}".strip(),
+                    "barcode": f"{ts}{user_barcode.barcode}",
+                }
+            )
 
         # 6) Fallback
         return Response(
@@ -227,12 +212,12 @@ class BarcodeListCreateAPIView(generics.ListCreateAPIView):
     throttle_classes = [BarcodeManagementRateThrottle]
 
     def get_serializer_class(self):
-        if self.request.method == 'POST':
+        if self.request.method == "POST":
             return BarcodeCreateSerializer
         return BarcodeListSerializer
 
     def get_queryset(self):
-        return Barcode.objects.filter(user=self.request.user).order_by('-id')
+        return Barcode.objects.filter(user=self.request.user).order_by("-id")
 
     def perform_create(self, serializer):
         serializer.save()
@@ -249,6 +234,8 @@ class BarcodeDestroyAPIView(generics.DestroyAPIView):
 
     def perform_destroy(self, instance):
         # remove barcode from user settings and delete usage records
-        UserBarcodeSettings.objects.filter(user=self.request.user, barcode=instance).update(barcode=None)
+        UserBarcodeSettings.objects.filter(
+            user=self.request.user, barcode=instance
+        ).update(barcode=None)
         BarcodeUsage.objects.filter(barcode=instance).delete()
         instance.delete()

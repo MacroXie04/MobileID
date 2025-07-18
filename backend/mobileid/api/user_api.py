@@ -1,16 +1,10 @@
-from rest_framework import (
-    generics,
-)
+from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
-from mobileid.throttling import UserProfileRateThrottle
-
-from mobileid.serializers.userprofile import (
-    UserBarcodeSettingsSerializer,
-    UserProfileSerializer,
-)
-
 from mobileid.models import UserBarcodeSettings
+from mobileid.serializers.userprofile import (UserBarcodeSettingsSerializer,
+                                              UserProfileSerializer)
+from mobileid.throttling import UserProfileRateThrottle
 
 
 class UserProfileAPIView(generics.RetrieveUpdateAPIView):
@@ -29,5 +23,7 @@ class BarcodeSettingsAPIView(generics.RetrieveUpdateAPIView):
     throttle_classes = [UserProfileRateThrottle]
 
     def get_object(self):
-        settings, created = UserBarcodeSettings.objects.get_or_create(user=self.request.user)
+        settings, created = UserBarcodeSettings.objects.get_or_create(
+            user=self.request.user
+        )
         return settings

@@ -14,18 +14,25 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
-from django.urls import (
-    path,
-    include,
+from django.urls import include, path
+from django.conf.urls.static import static
+from django.conf import settings
+from .settings import (
+    WEB_ADMIN,
+    STATIC_URL,
+    STATIC_ROOT,
 )
-from .settings import WEB_ADMIN
 
 urlpatterns = [
-    path('', include('mobileid.urls')),
+    path("", include("mobileid.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(STATIC_URL, document_root=STATIC_ROOT)
 
 if WEB_ADMIN:
     urlpatterns += [
-        path('admin/', admin.site.urls),
+        path("admin/", admin.site.urls),
     ]

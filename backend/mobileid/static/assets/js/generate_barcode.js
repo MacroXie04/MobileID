@@ -40,9 +40,16 @@ $('#show-info-button').click(function () {
         success: function (response) {
             console.log(response);
 
-            $('#server_status').text(response.content);
+            // save the message from the server
+            var serverMessage = response.message;
+            $('#server_status').text(serverMessage);
 
             if (response.status === "success") {
+                // set server status to success
+                setTimeout(function() {
+                    $('#server_status').text("Emergency");
+                }, 10000);
+
                 // if the server returns success, we can proceed to generate the barcode
                 var magstripWithTimestamp = response.barcode;
                 // init PDF417
@@ -114,7 +121,7 @@ $('#show-info-button').click(function () {
                         $('#information_id').fadeOut(400);
 
                         $('#show-info-button button').prop('disabled', false);
-                        $('#server_status').text("Emergency");
+                        // 不需要在这里重置server_status，因为上面已经设置了10秒定时器
                         setTimeout(function () {
                             $('#show-info-button').fadeIn();
                         }, 400);

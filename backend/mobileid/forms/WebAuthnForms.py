@@ -7,108 +7,92 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from mobileid.models import UserProfile
+from mobileid.services.webauthn import create_user_profile
 
 
 # UserLoginForm
 class UserLoginForm(AuthenticationForm):
     username = forms.CharField(
-        label='Username',
+        label="Username",
         max_length=150,
         widget=forms.TextInput(
-            attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter your username'
-            }
-        )
+            attrs={"class": "form-control", "placeholder": "Enter your username"}
+        ),
     )
     password = forms.CharField(
         label="Password",
         widget=forms.PasswordInput(
-            attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter your password'
-            }
-        )
+            attrs={"class": "form-control", "placeholder": "Enter your password"}
+        ),
     )
 
     def __init__(self, *args, **kwargs):
         super(UserLoginForm, self).__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             if self.errors.get(field_name):
-                field.widget.attrs['class'] += ' is-invalid'
+                field.widget.attrs["class"] += " is-invalid"
 
 
-# user registration form
 class UserRegisterForm(UserCreationForm):
-    name = forms.CharField(
-        max_length=100,
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full name'})
-    )
-    information_id = forms.CharField(
-        max_length=100,
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Information ID'})
-    )
-    user_profile_img = forms.ImageField(
-        required=True,
-        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'})
+    # Extra visible fields
+    name = forms.CharField(max_length=100, label="Name")
+    information_id = forms.CharField(max_length=100, label="Student ID")
+
+    # Raw file input (hidden by CSS – selection handled via JS)
+    user_profile_img = forms.ImageField(required=False, label="")
+
+    # Base64 string produced by Cropper.js
+    user_profile_img_base64 = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(),
+        label="",
     )
 
     class Meta:
         model = User
-        fields = ['username', 'password1', 'password2', 'name', 'information_id', 'user_profile_img']
-        widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your username'}),
-            'password1': forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter password'}),
-            'password2': forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm password'}),
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full name'}),
-            'information_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Student ID'}),
-            'user_profile_img': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super(UserRegisterForm, self).__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = field.widget.attrs.get('class', '') + ' form-control'
-
-            if self.errors.get(field_name):
-                field.widget.attrs['class'] += ' is-invalid'
-
-    def save(self, commit=True):
-        # Save the User instance first
-        user = super().save(commit=commit)
-        
-        # new user is not active
-        user.is_active = False
-        user.save()
-
-        # Gather extra form data
-        name = self.cleaned_data['name']
-        information_id = self.cleaned_data['information_id']
-        img_file = self.cleaned_data['user_profile_img']
-
-        # -------------------------------
-        # Process avatar -> 128×128 PNG
-        # -------------------------------
-        with Image.open(img_file) as im:
-            min_side = min(im.size)
-            left = (im.width - min_side) // 2
-            top = (im.height - min_side) // 2
-            im = im.crop((left, top, left + min_side, top + min_side))
-            im = im.resize((128, 128), Image.LANCZOS)
-
-            buffer = BytesIO()
-            im.save(buffer, format='PNG')
-            base64_img = base64.b64encode(buffer.getvalue()).decode('utf-8')
-
-        # Create UserProfile
-        UserProfile.objects.create(
-            user=user,
-            name=name,
-            information_id=information_id,
-            user_profile_img=base64_img,
+        fields = (
+            "username",
+            "password1",
+            "password2",
+            "name",
+            "information_id",
+            "user_profile_img",
+            "user_profile_img_base64",
         )
 
+    # ---------- validation helpers ---------- #
+    def clean(self):
+        data = super().clean()
+        # Ensure *some* avatar data is present
+        if not data.get("user_profile_img") and not data.get("user_profile_img_base64"):
+            self.add_error("user_profile_img", "Avatar is required.")
+        return data
+
+    @staticmethod
+    def _pil_to_base64(pil_img: Image.Image) -> str:
+        """Center-crop, resize → 128×128 PNG → Base64 (no data URI)."""
+        min_side = min(pil_img.size)
+        left = (pil_img.width - min_side) // 2
+        top = (pil_img.height - min_side) // 2
+        pil_img = pil_img.crop((left, top, left + min_side, top + min_side))
+        pil_img = pil_img.resize((128, 128), Image.LANCZOS)
+
+        buf = BytesIO()
+        pil_img.save(buf, format="PNG")
+        return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+    # ---------- persistence ---------- #
+    def save(self, commit=True):
+        user = super().save(commit)
+        name = self.cleaned_data["name"]
+        info_id = self.cleaned_data["information_id"]
+
+        # Prefer client-cropped Base64, else process the raw file
+        if self.cleaned_data.get("user_profile_img_base64"):
+            avatar_b64 = self.cleaned_data["user_profile_img_base64"]
+        else:
+            with Image.open(self.cleaned_data["user_profile_img"]) as im:
+                avatar_b64 = self._pil_to_base64(im)
+
+        create_user_profile(user, name, info_id, avatar_b64)
         return user

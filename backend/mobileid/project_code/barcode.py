@@ -16,11 +16,14 @@ def setup_driver():
     if platform.system() == "Linux":
         from selenium.webdriver.chrome.service import Service
         from webdriver_manager.chrome import ChromeDriverManager
+
         chrome_options.binary_location = "/usr/bin/google-chrome"
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+        driver = webdriver.Chrome(
+            service=Service(ChromeDriverManager().install()), options=chrome_options
+        )
     elif platform.system() == "Darwin":
         driver = webdriver.Chrome(options=chrome_options)
     else:
@@ -80,7 +83,9 @@ def auto_send_code(user_cookies):
     server_result = uc_merced_mobile_id(user_cookies)
 
     for mobile_id_rand in server_result["mobile_id_rand_array"]:
-        response = send_otc(mobile_id_rand, server_result["information_id"], server_result["barcode"])
+        response = send_otc(
+            mobile_id_rand, server_result["student_id"], server_result["barcode"]
+        )
         if response["status"] == "success":
             return {
                 "status": "success",
@@ -97,7 +102,7 @@ def uc_merced_mobile_id(user_cookie):
     mobile_id_rand_array, student_id, barcode = parse_html_data(html_source)
     return {
         "mobile_id_rand_array": mobile_id_rand_array,
-        "information_id": student_id,
+        "student_id": student_id,
         "barcode": barcode,
     }
 
@@ -140,7 +145,7 @@ def parse_html_data(html_content):
     try:
         # get mobile_id_rand_array
         array_pattern = r"var\s+mobileid_rand_array\s*=\s*(\[[^\]]*\])"
-        # get information_id
+        # get student_id
         student_id_pattern = r"studentid:\s*\"(.*?)\""
         # get barcode
         barcode_pattern = r"barcode:\s*\"(.*?)\""
