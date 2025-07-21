@@ -26,28 +26,6 @@ class UserProfile(models.Model):
         return f"{self.name} - ID: **{self.information_id[-4:]}"
 
 
-# user account type
-class UserAccount(models.Model):
-    # foreign key to user
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-    # user account type settings
-    ACCOUNT_TYPE_CHOICES = [
-        ("School", "School"),
-        ("User", "User"),
-        ("Staff", "Staff"),
-    ]
-
-    account_type = models.CharField(
-        max_length=10,
-        choices=ACCOUNT_TYPE_CHOICES,
-        default="User",
-    )
-
-    def __str__(self):
-        return f"{self.user.username} - {self.account_type} Account"
-
-
 class UserExtendedData(models.Model):
     # foreign key to user
     user = models.OneToOneField(User, on_delete=models.CASCADE)

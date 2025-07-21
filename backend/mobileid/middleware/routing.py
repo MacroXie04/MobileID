@@ -30,7 +30,7 @@ class AccountTypeRoutingMiddleware:
             try:
                 profile = UserProfile.objects.get(user=user)
             except UserProfile.DoesNotExist:
-                return redirect("mobileid:web_edit_profile")
+                return redirect("authn:web_edit_profile")
 
             account_type = getattr(getattr(user, "useraccount", None), "account_type", None)
 

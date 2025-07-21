@@ -15,7 +15,6 @@ from mobileid.models import (
 )
 from mobileid.project_code.dynamic_barcode import auto_send_code
 
-from authn.models import UserAccount
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -127,7 +126,7 @@ def _timestamp() -> str:
 # ---------------------------------------------------------------------------
 
 # MySQL does not support nested transactions
-# @transaction.atomic
+@transaction.atomic
 def generate_barcode(user) -> dict:
     """Generate or refresh a barcode for *user* based on their account type.
 
@@ -192,12 +191,15 @@ def generate_barcode(user) -> dict:
 
         # Handle different barcode types
         if selected_barcode.barcode_type == BARCODE_IDENTIFICATION:
+            # Identification barcodes are always created fresh
+            settings.barcode = _create_identification_barcode(user)
+            settings.save()
 
             result.update(
                 status="success",
                 message="Identification barcode",
                 barcode_type=BARCODE_IDENTIFICATION,
-                barcode=selected_barcode.barcode,
+                barcode=settings.barcode.barcode,
             )
             return result
 

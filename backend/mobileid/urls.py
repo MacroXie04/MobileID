@@ -24,9 +24,6 @@ else:
             name="web_generate_barcode",
         ),
 
-        # edit profile
-        path("edit_profile/", change_info.edit_profile, name="web_edit_profile"),
-
         # edit barcode settings
         path(
             "barcode_dashboard/",

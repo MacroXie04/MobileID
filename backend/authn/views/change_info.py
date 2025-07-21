@@ -21,4 +21,4 @@ def edit_profile(request):
             initial={"user_profile_img_base64": profile.user_profile_img},
         )
 
-    return render(request, "../../authn/templates/manage/profile_edit.html", {"form": form, "profile": profile})
+    return render(request, "manage/profile_edit.html", {"form": form, "profile": profile})

@@ -62,7 +62,7 @@ def barcode_dashboard(request):
 
     return render(
         request,
-        "../../authn/templates/manage/barcode_dashboard.html",
+        "manage/barcode_dashboard.html",
         {
             "settings_form": settings_form,
             "add_form": add_form,

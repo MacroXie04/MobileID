@@ -1,7 +1,7 @@
 import random
 
 from mobileid.models import UserBarcodeSettings, Barcode
-from authn.models import UserAccount, UserProfile
+from authn.models import UserProfile
 
 def generate_unique_identification_barcode():
     while True:
@@ -17,13 +17,6 @@ def create_user_profile(user, name, information_id, user_profile_img):
         name=name,
         information_id=information_id,
         user_profile_img=user_profile_img,
-    )
-
-    # Create a user account with the default settings
-    UserAccount.objects.create(
-        user=user,
-        # Default account type
-        account_type="User",
     )
 
     # Create user identification barcode
