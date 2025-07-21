@@ -7,7 +7,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from mobileid.services.webauthn import create_user_profile
+from authn.services.webauthn import create_user_profile
 
 
 # UserLoginForm
@@ -36,7 +36,7 @@ class UserLoginForm(AuthenticationForm):
 class UserRegisterForm(UserCreationForm):
     # Extra visible fields
     name = forms.CharField(max_length=100, label="Name")
-    information_id = forms.CharField(max_length=100, label="Student ID")
+    information_id = forms.CharField(max_length=100, label="Information ID")
 
     # Raw file input (hidden by CSS – selection handled via JS)
     user_profile_img = forms.ImageField(required=False, label="")

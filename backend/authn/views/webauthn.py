@@ -1,10 +1,8 @@
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
-
-# import forms
-from mobileid.forms.WebAuthnForms import UserLoginForm, UserRegisterForm
+from authn.forms.WebAuthnForms import UserLoginForm, UserRegisterForm
 
 
 def web_register(request):
@@ -39,7 +37,7 @@ def web_login(request):
     return render(request, 'webauthn/login.html', {'form': form})
 
 
-@login_required(login_url="login")
+@login_required
 def web_logout(request):
     logout(request)
     return redirect("mobileid:web_login")

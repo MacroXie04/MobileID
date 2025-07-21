@@ -11,10 +11,11 @@ from barcode.settings import SELENIUM_ENABLED
 from mobileid.models import (
     Barcode,
     BarcodeUsage,
-    UserAccount,
     UserBarcodeSettings,
 )
-from mobileid.project_code.barcode import auto_send_code
+from mobileid.project_code.dynamic_barcode import auto_send_code
+
+from authn.models import UserAccount
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -125,7 +126,8 @@ def _timestamp() -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
-@transaction.atomic
+# MySQL does not support nested transactions
+# @transaction.atomic
 def generate_barcode(user) -> dict:
     """Generate or refresh a barcode for *user* based on their account type.
 

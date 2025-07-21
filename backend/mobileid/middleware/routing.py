@@ -1,66 +1,55 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.http import Http404
 from django.shortcuts import redirect, render
-from django.urls import reverse
+from authn.models import UserProfile
 
 User = get_user_model()
 
+
 class AccountTypeRoutingMiddleware:
+
+    # Paths that Staff users are not allowed to visit
+    RESTRICTED_FOR_STAFF = {"/generate_barcode/", "/barcode_dashboard/"}
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Handle staff access restrictions
-        if request.user.is_authenticated:
+        user = request.user
+        is_authenticated = user.is_authenticated
+
+        # ---------- 1) Block Staff users from restricted paths ----------
+        if is_authenticated:
+            account_type = getattr(getattr(user, "useraccount", None), "account_type", None)
+            if account_type == "Staff" and request.path in self.RESTRICTED_FOR_STAFF:
+                return redirect("authn:web_staff_index")
+
+        # ---------- 2) Handle root path "/" ----------
+        if request.path == "/" and is_authenticated:
+            # a) Force users without a profile to complete it first
             try:
-                user_account_type = request.user.useraccount.account_type
-                
-                # Block staff users from accessing generate_barcode and barcode_dashboard
-                if user_account_type == "Staff":
-                    restricted_paths = ["/generate_barcode/", "/barcode_dashboard/"]
-                    if request.path in restricted_paths:
-                        from django.http import HttpResponseForbidden
-                        return HttpResponseForbidden("Staff users are not allowed to access this page")
-            except Exception as e:
-                # if any exception occurs, continue normal processing flow
-                pass
-        
-        # only handle root path
-        if request.path == "/" and request.user.is_authenticated:
-            try:
-                # check if user has UserProfile
-                from mobileid.models import UserProfile
-                try:
-                    info = UserProfile.objects.get(user=request.user)
-                except UserProfile.DoesNotExist:
-                    return redirect("mobileid:web_edit_profile")
+                profile = UserProfile.objects.get(user=user)
+            except UserProfile.DoesNotExist:
+                return redirect("mobileid:web_edit_profile")
 
-                # get user account type
-                user_account_type = request.user.useraccount.account_type
+            account_type = getattr(getattr(user, "useraccount", None), "account_type", None)
 
-                # prepare template context
-                context = {
-                    "name": info.name,
-                    "information_id": info.information_id,
-                    "user_profile_img": info.user_profile_img,
-                }
+            # b) Route or redirect based on account_type
+            if account_type == "School":
+                template = "index/index.html"
+            elif account_type == "User":
+                template = "index/index_user.html"
+            elif account_type == "Staff":
+                return redirect("authn:web_staff_index")
+            else:
+                raise Http404("Unknown account type")
 
-                # render different templates based on account type
-                if user_account_type == "School":
-                    return render(request, "index/index.html", context)
-                elif user_account_type == "User":
-                    return render(request, "index/index_user.html", context)
-                elif user_account_type == "Staff":
-                    return render(request, "index/index_staff.html", context)
-                else:
-                    # unknown account type, return 404
-                    from django.http import Http404
-                    raise Http404("Unknown account type")
+            context = {
+                "name": profile.name,
+                "information_id": profile.information_id,
+                "user_profile_img": profile.user_profile_img,
+            }
+            return render(request, template, context)
 
-            except Exception as e:
-                # if any exception occurs, continue normal processing flow
-                pass
-
-        response = self.get_response(request)
-        return response
+        # ---------- 3) For all other requests, continue processing ----------
+        return self.get_response(request)

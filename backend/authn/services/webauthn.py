@@ -1,7 +1,7 @@
 import random
 
-from mobileid.models import UserProfile, UserBarcodeSettings, UserAccount, Barcode
-
+from mobileid.models import UserBarcodeSettings, Barcode
+from authn.models import UserAccount, UserProfile
 
 def generate_unique_identification_barcode():
     while True:

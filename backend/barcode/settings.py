@@ -56,9 +56,15 @@ if "test" in sys.argv:
 
 # Application definition
 
+LOGIN_URL = "authn:web_login"
+
 INSTALLED_APPS = [
     # mobileid app
     "mobileid.apps.MobileidConfig",
+
+    # user authentication
+    "authn.apps.AuthnConfig",
+    
     # Django REST framework
     "rest_framework",
     "rest_framework_simplejwt",
@@ -86,7 +92,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    
     # Custom middleware for account type routing
     "mobileid.middleware.routing.AccountTypeRoutingMiddleware",
 ]
@@ -181,6 +186,15 @@ DATABASES = {
         "PORT": os.getenv("DB_PORT", ""),
     }
 }
+
+# MySQL extra options
+if DATABASES["default"]["ENGINE"].endswith("mysql"):
+    DATABASES["default"]["OPTIONS"] = {
+        "charset": "utf8mb4",
+        "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+    }
+    DATABASES["default"]["CONN_MAX_AGE"] = 60
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

@@ -2,10 +2,10 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from mobileid.forms.InfoForm import (InformationUpdateForm)
-from mobileid.models import UserProfile
+from authn.models import UserProfile
 
 
-@login_required(login_url="/login")
+@login_required
 def edit_profile(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
@@ -21,4 +21,4 @@ def edit_profile(request):
             initial={"user_profile_img_base64": profile.user_profile_img},
         )
 
-    return render(request, "manage/profile_edit.html", {"form": form, "profile": profile})
+    return render(request, "../../authn/templates/manage/profile_edit.html", {"form": form, "profile": profile})

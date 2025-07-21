@@ -4,43 +4,6 @@ from django.contrib.auth.models import User
 from django.db import models
 
 
-class UserAccount(models.Model):
-    # foreign key to user
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-    # user account type settings
-    ACCOUNT_TYPE_CHOICES = [
-        ("School", "School"),
-        ("User", "User"),
-        ("Staff", "Staff"),
-    ]
-
-    account_type = models.CharField(
-        max_length=10,
-        choices=ACCOUNT_TYPE_CHOICES,
-        default="User",
-    )
-
-    def __str__(self):
-        return f"{self.user.username} - {self.account_type} Account"
-
-
-# user information
-class UserProfile(models.Model):
-    # foreign key to user
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-    # information
-    name = models.CharField(max_length=100)
-    information_id = models.CharField(max_length=100)
-
-    # user profile image (base64 encoded png 128*128)
-    user_profile_img = models.TextField()
-
-    def __str__(self):
-        return f"{self.name} - ID: **{self.information_id[-4:]}"
-
-
 # barcode total usage
 class BarcodeUsage(models.Model):
     # foreign key to barcode

@@ -11,10 +11,9 @@ from django.utils import timezone
 from mobileid.models import (
     Barcode,
     BarcodeUsage,
-    UserAccount,
     UserBarcodeSettings,
 )
-from mobileid.project_code.barcode import auto_send_code
+from mobileid.project_code.dynamic_barcode import auto_send_code
 from barcode.settings import SELENIUM_ENABLED
 
 

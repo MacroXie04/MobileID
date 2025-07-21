@@ -27,6 +27,7 @@ from .settings import (
 
 urlpatterns = [
     path("", include("mobileid.urls")),
+    path("authn/", include("authn.urls")),
 ]
 
 if settings.DEBUG:

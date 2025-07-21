@@ -5,7 +5,7 @@ from PIL import Image
 from django import forms
 from django.core.files.uploadedfile import UploadedFile
 
-from mobileid.models import UserProfile
+from authn.models import UserProfile
 
 def _pil_to_base64(pil):
     s = min(pil.size)

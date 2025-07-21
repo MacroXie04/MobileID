@@ -1,0 +1,263 @@
+{% extends 'layout/layout_write.html' %}
+{% load widget_tweaks static %}
+
+{% block title %}Register{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .avatar-preview {
+            width: 128px;
+            height: 128px;
+            object-fit: cover;
+            border-radius: .25rem;
+            border: 1px solid #dee2e6;
+        }
+        /* Make crop area smaller and more compact */
+        #cropContainer {
+            max-width: 250px;
+            margin: 0.5rem auto;
+        }
+        /* Dynamic height based on image */
+        #cropContainer .crop-wrapper {
+            position: relative;
+            border: 1px solid #dee2e6 !important;
+            border-radius: .25rem;
+            overflow: hidden;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 150px;
+            max-height: 400px;
+        }
+        /* Ensure cropper image fills container */
+        #cropperImage {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
+        /* Compact button group */
+        .crop-buttons {
+            margin-top: 0.5rem;
+        }
+        .crop-buttons .btn {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.75rem;
+        }
+    </style>
+{% endblock %}
+
+{% block cdn %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5 d-flex justify-content-center">
+    <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
+        <h3 class="text-center mb-4 fw-semibold">Create Account</h3>
+
+        <form id="registerForm" method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <!-- avatar -->
+            <div class="mb-3 text-center">
+                <img id="avatarPreview" class="avatar-preview mb-2"
+                     src="{% static 'images/avatar_placeholder.png' %}" alt="avatar preview">
+
+                {{ form.user_profile_img|add_class:"form-control d-none" }}
+                {{ form.user_profile_img_base64 }}{# hidden Base64 field #}
+
+                <button id="selectAvatarBtn" type="button" class="btn btn-outline-secondary w-100">
+                    Select Avatar
+                </button>
+
+                {% if form.user_profile_img.errors %}
+                    <div class="invalid-feedback d-block text-start">
+                        {{ form.user_profile_img.errors|striptags }}
+                    </div>
+                {% endif %}
+                <small class="text-muted d-block">JPEG/PNG · &lt; 2&nbsp;MB</small>
+
+                <!-- Compact crop container with fixed height -->
+                <div id="cropContainer" class="text-center" style="display: none;">
+                    <div class="crop-wrapper">
+                        <img id="cropperImage" alt="Crop preview" />
+                    </div>
+                    <div class="crop-buttons">
+                        <button id="cropSaveBtnInline" type="button" class="btn btn-primary btn-sm">
+                            Crop &amp; Use
+                        </button>
+                        <button id="cropCancelBtn" type="button" class="btn btn-secondary btn-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- username -->
+            <div class="mb-3">
+                {{ form.username.label_tag }}
+                {{ form.username|add_class:"form-control" }}
+                {% if form.username.errors %}
+                    <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- name -->
+            <div class="mb-3">
+                {{ form.name.label_tag }}
+                {{ form.name|add_class:"form-control" }}
+                {% if form.name.errors %}
+                    <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- information_id -->
+            <div class="mb-3">
+                {{ form.information_id.label_tag }}
+                {{ form.information_id|add_class:"form-control" }}
+                {% if form.information_id.errors %}
+                    <div class="invalid-feedback d-block">{{ form.information_id.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- password -->
+            <div class="mb-3">
+                {{ form.password1.label_tag }}
+                {{ form.password1|add_class:"form-control" }}
+                {% if form.password1.errors %}
+                    <div class="invalid-feedback d-block">{{ form.password1.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- confirm password -->
+            <div class="mb-3">
+                {{ form.password2.label_tag }}
+                {{ form.password2|add_class:"form-control" }}
+                {% if form.password2.errors %}
+                    <div class="invalid-feedback d-block">{{ form.password2.errors }}</div>
+                {% endif %}
+            </div>
+
+            {% if form.non_field_errors %}
+                <div class="invalid-feedback d-block">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary w-100 py-2">Register</button>
+        </form>
+
+        <hr class="my-4"/>
+        <p class="text-center mb-0">
+            Already have an account? <a href="{% url 'authn:web_login' %}">Login here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(() => {
+    const fileInput   = document.querySelector('input[name="user_profile_img"]');
+    const base64Input = document.querySelector('input[name="user_profile_img_base64"]');
+    const selectBtn   = document.getElementById('selectAvatarBtn');
+    const previewImg  = document.getElementById('avatarPreview');
+    const cropContainer = document.getElementById('cropContainer');
+    const cropImg     = document.getElementById('cropperImage');
+    const cropSaveBtn = document.getElementById('cropSaveBtnInline');
+    const cropCancelBtn = document.getElementById('cropCancelBtn');
+    let cropper = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (base64Input.value) {
+            previewImg.src = 'data:image/png;base64,' + base64Input.value;
+        }
+    });
+
+    selectBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', e => {
+        if (!e.target.files.length) return;
+        const file = e.target.files[0];
+        if (!/^image\/(jpe?g|png)$/i.test(file.type)) {
+            alert('Only JPG / PNG images are supported.');
+            fileInput.value = '';
+            return;
+        }
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+
+        // Load image to get dimensions before showing cropper
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                // Calculate appropriate container height based on image aspect ratio
+                const imgAspectRatio = img.width / img.height;
+                const containerWidth = 250;
+                let containerHeight = containerWidth / imgAspectRatio;
+
+                // Constrain height between min and max
+                containerHeight = Math.max(150, Math.min(400, containerHeight));
+
+                // Set dynamic height for crop wrapper
+                const cropWrapper = document.querySelector('#cropContainer .crop-wrapper');
+                cropWrapper.style.height = containerHeight + 'px';
+
+                cropContainer.style.display = 'block';
+
+                // Scroll to crop container for better UX
+                setTimeout(() => {
+                    cropContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+
+                cropImg.src = event.target.result;
+                cropper = new Cropper(cropImg, {
+                    aspectRatio: 1,
+                    viewMode: 1,  // Restrict crop box to within the container
+                    minCropBoxWidth: 50,
+                    minCropBoxHeight: 50,
+                    dragMode: 'move',
+                    autoCropArea: 0.8,
+                    responsive: true,
+                    cropBoxResizable: true,
+                    cropBoxMovable: true
+                });
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    cropSaveBtn.addEventListener('click', () => {
+        if (!cropper) return;
+        const canvas  = cropper.getCroppedCanvas({ width: 128, height: 128 });
+        const dataURL = canvas.toDataURL('image/png');
+        base64Input.value = dataURL.split(',')[1];
+        previewImg.src    = dataURL;
+        closeCropper();
+    });
+
+    cropCancelBtn.addEventListener('click', () => {
+        closeCropper();
+        fileInput.value = '';
+    });
+
+    function closeCropper() {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        if (cropImg.src) {
+            // Reset crop wrapper height
+            const cropWrapper = document.querySelector('#cropContainer .crop-wrapper');
+            cropWrapper.style.height = '';
+            cropImg.src = '';
+        }
+        cropContainer.style.display = 'none';
+    }
+})();
+</script>
+{% endblock %}
