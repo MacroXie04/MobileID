@@ -3,6 +3,8 @@ import random
 from mobileid.models import UserBarcodeSettings, Barcode
 from authn.models import UserProfile, UserExtendedData
 
+from django.contrib.auth.models import Group
+
 def generate_unique_identification_barcode():
     while True:
         code = ''.join([str(random.randint(0, 9)) for _ in range(28)])
@@ -18,6 +20,10 @@ def create_user_profile(user, name, information_id, user_profile_img):
         information_id=information_id,
         user_profile_img=user_profile_img,
     )
+
+    # Add user to User group
+    user_group, _ = Group.objects.get_or_create(name="User")
+    user.groups.add(user_group)
 
     # Create user identification barcode
     user_identification_barcode = Barcode.objects.create(

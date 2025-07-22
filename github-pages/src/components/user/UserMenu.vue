@@ -32,10 +32,7 @@ const router = useRouter();
 const emit = defineEmits(['logout']);
 
 function handleEditProfile() {
-  // TODO: Navigate to edit profile page or show modal
-  console.log('Edit Profile clicked');
-  // For now, you can implement navigation to edit profile page
-  // router.push('/profile/edit');
+  router.push('/profile/edit');
 }
 
 function handleManageBarcode() {

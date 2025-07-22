@@ -4,11 +4,13 @@ import { userInfo } from "@/api/auth";
 const Login = () => import("@/views/Login.vue");
 const Home  = () => import("@/views/Home.vue");
 const ProfileEdit = () => import("@/views/ProfileEdit.vue");
+const Register = () => import("@/views/Register.vue");
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: "/login", component: Login },
+    { path: "/register", component: Register },
     { path: "/",      component: Home,  meta: { requiresAuth: true } },
     { path: "/profile/edit", component: ProfileEdit, meta: { requiresAuth: true } },
     { path: "/:pathMatch(.*)*", redirect: "/" }   // 兜底

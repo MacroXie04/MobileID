@@ -14,6 +14,11 @@
         <div class="text-danger mb-2">{{ error }}</div>
         <button class="btn btn-primary w-100">Login</button>
       </form>
+      
+      <hr class="my-4" />
+      <p class="text-center mb-0">
+        Don't have an account? <router-link to="/register">Register here</router-link>
+      </p>
     </div>
   </div>
 </template>

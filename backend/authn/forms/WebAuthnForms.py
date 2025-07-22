@@ -63,9 +63,7 @@ class UserRegisterForm(UserCreationForm):
     # ---------- validation helpers ---------- #
     def clean(self):
         data = super().clean()
-        # Ensure *some* avatar data is present
-        if not data.get("user_profile_img") and not data.get("user_profile_img_base64"):
-            self.add_error("user_profile_img", "Avatar is required.")
+        # Avatar is optional - no validation required
         return data
 
     @staticmethod
@@ -87,12 +85,14 @@ class UserRegisterForm(UserCreationForm):
         name = self.cleaned_data["name"]
         info_id = self.cleaned_data["information_id"]
 
-        # Prefer client-cropped Base64, else process the raw file
+        # Determine avatar data - prefer client-cropped Base64, else process raw file, else use default
+        avatar_b64 = ""
         if self.cleaned_data.get("user_profile_img_base64"):
             avatar_b64 = self.cleaned_data["user_profile_img_base64"]
-        else:
+        elif self.cleaned_data.get("user_profile_img"):
             with Image.open(self.cleaned_data["user_profile_img"]) as im:
                 avatar_b64 = self._pil_to_base64(im)
+        # If no avatar provided, avatar_b64 remains empty string
 
         create_user_profile(user, name, info_id, avatar_b64)
         return user

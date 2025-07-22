@@ -3,9 +3,9 @@
   <div class="grid-wrapper">
     <div class="grid-container">
       <!-- Row 1 -->
-      <a href="/edit_profile/" class="btn-grid">
-        <i class="fa fa-credit-card fa-2x"></i>
-        <p>Add Funds</p>
+      <a href="/profile/edit" class="btn-grid" @click.prevent="handleEditProfile">
+        <i class="fa fa-user-edit fa-2x"></i>
+        <p>Edit Profile</p>
       </a>
       <a href="/barcode_dashboard/" class="btn-grid">
         <i class="fa fa-money-bill fa-2x"></i>
@@ -45,6 +45,9 @@
 
 <script setup>
 import { toRefs } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 // Props
 const props = defineProps({
@@ -56,6 +59,11 @@ const props = defineProps({
 
 // Destructure props for reactivity
 const { serverStatus } = toRefs(props);
+
+// Functions
+function handleEditProfile() {
+  router.push('/profile/edit');
+}
 </script>
 
 <style scoped>
