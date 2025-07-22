@@ -40,13 +40,13 @@ $(function () {
             .removeClass('main-button')
             .addClass('btn-processing-custom pulse-effect');
 
-        // 添加加载旋转器
+        // add loading spinner
         $btnContent.html(`
                     <div class="spinner"></div>
                     <span>Processing…</span>
                 `);
 
-        // 启动进度条动画 - 使用 active 类而不是 processing
+        // start progress bar animation - use active class instead of processing
         $progressOverlay.addClass('active');
 
         console.log('Started processing with visual feedback');
@@ -63,10 +63,10 @@ $(function () {
                     <span>${message || 'Success'}</span>
                 `);
 
-        // 3秒后停止动画，然后重置
+        // 3 seconds later, stop animation, then reset
         setTimeout(() => {
             $progressOverlay.removeClass('active').css('width', '100%');
-            setTimeout(resetUI, 7000); // 总共10秒
+            setTimeout(resetUI, 7000); // total 10 seconds
         }, 3000);
     }
 
@@ -74,7 +74,7 @@ $(function () {
         $btn.removeClass('btn-processing-custom')
             .addClass('btn-danger-custom pulse-effect');
 
-        // 进度条继续动画但改变样式
+        // progress bar continue animation but change style
         $progressOverlay.addClass('active');
 
         $btnContent.html(`

@@ -10,6 +10,9 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 // Font Awesome
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
+// Cropper.js
+import 'cropperjs/dist/cropper.css';
+
 const app = createApp(App);
 
 app.use(router);

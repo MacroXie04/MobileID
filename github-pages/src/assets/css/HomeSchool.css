@@ -1,0 +1,154 @@
+/* HomeSchool Component Styles */
+
+.pdf417 {
+  background: #fff;
+  image-rendering: pixelated;
+  border: 1px solid #dee2e6;
+  max-width: 100%;
+  height: auto;
+  margin: 10px auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: block;
+}
+
+.progress-container {
+  width: 100%;
+  max-width: 300px;
+  margin: 15px auto 0;
+}
+
+#qrcode-code {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 60px;
+}
+
+.progress {
+  width: 90%;
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 10px auto 0 auto;
+}
+
+.progress-bar-white {
+  background-color: #ffc107;
+  height: 100%;
+}
+
+/* button hover effect */
+#show-info-button:hover {
+  transform: translateY(-2px);
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Header styles */
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  position: relative;
+}
+
+.header-left, .header-right {
+  flex: 1;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-image {
+  height: 60px;
+}
+
+.header-border {
+  border-top: 1px solid white;
+  margin: 0 20px;
+}
+
+/* profile styles */
+.profile-section {
+  text-align: center;
+  margin-top: 2em;
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4);
+  transition: transform 0.3s ease-in-out;
+}
+
+.profile-name {
+  margin-top: 0.5em;
+  color: white !important;
+}
+
+.profile-info-id {
+  color: white !important;
+  display: none;
+}
+
+.profile-button-container {
+  margin-top: 1em;
+}
+
+/* Grid menu styles */
+.grid-container {
+  margin: auto;
+  max-width: 320px;
+  padding-top: 15px;
+}
+
+/* Barcode display styles */
+.barcode-section {
+  text-center;
+}
+
+.barcode-canvas-container {
+  display: none;
+}
+
+.barcode-progress-container {
+  display: none;
+}
+
+/* Vue transition classes for smooth animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.4s ease;
+}
+
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+} 

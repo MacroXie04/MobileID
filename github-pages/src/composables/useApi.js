@@ -1,0 +1,89 @@
+import { getCookie } from '@/utils/cookie';
+import { useToken } from './useToken';
+
+export function useApi() {
+  const { checkAuthenticationError, refreshToken, handleTokenExpired } = useToken();
+
+  /**
+   * Make API calls with automatic token refresh on authentication errors
+   */
+  async function apiCallWithAutoRefresh(url, options = {}, retryCount = 0) {
+    // Maximum number of retries, 1 time
+    const maxRetries = 1;
+    
+    try {
+      const res = await fetch(url, {
+        credentials: "include",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+          "Content-Type": "application/json",
+          ...options.headers
+        },
+        ...options
+      });
+      
+      const data = await res.json();
+      console.log(`API Response from ${url}:`, data);
+      
+      // Check if it is an authentication error
+      if (checkAuthenticationError(data, res)) {
+        console.log(`Token expired (retry count: ${retryCount}/${maxRetries})`);
+        
+        if (retryCount < maxRetries) {
+          console.log("Trying to refresh token and retry...");
+          
+          // try to refresh token
+          const refreshSuccess = await refreshToken();
+          
+          if (refreshSuccess) {
+            console.log("Token refreshed successfully, retrying...");
+            // Recursive call, increase retry count
+            return await apiCallWithAutoRefresh(url, options, retryCount + 1);
+          } else {
+            console.log("Token refresh failed, trying handleTokenExpired...");
+            const tokenRecoverySuccess = await handleTokenExpired();
+            if (tokenRecoverySuccess) {
+              console.log("Token recovery successful, retrying request");
+              return await apiCallWithAutoRefresh(url, options, retryCount + 1);
+            } else {
+              throw new Error("Token refresh failed");
+            }
+          }
+        } else {
+          console.log("Maximum retries reached, trying final token recovery...");
+          const tokenRecoverySuccess = await handleTokenExpired();
+          if (tokenRecoverySuccess) {
+            console.log("Final token recovery successful, retrying request");
+            return await apiCallWithAutoRefresh(url, options, retryCount + 1);
+          } else {
+            throw new Error("Max retries exceeded");
+          }
+        }
+      }
+      
+      if (!res.ok) throw new Error(`API call failed: ${res.status} - ${data?.detail || data?.message || 'Unknown error'}`);
+      return data;
+      
+    } catch (error) {
+      if (error.message.includes("Token") || error.message.includes("retries")) {
+        throw error; // re-throw authentication related errors
+      }
+      console.error(`API request failed (${url}):`, error);
+      throw new Error(`Network error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate barcode API call
+   */
+  async function apiGenerateBarcode() {
+    return await apiCallWithAutoRefresh("http://127.0.0.1:8000/generate_barcode/", {
+      method: "POST"
+    });
+  }
+
+  return {
+    apiCallWithAutoRefresh,
+    apiGenerateBarcode
+  };
+} 

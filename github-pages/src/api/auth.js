@@ -24,3 +24,38 @@ export async function logout() {
     credentials: "include"
   });
 }
+
+// 获取用户档案信息
+export async function getUserProfile() {
+  const res = await fetch(`${BASE}/authn/profile/`, {
+    credentials: "include"
+  });
+  if (!res.ok) throw new Error('Failed to fetch profile');
+  return res.json();
+}
+
+// 更新用户档案信息
+export async function updateUserProfile(profileData) {
+  const res = await fetch(`${BASE}/authn/profile/`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(profileData)
+  });
+  if (!res.ok) throw new Error('Failed to update profile');
+  return res.json();
+}
+
+// 上传头像文件
+export async function uploadAvatar(file) {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  
+  const res = await fetch(`${BASE}/authn/profile/avatar/`, {
+    method: "POST",
+    credentials: "include",
+    body: formData
+  });
+  if (!res.ok) throw new Error('Failed to upload avatar');
+  return res.json();
+}
