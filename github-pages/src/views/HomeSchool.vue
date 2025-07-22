@@ -1,105 +1,138 @@
 <!-- src/views/HomeSchool.vue -->
 <template>
-  <!-- ───── HEADER ───── -->
-  <header class="d-flex align-items-center justify-content-between px-4 py-3">
-    <a href="/">
-      <img :src="ucmLogo" alt="UC Merced Logo" height="60" />
-    </a>
-    <img :src="mobileIdLogo" alt="MobileID" height="60" />
-    <span />
-  </header>
+  <div class="container">
+    <!-- ────────── HEADER ────────── -->
+    <div
+      class="row is-flex"
+      style="display:flex;align-items:center;justify-content:space-between;padding:0.5em;"
+    >
+      <!--  UC Merced logo  -->
+      <div class="col-xs-2">
+        <a href="/">
+          <img :src="ucmLogo" height="60" alt="UC Merced Logo" />
+        </a>
+      </div>
 
-  <hr class="m-0" />
+      <!--  Mobile ID logo  -->
+      <div class="col-xs-8 text-center">
+        <img :src="mobileIdLogo" height="60" alt="Mobile ID" />
+      </div>
 
-  <!-- ───── PROFILE ───── -->
-  <section class="text-center mt-4">
-    <img
-      :src="profile?.avatar ?? avatarPlaceholder"
-      :style="avatarStyle"
-      class="img-circle"
-      alt="avatar"
-    />
-    <h4 class="white-h4 mt-2">{{ profile?.name }}</h4>
-    <h4 id="information_id" class="white-h4">{{ profile?.informationId }}</h4>
-
-    <div id="show-info-button" class="mt-3">
-      <button
-        class="btn btn-trans btn-trans-default"
-        :disabled="loading"
-        @click="handleGenerate"
-      >
-        <b>{{ loading ? "Processing…" : "PAY / Check‑in" }}</b>
-      </button>
+      <!--  spacer  -->
+      <div class="col-xs-2 text-right"></div>
     </div>
-  </section>
+    <hr style="margin-top:5px;margin-bottom:5px;" />
 
-  <!-- ───── BARCODE & PROGRESS ───── -->
-  <section id="qrcode" class="text-center">
-    <div v-show="barcodeReady">
-      <canvas ref="barcodeCanvas" width="0" height="0" class="pdf417" />
-    </div>
-    <br v-show="barcodeReady" />
-    <div v-show="barcodeReady">
-      <div class="progress" style="width:70%;display:inline-block;">
-        <div
-          class="progress-bar progress-bar-white"
-          role="progressbar"
-          :style="{ width: progressWidth + '%', transition: progressTransition }"
+    <!-- ─────── PROFILE SECTION ─────── -->
+    <div class="text-center" style="margin-top:2em;">
+      <a href="/edit_profile/" id="setting-icon">
+        <img
+          :src="avatarSrc"
+          class="img-circle"
+          alt="User profile picture"
+          style="width:100px;height:100px;object-fit:cover;border-radius:50%;box-shadow:0 4px 12px rgba(255,255,255,.4);transition:transform .3s ease-in-out;"
         />
+      </a>
+
+      <h4 class="white-h4" style="margin-top:.5em;color:white !important;">
+        {{ profile.name }}
+      </h4>
+      <h4
+        id="information_id"
+        class="white-h4"
+        style="color:white !important;display:none;"
+      >
+        {{ profile.information_id }}
+      </h4>
+
+      <div id="show-info-button" style="margin-top:1em;">
+        <button
+          class="btn btn-trans btn-trans-default"
+          :disabled="loading"
+          @click="handleGenerate"
+        >
+          <b>{{ loading ? "Processing…" : "PAY / Check-in" }}</b>
+        </button>
       </div>
     </div>
-  </section>
 
-  <!-- ───── 3 × 3 GRID ───── -->
-  <div style="margin:auto;max-width:320px">
-    <div class="grid-container">
-      <RouterLink to="/edit_profile"      class="btn-grid"><i class="fa fa-credit-card      fa-2x" /><p>Add Funds</p></RouterLink>
-      <RouterLink to="/barcode_dashboard" class="btn-grid"><i class="fa fa-money-bill      fa-2x" /><p>Balance</p></RouterLink>
-      <RouterLink to="/"                  class="btn-grid"><i class="fa fa-id-card        fa-2x" /><p>Lost My Card</p></RouterLink>
+    <!-- ─────── BARCODE + PROGRESS ─────── -->
+    <div id="qrcode" class="text-center">
+      <div v-show="barcodeReady" id="qrcode-div">
+        <canvas ref="barcodeCanvas" class="pdf417"></canvas>
+      </div>
+      <br v-show="barcodeReady" />
+      <div v-show="barcodeReady" id="qrcode-code" style="height:10%;">
+        <div class="progress center-block">
+          <div
+            class="progress-bar progress-bar-white"
+            role="progressbar"
+            :style="{ width: progressWidth + '%', transition: progressTransition }"
+          ></div>
+        </div>
+      </div>
+    </div>
 
-      <RouterLink to="/"                  class="btn-grid"><i class="fa fa-exclamation-triangle fa-2x" /><p id="server_status">{{ serverStatus }}</p></RouterLink>
-      <RouterLink to="/"                  class="btn-grid"><i class="fa fa-dumbbell       fa-2x" /><p>Gym</p></RouterLink>
-      <RouterLink to="/"                  class="btn-grid"><i class="fa fa-info           fa-2x" /><p>Resources</p></RouterLink>
+    <!-- ─────── 3 × 3 GRID ─────── -->
+    <div style="margin:auto;max-width:320px;">
+      <div class="grid-container">
+        <!-- Row 1 -->
+        <a href="/edit_profile/"      class="btn-grid"><i class="fa fa-credit-card fa-2x"></i><p>Add Funds</p></a>
+        <a href="/barcode_dashboard/" class="btn-grid"><i class="fa fa-money-bill fa-2x"></i><p>Balance</p></a>
+        <a id="lost-my-card" href="#" class="btn-grid"><i class="fa fa-id-card fa-2x"></i><p>Lost My Card</p></a>
 
-      <RouterLink to="/logout"            class="btn-grid"><i class="fa fa-sign-out-alt   fa-2x" /><p>Log out</p></RouterLink>
+        <!-- Row 2 -->
+        <a id="emergency" href="#" class="btn-grid"><i class="fa fa-exclamation-triangle fa-2x"></i><p>{{ serverStatus }}</p></a>
+        <a id="gym"       href="#" class="btn-grid"><i class="fa fa-dumbbell fa-2x"></i><p>Gym</p></a>
+        <a id="resource"  href="#" class="btn-grid"><i class="fa fa-info fa-2x"></i><p>Resources</p></a>
+
+        <!-- Row 3 -->
+        <a href="https://alynx.ucmerced.edu/"  target="_blank" class="btn-grid"><i class="fa fa-link fa-2x"></i><p>Alynx</p></a>
+        <a href="/logout/"                     class="btn-grid"><i class="fa fa-sign-out-alt fa-2x"></i><p>Log out</p></a>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { userInfo } from "@/api/auth";
-import ucmLogo         from "@/assets/images/ucm3.png";
-import mobileIdLogo    from "@/assets/images/mobileid_logo.png";
-import avatarPlaceholder from "@/assets/images/avatar_placeholder.png";
+import { PDF417 } from "@makard/pdf417";
 
-/* ───── STATE ───── */
-const profile            = ref(null);
+import ucmLogo      from "@/assets/images/ucm3.png";
+import mobileIdLogo from "@/assets/images/mobileid_logo.png";
+
+/* ── reactive state ─────────────────────────────────────────────────────── */
+const profile            = ref({ name: "", information_id: "", user_profile_img: "" });
 const loading            = ref(false);
 const serverStatus       = ref("Emergency");
 const barcodeReady       = ref(false);
 const progressWidth      = ref(100);
 const progressTransition = ref("none");
 const barcodeCanvas      = ref(null);
-let   resetTimer;
+let   resetTimer         = null;
 
-/* ───── LIFECYCLE ───── */
+/* avatar helper (base64 → data-URL) */
+const avatarSrc = computed(() =>
+  profile.value.user_profile_img
+    ? `data:image/png;base64,${profile.value.user_profile_img}`
+    : ""
+);
+
+/* ── lifecycle ──────────────────────────────────────────────────────────── */
 onMounted(async () => {
   const data = await userInfo();
-  profile.value = data?.profile ?? {};
+  if (data?.profile) profile.value = data.profile;
 });
 
-/* ───── HELPERS ───── */
-function getCookie(name) {
-  return document.cookie
-    .split(";")
-    .map(c => c.trim())
-    .find(c => c.startsWith(name + "="))
-    ?.split("=")[1] ?? "";
+/* ── helpers ────────────────────────────────────────────────────────────── */
+function getCookie (name) {
+  const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  return m ? decodeURIComponent(m[2]) : "";
 }
 
-async function apiGenerateBarcode() {
-  const res = await fetch("/api/generate-barcode/", {
+async function apiGenerateBarcode () {
+  const res = await fetch("http://127.0.0.1:8000/generate_barcode/", {
     method: "POST",
     credentials: "include",
     headers: { "X-CSRFToken": getCookie("csrftoken") }
@@ -108,78 +141,81 @@ async function apiGenerateBarcode() {
   return res.json();
 }
 
-/* ───── MAIN ACTION ───── */
-async function handleGenerate() {
-  try {
-    loading.value = true;
-    serverStatus.value = "Processing";
+/* ── UI actions ─────────────────────────────────────────────────────────── */
+async function handleGenerate () {
+  loading.value      = true;
+  serverStatus.value = "Processing";
 
+  try {
     const { status, barcode, message } = await apiGenerateBarcode();
     serverStatus.value = message || "Success";
 
     if (status === "success") {
-      drawPdf417(barcode);
-      await nextTick();
       barcodeReady.value = true;
+      await nextTick();
 
-      /* progress bar: 10 s countdown */
+      drawPdf417(barcode);
+
       requestAnimationFrame(() => {
         progressTransition.value = "width 10s linear";
-        progressWidth.value = 0;
+        progressWidth.value      = 0;
       });
       clearTimeout(resetTimer);
       resetTimer = setTimeout(resetUi, 10400);
     }
-  } catch {
+  } catch (err) {
     serverStatus.value = "Error";
+    console.error(err);
   } finally {
     loading.value = false;
   }
 }
 
-function resetUi() {
-  barcodeReady.value     = false;
+
+function resetUi () {
+  barcodeReady.value       = false;
   progressTransition.value = "none";
-  progressWidth.value    = 100;
-  serverStatus.value     = "Emergency";
+  progressWidth.value      = 100;
+  serverStatus.value       = "Emergency";
 }
 
-function drawPdf417(text) {
-  if (!window.PDF417) return;
-  window.PDF417.init(text);
-  const b  = window.PDF417.getBarcodeArray();
-  const bw = 2.5, bh = 1;
-  const ctx = barcodeCanvas.value.getContext("2d");
-  barcodeCanvas.value.width  = bw * b.num_cols;
-  barcodeCanvas.value.height = bh * b.num_rows;
-  ctx.clearRect(0, 0, barcodeCanvas.value.width, barcodeCanvas.value.height);
+/* ── barcode renderer (hi-DPI-safe) ─────────────────────────────────────── */
+function drawPdf417 (text) {
+  PDF417.init(text, 2, 0);          // ECC level 2, auto-columns
+  const b = PDF417.getBarcodeArray();
 
-  for (let r = 0; r < b.num_rows; r++) {
-    for (let c = 0; c < b.num_cols; c++) {
-      ctx.fillStyle = b.bcode[r][c] ? "#000" : "#fff";
-      ctx.fillRect(c * bw, r * bh, bw, bh);
-    }
-  }
+  const W = 2;                      // module width  (device-px)
+  const H = W * 3;                  // module height ≈ 3:1
+  const canvas = barcodeCanvas.value;
+  canvas.width  = b.num_cols * W;
+  canvas.height = b.num_rows * H;
+
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#000";
+  for (let r = 0; r < b.num_rows; ++r)
+    for (let c = 0; c < b.num_cols; ++c)
+      if (b.bcode[r][c])
+        ctx.fillRect(c * W, r * H, W, H);
+
+  canvas.style.width  = `${canvas.width  / window.devicePixelRatio}px`;
+  canvas.style.height = `${canvas.height / window.devicePixelRatio}px`;
 }
-
-/* ───── STYLES ───── */
-const avatarStyle = {
-  width: "100px",
-  height: "100px",
-  objectFit: "cover",
-  borderRadius: "50%",
-  boxShadow: "0 4px 12px rgba(255,255,255,0.4)"
-};
 </script>
 
+<!-- ────────── GLOBAL STYLES (order matters) ────────── -->
+<style src="bootstrap/dist/css/bootstrap.min.css"></style>
+<style src="@fortawesome/fontawesome-free/css/all.min.css"></style>
+<style src="@/assets/css/mobileid.css"></style>
+
+<!-- ────────── PAGE-SPECIFIC MINIMAL OVERRIDES ────────── -->
 <style scoped>
-.pdf417         { image-rendering: pixelated; border: 1px solid #dee2e6; }
-.grid-container { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 20px; }
-.btn-grid       { display: flex; flex-direction: column; align-items: center; justify-content: center;
-                  padding: 12px 4px; border-radius: 12px; background: rgba(255,255,255,0.1);
-                  color: #fff; text-decoration: none; transition: background .2s; }
-.btn-grid:hover { background: rgba(255,255,255,0.2); }
-.white-h4       { color: #fff; }
-.btn-trans      { background: transparent; border: 1px solid #fff; color: #fff; }
-.btn-trans-default:hover { background: #fff; color: #000; }
+.pdf417 {
+  background:#fff;
+  image-rendering:pixelated;
+  border:1px solid #dee2e6;
+  max-width:100%;
+  height:auto;
+}
 </style>
