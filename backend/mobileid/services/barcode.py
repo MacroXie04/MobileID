@@ -15,14 +15,9 @@ from mobileid.models import (
 )
 from mobileid.project_code.dynamic_barcode import auto_send_code
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-ACCOUNT_STAFF: Final[str] = "staff"
-ACCOUNT_USER: Final[str] = "user"
-ACCOUNT_SCHOOL: Final[str] = "school"
-
 BARCODE_IDENTIFICATION: Final[str] = "Identification"
 BARCODE_DYNAMIC: Final[str] = "DynamicBarcode"
 BARCODE_OTHERS: Final[str] = "Others"
@@ -38,7 +33,6 @@ RESULT_TEMPLATE = {
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
-
 def _random_digits(length: int) -> str:
     """Return a random string of *length* numeric digits."""
     return "".join(str(random.randint(0, 9)) for _ in range(length))
@@ -60,7 +54,6 @@ def generate_unique_identification_barcode(max_attempts: int = 50) -> str:
 
 def _create_identification_barcode(user) -> Barcode:
     """Delete prior Identification barcodes for *user* and create a fresh one."""
-    # Ensure only one Identification barcode remains per user
     Barcode.objects.filter(user=user, barcode_type=BARCODE_IDENTIFICATION).delete()
     return Barcode.objects.create(
         user=user,
@@ -72,173 +65,140 @@ def _create_identification_barcode(user) -> Barcode:
 def _touch_barcode_usage(barcode: Barcode) -> None:
     """Increment usage counters for *barcode* atomically."""
     now = timezone.now()
-    BarcodeUsage.objects.update_or_create(
-        barcode=barcode, defaults={"last_used": now}
+
+    # Try to update existing record first
+    updated = BarcodeUsage.objects.filter(barcode=barcode).update(
+        total_usage=F("total_usage") + 1,
+        last_used=now
     )
-    BarcodeUsage.objects.filter(barcode=barcode).update(
-        total_usage=F("total_usage") + 1, last_used=now
-    )
+
+    # If no rows were updated, create a new record
+    if not updated:
+        BarcodeUsage.objects.create(
+            barcode=barcode,
+            total_usage=1,
+            last_used=now
+        )
 
 
 def _select_optimal_dynamic_barcode() -> Barcode | None:
-    """Select the optimal Dynamic barcode based on usage patterns.
-
-    Selection criteria (in order of priority):
-    1. Never used barcodes (total_usage = 0)
-    2. Least used barcodes (lowest total_usage)
-    3. Among equally used barcodes, select the one used longest ago (oldest last_used)
-
-    Returns:
-        Barcode | None: The selected barcode, or None if no dynamic barcodes exist.
-    """
-    # Get all dynamic barcodes with their usage stats
-    dynamic_barcodes_with_usage = (
+    """Select the optimal Dynamic barcode based on usage patterns."""
+    dynamic_with_usage = (
         BarcodeUsage.objects.select_related("barcode")
         .filter(barcode__barcode_type=BARCODE_DYNAMIC)
         .order_by("total_usage", "last_used")
     )
+    if dynamic_with_usage.exists():
+        return dynamic_with_usage.first().barcode
 
-    if not dynamic_barcodes_with_usage.exists():
-        # Check if there are dynamic barcodes without usage records
-        unused_dynamic_barcodes = (
-            Barcode.objects.filter(barcode_type=BARCODE_DYNAMIC)
-            .exclude(id__in=BarcodeUsage.objects.values_list("barcode_id", flat=True))
-        )
-
-        if unused_dynamic_barcodes.exists():
-            # Return the first unused barcode (could be ordered by creation time)
-            return unused_dynamic_barcodes.order_by("time_created").first()
-
-        return None
-
-    # Return the barcode with optimal usage pattern
-    return dynamic_barcodes_with_usage.first().barcode
+    unused = (
+        Barcode.objects.filter(barcode_type=BARCODE_DYNAMIC)
+        .exclude(id__in=BarcodeUsage.objects.values_list("barcode_id", flat=True))
+        .order_by("time_created")
+    )
+    return unused.first() if unused.exists() else None
 
 
 def _timestamp() -> str:
     """Return a timestamp string for dynamic barcodes."""
-    now = timezone.now()
-    return now.strftime("%Y%m%d%H%M%S")
+    return timezone.now().strftime("%Y%m%d%H%M%S")
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
-
-# MySQL does not support nested transactions
-@transaction.atomic
 def generate_barcode(user) -> dict:
-    """Generate or refresh a barcode for *user* based on their account type.
-
-    Always returns a dict with keys: ``status``, ``message``, ``barcode_type``,
-    ``barcode``.
-    """
+    """Generate or refresh a barcode for *user* based on their group membership."""
     result = RESULT_TEMPLATE.copy()
 
-    # ---------------------------------------------------------------------
-    # 1 – Ensure prerequisite objects exist
-    # ---------------------------------------------------------------------
-    user_account, _ = UserAccount.objects.get_or_create(
-        user=user, defaults={"account_type": ACCOUNT_USER.capitalize()}
-    )
-    account_type = user_account.account_type.lower()
-
-    settings, created = UserBarcodeSettings.objects.select_for_update().get_or_create(
-        user=user,
-        defaults={
-            "barcode": None,
-            "server_verification": False,
-            "barcode_pull": False,
-        },
-    )
-
-    # ---------------------------------------------------------------------
-    # 2 – Branch per account type
-    # ---------------------------------------------------------------------
+    # Determine account type via groups
+    is_staff = user.groups.filter(name="Staff").exists()
+    is_user = user.groups.filter(name="User").exists()
+    is_school = user.groups.filter(name="School").exists()
 
     # STAFF — not allowed
-    if account_type == ACCOUNT_STAFF:
+    if is_staff:
         result.update(status="error", message="Staff accounts cannot generate barcodes.")
         return result
 
-    # USER and SCHOOL — both return their selected barcode
-    if account_type in [ACCOUNT_USER, ACCOUNT_SCHOOL]:
+    # Unknown or missing group
+    if not (is_user or is_school):
+        result.update(status="error", message="Invalid user group.")
+        return result
 
-        # init selected_barcode
-        selected_barcode = None
+    # Wrap DB operations in an explicit transaction for select_for_update
+    with transaction.atomic():
+        settings, _ = UserBarcodeSettings.objects.select_for_update().get_or_create(
+            user=user,
+            defaults={
+                "barcode": None,
+                "server_verification": False,
+                "barcode_pull": False,
+            },
+        )
 
-        # process barcode_pull logic (only for School accounts)
-        if settings.barcode_pull and account_type == ACCOUNT_SCHOOL:
-            # try to get the optimal dynamic barcode
-            pulled_barcode = _select_optimal_dynamic_barcode()
-            if pulled_barcode:
-                selected_barcode = pulled_barcode
-            else:
+        # Determine which barcode to use
+        if settings.barcode_pull and is_school:
+            selected = _select_optimal_dynamic_barcode()
+            if not selected:
                 result.update(status="error", message="No dynamic barcode available for pull.")
                 return result
         else:
-            # use user-selected barcode
-            selected_barcode = settings.barcode
+            selected = settings.barcode
 
-        # check if there is a usable barcode
-        if not selected_barcode:
-            if account_type == ACCOUNT_SCHOOL:
-                result.update(status="error",
-                              message="No barcode selected.")
-            else:
-                result.update(status="error", message="No barcode selected.")
+        if not selected:
+            result.update(status="error", message="No barcode selected.")
             return result
 
-        # Handle different barcode types
-        if selected_barcode.barcode_type == BARCODE_IDENTIFICATION:
-            # Identification barcodes are always created fresh
-            settings.barcode = _create_identification_barcode(user)
-            settings.save()
+        # Handle by barcode type
+        if selected.barcode_type == BARCODE_IDENTIFICATION:
+            # Create fresh identification barcode
+            new_bc = _create_identification_barcode(user)
+            settings.barcode = new_bc
+            settings.save(update_fields=["barcode"])
+
+            # Track usage for identification barcodes
+            _touch_barcode_usage(new_bc)
 
             result.update(
                 status="success",
                 message="Identification barcode",
                 barcode_type=BARCODE_IDENTIFICATION,
-                barcode=settings.barcode.barcode,
+                barcode=new_bc.barcode,
             )
             return result
 
-        elif selected_barcode.barcode_type == BARCODE_DYNAMIC:
-            # Add timestamp prefix for dynamic barcodes
-            ts_prefix = _timestamp()
-
+        if selected.barcode_type == BARCODE_DYNAMIC:
             # Update usage stats
-            _touch_barcode_usage(selected_barcode)
+            _touch_barcode_usage(selected)
 
             # Optional server verification
             server_note = ""
             if SELENIUM_ENABLED and settings.server_verification:
-                srv = auto_send_code(selected_barcode.session)
+                srv = auto_send_code(selected.session)
                 server_note = f" Server: {srv['code']}" if srv else ""
 
-            full_barcode = f"{ts_prefix}{selected_barcode.barcode}"
+            full = f"{_timestamp()}{selected.barcode}"
             result.update(
                 status="success",
-                message=f"Dynamic: {selected_barcode.barcode[-4:]}{server_note}",
+                message=f"Dynamic: {selected.barcode[-4:]}{server_note}",
                 barcode_type=BARCODE_DYNAMIC,
-                barcode=full_barcode,
+                barcode=full,
             )
             return result
 
-        elif selected_barcode.barcode_type == BARCODE_OTHERS:
+        if selected.barcode_type == BARCODE_OTHERS:
+            # Track usage for other barcode types
+            _touch_barcode_usage(selected)
 
             result.update(
                 status="success",
-                message=f"Barcode ending with {selected_barcode.barcode[-4:]}",
+                message=f"Barcode ending with {selected.barcode[-4:]}",
                 barcode_type=BARCODE_OTHERS,
-                barcode=selected_barcode.barcode,
+                barcode=selected.barcode,
             )
             return result
 
-        else:
-            result.update(status="error", message="Invalid barcode type.")
-            return result
-
-    # Unknown account type
-    result.update(message="Invalid account type.")
-    return result
+        # Fallback error
+        result.update(status="error", message="Invalid barcode type.")
+        return result

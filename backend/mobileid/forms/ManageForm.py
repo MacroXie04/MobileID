@@ -1,18 +1,12 @@
-"""
-forms.py
-~~~~~~~~
-Forms for the barcode dashboard.
-
-* UserBarcodeSettingsForm – edit pull / verification flags & choose default barcode
-* BarcodeCreateForm       – add a new barcode (type auto-assigned)
-* BarcodeDeleteForm       – confirm deletion of one existing barcode
-"""
-
 from django import forms
-
+from django.contrib.auth.models import Group
 from mobileid.models import UserBarcodeSettings, Barcode
 
-YES_NO = [(True, "Yes"), (False, "No")]  # shared dropdown values
+YES_NO = [(True, "Yes"), (False, "No")]
+
+def _in_group(user, group_name: str) -> bool:
+    """Return True if user is in the given group."""
+    return user and user.groups.filter(name=group_name).exists()
 
 
 # --------------------------------------------------------------------------- #
@@ -20,12 +14,12 @@ YES_NO = [(True, "Yes"), (False, "No")]  # shared dropdown values
 # --------------------------------------------------------------------------- #
 class UserBarcodeSettingsForm(forms.ModelForm):
     """
-    Business rules
-    --------------
-    1.  If the current user’s UserAccount.account_type == "User":
+    Business rules (group‐based)
+    ----------------------------
+    1.  If the current user is in "User" group:
           • barcode_pull is permanently False and the widget is disabled.
     2.  When barcode_pull == True the <select> for 'barcode' must be disabled
-        and a POST that tries to send a value is rejected.
+        and any posted value rejected.
     """
 
     class Meta:
@@ -37,43 +31,42 @@ class UserBarcodeSettingsForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        self.request = kwargs.pop("request", None)  # injected by the view
+        self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
 
         user = getattr(self.request, "user", None)
 
-        # rule 1 – standard “User” accounts cannot enable pull
-        if user and hasattr(user, "useraccount"):
-            if user.useraccount.account_type == "User":
-                self.fields["barcode_pull"].disabled = True
-                self.initial["barcode_pull"] = False
+        # rule 1 – "User" group cannot enable pull
+        if _in_group(user, "User"):
+            self.fields["barcode_pull"].disabled = True
+            self.initial["barcode_pull"] = False
 
-        # rule 2 – if pull already on, lock barcode field in UI
+        # rule 2 – if pull already on, lock barcode field
         if self.instance and self.instance.barcode_pull:
             self.fields["barcode"].disabled = True
 
-        # barcode choices: **all** of the user’s barcodes (no type filter)
+        # barcode choices: all of the user’s barcodes
         if user:
             self.fields["barcode"].queryset = Barcode.objects.filter(user=user)
 
     def clean(self):
         cleaned = super().clean()
-        barcode_pull = cleaned.get("barcode_pull")
-        barcode_obj = cleaned.get("barcode")
         user = getattr(self.request, "user", None)
+        pull = cleaned.get("barcode_pull")
+        bc = cleaned.get("barcode")
 
-        # rule 1 – block “User” accounts changing pull
-        if user and hasattr(user, "useraccount"):
-            if user.useraccount.account_type == "User" and barcode_pull:
-                self.add_error(
-                    "barcode_pull", "Standard users cannot enable automatic barcode pull."
-                )
+        # rule 1 – block "User" group from enabling pull
+        if _in_group(user, "User") and pull:
+            self.add_error(
+                "barcode_pull",
+                "Standard users cannot enable automatic barcode pull."
+            )
 
         # rule 2 – pull ON → barcode must be empty
-        if barcode_pull and barcode_obj:
+        if pull and bc:
             self.add_error(
                 "barcode",
-                "When barcode pull is ON, a specific barcode cannot be selected.",
+                "When barcode pull is ON, a specific barcode cannot be selected."
             )
             cleaned["barcode"] = None
 
@@ -85,8 +78,8 @@ class UserBarcodeSettingsForm(forms.ModelForm):
 # --------------------------------------------------------------------------- #
 class BarcodeCreateForm(forms.ModelForm):
     """
-    • 28-digit numeric  + School account  → DynamicBarcode (save last 14 digits)
-    • otherwise                           → Others
+    • 28-digit numeric + School group → DynamicBarcode (save last 14 digits)
+    • otherwise                      → Others
     """
 
     class Meta:
@@ -106,10 +99,7 @@ class BarcodeCreateForm(forms.ModelForm):
 
         code = obj.barcode
         is_28 = len(code) == 28 and code.isdigit()
-        is_school = (
-                hasattr(self.user, "useraccount")
-                and self.user.useraccount.account_type == "School"
-        )
+        is_school = _in_group(self.user, "School")
 
         if is_28 and is_school:
             obj.barcode_type = "DynamicBarcode"
@@ -128,14 +118,14 @@ class BarcodeCreateForm(forms.ModelForm):
 class BarcodeDeleteForm(forms.Form):
     """
     Confirmation form for deleting a barcode.
-    Only allows DynamicBarcode & Other types (Identification never deletable here).
+    Only allows DynamicBarcode & Others types.
     """
-
     barcode = forms.ModelChoiceField(queryset=Barcode.objects.none())
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop("user")  # required
+        user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
         self.fields["barcode"].queryset = Barcode.objects.filter(
-            user=user, barcode_type__in=["DynamicBarcode", "Other"]
+            user=user,
+            barcode_type__in=["DynamicBarcode", "Others"]
         )

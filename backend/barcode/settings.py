@@ -49,11 +49,6 @@ SELENIUM_ENABLED = os.getenv("SELENIUM_ENABLED", "False").lower() == "true"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-# If running in test mode, set environment variables accordingly
-if "test" in sys.argv:
-    API_SERVER = False
-    WEBAPP_ENABLED = True
-
 # Application definition
 
 LOGIN_URL = "authn:web_login"
@@ -70,8 +65,10 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework.authtoken",
     "corsheaders",
+
     # modules
     "widget_tweaks",
+
     # Default Django apps
     "django.contrib.admin",
     "django.contrib.auth",
@@ -93,14 +90,19 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Custom middleware for account type routing
-    "mobileid.middleware.routing.AccountTypeRoutingMiddleware",
+    "authn.middleware.routing.AccountTypeRoutingMiddleware",
 ]
+
+# If running as an API server, disable session middleware
+if API_SERVER:
+    MIDDLEWARE.remove("authn.middleware.routing.AccountTypeRoutingMiddleware")
+
 
 # URL configuration
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.getenv(
         "CORS_ALLOWED_ORIGINS", 
-        "http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:3000"
+        "http://localhost:8080,http://127.0.0.1:8080"
     ).split(",") if origin.strip()
 ]
 
@@ -108,7 +110,7 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     origin.strip() for origin in os.getenv(
         "CSRF_TRUSTED_ORIGINS", 
-        "http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:3000"
+        "http://localhost:8080,http://127.0.0.1:8080"
     ).split(",") if origin.strip()
 ]
 

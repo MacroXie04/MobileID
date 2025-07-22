@@ -11,7 +11,7 @@ def web_register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect("mobileid:web_index")
+            return redirect("mobile:web_index")
         messages.error(request, "Please correct the highlighted errors.")
     else:
         form = UserRegisterForm()
@@ -40,4 +40,4 @@ def web_login(request):
 @login_required
 def web_logout(request):
     logout(request)
-    return redirect("mobileid:web_login")
+    return redirect("authn:web_login")

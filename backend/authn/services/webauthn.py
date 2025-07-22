@@ -1,7 +1,7 @@
 import random
 
 from mobileid.models import UserBarcodeSettings, Barcode
-from authn.models import UserProfile
+from authn.models import UserProfile, UserExtendedData
 
 def generate_unique_identification_barcode():
     while True:
@@ -32,6 +32,12 @@ def create_user_profile(user, name, information_id, user_profile_img):
         barcode=user_identification_barcode,
         server_verification=False,
         barcode_pull=False,
+    )
+
+    # Create user extended data
+    UserExtendedData.objects.create(
+        user=user,
+        extended_data={},
     )
 
     return user

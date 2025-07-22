@@ -17,8 +17,8 @@ def bootstrap_groups_and_perms(sender, **kwargs):
 
     staff_group.permissions.set(Permission.objects.all())
 
-    full_models = [UserProfile, Barcode, UserBarcodeSettings]
-    view_only_models = [BarcodeUsage, UserExtendedData]
+    full_models = [UserProfile, Barcode, UserBarcodeSettings, BarcodeUsage]
+    view_only_models = [UserExtendedData]
 
     full_perms = []
     for model in full_models:

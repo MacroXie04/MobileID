@@ -11,7 +11,6 @@ if API_SERVER:
     urlpatterns += [
     ]
 
-
 else:
     urlpatterns += [
         # index page

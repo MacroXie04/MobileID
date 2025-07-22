@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils import timezone
 
 from mobileid.models import Barcode, UserBarcodeSettings, BarcodeUsage
 
@@ -208,11 +209,11 @@ class UserBarcodeSettingsAdmin(admin.ModelAdmin):
     def settings_status(self, obj):
         """Display overall settings status"""
         if obj.barcode and obj.server_verification:
-            return format_html('<span style="color: green;">✓ Fully Configured</span>')
+            return format_html('<span style="color: green;">Fully Configured</span>')
         elif obj.barcode:
-            return format_html('<span style="color: orange;">⚠ Partially Configured</span>')
+            return format_html('<span style="color: orange;">Partially Configured</span>')
         else:
-            return format_html('<span style="color: red;">✗ Not Configured</span>')
+            return format_html('<span style="color: red;">Not Configured</span>')
 
     settings_status.short_description = 'Status'
 
