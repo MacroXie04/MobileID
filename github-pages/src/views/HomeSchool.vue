@@ -1,13 +1,8 @@
-<!-- src/views/HomeSchool.vue -->
 <template>
   <div class="container">
-    <!-- ────────── HEADER ────────── -->
-    <div
-      class="row is-flex"
-      style="display:flex;align-items:center;justify-content:space-between;padding:0.5em;"
-    >
-      <!--  UC Merced logo  -->
-      <div class="col-xs-2">
+    <!-- Header -->
+    <div class="header">
+      <div style="flex: 1;">
         <a href="/">
           <img :src="ucmLogo" height="60" alt="UC Merced Logo" />
         </a>
@@ -17,11 +12,10 @@
       <div class="col-xs-8 text-center">
         <img :src="mobileIdLogo" height="60" alt="Mobile ID" />
       </div>
-
-      <!--  spacer  -->
-      <div class="col-xs-2 text-right"></div>
+      <div style="flex: 1;"></div>
     </div>
-    <hr style="margin-top:5px;margin-bottom:5px;" />
+
+    <div style="border-top: 1px solid white; margin: 0 20px;"></div>
 
     <!-- ─────── PROFILE SECTION ─────── -->
     <div class="text-center" style="margin-top:2em;">
@@ -37,14 +31,17 @@
       <h4 class="white-h4" style="margin-top:.5em;color:white !important;">
         {{ profile.name }}
       </h4>
+      
+      <!-- User ID (student-id) -->
       <h4
-        id="information_id"
+        id="student-id"
         class="white-h4"
         style="color:white !important;display:none;"
       >
         {{ profile.information_id }}
       </h4>
 
+      <!-- Button -->
       <div id="show-info-button" style="margin-top:1em;">
         <button
           class="btn btn-trans btn-trans-default"
@@ -58,16 +55,19 @@
 
     <!-- ─────── BARCODE + PROGRESS ─────── -->
     <div id="qrcode" class="text-center">
-      <div v-show="barcodeReady" id="qrcode-div">
+      <!-- Barcode canvas -->
+      <div id="qrcode-div" style="display:none;">
         <canvas ref="barcodeCanvas" class="pdf417"></canvas>
       </div>
-      <br v-show="barcodeReady" />
-      <div v-show="barcodeReady" id="qrcode-code" style="height:10%;">
-        <div class="progress center-block">
+      
+      <!-- Progress bar -->
+      <div id="qrcode-code" style="display:none;margin-top: 20px;">
+        <div class="progress">
           <div
             class="progress-bar progress-bar-white"
             role="progressbar"
-            :style="{ width: progressWidth + '%', transition: progressTransition }"
+            style="width: 100%; transition: none;"
+            ref="progressBar"
           ></div>
         </div>
       </div>
@@ -95,28 +95,25 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref } from "vue";
-import { userInfo } from "@/api/auth";
-import { PDF417 } from "@makard/pdf417";
+import {computed, nextTick, onMounted, ref} from "vue";
+import {userInfo} from "@/api/auth";
 
-import ucmLogo      from "@/assets/images/ucm3.png";
+import ucmLogo from "@/assets/images/ucm3.png";
 import mobileIdLogo from "@/assets/images/mobileid_logo.png";
 
 /* ── reactive state ─────────────────────────────────────────────────────── */
-const profile            = ref({ name: "", information_id: "", user_profile_img: "" });
-const loading            = ref(false);
-const serverStatus       = ref("Emergency");
-const barcodeReady       = ref(false);
-const progressWidth      = ref(100);
-const progressTransition = ref("none");
-const barcodeCanvas      = ref(null);
-let   resetTimer         = null;
+const profile = ref({name: "", information_id: "", user_profile_img: ""});
+const loading = ref(false);
+const serverStatus = ref("Emergency");
+const barcodeCanvas = ref(null);
+const progressBar = ref(null);
+let resetTimer = null;
 
 /* avatar helper (base64 → data-URL) */
 const avatarSrc = computed(() =>
-  profile.value.user_profile_img
-    ? `data:image/png;base64,${profile.value.user_profile_img}`
-    : ""
+    profile.value.user_profile_img
+        ? `data:image/png;base64,${profile.value.user_profile_img}`
+        : ""
 );
 
 /* ── lifecycle ──────────────────────────────────────────────────────────── */
@@ -126,81 +123,203 @@ onMounted(async () => {
 });
 
 /* ── helpers ────────────────────────────────────────────────────────────── */
-function getCookie (name) {
+function getCookie(name) {
   const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
   return m ? decodeURIComponent(m[2]) : "";
 }
 
-async function apiGenerateBarcode () {
+async function apiGenerateBarcode() {
   const res = await fetch("http://127.0.0.1:8000/generate_barcode/", {
     method: "POST",
     credentials: "include",
-    headers: { "X-CSRFToken": getCookie("csrftoken") }
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/json"
+    }
   });
-  if (!res.ok) throw new Error("Barcode generation failed");
-  return res.json();
+  if (!res.ok) throw new Error(`Barcode generation failed: ${res.status}`);
+  const data = await res.json();
+  console.log("API Response:", data);
+  return data;
 }
 
-/* ── UI actions ─────────────────────────────────────────────────────────── */
-async function handleGenerate () {
-  loading.value      = true;
+/* ── Main handler exactly like original JS code ─────────────────────────── */
+async function handleGenerate() {
+  loading.value = true;
   serverStatus.value = "Processing";
 
+  console.log("=== Starting barcode generation ===");
+  console.log("jQuery available:", typeof window.$);
+  console.log("PDF417 available:", typeof window.PDF417);
+
   try {
-    const { status, barcode, message } = await apiGenerateBarcode();
+    console.log("Calling API...");
+    const {status, message, barcode} = await apiGenerateBarcode();
+    console.log("API Response received:", {status, message, barcode});
+    
     serverStatus.value = message || "Success";
 
-    if (status === "success") {
-      barcodeReady.value = true;
-      await nextTick();
+    if (status === "success" && barcode) {
+      console.log("API returned barcode data:", barcode);
 
+      // Generate barcode using API response data
+      await nextTick();
+      console.log("About to draw PDF417...");
       drawPdf417(barcode);
 
-      requestAnimationFrame(() => {
-        progressTransition.value = "width 10s linear";
-        progressWidth.value      = 0;
+      // Animation logic exactly like original
+      console.log("Starting animation logic...");
+      
+      // Check if jQuery is available
+      if (typeof window.$ === 'undefined') {
+        console.error("jQuery is not available!");
+        return;
+      }
+
+      const $button = window.$('#show-info-button');
+      const $studentId = window.$('#student-id');
+      const $qrcodeCode = window.$('#qrcode-code');
+      const $qrcodeDiv = window.$('#qrcode-div');
+
+      console.log("jQuery elements found:", {
+        button: $button.length,
+        studentId: $studentId.length,
+        qrcodeCode: $qrcodeCode.length,
+        qrcodeDiv: $qrcodeDiv.length
       });
-      clearTimeout(resetTimer);
-      resetTimer = setTimeout(resetUi, 10400);
+
+      const isFaded = $button.css('display') === 'none';
+      console.log("Button is faded:", isFaded);
+
+      if (isFaded) {
+        // Reset state - exactly like original
+        setTimeout(() => {
+          $button.fadeIn();
+        }, 400);
+        $studentId.fadeOut();
+        $qrcodeCode.fadeOut();
+        $qrcodeDiv.fadeOut();
+      } else {
+        // Show barcode sequence - exactly like original
+        console.log("Starting show sequence...");
+        $button.fadeOut();
+
+        setTimeout(() => {
+          console.log("Showing elements...");
+          $qrcodeDiv.fadeIn();
+          $qrcodeCode.fadeIn();
+          $studentId.fadeIn();
+
+          // Progress bar animation exactly like original
+          const $progressBar = window.$('.progress-bar');
+          console.log("Progress bar found:", $progressBar.length);
+          
+          $progressBar.css({
+            "transition": "none",
+            "width": "100%"
+          });
+          console.log("Set progress bar to 100%");
+
+          // Short delay before applying transition again for smooth animation
+          setTimeout(() => {
+            $progressBar.css({
+              "transition": "width 10s linear",
+              "width": "0%"
+            });
+            console.log("Started 10s animation to 0%");
+          }, 50);
+
+        }, 400);
+
+        // Hide barcode after 10.4 seconds - exactly like original
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => {
+          $qrcodeDiv.fadeOut(400);
+          $qrcodeCode.fadeOut(400);
+          $studentId.fadeOut(400);
+          setTimeout(() => {
+            $button.fadeIn();
+          }, 400);
+        }, 10400);
+      }
     }
   } catch (err) {
     serverStatus.value = "Error";
-    console.error(err);
+    console.error("Barcode generation error:", err);
   } finally {
     loading.value = false;
   }
 }
 
-
-function resetUi () {
-  barcodeReady.value       = false;
-  progressTransition.value = "none";
-  progressWidth.value      = 100;
-  serverStatus.value       = "Emergency";
-}
-
-/* ── barcode renderer (hi-DPI-safe) ─────────────────────────────────────── */
-function drawPdf417 (text) {
-  PDF417.init(text, 2, 0);          // ECC level 2, auto-columns
-  const b = PDF417.getBarcodeArray();
-
-  const W = 2;                      // module width  (device-px)
-  const H = W * 3;                  // module height ≈ 3:1
+/* ── barcode renderer using API response data ──────────────────────────────── */
+function drawPdf417(barcodeData) {
   const canvas = barcodeCanvas.value;
-  canvas.width  = b.num_cols * W;
-  canvas.height = b.num_rows * H;
+  if (!canvas) {
+    console.error("Canvas element not found");
+    return;
+  }
 
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#000";
-  for (let r = 0; r < b.num_rows; ++r)
-    for (let c = 0; c < b.num_cols; ++c)
-      if (b.bcode[r][c])
-        ctx.fillRect(c * W, r * H, W, H);
+  console.log("Generating PDF417 barcode for data:", barcodeData);
 
-  canvas.style.width  = `${canvas.width  / window.devicePixelRatio}px`;
-  canvas.style.height = `${canvas.height / window.devicePixelRatio}px`;
+  // Check if global PDF417 object is available
+  if (typeof window.PDF417 === 'undefined') {
+    console.error("PDF417 library not loaded");
+    return;
+  }
+
+  try {
+    // Initialize PDF417 with the barcode data from API
+    window.PDF417.init(barcodeData);
+    const barcode = window.PDF417.getBarcodeArray();
+
+    if (!barcode || !barcode.bcode || barcode.num_rows <= 0) {
+      console.error("Failed to generate PDF417 barcode array");
+      return;
+    }
+
+    console.log("Barcode array generated:", {
+      rows: barcode.num_rows,
+      cols: barcode.num_cols
+    });
+
+    // Block sizes exactly like original
+    const bw = 2.5;
+    const bh = 1;
+
+    // Create canvas exactly like original
+    const container = document.getElementById('qrcode-div');
+    if (container.firstChild && container.firstChild.tagName === 'CANVAS') {
+      container.removeChild(container.firstChild);
+    }
+
+    canvas.setAttribute("id", "canvas");
+    canvas.width = bw * barcode.num_cols;
+    canvas.height = bh * barcode.num_rows;
+
+    const ctx = canvas.getContext('2d');
+
+    // Graph barcode elements exactly like original
+    let y = 0;
+    for (let r = 0; r < barcode.num_rows; r++) {
+      let x = 0;
+      for (let c = 0; c < barcode.num_cols; c++) {
+        if (barcode.bcode[r][c] == 1) {
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(x, y, bw, bh);
+        } else {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(x, y, bw, bh);
+        }
+        x += bw;
+      }
+      y += bh;
+    }
+
+    console.log("PDF417 barcode rendered successfully");
+
+  } catch (error) {
+    console.error("PDF417 generation failed:", error);
+  }
 }
 </script>
 
@@ -211,11 +330,52 @@ function drawPdf417 (text) {
 
 <!-- ────────── PAGE-SPECIFIC MINIMAL OVERRIDES ────────── -->
 <style scoped>
+/* Header styles */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5em;
+}
+
+.header > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .pdf417 {
-  background:#fff;
-  image-rendering:pixelated;
-  border:1px solid #dee2e6;
-  max-width:100%;
-  height:auto;
+  background: #fff;
+  image-rendering: pixelated;
+  border: 1px solid #dee2e6;
+  max-width: 100%;
+  height: auto;
+  margin: 10px auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: block;
+}
+
+.progress {
+  margin-top: 15px;
+  width: 100%;
+  height: 8px;
+  background-color: rgba(255,255,255,0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-white {
+  background-color: #ffc107;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* Button hover effect */
+#show-info-button:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
 }
 </style>
