@@ -349,7 +349,7 @@ const handleSubmit = async () => {
   } catch (error) {
     console.error('Registration error:', error);
     
-    // 尝试解析错误信息
+    // if error is not JSON, try to parse it
     try {
       const errorData = JSON.parse(error.message);
       if (errorData.errors) {
@@ -362,7 +362,7 @@ const handleSubmit = async () => {
         errors.value.general = ['Registration failed. Please try again.'];
       }
     } catch (parseError) {
-      // 如果不能解析错误信息，使用默认错误
+      // if cannot parse error info, use default error
       errors.value.general = ['Network error. Please try again.'];
     }
   } finally {

@@ -36,9 +36,7 @@ function handleEditProfile() {
 }
 
 function handleManageBarcode() {
-  // TODO: Navigate to barcode management page
-  console.log('Manage Barcode clicked');
-  // router.push('/barcode/manage');
+  router.push('/barcode/dashboard');
 }
 
 function handleLogout() {

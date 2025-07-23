@@ -2,6 +2,7 @@ import { ref, computed } from 'vue';
 import { userInfo } from '@/api/auth';
 import { useApi } from './useApi';
 import { hasAuthTokens } from '@/utils/cookie';
+import { baseURL } from '@/config'
 
 // Global state to prevent multiple instances and API calls
 const globalProfile = ref(window.userInfo?.profile || { name: "", information_id: "", user_profile_img: "" });
@@ -23,18 +24,18 @@ export function useUserInfo() {
    */
   async function getUserInfoWithAutoRefresh() {
     try {
-      console.log("🌐 Making API call to /authn/user_info/");
-      return await apiCallWithAutoRefresh("http://127.0.0.1:8000/authn/user_info/", {
+      console.log("Making API call to /authn/user_info/");
+      return await apiCallWithAutoRefresh(`${baseURL}/authn/user_info/`, {
         method: "GET"
       });
     } catch (error) {
       // If it is an authentication error, it has been handled in apiCallWithAutoRefresh
       if (error.message.includes("Token")) {
-        console.log("🔑 Authentication error in user info call:", error.message);
+        console.log("Authentication error in user info call:", error.message);
         throw error;
       }
       // If it is not an authentication error, use the original userInfo function as a fallback
-      console.log("🔄 Using fallback method to get user info...");
+      console.log("Using fallback method to get user info...");
       return await userInfo();
     }
   }
@@ -49,7 +50,7 @@ export function useUserInfo() {
       return null;
     }
 
-    // 优先从 window.userInfo 读取
+    // read from window.userInfo first
     if (window.userInfo && !forceReload) {
       globalProfile.value = window.userInfo.profile;
       isLoaded.value = true;

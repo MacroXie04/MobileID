@@ -4,10 +4,10 @@
     <div class="grid-container">
       <!-- Row 1 -->
       <a href="/profile/edit" class="btn-grid" @click.prevent="handleEditProfile">
-        <i class="fa fa-user-edit fa-2x"></i>
-        <p>Edit Profile</p>
+        <i class="fa fa-credit-card fa-2x"></i>
+        <p>Add Funds</p>
       </a>
-      <a href="/barcode_dashboard/" class="btn-grid">
+      <a href="/barcode/dashboard" class="btn-grid" @click.prevent="handleBarcodeDashboard">
         <i class="fa fa-money-bill fa-2x"></i>
         <p>Balance</p>
       </a>
@@ -63,6 +63,10 @@ const { serverStatus } = toRefs(props);
 // Functions
 function handleEditProfile() {
   router.push('/profile/edit');
+}
+
+function handleBarcodeDashboard() {
+  router.push('/barcode/dashboard');
 }
 </script>
 

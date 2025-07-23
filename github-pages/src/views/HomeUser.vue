@@ -1,14 +1,16 @@
 <template>
-  <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-    <div class="card p-4 mobile-card">
-      <!-- User Profile Section -->
-      <UserProfile :profile="profile" />
+  <div class="home-user-container">
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+      <div class="card p-4 mobile-card">
+        <!-- User Profile Section -->
+        <UserProfile :profile="profile" />
 
-      <!-- Barcode Display Section -->
-      <BarcodeDisplay ref="barcodeDisplayRef" @generate="handleGenerate" />
+        <!-- Barcode Display Section -->
+        <BarcodeDisplay ref="barcodeDisplayRef" @generate="handleGenerate" />
 
-      <!-- User Menu Section -->
-      <UserMenu @logout="handleLogout" />
+        <!-- User Menu Section -->
+        <UserMenu @logout="handleLogout" />
+      </div>
     </div>
   </div>
 </template>
@@ -18,9 +20,7 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
 // CSS Imports
-import "bootstrap/dist/css/bootstrap.min.css";
-import "@fortawesome/fontawesome-free/css/all.min.css";
-import "@/assets/css/mobileid_user.css";
+import "@/assets/css/HomeUser.css";
 
 // Components
 import UserProfile from "@/components/user/UserProfile.vue";

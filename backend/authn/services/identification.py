@@ -11,23 +11,7 @@ from django.utils import timezone
 from mobileid.models import (
     Barcode,
     BarcodeUsage,
-    UserBarcodeSettings,
 )
 from mobileid.project_code.dynamic_barcode import auto_send_code
-from barcode.settings import SELENIUM_ENABLED
 
 
-
-def user_identification(staff_user, identification_barcode):
-    # Verify the staff user
-    if staff_user.UserAccount.account_type == "Staff":
-        # logic for staff user identification
-        pass
-
-
-    return {
-        "status": "success",
-        "message": "Identification successful",
-        "barcode_type": identification_barcode.barcode_type,
-        "barcode": identification_barcode.barcode,
-    }

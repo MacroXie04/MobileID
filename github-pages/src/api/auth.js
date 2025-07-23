@@ -1,7 +1,7 @@
-const BASE = "http://127.0.0.1:8000";
+import { baseURL } from '@/config'
 
 export async function login(username, password) {
-  const res = await fetch(`${BASE}/authn/api/token/`, {
+  const res = await fetch(`${baseURL}/authn/token/`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -11,7 +11,7 @@ export async function login(username, password) {
 }
 
 export async function userInfo() {
-  const res = await fetch(`${BASE}/authn/api/user_info/`, {
+  const res = await fetch(`${baseURL}/authn/user_info/`, {
     credentials: "include"
   });
   if (!res.ok) return null;
@@ -19,24 +19,24 @@ export async function userInfo() {
 }
 
 export async function logout() {
-  await fetch(`${BASE}/authn/api/logout/`, {
+  await fetch(`${baseURL}/authn/logout/`, {
     method: "POST",
     credentials: "include"
   });
 }
 
-// 获取用户档案信息
+// get user profile
 export async function getUserProfile() {
-  const res = await fetch(`${BASE}/authn/api/profile/`, {
+  const res = await fetch(`${baseURL}/authn/profile/`, {
     credentials: "include"
   });
   if (!res.ok) throw new Error('Failed to fetch profile');
   return res.json();
 }
 
-// 更新用户档案信息
+// update user profile
 export async function updateUserProfile(profileData) {
-  const res = await fetch(`${BASE}/authn/api/profile/`, {
+  const res = await fetch(`${baseURL}/authn/profile/`, {
     method: "PUT",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -46,12 +46,12 @@ export async function updateUserProfile(profileData) {
   return res.json();
 }
 
-// 上传头像文件
+// upload avatar
 export async function uploadAvatar(file) {
   const formData = new FormData();
   formData.append('avatar', file);
   
-  const res = await fetch(`${BASE}/authn/api/profile/avatar/`, {
+  const res = await fetch(`${baseURL}/authn/profile/avatar/`, {
     method: "POST",
     credentials: "include",
     body: formData
@@ -60,10 +60,10 @@ export async function uploadAvatar(file) {
   return res.json();
 }
 
-// 用户注册
+// register
 export async function register(userData) {
   try {
-    const res = await fetch(`${BASE}/authn/api/register/`, {
+    const res = await fetch(`${baseURL}/authn/register/`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -77,21 +77,21 @@ export async function register(userData) {
     
     return res.json();
   } catch (error) {
-    // 如果是token相关错误，可能是因为有过期的cookie，尝试调用logout API清除它们
+    // if token related error, maybe because of expired cookie, try to call logout API to clear them
     if (error.message.includes('token_not_valid') || error.message.includes('Token is expired')) {
-      // 调用logout API来清除HTTPOnly cookies
+      // call logout API to clear HTTPOnly cookies
       try {
-        await fetch(`${BASE}/authn/logout/`, {
+        await fetch(`${baseURL}/authn/logout/`, {
           method: "POST",
           credentials: "include"
         });
       } catch (logoutError) {
-        // 即使logout失败也继续尝试注册
+        // even if logout fails, continue to try register
         console.warn('Failed to logout:', logoutError);
       }
       
-      // 重新尝试注册
-      const retryRes = await fetch(`${BASE}/authn/register/`, {
+      // try register again
+      const retryRes = await fetch(`${baseURL}/authn/register/`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

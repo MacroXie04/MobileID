@@ -1,21 +1,23 @@
 <template>
-  <!-- Header Component -->
-  <Header />
+  <div class="home-school-container">
+    <!-- Header Component -->
+    <Header />
 
-  <!-- User Profile Component -->
-  <UserProfile 
-    :profile="profile" 
-    :avatar-src="avatarSrc"
-    :loading="loading || userInfoLoading"
-    :is-refreshing-token="isRefreshingToken"
-    @generate="handleGenerate"
-  />
+    <!-- User Profile Component -->
+    <UserProfile 
+      :profile="profile" 
+      :avatar-src="avatarSrc"
+      :loading="loading || userInfoLoading"
+      :is-refreshing-token="isRefreshingToken"
+      @generate="handleGenerate"
+    />
 
-  <!-- Barcode Display Component -->
-  <BarcodeDisplay ref="barcodeDisplayRef" />
+    <!-- Barcode Display Component -->
+    <BarcodeDisplay ref="barcodeDisplayRef" />
 
-  <!-- Grid Menu Component -->
-  <GridMenu :server-status="serverStatus" />
+    <!-- Grid Menu Component -->
+    <GridMenu :server-status="serverStatus" />
+  </div>
 </template>
 
 <script setup>
@@ -23,9 +25,6 @@ import { ref, nextTick, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
 // CSS Imports
-import "bootstrap/dist/css/bootstrap.min.css";
-import "@fortawesome/fontawesome-free/css/all.min.css";
-import "@/assets/css/mobileid.css";
 import "@/assets/css/HomeSchool.css";
 
 // Components

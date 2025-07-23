@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getCookie, clearAuthCookies, clearAuthStorage } from '@/utils/cookie';
+import { baseURL } from '@/config'
 
 const isRefreshingToken = ref(false);
 
@@ -46,7 +47,7 @@ export function useToken() {
     try {
       console.log("Attempting to refresh access token...");
       
-      const res = await fetch("http://127.0.0.1:8000/authn/token/refresh/", {
+      const res = await fetch(`${baseURL}/authn/token/refresh/`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -88,15 +89,15 @@ export function useToken() {
       const refreshSuccess = await refreshToken();
       
       if (refreshSuccess) {
-        console.log("✅ Token refresh successful, user can continue");
+        console.log("Token refresh successful, user can continue");
         window.isLoggingOut = false;
         return true; // Token refreshed successfully
       } else {
-        console.log("❌ Token refresh failed, proceeding with logout...");
+        console.log("Token refresh failed, proceeding with logout...");
         // Continue to logout process below
       }
     } catch (error) {
-      console.error("❌ Token refresh error:", error);
+      console.error("Token refresh error:", error);
       // Continue to logout process below
     }
     

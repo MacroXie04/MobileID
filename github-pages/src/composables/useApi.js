@@ -1,5 +1,6 @@
 import { getCookie } from '@/utils/cookie';
 import { useToken } from './useToken';
+import { baseURL } from '@/config'
 
 export function useApi() {
   const { checkAuthenticationError, refreshToken, handleTokenExpired } = useToken();
@@ -77,13 +78,47 @@ export function useApi() {
    * Generate barcode API call
    */
   async function apiGenerateBarcode() {
-    return await apiCallWithAutoRefresh("http://127.0.0.1:8000/generate_barcode/", {
+    return await apiCallWithAutoRefresh(`${baseURL}/generate_barcode/`, {
       method: "POST"
+    });
+  }
+
+  /**
+   * Barcode Dashboard API calls
+   */
+  async function apiGetBarcodeDashboard() {
+    return await apiCallWithAutoRefresh(`${baseURL}/barcode_dashboard/`, {
+      method: "GET"
+    });
+  }
+
+  async function apiUpdateBarcodeSettings(settings) {
+    return await apiCallWithAutoRefresh(`${baseURL}/barcode_dashboard/`, {
+      method: "POST",
+      body: JSON.stringify(settings)
+    });
+  }
+
+  async function apiCreateBarcode(barcode) {
+    return await apiCallWithAutoRefresh(`${baseURL}/barcode_dashboard/`, {
+      method: "PUT",
+      body: JSON.stringify({ barcode })
+    });
+  }
+
+  async function apiDeleteBarcode(barcodeId) {
+    return await apiCallWithAutoRefresh(`${baseURL}/barcode_dashboard/`, {
+      method: "DELETE", 
+      body: JSON.stringify({ barcode_id: barcodeId })
     });
   }
 
   return {
     apiCallWithAutoRefresh,
-    apiGenerateBarcode
+    apiGenerateBarcode,
+    apiGetBarcodeDashboard,
+    apiUpdateBarcodeSettings,
+    apiCreateBarcode,
+    apiDeleteBarcode
   };
 } 

@@ -28,18 +28,9 @@ load_dotenv(BASE_DIR / ".env")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable is required")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-
-# Project API and webapp mode
-API_SERVER = os.getenv("API_SERVER", "False").lower() == "true"
-
-# When API_ENABLED is False, please set the following flags
-API_ENABLED = os.getenv("API_ENABLED", "True").lower() == "true"
-WEBAPP_ENABLED = os.getenv("WEBAPP_ENABLED", "True").lower() == "true"
 
 # Enable django default web admin interface
 WEB_ADMIN = os.getenv("WEB_ADMIN", "True").lower() == "true"
@@ -49,9 +40,6 @@ SELENIUM_ENABLED = os.getenv("SELENIUM_ENABLED", "False").lower() == "true"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-# Application definition
-
-LOGIN_URL = "authn:web_login"
 
 INSTALLED_APPS = [
     # mobileid app
@@ -89,13 +77,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # Custom middleware for account type routing
-    "authn.middleware.routing.AccountTypeRoutingMiddleware",
 ]
 
-# If running as an API server, disable session middleware
-if API_SERVER:
-    MIDDLEWARE.remove("authn.middleware.routing.AccountTypeRoutingMiddleware")
 
 
 # URL configuration

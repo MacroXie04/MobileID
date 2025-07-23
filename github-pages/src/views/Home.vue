@@ -12,8 +12,8 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import HomeSchool from "@/views/HomeSchool.vue";
-import HomeUser   from "@/views/HomeUser.vue";
+import HomeSchool from "./HomeSchool.vue";
+import HomeUser from "./HomeUser.vue";
 
 const loading = ref(true);
 const groups  = ref([]);

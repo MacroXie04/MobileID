@@ -1,5 +1,5 @@
 <template>
-  <div class="text-center mb-4">
+  <div class="text-center mb-4" style="margin-bottom: 0px!important;">
     <img 
       :src="avatarSrc || defaultAvatar" 
       alt="avatar" 

@@ -1,19 +1,22 @@
 <template>
-  <div id="barcode-container" class="text-center mb-3" style="display:none;"></div>
+  <div class="barcode-display-section">
+    <div id="barcode-container" class="barcode-canvas-container" style="display:none;"></div>
 
-  <div class="button-container">
-    <button 
-      id="show-barcode-button" 
-      ref="mainButton"
-      class="btn main-button text-white w-100 py-3 fw-semibold"
-      @click="handleGenerate"
-      :disabled="isProcessing"
-    >
-      <div class="progress-overlay" ref="progressOverlay"></div>
-      <div class="button-content" ref="buttonContent">
-        <span>PAY / Check-in</span>
-      </div>
-    </button>
+    <div class="button-container">
+      <button 
+        id="show-barcode-button" 
+        ref="mainButton"
+        class="btn btn-primary main-button text-white w-100 py-3 fw-semibold"
+        @click="handleGenerate"
+        :disabled="isProcessing"
+      >
+        <div class="progress-overlay" ref="progressOverlay"></div>
+        <div class="button-content" ref="buttonContent">
+          <i class="fas fa-qrcode me-2"></i>
+          <span>PAY / Check-in</span>
+        </div>
+      </button>
+    </div>
   </div>
 </template>
 

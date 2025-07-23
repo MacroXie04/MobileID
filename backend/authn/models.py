@@ -69,9 +69,3 @@ class UserChangeLog(models.Model):
 
     def __str__(self):
         return f"Change by {self.staff_user.username} on {self.target_user.username} at {self.timestamp}"
-
-
-
-
-
-

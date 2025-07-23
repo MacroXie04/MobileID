@@ -2,6 +2,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
+import { baseURL } from './config';
 
 // Bootstrap 5
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -14,6 +15,8 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import 'cropperjs/dist/cropper.css';
 
 const app = createApp(App);
+
+app.provide('baseURL', baseURL);
 
 app.use(router);
 

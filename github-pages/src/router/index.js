@@ -5,6 +5,7 @@ const Login = () => import("@/views/Login.vue");
 const Home  = () => import("@/views/Home.vue");
 const ProfileEdit = () => import("@/views/ProfileEdit.vue");
 const Register = () => import("@/views/Register.vue");
+const BarcodeDashboard = () => import("@/views/BarcodeDashboard.vue");
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,20 +14,21 @@ const router = createRouter({
     { path: "/register", component: Register },
     { path: "/",      component: Home,  meta: { requiresAuth: true } },
     { path: "/profile/edit", component: ProfileEdit, meta: { requiresAuth: true } },
-    { path: "/:pathMatch(.*)*", redirect: "/" }   // 兜底
+    { path: "/barcode/dashboard", component: BarcodeDashboard, meta: { requiresAuth: true } },
+    { path: "/:pathMatch(.*)*", redirect: "/" }   // fallback
   ]
 });
 
-// ≈≈≈ 路由守卫：仅检测“是否已登录” ≈≈≈
+// redirect to login if not logged in
 router.beforeEach(async (to, _from, next) => {
   if (!to.meta.requiresAuth) return next();
 
-  const data = await userInfo();   // 有 HttpOnly cookie 时才返回用户信息
+  const data = await userInfo();   // return user info if HttpOnly cookie is set
   if (data) {
-    window.userInfo = data; // 缓存到全局
-    return next();         // 已登录
+    window.userInfo = data; // cache to global
+    return next();         // already logged in
   }
-  next("/login");                  // 未登录
+  next("/login");                  // not logged in
 });
 
 export default router;
