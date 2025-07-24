@@ -17,21 +17,14 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include, path
-from django.conf.urls.static import static
-from django.conf import settings
 from .settings import (
     WEB_ADMIN,
-    STATIC_URL,
-    STATIC_ROOT,
 )
 
 urlpatterns = [
     path("", include("mobileid.urls")),
     path("authn/", include("authn.urls")),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(STATIC_URL, document_root=STATIC_ROOT)
 
 if WEB_ADMIN:
     urlpatterns += [

@@ -1,7 +1,7 @@
 <template>
   <div class="text-center mb-4" style="margin-bottom: 0px!important;">
     <img 
-      :src="avatarSrc || defaultAvatar" 
+      :src="props.avatarSrc || defaultAvatar" 
       alt="avatar" 
       class="rounded-circle shadow"
       style="width:112px;height:112px;object-fit:cover;"
@@ -13,7 +13,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import defaultAvatar from '@/assets/images/avatar_placeholder.png';
 
 // Props
@@ -21,15 +20,12 @@ const props = defineProps({
   profile: {
     type: Object,
     default: () => ({})
+  },
+  avatarSrc: {
+    type: String,
+    default: ''
   }
 });
-
-// Avatar helper (base64 → data-URL)
-const avatarSrc = computed(() =>
-  props.profile?.user_profile_img
-    ? `data:image/png;base64,${props.profile.user_profile_img}`
-    : ""
-);
 
 // Handle image loading error
 function handleImageError(event) {

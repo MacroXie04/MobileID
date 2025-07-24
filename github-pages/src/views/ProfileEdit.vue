@@ -183,7 +183,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { getUserProfile, updateUserProfile } from '@/api/auth';
+import { getUserProfile, updateUserProfile, uploadAvatar } from '@/api/auth';
+import { baseURL } from '@/config';
 import Cropper from 'cropperjs';
 
 const router = useRouter();
@@ -204,17 +205,18 @@ const cropPlaceholder = ref(null);
 const loading = ref(false);
 const formData = ref({
   name: '',
-  information_id: '',
-  user_profile_img: ''
+  information_id: ''
 });
+const avatarFile = ref(null); // Store the file to upload
+const avatarPreviewUrl = ref(''); // Store preview URL
 const errors = ref({});
 const cropper = ref(null);
 const originalImageSrc = ref(null);
 
 // Methods
 const getAvatarSrc = () => {
-  if (formData.value.user_profile_img) {
-    return `data:image/png;base64,${formData.value.user_profile_img}`;
+  if (avatarPreviewUrl.value) {
+    return avatarPreviewUrl.value;
   }
   return '/images/avatar_placeholder.png';
 };
@@ -300,9 +302,21 @@ const applyCrop = () => {
     imageSmoothingQuality: 'high'
   });
   
-  const dataURL = canvas.toDataURL('image/png', 0.9);
-  formData.value.user_profile_img = dataURL.split(',')[1];
-  avatarPreview.value.src = dataURL;
+  // Convert cropped canvas to blob
+  canvas.toBlob((blob) => {
+    if (blob) {
+      // Store the file for upload
+      avatarFile.value = new File([blob], 'avatar.png', { type: 'image/png' });
+      
+      // Create preview URL
+      if (avatarPreviewUrl.value) {
+        URL.revokeObjectURL(avatarPreviewUrl.value);
+      }
+      avatarPreviewUrl.value = URL.createObjectURL(blob);
+      avatarPreview.value.src = avatarPreviewUrl.value;
+    }
+  }, 'image/png', 0.9);
+  
   fileInput.value.value = '';
 
   applyCropBtn.value.innerHTML = '<i class="fas fa-check"></i> Applied!';
@@ -318,7 +332,11 @@ const applyCrop = () => {
 };
 
 const removeImage = () => {
-  formData.value.user_profile_img = '';
+  avatarFile.value = null;
+  if (avatarPreviewUrl.value) {
+    URL.revokeObjectURL(avatarPreviewUrl.value);
+    avatarPreviewUrl.value = '';
+  }
   fileInput.value.value = '';
   avatarPreview.value.src = '/images/avatar_placeholder.png';
 
@@ -345,17 +363,32 @@ const handleSubmit = async () => {
   errors.value = {};
   
   try {
+    // First update profile data
     const response = await updateUserProfile(formData.value);
-    if (response.success) {
-      alert('Profile updated successfully!');
-      router.push('/');
-    } else {
+    if (!response.success) {
       if (response.errors) {
         errors.value = response.errors;
       } else {
         errors.value.general = response.message || 'Update failed';
       }
+      return;
     }
+    
+    // Then upload avatar if there's a new one
+    if (avatarFile.value) {
+      try {
+        await uploadAvatar(avatarFile.value);
+      } catch (avatarError) {
+        console.error('Avatar upload error:', avatarError);
+        // Profile updated but avatar failed - still consider it partial success
+        alert('Profile updated, but avatar upload failed. Please try uploading avatar again.');
+        router.push('/');
+        return;
+      }
+    }
+    
+    alert('Profile updated successfully!');
+    router.push('/');
   } catch (error) {
     console.error('Update error:', error);
     errors.value.general = 'Network error. Please try again.';
@@ -370,13 +403,24 @@ const loadProfile = async () => {
     if (response.success) {
       formData.value = { ...response.data };
       
-      // Update UI state
-      const hasImage = Boolean(formData.value.user_profile_img);
-      if (hasImage) {
-        removeImageBtn.value.style.display = 'inline-block';
-      } else {
+      // Load avatar separately
+      try {
+        const avatarResponse = await fetch(`${baseURL}/authn/profile/avatar/get/`, {
+          credentials: "include"
+        });
+        if (avatarResponse.ok) {
+          const blob = await avatarResponse.blob();
+          avatarPreviewUrl.value = URL.createObjectURL(blob);
+          avatarPreview.value.src = avatarPreviewUrl.value;
+          removeImageBtn.value.style.display = 'inline-block';
+        } else {
+          removeImageBtn.value.style.display = 'none';
+        }
+      } catch (avatarError) {
+        console.log('No avatar found or error loading avatar');
         removeImageBtn.value.style.display = 'none';
       }
+      
       updateButtons(false);
     }
   } catch (error) {
@@ -393,6 +437,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (originalImageSrc.value) {
     URL.revokeObjectURL(originalImageSrc.value);
+  }
+  if (avatarPreviewUrl.value) {
+    URL.revokeObjectURL(avatarPreviewUrl.value);
   }
   if (cropper.value) {
     cropper.value.destroy();

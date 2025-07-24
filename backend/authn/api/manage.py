@@ -2,6 +2,7 @@ import base64
 from io import BytesIO
 
 from PIL import Image
+from django.http import HttpResponse
 from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
@@ -241,6 +242,66 @@ def upload_avatar_api(request):
                 'success': False,
                 'message': f'Avatar processing failed: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
+    
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@throttle_classes([UserProfileThrottle])
+def get_avatar_api(request):
+    """
+    Get user avatar as image
+    
+    GET: returns user avatar as image/png response
+    """
+    try:
+        # Get user profile
+        try:
+            profile = request.user.userprofile
+        except UserProfile.DoesNotExist:
+            # Return default avatar or 404
+            return Response({
+                'success': False,
+                'message': 'User profile not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if user has avatar
+        if not profile.user_profile_img:
+            # Return default avatar or 404
+            return Response({
+                'success': False,
+                'message': 'No avatar uploaded'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            # Remove data URL prefix if present
+            image_data = profile.user_profile_img
+            if image_data.startswith('data:image'):
+                # Extract base64 data from data URL
+                image_data = image_data.split(',')[1]
+            
+            # Decode base64 to bytes
+            image_bytes = base64.b64decode(image_data)
+            
+            # Create HTTP response with image
+            response = HttpResponse(image_bytes, content_type='image/png')
+            response['Content-Disposition'] = f'inline; filename="avatar_{request.user.username}.png"'
+            
+            # Add cache headers to improve performance
+            response['Cache-Control'] = 'private, max-age=3600'  # Cache for 1 hour
+            
+            return response
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': f'Failed to decode avatar: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     except Exception as e:
         return Response({

@@ -3,7 +3,7 @@
     <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
       <div class="card p-4 mobile-card">
         <!-- User Profile Section -->
-        <UserProfile :profile="profile" />
+        <UserProfile :profile="profile" :avatar-src="avatarSrc" />
 
         <!-- Barcode Display Section -->
         <BarcodeDisplay ref="barcodeDisplayRef" @generate="handleGenerate" />
@@ -29,6 +29,7 @@ import UserMenu from "@/components/user/UserMenu.vue";
 
 // Composables
 import { useApi } from "@/composables/useApi";
+import { useUserInfo } from "@/composables/useUserInfo";
 
 /* ── reactive state ─────────────────────────────────────────────────────── */
 const router = useRouter();
@@ -37,6 +38,7 @@ const barcodeDisplayRef = ref(null);
 
 // Use composables
 const { apiGenerateBarcode } = useApi();
+const { avatarSrc } = useUserInfo();
 
 /* ── lifecycle ──────────────────────────────────────────────────────────── */
 onMounted(() => {

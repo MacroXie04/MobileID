@@ -5,19 +5,48 @@ import { hasAuthTokens } from '@/utils/cookie';
 import { baseURL } from '@/config'
 
 // Global state to prevent multiple instances and API calls
-const globalProfile = ref(window.userInfo?.profile || { name: "", information_id: "", user_profile_img: "" });
+const globalProfile = ref(window.userInfo?.profile || { name: "", information_id: "" });
 const isLoading = ref(false);
 const isLoaded = ref(false);
 
 export function useUserInfo() {
   const { apiCallWithAutoRefresh } = useApi();
 
-  // Avatar helper (base64 → data-URL)
-  const avatarSrc = computed(() =>
-    globalProfile.value.user_profile_img
-      ? `data:image/png;base64,${globalProfile.value.user_profile_img}`
-      : ""
-  );
+  // Avatar state
+  const avatarBlobUrl = ref("");
+  
+  // Avatar URL - returns blob URL or empty string
+  const avatarSrc = computed(() => avatarBlobUrl.value);
+  
+  /**
+   * Load user avatar
+   */
+  async function loadAvatar() {
+    if (!isLoaded.value || !hasAuthTokens()) {
+      avatarBlobUrl.value = "";
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${baseURL}/authn/profile/avatar/get/`, {
+        credentials: "include"
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        // Revoke previous blob URL to avoid memory leaks
+        if (avatarBlobUrl.value) {
+          URL.revokeObjectURL(avatarBlobUrl.value);
+        }
+        avatarBlobUrl.value = URL.createObjectURL(blob);
+      } else {
+        avatarBlobUrl.value = "";
+      }
+    } catch (error) {
+      console.error("Failed to load avatar:", error);
+      avatarBlobUrl.value = "";
+    }
+  }
 
   /**
    * Get user info with automatic token refresh
@@ -54,6 +83,8 @@ export function useUserInfo() {
     if (window.userInfo && !forceReload) {
       globalProfile.value = window.userInfo.profile;
       isLoaded.value = true;
+      // Load avatar after setting profile from window
+      await loadAvatar();
       return globalProfile.value;
     }
 
@@ -75,6 +106,8 @@ export function useUserInfo() {
         globalProfile.value = data.profile;
         isLoaded.value = true;
         console.log("User info loaded successfully");
+        // Load avatar after user info is loaded
+        await loadAvatar();
         return data.profile;
       } else {
         console.log("No user info found, may need to login");
@@ -96,9 +129,14 @@ export function useUserInfo() {
    * Clear cached user profile data
    */
   function clearUserProfile() {
-    globalProfile.value = { name: "", information_id: "", user_profile_img: "" };
+    globalProfile.value = { name: "", information_id: "" };
     isLoaded.value = false;
     isLoading.value = false;
+    // Clean up blob URL
+    if (avatarBlobUrl.value) {
+      URL.revokeObjectURL(avatarBlobUrl.value);
+      avatarBlobUrl.value = "";
+    }
     console.log("User profile cache cleared");
   }
 
@@ -109,6 +147,7 @@ export function useUserInfo() {
     isLoaded,
     getUserInfoWithAutoRefresh,
     loadUserProfile,
+    loadAvatar,
     clearUserProfile
   };
 } 

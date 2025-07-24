@@ -16,6 +16,4 @@ class CookieJWTAuthentication(JWTAuthentication):
             validated_token = self.get_validated_token(raw_token)
             return self.get_user(validated_token), validated_token
         except (InvalidToken, TokenError):
-            # 如果token无效或过期，返回None而不是抛出异常
-            # 这样可以让AllowAny权限的视图正常工作
             return None

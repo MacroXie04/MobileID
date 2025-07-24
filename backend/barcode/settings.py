@@ -66,6 +66,11 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 ]
 
+# Static files
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+
 MIDDLEWARE = [
     # CORS middleware must be placed before Django's security middleware
     "corsheaders.middleware.CorsMiddleware",
@@ -213,12 +218,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -240,7 +239,3 @@ CACHES = {
     }
 }
 SESSION_ENGINE = os.getenv("SESSION_ENGINE", "django.contrib.sessions.backends.db")
-
-STATICFILES_DIRS = [
-    BASE_DIR / "mobileid" / "static",
-]

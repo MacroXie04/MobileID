@@ -109,7 +109,7 @@ def user_info(request):
         profile_data = {
             "name": profile.name,
             "information_id": profile.information_id,
-            "user_profile_img": profile.user_profile_img,
+            # user_profile_img removed from here - now available at separate endpoint
         }
     except Exception:
         profile_data = None

@@ -100,7 +100,7 @@ function handleGenerate() {
   margin-top: 1em;
 }
 
-/* 按钮悬停效果 */
+/* buttom */
 #show-info-button:hover {
   transform: translateY(-2px);
   transition: transform 0.3s ease-in-out;

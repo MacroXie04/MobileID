@@ -1,7 +1,7 @@
 from django.urls import path
 
 from authn.api.webauthn import CookieTokenObtainPairView, api_logout, user_info, api_register
-from authn.api.manage import user_profile_api, upload_avatar_api
+from authn.api.manage import user_profile_api, upload_avatar_api, get_avatar_api
 
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -20,4 +20,5 @@ urlpatterns = [
     # User profile management endpoints
     path("profile/", user_profile_api, name="api_user_profile"),
     path("profile/avatar/", upload_avatar_api, name="api_upload_avatar"),
+    path("profile/avatar/get/", get_avatar_api, name="api_get_avatar"),
 ]

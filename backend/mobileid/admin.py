@@ -100,6 +100,7 @@ class BarcodeUsageAdmin(admin.ModelAdmin):
     """Admin configuration for BarcodeUsage model"""
     list_display = (
         'barcode_display',
+        'user_display',
         'total_usage',
         'last_used_display',
         'usage_status',
@@ -123,7 +124,16 @@ class BarcodeUsageAdmin(admin.ModelAdmin):
 
     def barcode_display(self, obj):
         """Display barcode ending"""
-        return f"...{obj.barcode.barcode[-4:]}"
+
+        if obj.barcode.barcode_type == "Identification":
+            # display user name and last 4 digits
+            return f"{obj.barcode.user.username}'s identification barcode"
+        if obj.barcode.barcode_type == "DynamicBarcode":
+            # display barcode type and last 4 digits
+            return f"dynamic barcode ending with {obj.barcode.barcode[-4:]}"
+        if obj.barcode.barcode_type == "Others":
+            # display barcode type and last 4 digits
+            return f"barcode ending with {obj.barcode.barcode[-4:]}"
 
     barcode_display.short_description = 'Barcode'
 
@@ -133,6 +143,13 @@ class BarcodeUsageAdmin(admin.ModelAdmin):
 
     barcode_type.short_description = 'Type'
     barcode_type.admin_order_field = 'barcode__barcode_type'
+
+    def user_display(self, obj):
+        """Display the user name"""
+        return obj.barcode.user.username
+
+    user_display.short_description = 'User'
+    user_display.admin_order_field = 'barcode__user__username'
 
     def last_used_display(self, obj):
         """Display last used time with proper timezone handling"""

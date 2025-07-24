@@ -25,6 +25,25 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.name} - ID: **{self.information_id[-4:]}"
 
+class Passkey(models.Model):
+    # foreign key to user(one to one)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    # passkey credential id
+    credential_id = models.CharField(max_length=191, unique=True)
+
+    # passkey public key
+    public_key = models.TextField()
+
+    # passkey sign count
+    sign_count = models.IntegerField(default=0)
+
+    # passkey transports
+    transports = models.JSONField(null=True, blank=True)
+
+    # passkey created at
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
 class UserExtendedData(models.Model):
     # foreign key to user
