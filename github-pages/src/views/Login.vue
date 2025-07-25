@@ -1,99 +1,66 @@
 <template>
   <div class="login-container">
-    <div class="login-card">
-
-      <!-- Login Form -->
-      <form @submit.prevent="handleSubmit" novalidate>
-        <!-- Username Field -->
-        <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-user"></i>
-            Username
-          </label>
-          <input 
-            v-model="formData.username"
-            type="text"
-            class="form-control"
-            :class="{ 'is-invalid': errors.username }"
-            placeholder="Enter your username"
-            @input="clearError('username')"
-            @blur="validateField('username')"
-          />
-          <div v-if="errors.username" class="invalid-feedback">
-            {{ errors.username }}
-          </div>
-        </div>
-
-        <!-- Password Field -->
-        <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-lock"></i>
-            Password
-          </label>
-          <div class="password-input-wrapper">
-            <input 
-              v-model="formData.password"
-              :type="showPassword ? 'text' : 'password'"
-              class="form-control"
-              :class="{ 'is-invalid': errors.password }"
-              placeholder="Enter your password"
-              @input="clearError('password')"
-              @blur="validateField('password')"
-            />
-            <button
-              type="button"
-              class="password-toggle"
-              @click="showPassword = !showPassword"
-            >
-              <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-            </button>
-          </div>
-          <div v-if="errors.password" class="invalid-feedback">
-            {{ errors.password }}
-          </div>
-        </div>
-
-        <!-- General Error Message -->
-        <div v-if="errors.general" class="alert alert-danger">
-          <i class="fas fa-exclamation-triangle"></i>
-          {{ errors.general }}
-        </div>
-
-        <!-- Submit Button -->
-        <button 
-          type="submit" 
-          class="btn btn-primary btn-login"
-          :disabled="loading"
-        >
-          <span v-if="!loading">
-            <i class="fas fa-sign-in-alt"></i>
-            Sign In
-          </span>
-          <span v-else>
-            <i class="fas fa-spinner fa-spin"></i>
-            Signing in...
-          </span>
-        </button>
-      </form>
-
-      <!-- Divider -->
-      <div class="divider">
-        <span>OR</span>
+    <div class="login-surface">
+      <!-- Header -->
+      <div class="login-header">
+        <p class="md-typescale-body-large">Enter your credentials to access your account</p>
       </div>
 
-      <!-- Register Link -->
-      <div class="register-link">
-        <p>
-          Don't have an account? 
-          <router-link to="/register">Create one now</router-link>
-        </p>
+      <form @submit.prevent="handleSubmit" novalidate>
+        <md-outlined-text-field
+          label="Username"
+          v-model="formData.username"
+          :error="!!errors.username"
+          :error-text="errors.username"
+          @input="clearError('username')"
+          @blur="validateField('username')"
+          @keyup.enter="!loading && handleSubmit()"
+        >
+          <md-icon slot="leading-icon">person</md-icon>
+        </md-outlined-text-field>
+
+        <md-outlined-text-field
+          :type="showPassword ? 'text' : 'password'"
+          label="Password"
+          v-model="formData.password"
+          :error="!!errors.password"
+          :error-text="errors.password"
+          @input="clearError('password')"
+          @blur="validateField('password')"
+          @keyup.enter="!loading && handleSubmit()"
+        >
+          <md-icon slot="leading-icon">lock</md-icon>
+        </md-outlined-text-field>
+
+        <div v-if="errors.general" class="error-banner">
+          <md-icon>error_outline</md-icon>
+          <span class="md-typescale-body-medium">{{ errors.general }}</span>
+        </div>
+
+        <md-filled-button ref="submitBtn" type="submit" :disabled="loading">
+          {{ loading ? 'Signing in...' : 'Sign In' }}
+        </md-filled-button>
+      </form>
+
+      <md-divider class="divider"></md-divider>
+
+      <div class="register-link md-typescale-body-medium">
+        <div class="register-content">
+          Don't have an account?
+          <router-link to="/register">
+            <md-text-button>
+              <md-icon slot="icon">person_add</md-icon>
+              Create one now
+            </md-text-button>
+          </router-link>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { login } from "@/api/auth";
 import { useRouter } from "vue-router";
 
@@ -111,6 +78,22 @@ const errors = reactive({});
 const loading = ref(false);
 const showPassword = ref(false);
 const rememberMe = ref(false);
+const iconBtn = ref(null);
+const submitBtn = ref(null);
+
+onMounted(() => {
+  if (iconBtn.value) {
+    const internalBtn = iconBtn.value.shadowRoot.querySelector('button');
+    if (internalBtn) {
+      internalBtn.id = 'password-toggle';
+      internalBtn.type = 'button';
+    }
+  }
+  if (submitBtn.value) {
+    const internalBtn = submitBtn.value.shadowRoot.querySelector('button');
+    if (internalBtn) internalBtn.id = 'login-submit';
+  }
+});
 
 // Clear specific error
 function clearError(field) {
@@ -205,261 +188,77 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 24px;
+  background-color: var(--md-sys-color-background);
 }
 
-.login-card {
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  padding: 40px;
+.login-surface {
   width: 100%;
-  max-width: 450px;
-  transition: transform 0.3s ease;
+  max-width: 500px;
+  padding: 24px;
+  border-radius: 28px;
+  background-color: var(--md-sys-color-surface);
+  border: 2px solid #D1D5DB; /* light gray border for surface */
+  box-shadow: none;
 }
 
-/* Header Section */
 .login-header {
   text-align: center;
-  margin-bottom: 40px;
-}
-
-.logo-container {
-  margin-bottom: 20px;
-}
-
-.logo-icon {
-  font-size: 60px;
-  color: #667eea;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.login-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.login-subtitle {
-  color: #666;
-  font-size: 16px;
-}
-
-/* Form Styling */
-.form-group {
   margin-bottom: 24px;
 }
 
-.form-label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-  font-weight: 600;
-  font-size: 14px;
+.brand-icon {
+  font-size: 48px;
+  color: var(--md-sys-color-primary);
+  margin-bottom: 16px;
 }
 
-.form-label i {
-  margin-right: 8px;
-  color: #667eea;
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-.form-control {
-  width: 100%;
+.divider {
+  margin: 16px 0;
+}
+
+.register-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.register-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 12px 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  background-color: #f8f9fa;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #667eea;
-  background-color: white;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-}
-
-.form-control.is-invalid {
-  border-color: #dc3545;
-  background-color: #fff5f5;
-}
-
-.form-control.is-invalid:focus {
-  box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.1);
-}
-
-/* Password Input Wrapper */
-.password-input-wrapper {
-  position: relative;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #666;
-  cursor: pointer;
-  padding: 8px;
-  transition: color 0.3s ease;
-}
-
-.password-toggle:hover {
-  color: #333;
-}
-
-.password-input-wrapper .form-control {
-  padding-right: 48px;
-}
-
-/* Error Messages */
-.invalid-feedback {
-  display: block;
-  margin-top: 6px;
-  color: #dc3545;
-  font-size: 14px;
+  background-color: #fff;
+  color: #d32f2f;
+  border-radius: 12px;
+  margin: 12px 0;
+  border: 2px solid #d32f2f;
   font-weight: 500;
 }
 
-.alert {
-  padding: 12px 16px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
+md-outlined-text-field::part(field),
+md-outlined-text-field::part(outline) {
+  border: 1.5px solid var(--md-sys-color-outline, #79747E) !important;
+  border-radius: 12px !important;
 }
 
-.alert-danger {
-  background-color: #fee;
-  color: #c53030;
-  border: 1px solid #feb2b2;
-}
-
-/* Buttons */
-.btn {
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-login {
-  width: 100%;
-  padding: 14px 24px;
-  font-size: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-}
-
-.btn-login:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.btn-login:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* Divider */
-.divider {
-  text-align: center;
-  margin: 30px 0;
-  position: relative;
-}
-
-.divider::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: #e0e0e0;
-}
-
-.divider span {
-  background: white;
-  padding: 0 16px;
-  position: relative;
-  color: #666;
-  font-size: 14px;
-}
-
-/* Social Login */
-.social-login {
-  margin-bottom: 24px;
-}
-
-.btn-social {
-  width: 100%;
-  padding: 12px 24px;
-  background: white;
-  border: 2px solid #e0e0e0;
-  color: #333;
-  font-size: 15px;
-}
-
-.btn-social:hover:not(:disabled) {
-  border-color: #667eea;
-  color: #667eea;
-}
-
-.btn-social:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Register Link */
-.register-link {
-  text-align: center;
-  margin-top: 20px;
-}
-
-.register-link p {
-  margin: 0;
-  color: #666;
-  font-size: 14px;
-}
-
-.register-link a {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 600;
-  transition: color 0.3s ease;
-}
-
-.register-link a:hover {
-  color: #764ba2;
-  text-decoration: underline;
-}
-
-/* Responsive Design */
-@media (max-width: 480px) {
-  .login-card {
-    padding: 30px 20px;
-  }
-  
-  .login-title {
-    font-size: 24px;
-  }
-  
-  .form-control {
-    font-size: 16px; /* Prevent zoom on iOS */
-  }
+md-filled-button::part(button) {
+  border: 1.5px solid var(--md-sys-color-outline, #79747E) !important;
+  border-radius: 20px !important;
 }
 </style>
