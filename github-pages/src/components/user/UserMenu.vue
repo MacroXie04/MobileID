@@ -1,32 +1,30 @@
 <template>
-  <div class="row gy-3 text-center">
-    <div class="col-4">
-      <a href="/profile/edit" class="text-decoration-none text-dark d-block" @click.prevent="handleEditProfile">
-        <div class="icon-circle"><i class="fa-solid fa-user fa-lg"></i></div>
-        <span class="small fw-semibold d-block">Edit Profile</span>
-      </a>
+  <div class="menu-grid">
+    <div class="menu-item" @click="handleEditProfile">
+      <div class="icon-circle">
+        <md-icon>person</md-icon>
+      </div>
+      <div class="md-typescale-label-medium">Edit Profile</div>
     </div>
-    <div class="col-4">
-      <a href="/barcode/manage" class="text-decoration-none text-dark d-block" @click.prevent="handleManageBarcode">
-        <div class="icon-circle"><i class="fa-solid fa-barcode fa-lg"></i></div>
-        <span class="small fw-semibold d-block">Manage Barcode</span>
-      </a>
+    <div class="menu-item" @click="handleManageBarcode">
+      <div class="icon-circle">
+        <md-icon>qr_code_scanner</md-icon>
+      </div>
+      <div class="md-typescale-label-medium">Manage Barcode</div>
     </div>
-    <div class="col-4">
-      <a href="/logout"
-         class="text-decoration-none text-danger d-inline-flex flex-column align-items-center"
-         @click.prevent="handleLogout">
-        <div class="icon-circle" style="background:rgba(220,53,69,.15);color:#dc3545;">
-          <i class="fa-solid fa-right-from-bracket fa-lg"></i>
-        </div>
-        <span class="small fw-semibold">Log out</span>
-      </a>
+    <div class="menu-item" @click="handleLogout">
+      <div class="icon-circle" style="color: var(--md-sys-color-error); background: rgba(220,53,69,0.1);">
+        <md-icon>logout</md-icon>
+      </div>
+      <div class="md-typescale-label-medium" style="color: var(--md-sys-color-error);">Log out</div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router';
+import '@material/web/icon/icon.js';
+import "@material/web/typography/md-typescale-styles.css";
 
 const router = useRouter();
 const emit = defineEmits(['logout']);
@@ -45,20 +43,4 @@ function handleLogout() {
 </script>
 
 <style scoped>
-.icon-circle {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto .5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(var(--bs-primary-rgb), 0.1);
-  color: var(--brand);
-  transition: background-color 0.2s;
-}
-
-a:hover .icon-circle {
-  background: rgba(var(--bs-primary-rgb), 0.15);
-}
 </style> 

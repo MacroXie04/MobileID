@@ -1,16 +1,27 @@
 <template>
   <div class="home-user-container">
-    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-      <div class="card p-4 mobile-card">
+    <div class="background-gradient"></div>
+    <div class="content-wrapper">
+      <md-elevation :level="3" class="profile-card">
         <!-- User Profile Section -->
-        <UserProfile :profile="profile" :avatar-src="avatarSrc" />
+        <UserProfile 
+          class="user-profile-section" 
+          :profile="profile" 
+          :avatar-src="avatarSrc" 
+        />
 
         <!-- Barcode Display Section -->
-        <BarcodeDisplay ref="barcodeDisplayRef" @generate="handleGenerate" />
+        <BarcodeDisplay 
+          ref="barcodeDisplayRef" 
+          @generate="handleGenerate" 
+        />
 
         <!-- User Menu Section -->
-        <UserMenu @logout="handleLogout" />
-      </div>
+        <UserMenu 
+          class="menu-section" 
+          @logout="handleLogout" 
+        />
+      </md-elevation>
     </div>
   </div>
 </template>
@@ -19,8 +30,11 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
+// Material Web Components
+import '@material/web/elevation/elevation.js';
+
 // CSS Imports
-import "@/assets/css/HomeUser.css";
+import '@/assets/css/HomeUser.css';
 
 // Components
 import UserProfile from "@/components/user/UserProfile.vue";
@@ -103,5 +117,78 @@ async function handleLogout() {
 </script>
 
 <style scoped>
-/* Additional component-specific styles if needed */
+/* Material 3 Design System */
+.home-user-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: var(--md-sys-color-surface);
+  overflow: hidden;
+}
+
+/* Subtle gradient background */
+.background-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    ellipse at top left,
+    var(--md-sys-color-primary-container) 0%,
+    transparent 50%
+  ),
+  radial-gradient(
+    ellipse at bottom right,
+    var(--md-sys-color-tertiary-container) 0%,
+    transparent 50%
+  );
+  opacity: 0.3;
+  z-index: 0;
+}
+
+.content-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  padding: 16px;
+}
+
+.profile-card {
+  background: var(--md-sys-color-surface-container-low);
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* Hover effect for card */
+@media (hover: hover) {
+  .profile-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Section spacing */
+.user-profile-section {
+  padding: 32px 24px 24px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.menu-section {
+  padding: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .content-wrapper {
+    padding: 8px;
+  }
+  
+  .user-profile-section {
+    padding: 24px 16px 16px;
+  }
+}
 </style>

@@ -1,35 +1,44 @@
 <template>
   <div class="barcode-display-section">
-    <div id="barcode-container" class="barcode-canvas-container" style="display:none;"></div>
-
+    <transition name="barcode" @after-leave="clearBarcodeContainer">
+      <div id="barcode-container" class="barcode-canvas-container" v-show="barcodeDisplayed" style="margin-bottom: 16px;"></div>
+    </transition>
     <div class="button-container">
-      <button 
-        id="show-barcode-button" 
-        ref="mainButton"
-        class="btn btn-primary main-button text-white w-100 py-3 fw-semibold"
+      <md-filled-button 
+        :class="['main-button', ...additionalButtonClasses]"
         @click="handleGenerate"
         :disabled="isProcessing"
       >
-        <div class="progress-overlay" ref="progressOverlay"></div>
-        <div class="button-content" ref="buttonContent">
-          <i class="fas fa-qrcode me-2"></i>
-          <span>PAY / Check-in</span>
-        </div>
-      </button>
+        <md-icon slot="icon">qr_code</md-icon>
+        {{ buttonMessage }}
+      </md-filled-button>
+      <md-linear-progress v-if="barcodeDisplayed" :value="remainingTime / 100" style="margin-top: 8px;"></md-linear-progress>
+      <div v-if="isProcessing" class="progress-overlay active"></div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, defineExpose } from 'vue';
+import { ref, defineExpose } from "vue";
+
+import '@material/web/button/filled-button.js';
+import '@material/web/icon/icon.js';
+import '@material/web/progress/linear-progress.js';
 
 // Template refs
 const mainButton = ref(null);
 const progressOverlay = ref(null);
 const buttonContent = ref(null);
+const buttonMessage = ref('PAY / Check-in');
+const additionalButtonClasses = ref([]);
 
 // State
 const isProcessing = ref(false);
+const successMessage = ref('');
+const errorMessage = ref('');
+const barcodeDisplayed = ref(false);
+const remainingTime = ref(100);
+let timerInterval = null;
 
 // Emits
 const emit = defineEmits(['generate']);
@@ -41,103 +50,49 @@ function handleGenerate() {
 }
 
 // UI State Management Functions
-function resetUI() {
-  isProcessing.value = false;
-  if (mainButton.value) {
-    mainButton.value.classList.remove('btn-success-custom', 'btn-danger-custom', 'btn-processing-custom', 'pulse-effect');
-    mainButton.value.classList.add('main-button');
-  }
-  if (progressOverlay.value) {
-    progressOverlay.value.classList.remove('active');
-    progressOverlay.value.style.width = '0%';
-  }
-  if (buttonContent.value) {
-    buttonContent.value.innerHTML = '<span>PAY / Check-in</span>';
-  }
-  
-  // Hide barcode
+function clearBarcodeContainer() {
   const barcodeContainer = document.getElementById('barcode-container');
   if (barcodeContainer) {
-    window.$(barcodeContainer).fadeOut(function () {
-      barcodeContainer.innerHTML = '';
-    });
+    barcodeContainer.innerHTML = '';
   }
+}
+
+function resetUI() {
+  isProcessing.value = false;
+  barcodeDisplayed.value = false;
+  buttonMessage.value = 'PAY / Check-in';
+  additionalButtonClasses.value = [];
+  clearInterval(timerInterval);
   console.log('UI reset');
 }
 
 function startProcessing() {
   isProcessing.value = true;
-  if (mainButton.value) {
-    mainButton.value.classList.remove('main-button');
-    mainButton.value.classList.add('btn-processing-custom', 'pulse-effect');
-  }
-  
-  if (buttonContent.value) {
-    buttonContent.value.innerHTML = `
-      <div class="spinner"></div>
-      <span>Processing…</span>
-    `;
-  }
-  
-  if (progressOverlay.value) {
-    progressOverlay.value.classList.add('active');
-  }
-  
-  console.log('Started processing with visual feedback');
+  additionalButtonClasses.value = ['btn-processing-custom', 'pulse-effect'];
+  buttonMessage.value = 'Processing...';
+  console.log('Started processing');
 }
 
 function showSuccess(message) {
-  if (mainButton.value) {
-    mainButton.value.classList.remove('btn-processing-custom');
-    mainButton.value.classList.add('btn-success-custom', 'pulse-effect');
-  }
-  
-  if (progressOverlay.value) {
-    progressOverlay.value.classList.add('active');
-  }
-  
-  if (buttonContent.value) {
-    buttonContent.value.innerHTML = `
-      <i class="fa-solid fa-check"></i>
-      <span>${message || 'Success'}</span>
-    `;
-  }
-  
-  // 3秒后停止动画，然后重置
-  setTimeout(() => {
-    if (progressOverlay.value) {
-      progressOverlay.value.classList.remove('active');
-      progressOverlay.value.style.width = '100%';
+  buttonMessage.value = message || 'Success';
+  additionalButtonClasses.value = ['btn-success-custom', 'pulse-effect'];
+  barcodeDisplayed.value = true;
+  remainingTime.value = 100;
+  timerInterval = setInterval(() => {
+    remainingTime.value -= 1;
+    if (remainingTime.value <= 0) {
+      clearInterval(timerInterval);
+      resetUI();
     }
-    setTimeout(resetUI, 7000); // 总共10秒
-  }, 3000);
+  }, 100);  // 10 seconds total
 }
 
 function showError(message) {
-  if (mainButton.value) {
-    mainButton.value.classList.remove('btn-processing-custom');
-    mainButton.value.classList.add('btn-danger-custom', 'pulse-effect');
-  }
-  
-  if (progressOverlay.value) {
-    progressOverlay.value.classList.add('active');
-  }
-  
-  if (buttonContent.value) {
-    buttonContent.value.innerHTML = `
-      <i class="fa-solid fa-exclamation-triangle"></i>
-      <span>${message || 'Error'}</span>
-    `;
-  }
-  
-  // 2 sec animation, then reset
+  buttonMessage.value = message || 'Error';
+  additionalButtonClasses.value = ['btn-danger-custom', 'pulse-effect'];
   setTimeout(() => {
-    if (progressOverlay.value) {
-      progressOverlay.value.classList.remove('active');
-      progressOverlay.value.style.width = '100%';
-    }
-    setTimeout(resetUI, 2000);
-  }, 2000);
+    resetUI();
+  }, 4000);
 }
 
 function drawPDF417(data) {
@@ -171,8 +126,6 @@ function drawPDF417(data) {
         }
       }
     }
-
-    window.$(barcodeContainer).fadeIn();
   }
 }
 
@@ -188,4 +141,29 @@ defineExpose({
 
 <style scoped>
 /* Component-specific styles are handled by imported CSS */
+.success-message {
+  background-color: var(--md-sys-color-primary);
+  color: white;
+  padding: 8px;
+  margin-top: 8px;
+  border-radius: 4px;
+}
+.error-message {
+  background-color: var(--md-sys-color-error);
+  color: white;
+  padding: 8px;
+  margin-top: 8px;
+  border-radius: 4px;
+}
+.barcode-enter-active, .barcode-leave-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.barcode-enter-from, .barcode-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
+}
+.barcode-enter-to, .barcode-leave-from {
+  opacity: 1;
+  transform: scale(1);
+}
 </style> 

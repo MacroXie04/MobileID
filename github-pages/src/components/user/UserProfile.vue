@@ -1,14 +1,13 @@
 <template>
-  <div class="text-center mb-4" style="margin-bottom: 0px!important;">
+  <div style="text-align: center; margin-bottom: 16px;">
     <img 
+      class="profile-picture"
       :src="props.avatarSrc || defaultAvatar" 
       alt="avatar" 
-      class="rounded-circle shadow"
-      style="width:112px;height:112px;object-fit:cover;"
       @error="handleImageError"
     >
-    <h4 class="mt-3 mb-1 fw-semibold">{{ profile?.name || 'User' }}</h4>
-    <p class="text-muted small mb-0">{{ profile?.information_id || 'ID not available' }}</p>
+    <h4 class="profile-name md-typescale-title-medium">{{ profile?.name || 'User' }}</h4>
+    <p class="profile-id md-typescale-body-small">{{ profile?.information_id || 'ID not available' }}</p>
   </div>
 </template>
 
@@ -34,5 +33,5 @@ function handleImageError(event) {
 </script>
 
 <style scoped>
-/* Component-specific styles if needed */
+@import "@material/web/typography/md-typescale-styles.css";
 </style> 
