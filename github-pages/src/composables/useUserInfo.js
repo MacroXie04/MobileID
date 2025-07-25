@@ -22,13 +22,13 @@ export function useUserInfo() {
    * Load user avatar
    */
   async function loadAvatar() {
-    if (!isLoaded.value || !hasAuthTokens()) {
+    if (!hasAuthTokens()) {
       avatarBlobUrl.value = "";
       return;
     }
     
     try {
-      const response = await fetch(`${baseURL}/authn/profile/avatar/get/`, {
+      const response = await fetch(`${baseURL}/authn/user_img/`, {
         credentials: "include"
       });
       

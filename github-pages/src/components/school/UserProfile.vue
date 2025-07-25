@@ -3,10 +3,15 @@
   <div class="profile-section">
     <a href="/edit_profile/" id="setting-icon">
       <img
-        :src="avatarSrc"
+        v-if="avatarUrl"
+        :src="avatarUrl"
         class="profile-avatar"
         alt="User profile picture"
+        @error="handleImageError"
       />
+      <div v-else class="profile-avatar profile-initials">
+        {{ getInitials(profile.name) }}
+      </div>
     </a>
 
     <h4 class="white-h4 profile-name">
@@ -37,7 +42,7 @@
 </template>
 
 <script setup>
-import { toRefs } from 'vue';
+import { toRefs, computed, ref } from 'vue';
 
 // Props
 const props = defineProps({
@@ -65,6 +70,29 @@ const emit = defineEmits(['generate']);
 // Destructure props for reactivity
 const { profile, avatarSrc, loading, isRefreshingToken } = toRefs(props);
 
+// State
+const showInitials = ref(false);
+
+// Computed
+const avatarUrl = computed(() => {
+  return showInitials.value ? null : props.avatarSrc;
+});
+
+// Get user initials
+function getInitials(name) {
+  if (!name) return 'U';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+// Handle image loading error
+function handleImageError() {
+  showInitials.value = true;
+}
+
 // Event handlers
 function handleGenerate() {
   emit('generate');
@@ -84,6 +112,17 @@ function handleGenerate() {
   border-radius: 50%;
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4);
   transition: transform 0.3s ease-in-out;
+}
+
+.profile-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 36px;
+  font-weight: 500;
+  text-decoration: none;
 }
 
 .profile-name {

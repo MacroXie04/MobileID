@@ -46,7 +46,7 @@ const serverStatus = ref("Emergency");
 const barcodeDisplayRef = ref(null);
 
 // Use composables
-const { profile, avatarSrc } = useUserInfo();
+const { profile, avatarSrc, loadAvatar } = useUserInfo();
 const { isRefreshingToken } = useToken();
 const { apiGenerateBarcode } = useApi();
 const { drawPdf417 } = usePdf417();
@@ -58,6 +58,9 @@ onMounted(() => {
   if (data && data.profile) {
     profile.value = data.profile;
   }
+  
+  // Load user avatar
+  loadAvatar();
 });
 
 /* ── UI actions with jQuery animations ─────────────────────────────────────── */
@@ -130,7 +133,7 @@ async function handleGenerate() {
     // Handle different types of errors
     if (err.message.includes("Token refresh failed") || err.message.includes("Max retries exceeded")) {
       console.log("Token refresh failed or max retries exceeded, redirecting to login page");
-      return; // return immediately, do not execute subsequent operations
+      return;
     } else if (err.message.includes("Network error")) {
       serverStatus.value = "Network Error";
       console.error("Network error:", err.message);

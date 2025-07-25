@@ -10,9 +10,6 @@ import uuid
 
 from authn.models import (
     UserProfile,
-    UserExtendedData,
-    QuickAction,
-    UserChangeLog,
 )
 from mobileid.models import UserBarcodeSettings, Barcode
 
@@ -171,13 +168,6 @@ class LimitedGroupUserAdmin(UserAdmin):
                         user_profile_img=""  # Empty profile image
                     )
                 
-                # Create UserExtendedData if it doesn't exist
-                if not hasattr(user, 'userextendeddata'):
-                    UserExtendedData.objects.create(
-                        user=user,
-                        extended_data={}
-                    )
-                
                 # Create UserBarcodeSettings if it doesn't exist
                 try:
                     UserBarcodeSettings.objects.get(user=user)
@@ -234,71 +224,3 @@ class UserProfileAdmin(admin.ModelAdmin):
             '<img src="data:image/png;base64,{}" width="48" height="48" style="object-fit:cover;border-radius:4px;" />',
             obj.user_profile_img,
         )
-
-
-@admin.register(UserExtendedData)
-class UserExtendedDataAdmin(admin.ModelAdmin):
-    list_display = ("user", "preview")
-    search_fields = ("user__username",)
-    readonly_fields = ("preview_full",)
-    list_select_related = ("user",)
-
-    @admin.display(description="Extended Data (brief)", ordering=False)
-    def preview(self, obj):
-        return _pretty_json(obj.extended_data)
-
-    @admin.display(description="Extended Data (full)", ordering=False)
-    def preview_full(self, obj):
-        return format_html(
-            "<pre style='white-space:pre-wrap'>{}</pre>",
-            json.dumps(obj.extended_data, indent=2, ensure_ascii=False),
-        )
-
-
-@admin.register(QuickAction)
-class QuickActionAdmin(admin.ModelAdmin):
-    list_display = ("action_name", "short_description", "json_patch_preview")
-    search_fields = ("action_name",)
-    readonly_fields = ("json_patch_preview",)
-
-    @admin.display(description="Description")
-    def short_description(self, obj):
-        return textwrap.shorten(obj.action_description, width=60, placeholder="…")
-
-    @admin.display(description="JSON Patch (brief)")
-    def json_patch_preview(self, obj):
-        return _pretty_json(obj.json_patch)
-
-
-@admin.register(UserChangeLog)
-class UserChangeLogAdmin(admin.ModelAdmin):
-    list_display = (
-        "timestamp",
-        "staff_user",
-        "target_user",
-        "short_change_description",
-    )
-    list_filter = ("staff_user", "target_user")
-    search_fields = ("staff_user__username", "target_user__username", "change_description")
-    readonly_fields = ("timestamp", "data_before_pretty", "data_after_pretty")
-    date_hierarchy = "timestamp"
-    list_per_page = 25
-
-    @admin.display(description="Change Description")
-    def short_change_description(self, obj):
-        return textwrap.shorten(obj.change_description, width=80, placeholder="…")
-
-    @admin.display(description="Data Before")
-    def data_before_pretty(self, obj):
-        return format_html(
-            "<pre style='white-space:pre-wrap'>{}</pre>",
-            json.dumps(obj.data_before, indent=2, ensure_ascii=False),
-        )
-
-    @admin.display(description="Data After")
-    def data_after_pretty(self, obj):
-        return format_html(
-            "<pre style='white-space:pre-wrap'>{}</pre>",
-            json.dumps(obj.data_after, indent=2, ensure_ascii=False),
-        )
-

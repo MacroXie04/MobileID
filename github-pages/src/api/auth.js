@@ -46,20 +46,6 @@ export async function updateUserProfile(profileData) {
   return res.json();
 }
 
-// upload avatar
-export async function uploadAvatar(file) {
-  const formData = new FormData();
-  formData.append('avatar', file);
-  
-  const res = await fetch(`${baseURL}/authn/profile/avatar/`, {
-    method: "POST",
-    credentials: "include",
-    body: formData
-  });
-  if (!res.ok) throw new Error('Failed to upload avatar');
-  return res.json();
-}
-
 // register
 export async function register(userData) {
   try {

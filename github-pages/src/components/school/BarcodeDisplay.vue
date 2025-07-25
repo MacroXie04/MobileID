@@ -18,7 +18,10 @@
 </template>
 
 <script setup>
-import { ref, defineExpose } from 'vue';
+import { ref } from 'vue';
+
+import '@material/web/icon/icon';
+import '@material/web/button/filled-button.js';
 
 // Template refs
 const barcodeCanvas = ref(null);

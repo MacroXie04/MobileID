@@ -2,7 +2,7 @@
   <div class="home-user-container">
     <div class="background-gradient"></div>
     <div class="content-wrapper">
-      <md-elevation :level="3" class="profile-card">
+      <div class="profile-card elevation-3">
         <!-- User Profile Section -->
         <UserProfile 
           class="user-profile-section" 
@@ -21,7 +21,7 @@
           class="menu-section" 
           @logout="handleLogout" 
         />
-      </md-elevation>
+      </div>
     </div>
   </div>
 </template>
@@ -29,9 +29,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-
-// Material Web Components
-import '@material/web/elevation/elevation.js';
 
 // CSS Imports
 import '@/assets/css/HomeUser.css';
@@ -52,13 +49,19 @@ const barcodeDisplayRef = ref(null);
 
 // Use composables
 const { apiGenerateBarcode } = useApi();
-const { avatarSrc } = useUserInfo();
+const { avatarSrc, loadAvatar } = useUserInfo();
 
 /* ── lifecycle ──────────────────────────────────────────────────────────── */
 onMounted(() => {
+  console.log('HomeUser component mounted');
   // read user info from window.userInfo
   const data = window.userInfo;
+  console.log('window.userInfo:', data);
   profile.value = data?.profile;
+  console.log('Profile set to:', profile.value);
+  
+  // Load user avatar
+  loadAvatar();
 });
 
 /* ── barcode generation ─────────────────────────────────────────────────── */
@@ -117,7 +120,7 @@ async function handleLogout() {
 </script>
 
 <style scoped>
-/* Material 3 Design System */
+/* Material 3 Design System - Enhanced */
 .home-user-container {
   position: relative;
   display: flex;
@@ -126,26 +129,28 @@ async function handleLogout() {
   min-height: 100vh;
   background: var(--md-sys-color-surface);
   overflow: hidden;
+  font-family: 'Roboto', sans-serif; /* Add Material default font */
 }
 
-/* Subtle gradient background */
+/* Enhanced gradient background */
 .background-gradient {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(
-    ellipse at top left,
-    var(--md-sys-color-primary-container) 0%,
-    transparent 50%
-  ),
-  radial-gradient(
-    ellipse at bottom right,
-    var(--md-sys-color-tertiary-container) 0%,
-    transparent 50%
-  );
-  opacity: 0.3;
+  background: 
+    radial-gradient(
+      ellipse at top left,
+      var(--md-sys-color-primary-container) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse at bottom right,
+      var(--md-sys-color-tertiary-container) 0%,
+      transparent 70%
+    );
+  opacity: 0.1; /* More subtle gradient */
   z-index: 0;
 }
 
@@ -157,38 +162,51 @@ async function handleLogout() {
   padding: 16px;
 }
 
+/* Enhanced card with proper elevation */
 .profile-card {
   background: var(--md-sys-color-surface-container-low);
   border-radius: var(--md-sys-shape-corner-extra-large);
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  box-shadow: var(--md-sys-elevation-level3); /* Use elevation token */
 }
 
-/* Hover effect for card */
-@media (hover: hover) {
-  .profile-card:hover {
-    transform: translateY(-2px);
-  }
-}
-
-/* Section spacing */
+/* Section spacing with MD3 grid */
 .user-profile-section {
   padding: 32px 24px 24px;
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .menu-section {
-  padding: 16px;
+  padding: 24px; /* Increased padding for better spacing */
 }
 
-/* Responsive adjustments */
-@media (max-width: 480px) {
+/* Responsive adjustments with MD3 breakpoints */
+@media (max-width: 600px) { /* Standard MD3 breakpoint */
   .content-wrapper {
-    padding: 8px;
+    padding: 0;
+    max-width: 100%;
+  }
+  
+  .profile-card {
+    border-radius: 0;
+    box-shadow: none;
   }
   
   .user-profile-section {
-    padding: 24px 16px 16px;
+    padding: 24px 16px;
   }
+}
+
+/* Add hover effect for interactive elements */
+.profile-card:hover {
+  box-shadow: var(--md-sys-elevation-level4);
+  transform: translateY(-2px);
+}
+
+/* Add focus states for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
 }
 </style>

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator
 from decimal import Decimal
 from datetime import datetime
 import uuid
@@ -16,11 +17,20 @@ class UserProfile(models.Model):
 
     # user uuid
     profile_uuid = models.UUIDField(
-        default=uuid.uuid4, editable=False, unique=True, null=True
+        default=uuid.uuid4, editable=False, unique=True
     )
 
     # user profile image (base64 encoded png 128*128)
-    user_profile_img = models.TextField()
+    user_profile_img = models.TextField(
+        null=True,
+        blank=True,
+        validators=[MaxLengthValidator(10_000)],
+        help_text=(
+            "Base64 encoded PNG of the user's 128*128 avatar. "
+            "No data-URI prefix."
+        ),
+        verbose_name="avatar (Base64)",
+    )
 
     def __str__(self):
         return f"{self.name} - ID: **{self.information_id[-4:]}"
@@ -43,48 +53,3 @@ class Passkey(models.Model):
 
     # passkey created at
     created_at = models.DateTimeField(auto_now_add=True)
-
-
-class UserExtendedData(models.Model):
-    # foreign key to user
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-    # extended data stored as JSON
-    extended_data = models.JSONField(default=dict, blank=True)
-
-    def __str__(self):
-        return f"{self.user.username} - Extended Data"
-
-class QuickAction(models.Model):
-    # action name
-    action_name = models.CharField(max_length=100, unique=True)
-
-    # action description
-    action_description = models.TextField(max_length=255, blank=True)
-
-    # patch to apply
-    json_patch = models.JSONField(help_text="JSON Patch to apply to the user extended data")
-
-    def __str__(self):
-        return self.action_name
-
-class UserChangeLog(models.Model):
-    # foreign key to staff user and target user
-    staff_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='staff_user')
-    target_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='target_user')
-
-    # timestamp of change
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    # description of the change
-    change_description = models.TextField(max_length=255, blank=True)
-
-    # data before and after the change
-    data_before = models.JSONField(default=dict, blank=True)
-    data_after = models.JSONField(default=dict, blank=True)
-
-    class Meta:
-        ordering = ['-timestamp']
-
-    def __str__(self):
-        return f"Change by {self.staff_user.username} on {self.target_user.username} at {self.timestamp}"

@@ -1,7 +1,7 @@
 import random
 
 from mobileid.models import UserBarcodeSettings, Barcode
-from authn.models import UserProfile, UserExtendedData
+from authn.models import UserProfile
 
 from django.contrib.auth.models import Group
 
@@ -12,38 +12,33 @@ def generate_unique_identification_barcode():
             return code
 
 
-def create_user_profile(user, name, information_id, user_profile_img):
-    # Create a user profile with the provided details
+def create_user_profile(user, name: str, information_id: str, user_profile_img: str | None):
+    # Profile
     UserProfile.objects.create(
         user=user,
         name=name,
         information_id=information_id,
-        user_profile_img=user_profile_img,
+        # store NULL if empty
+        user_profile_img=user_profile_img or None,
     )
 
-    # Add user to User group
+    # Group membership  (creates "User" group if missing)
     user_group, _ = Group.objects.get_or_create(name="User")
     user.groups.add(user_group)
 
-    # Create user identification barcode
-    user_identification_barcode = Barcode.objects.create(
+    # Identification barcode
+    ident_barcode = Barcode.objects.create(
         user=user,
         barcode_type="Identification",
         barcode=generate_unique_identification_barcode(),
     )
 
-    # Create user barcode settings
+    # Per‑user barcode settings
     UserBarcodeSettings.objects.create(
         user=user,
-        barcode=user_identification_barcode,
+        barcode=ident_barcode,
         server_verification=False,
         barcode_pull=False,
-    )
-
-    # Create user extended data
-    UserExtendedData.objects.create(
-        user=user,
-        extended_data={},
     )
 
     return user

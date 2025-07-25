@@ -135,7 +135,6 @@ REST_FRAMEWORK = {
     },
 }
 
-
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", "15"))),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "1"))),
@@ -144,6 +143,7 @@ SIMPLE_JWT = {
     "ALGORITHM": os.getenv("JWT_ALGORITHM", "HS256"),
     "SIGNING_KEY": SECRET_KEY,
 }
+
 
 ROOT_URLCONF = "barcode.urls"
 

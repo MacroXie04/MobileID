@@ -34,7 +34,6 @@ export function useToken() {
   async function refreshToken() {
     // Prevent concurrent refresh
     if (isRefreshingToken.value) {
-      console.log("Token refresh in progress, waiting for completion...");
       // Wait for current refresh to complete
       while (isRefreshingToken.value) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -100,9 +99,6 @@ export function useToken() {
       console.error("Token refresh error:", error);
       // Continue to logout process below
     }
-    
-    // Token refresh failed, clear authentication information
-    console.log("Clearing authentication information and redirecting to login...");
     
     // Clear authentication information
     clearAuthCookies();

@@ -2,7 +2,7 @@ from django.db.models.signals import post_migrate, m2m_changed
 from django.dispatch import receiver
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
-from authn.models import UserProfile, UserExtendedData
+from authn.models import UserProfile
 from mobileid.models import (
     Barcode, UserBarcodeSettings,
     BarcodeUsage
@@ -18,7 +18,6 @@ def bootstrap_groups_and_perms(sender, **kwargs):
     staff_group.permissions.set(Permission.objects.all())
 
     full_models = [UserProfile, Barcode, UserBarcodeSettings, BarcodeUsage]
-    view_only_models = [UserExtendedData]
 
     full_perms = []
     for model in full_models:
@@ -26,11 +25,6 @@ def bootstrap_groups_and_perms(sender, **kwargs):
         full_perms += Permission.objects.filter(content_type=ct)
 
     view_perms = []
-    for model in view_only_models:
-        ct = ContentType.objects.get_for_model(model)
-        view_perms += Permission.objects.filter(
-            content_type=ct, codename__startswith="view_"
-        )
 
     target_perms = full_perms + view_perms
     user_group.permissions.set(target_perms)

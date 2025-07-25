@@ -152,7 +152,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { register, uploadAvatar } from '@/api/auth';
+import { register } from '@/api/auth';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
 
@@ -171,7 +171,8 @@ const formData = ref({
   name: '',
   information_id: '',
   password1: '',
-  password2: ''
+  password2: '',
+  user_profile_img_base64: ''  // Add this field
 });
 const avatarFile = ref(null);
 const avatarPreviewUrl = ref('');
@@ -355,6 +356,14 @@ const applyCrop = () => {
         URL.revokeObjectURL(avatarPreviewUrl.value);
       }
       avatarPreviewUrl.value = URL.createObjectURL(blob);
+      
+      // Convert blob to Base64 for backend
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result.split(',')[1]; // Remove data:image/png;base64, prefix
+        formData.value.user_profile_img_base64 = base64String;
+      };
+      reader.readAsDataURL(blob);
     }
     closeCropper();
   }, 'image/png', 0.9);
@@ -416,17 +425,7 @@ const handleSubmit = async () => {
       return;
     }
     
-    // Upload avatar if selected
-    if (avatarFile.value) {
-      try {
-        await uploadAvatar(avatarFile.value);
-      } catch (avatarError) {
-        console.error('Avatar upload failed:', avatarError);
-        // Continue with registration success
-      }
-    }
-    
-    // Success
+    // Success - avatar was already included in registration data as base64
     router.push('/');
     
   } catch (error) {

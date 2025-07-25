@@ -23,12 +23,17 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   if (!to.meta.requiresAuth) return next();
 
-  const data = await userInfo();   // return user info if HttpOnly cookie is set
-  if (data) {
-    window.userInfo = data; // cache to global
-    return next();         // already logged in
+  try {
+    const data = await userInfo();   // return user info if HttpOnly cookie is set
+    if (data) {
+      window.userInfo = data; // cache to global
+      return next();         // already logged in
+    }
+    next("/login");                  // not logged in
+  } catch (err) {
+    window.apiError = "API服务器离线";
+    return next();
   }
-  next("/login");                  // not logged in
 });
 
 export default router;
