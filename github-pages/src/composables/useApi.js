@@ -62,7 +62,14 @@ export function useApi() {
         }
       }
       
-      if (!res.ok) throw new Error(`API call failed: ${res.status} - ${data?.detail || data?.message || 'Unknown error'}`);
+      if (!res.ok) {
+        // Create error with full response data for better error handling
+        const error = new Error(`API call failed: ${res.status} - ${data?.detail || data?.message || 'Unknown error'}`);
+        error.status = res.status;
+        error.errors = data?.errors;
+        error.responseData = data;
+        throw error;
+      }
       return data;
       
     } catch (error) {

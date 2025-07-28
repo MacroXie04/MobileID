@@ -26,6 +26,8 @@ import { useRouter } from "vue-router";
 
 // CSS Imports
 import "@/assets/css/HomeSchool.css";
+// Import Font Awesome for this page (needed for GridMenu component)
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 // Components
 import Header from "@/components/school/Header.vue";

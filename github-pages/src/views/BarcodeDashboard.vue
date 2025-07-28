@@ -1,127 +1,132 @@
 <template>
-  <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-    <div class="card p-4 shadow-sm" style="max-width: 800px; width: 100%;">
-      <h3 class="text-center mb-4 fw-semibold">Barcode Dashboard</h3>
-
-      <!-- Loading State -->
-      <div v-if="loading" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
+  <div class="page-container">
+    <div class="page-card">
+      <div class="page-header">
+        <p class="md-typescale-body-large subtitle">Change & Manage Barcode Settings</p>
       </div>
 
       <!-- Dashboard Content -->
-      <div v-else>
+      <div class="content-section">
         <!-- Flash Messages -->
-        <div v-if="message" class="mb-4">
-          <div :class="`alert alert-${messageType} alert-dismissible fade show`" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" @click="message = ''" aria-label="Close"></button>
-          </div>
+        <div v-if="message" class="message-banner" :class="messageType">
+          <md-icon>{{ messageType === 'success' ? 'check_circle' : 'error_outline' }}</md-icon>
+          <span class="md-typescale-body-medium">{{ message }}</span>
+          <md-icon-button @click="message = ''" class="close-button">
+            <md-icon>close</md-icon>
+          </md-icon-button>
         </div>
 
-        <!-- Settings Form -->
-        <div class="mb-4">
-          <h5 class="mb-3 fw-semibold">Barcode Settings</h5>
-          <form @submit.prevent="updateSettings" novalidate>
-            <div class="row g-3">
+        <!-- Settings Section -->
+        <div class="settings-section">
+          <div class="section-header">
+            <md-icon>settings</md-icon>
+            <h2 class="md-typescale-headline-small">Barcode Settings</h2>
+          </div>
+          
+          <div class="form-section">
+            <div class="settings-grid">
               <!-- Pull Setting -->
-              <div class="col-md-4">
-                <label for="barcode-pull" class="form-label">Barcode Pull</label>
-                <select 
-                  id="barcode-pull" 
+              <div class="setting-field">
+                <label class="md-typescale-body-large">Barcode Pull</label>
+                <md-outlined-select 
                   v-model="settings.barcode_pull" 
-                  class="form-control"
                   :disabled="isUserGroup"
-                  @change="onPullSettingChange"
+                  @change="onSettingChange"
                 >
-                  <option :value="true">Yes</option>
-                  <option :value="false">No</option>
-                </select>
-                <div v-if="errors.barcode_pull" class="invalid-feedback d-block">
-                  {{ errors.barcode_pull }}
-                </div>
+                  <md-select-option :value="true">
+                    <div slot="headline">Yes</div>
+                  </md-select-option>
+                  <md-select-option :value="false">
+                    <div slot="headline">No</div>
+                  </md-select-option>
+                </md-outlined-select>
+                <p v-if="errors.barcode_pull" class="error-text">{{ errors.barcode_pull }}</p>
               </div>
 
               <!-- Server Verification -->
-              <div class="col-md-4">
-                <label for="server-verification" class="form-label">Server Verification</label>
-                <select 
-                  id="server-verification" 
-                  v-model="settings.server_verification" 
-                  class="form-control"
+              <div class="setting-field">
+                <label class="md-typescale-body-large">Server Verification</label>
+                <md-outlined-select 
+                  v-model="settings.server_verification"
+                  @change="onSettingChange"
                 >
-                  <option :value="true">Yes</option>
-                  <option :value="false">No</option>
-                </select>
-                <div v-if="errors.server_verification" class="invalid-feedback d-block">
-                  {{ errors.server_verification }}
-                </div>
+                  <md-select-option :value="true">
+                    <div slot="headline">Yes</div>
+                  </md-select-option>
+                  <md-select-option :value="false">
+                    <div slot="headline">No</div>
+                  </md-select-option>
+                </md-outlined-select>
+                <p v-if="errors.server_verification" class="error-text">{{ errors.server_verification }}</p>
               </div>
 
               <!-- Barcode Select -->
-              <div class="col-md-4" v-show="!settings.barcode_pull">
-                <label for="barcode-select" class="form-label">Barcode</label>
-                <select 
-                  id="barcode-select" 
-                  v-model="settings.barcode" 
-                  class="form-control"
+              <div class="setting-field" v-show="!settings.barcode_pull">
+                <label class="md-typescale-body-large">Barcode</label>
+                <md-outlined-select 
+                  v-model="settings.barcode"
                   :disabled="settings.barcode_pull"
+                  @change="onSettingChange"
                 >
-                  <option :value="null">-- Select Barcode --</option>
-                  <option 
+                  <md-select-option :value="null">
+                    <div slot="headline">-- Select Barcode --</div>
+                  </md-select-option>
+                  <md-select-option 
                     v-for="choice in barcodeChoices" 
-                    :key="choice.id" 
-                    :value="choice.id"
+                    :key="`barcode-${choice.id}`" 
+                    :value="Number(choice.id)"
                   >
-                    {{ choice.display }}
-                  </option>
-                </select>
-                <div v-if="errors.barcode" class="invalid-feedback d-block">
-                  {{ errors.barcode }}
-                </div>
+                    <div slot="headline">{{ choice.display }}</div>
+                  </md-select-option>
+                </md-outlined-select>
+                <p v-if="errors.barcode" class="error-text">{{ errors.barcode }}</p>
               </div>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 py-2 mt-3">
-              Save Settings
-            </button>
-          </form>
+            <!-- Auto-save indicator -->
+            <transition name="fade">
+              <div v-if="isSaving" class="auto-save-indicator">
+                <md-icon>sync</md-icon>
+                <span class="md-typescale-body-small">Saving changes...</span>
+              </div>
+            </transition>
+          </div>
         </div>
 
-        <hr class="my-4" />
+        <!-- Add Barcode Section -->
+        <div class="add-barcode-section">
+          <div class="section-header">
+            <md-icon>add</md-icon>
+            <h2 class="md-typescale-headline-small">Add New Barcode</h2>
+          </div>
+          
+          <form @submit.prevent="addBarcode" novalidate class="form-section">
+            <md-outlined-text-field 
+              label="Barcode" 
+              v-model="newBarcode"
+              :error="!!errors.newBarcode" 
+              :error-text="errors.newBarcode" 
+              @input="clearError('newBarcode')"
+              @keyup.enter="addBarcode()"
+              placeholder="Enter barcode"
+            >
+              <md-icon slot="leading-icon">qr_code</md-icon>
+            </md-outlined-text-field>
 
-        <!-- Add Barcode Form -->
-        <div class="mb-4">
-          <h5 class="mb-3 fw-semibold">Add New Barcode</h5>
-          <form @submit.prevent="addBarcode" novalidate>
-            <div class="mb-3">
-              <label for="new-barcode" class="form-label">Barcode</label>
-              <input 
-                id="new-barcode"
-                v-model="newBarcode" 
-                type="text" 
-                class="form-control"
-                placeholder="Enter barcode"
-                required
-              />
-              <div v-if="errors.newBarcode" class="invalid-feedback d-block">
-                {{ errors.newBarcode }}
-              </div>
-            </div>
-
-            <!-- Barcode Scanner Section -->
-            <div class="mb-3">
-              <button 
-                type="button" 
-                @click="toggleScanner"
-                class="btn btn-outline-secondary w-100 py-2"
-              >
-                {{ showScanner ? 'Hide Scanner' : 'Scan Barcode' }}
-              </button>
-              
-              <transition name="fade">
-                <div v-show="showScanner" class="scanner-container mt-3">
+            <!-- Scanner Toggle -->
+            <md-outlined-button 
+              type="button" 
+              @click="toggleScanner"
+              class="primary-button"
+            >
+              <md-icon slot="icon">{{ showScanner ? 'videocam_off' : 'videocam' }}</md-icon>
+              {{ showScanner ? 'Hide Scanner' : 'Scan Barcode' }}
+            </md-outlined-button>
+            
+            <!-- Scanner Section -->
+            <transition name="fade">
+              <div v-show="showScanner" class="scanner-section">
+                <div class="scanner-card">
                   <div class="video-wrapper">
                     <video 
                       ref="videoRef"
@@ -132,73 +137,111 @@
                     ></video>
                     <div v-if="scanning" class="scanning-overlay"></div>
                   </div>
-                  <div class="text-center mt-3">
-                    <small class="text-muted">
-                      <span>{{ scannerStatus }}</span>
-                    </small>
-                  </div>
-                </div>
-              </transition>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100 py-2">
-              Add Barcode
-            </button>
-          </form>
-        </div>
-
-        <hr class="my-4" />
-
-        <div class="mb-4">
-          <button @click="$router.push('/')" class="btn btn-primary w-100 py-2">
-            Back to Home
-          </button>
-        </div>
-
-        <hr class="my-4" />
-
-        <!-- Barcodes List -->
-        <div>
-          <h5 class="mb-3 fw-semibold">Barcodes</h5>
-          <div v-if="barcodes.length > 0" class="row g-3">
-            <div v-for="barcode in barcodes" :key="barcode.id" class="col-12">
-              <div class="card border-0 bg-light">
-                <div class="card-body d-flex justify-content-between align-items-center py-3">
-                  <div class="flex-grow-1">
-                    <h6 class="mb-1 fw-semibold">
-                      {{ barcode.barcode_type === 'DynamicBarcode' ? 'Dynamic Barcode' : 'Static Barcode' }}
-                    </h6>
-                    <small class="text-muted">ending with {{ barcode.barcode.slice(-4) }}</small>
-                    <div v-if="barcode.usage_count > 0" class="mt-1">
-                      <small class="text-muted">
-                        Used {{ barcode.usage_count }} time{{ barcode.usage_count > 1 ? 's' : '' }}
-                        <span v-if="barcode.last_used">
-                          - Last: {{ formatDate(barcode.last_used) }}
-                        </span>
-                      </small>
-                    </div>
-                  </div>
-                  <div class="flex-shrink-0">
-                    <button 
-                      @click="deleteBarcode(barcode.id)"
-                      class="btn btn-sm btn-outline-danger"
-                    >
-                      Delete
-                    </button>
+                  <div class="scanner-status">
+                    <md-icon>info</md-icon>
+                    <span class="md-typescale-body-small">{{ scannerStatus }}</span>
                   </div>
                 </div>
               </div>
+            </transition>
+
+            <md-filled-button type="submit" class="primary-button">
+              <md-icon slot="icon">add</md-icon>
+              Add Barcode
+            </md-filled-button>
+          </form>
+        </div>
+
+
+        <!-- Barcodes List Section -->
+        <div class="barcodes-section">
+          <div class="section-header">
+            <md-icon>list</md-icon>
+            <h2 class="md-typescale-headline-small">Your Barcodes</h2>
+          </div>
+          
+          <div v-if="barcodes.length > 0" class="barcodes-grid">
+            <div v-for="barcode in barcodes" :key="barcode.id" class="barcode-card">
+              <div class="barcode-info">
+                <div class="barcode-header">
+                  <md-icon class="barcode-icon">
+                    {{ barcode.barcode_type === 'DynamicBarcode' ? 'dynamic_feed' : 'code' }}
+                  </md-icon>
+                  <div class="barcode-details">
+                    <h3 class="md-typescale-title-medium">
+                      {{ barcode.barcode_type === 'DynamicBarcode' ? 'Dynamic Barcode' : 'Static Barcode' }}
+                    </h3>
+                    <p class="md-typescale-body-medium barcode-number">
+                      ending with {{ barcode.barcode.slice(-4) }}
+                    </p>
+                  </div>
+                </div>
+                
+                <div v-if="barcode.usage_count > 0" class="usage-info">
+                  <div class="usage-stat">
+                    <md-icon>analytics</md-icon>
+                    <span class="md-typescale-body-small">
+                      Used {{ barcode.usage_count }} time{{ barcode.usage_count > 1 ? 's' : '' }}
+                    </span>
+                  </div>
+                  <div v-if="barcode.last_used" class="last-used">
+                    <md-icon>schedule</md-icon>
+                    <span class="md-typescale-body-small">
+                      Last: {{ formatDate(barcode.last_used) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <md-outlined-button 
+                @click="deleteBarcode(barcode.id)"
+                class="delete-button"
+              >
+                <md-icon slot="icon">delete</md-icon>
+                Delete
+              </md-outlined-button>
             </div>
           </div>
-          <div v-else class="text-center text-muted py-4">
-            <div class="bg-light rounded p-4">
-              <p class="mb-0">No barcodes yet.</p>
-              <small class="text-muted">Add your first barcode using the form above.</small>
+          
+          <div v-else class="empty-state">
+            <div class="empty-content">
+              <md-icon class="empty-icon">qr_code_scanner</md-icon>
+              <h3 class="md-typescale-headline-small">No barcodes yet</h3>
+              <p class="md-typescale-body-medium">Add your first barcode using the form above.</p>
             </div>
           </div>
         </div>
+
+        <!-- Back Link -->
+        <div class="nav-section">
+            <md-divider></md-divider>
+            <p class="md-typescale-body-medium nav-text">
+              <router-link to="/" class="nav-link">
+                <md-icon>arrow_back</md-icon>
+                Back to Dashboard
+              </router-link>
+            </p>
+          </div>
       </div>
     </div>
+
+    <!-- Confirmation Dialog -->
+    <md-dialog ref="confirmDialog" :open="showConfirmDialog" @close="showConfirmDialog = false">
+      <div slot="headline">
+        <md-icon>delete</md-icon>
+        Confirm Deletion
+      </div>
+      <form slot="content" method="dialog">
+        <p class="md-typescale-body-medium">Are you sure you want to delete this barcode? This action cannot be undone.</p>
+      </form>
+      <div slot="actions">
+        <md-text-button @click="showConfirmDialog = false">Cancel</md-text-button>
+        <md-filled-button @click="confirmDelete" class="confirm-button">
+          <md-icon slot="icon">delete</md-icon>
+          Delete
+        </md-filled-button>
+      </div>
+    </md-dialog>
   </div>
 </template>
 
@@ -206,6 +249,7 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useApi } from '@/composables/useApi';
+import '@/styles/auth-shared.css';
 
 // Router
 const router = useRouter();
@@ -223,6 +267,7 @@ const loading = ref(true);
 const message = ref('');
 const messageType = ref('success');
 const errors = ref({});
+const isSaving = ref(false);
 
 // Dashboard data
 const settings = ref({
@@ -245,22 +290,44 @@ const scannerStatus = ref('Position the barcode within the camera view');
 const videoRef = ref(null);
 let codeReader = null;
 
+// Dialog state
+const showConfirmDialog = ref(false);
+const barcodeToDelete = ref(null);
+
+// Clear specific error
+const clearError = (field) => {
+  delete errors.value[field];
+};
+
 // Load dashboard data
 async function loadDashboard() {
   try {
     loading.value = true;
     const data = await apiGetBarcodeDashboard();
     
+    // Clear previous state
     settings.value = {
-      barcode_pull: data.settings.barcode_pull,
-      server_verification: data.settings.server_verification,
-      barcode: data.settings.barcode
+      barcode_pull: false,
+      server_verification: false,
+      barcode: null
+    };
+    barcodeChoices.value = [];
+    
+    // Set choices first
+    barcodeChoices.value = data.settings.barcode_choices || [];
+    
+    // Then set settings with proper type conversion
+    await nextTick(); // Wait for choices to be rendered
+    
+    settings.value = {
+      barcode_pull: Boolean(data.settings.barcode_pull),
+      server_verification: Boolean(data.settings.server_verification),
+      barcode: data.settings.barcode ? Number(data.settings.barcode) : null
     };
     
-    barcodes.value = data.barcodes;
-    barcodeChoices.value = data.settings.barcode_choices;
-    isUserGroup.value = data.is_user_group;
-    isSchoolGroup.value = data.is_school_group;
+    barcodes.value = data.barcodes || [];
+    isUserGroup.value = Boolean(data.is_user_group);
+    isSchoolGroup.value = Boolean(data.is_school_group);
     
   } catch (error) {
     showMessage('Failed to load dashboard: ' + error.message, 'danger');
@@ -269,26 +336,66 @@ async function loadDashboard() {
   }
 }
 
-// Update settings
-async function updateSettings() {
+// Auto-save settings with debounce
+let saveTimeout = null;
+
+async function autoSaveSettings() {
+  // Record start time for minimum display duration
+  const startTime = Date.now();
+  
   try {
+    isSaving.value = true;
     errors.value = {};
-    const response = await apiUpdateBarcodeSettings(settings.value);
+    
+    // ensure barcode ID is a number
+    const settingsToSend = {
+      ...settings.value,
+      barcode: settings.value.barcode ? Number(settings.value.barcode) : null
+    };
+    
+    const response = await apiUpdateBarcodeSettings(settingsToSend);
     
     if (response.status === 'success') {
-      showMessage(response.message, 'success');
-      // Update choices from response
+      // update choices from response
       if (response.settings && response.settings.barcode_choices) {
         barcodeChoices.value = response.settings.barcode_choices;
       }
+      // Ensure the updated barcode value is properly typed
+      if (response.settings && response.settings.barcode !== undefined) {
+        settings.value.barcode = response.settings.barcode ? Number(response.settings.barcode) : null;
+      }
     }
+    
+    // Ensure minimum display time of 1 second
+    const elapsed = Date.now() - startTime;
+    const remainingTime = Math.max(0, 1000 - elapsed);
+    
+    if (remainingTime > 0) {
+      await new Promise(resolve => setTimeout(resolve, remainingTime));
+    }
+    
   } catch (error) {
-    if (error.message.includes('400') && error.errors) {
+    if (error.status === 400 && error.errors) {
       errors.value = error.errors;
     } else {
-      showMessage('Failed to update settings: ' + error.message, 'danger');
+      showMessage('Failed to save settings: ' + error.message, 'danger');
     }
+    
+    // Also ensure minimum display time for errors
+    const elapsed = Date.now() - startTime;
+    const remainingTime = Math.max(0, 1000 - elapsed);
+    
+    if (remainingTime > 0) {
+      await new Promise(resolve => setTimeout(resolve, remainingTime));
+    }
+  } finally {
+    isSaving.value = false;
   }
+}
+
+// Deprecated - kept for backward compatibility
+async function updateSettings() {
+  await autoSaveSettings();
 }
 
 // Add new barcode
@@ -310,8 +417,13 @@ async function addBarcode() {
       await loadDashboard();
     }
   } catch (error) {
-    if (error.message.includes('400') && error.errors) {
-      errors.value.newBarcode = error.errors.barcode?.[0] || 'Invalid barcode';
+    if (error.status === 400 && error.errors) {
+      // Handle validation errors from API
+      if (error.errors.barcode && error.errors.barcode.length > 0) {
+        errors.value.newBarcode = error.errors.barcode[0];
+      } else {
+        errors.value.newBarcode = 'Invalid barcode';
+      }
     } else {
       showMessage('Failed to add barcode: ' + error.message, 'danger');
     }
@@ -320,12 +432,15 @@ async function addBarcode() {
 
 // Delete barcode
 async function deleteBarcode(barcodeId) {
-  if (!confirm('Delete this barcode?')) {
-    return;
-  }
+  barcodeToDelete.value = barcodeId;
+  showConfirmDialog.value = true;
+}
+
+async function confirmDelete() {
+  if (!barcodeToDelete.value) return;
   
   try {
-    const response = await apiDeleteBarcode(barcodeId);
+    const response = await apiDeleteBarcode(barcodeToDelete.value);
     
     if (response.status === 'success') {
       showMessage(response.message, 'success');
@@ -334,14 +449,27 @@ async function deleteBarcode(barcodeId) {
     }
   } catch (error) {
     showMessage('Failed to delete barcode: ' + error.message, 'danger');
+  } finally {
+    showConfirmDialog.value = false;
+    barcodeToDelete.value = null;
   }
 }
 
-// Handle pull setting change
-function onPullSettingChange() {
+// setting change handler
+function onSettingChange() {
+  // clear barcode when pull is enabled, to avoid user selecting barcode then enabling pull, causing barcode to be cleared
   if (settings.value.barcode_pull) {
     settings.value.barcode = null;
   }
+  
+  // debounce logic, 800ms delay to avoid frequent api calls
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+  
+  saveTimeout = setTimeout(() => {
+    autoSaveSettings();
+  }, 800);
 }
 
 // Scanner functions
@@ -380,12 +508,10 @@ async function startScanner() {
         }
         
         if (error && error.name !== 'NotFoundException') {
-          console.error('Scanner error:', error);
         }
       }
     );
   } catch (error) {
-    console.error('Failed to start scanner:', error);
     scannerStatus.value = 'Failed to access camera';
     scanning.value = false;
   }
@@ -423,88 +549,50 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopScanner();
+  // Clear save timeout
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+});
+
+// Watch for barcode pull changes to clear barcode selection
+watch(() => settings.value.barcode_pull, (newValue) => {
+  if (newValue) {
+    settings.value.barcode = null;
+  }
 });
 </script>
 
 <style scoped>
-/* Scanner styles */
-.scanner-container {
-  background: #fff;
-  padding: 15px;
-  border: 1px solid #dee2e6;
-  border-radius: 0.25rem;
-  overflow: hidden;
+/* Page-specific styles for BarcodeDashboard.vue */
+/* All common styles are now in @/styles/auth-shared.css */
+
+.auto-save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(25, 118, 210, 0.1);
+  border-radius: 8px;
+  color: rgb(25, 118, 210);
+  margin-top: 16px;
 }
 
-.video-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 320px;
-  height: 240px;
-  margin: 0 auto;
-  border-radius: 0.25rem;
-  overflow: hidden;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
+.auto-save-indicator md-icon {
+  animation: spin 1s linear infinite;
+  font-size: 16px;
 }
 
-.video-wrapper video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  border-radius: calc(0.25rem - 1px);
-  background-color: #000;
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.scanning-overlay {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
-  border: 2px solid rgba(0, 123, 255, 0.8);
-  border-radius: 0.25rem;
-  pointer-events: none;
-  animation: scanningPulse 2s infinite;
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-@keyframes scanningPulse {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* Transitions */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
+.fade-enter-from, .fade-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-  .video-wrapper {
-    max-width: 280px;
-    height: 210px;
-  }
-}
-
-@media (max-width: 480px) {
-  .video-wrapper {
-    max-width: 260px;
-    height: 195px;
-  }
 }
 </style> 

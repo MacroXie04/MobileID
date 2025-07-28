@@ -44,6 +44,9 @@ import { ref, onMounted } from "vue";
 import HomeSchool from "./HomeSchool.vue";
 import HomeUser from "./HomeUser.vue";
 
+// Import Font Awesome for this page
+import '@fortawesome/fontawesome-free/css/all.min.css';
+
 const loading = ref(true);
 const groups  = ref([]);
 

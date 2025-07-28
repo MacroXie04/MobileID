@@ -21,7 +21,6 @@ export function useToken() {
       response?.status === 403;
       
     if (isTokenInvalid) {
-      console.log("Authentication error detected:", data);
       return true;
     }
     
@@ -44,8 +43,6 @@ export function useToken() {
     isRefreshingToken.value = true;
     
     try {
-      console.log("Attempting to refresh access token...");
-      
       const res = await fetch(`${baseURL}/authn/token/refresh/`, {
         method: "POST",
         credentials: "include",
@@ -56,17 +53,13 @@ export function useToken() {
       });
       
       const data = await res.json();
-      console.log("Token refresh response:", data);
       
       if (res.ok && data) {
-        console.log("Token refresh successful");
         return true;
       } else {
-        console.log("Token refresh failed:", data);
         return false;
       }
     } catch (error) {
-      console.error("Token refresh request failed:", error);
       return false;
     } finally {
       isRefreshingToken.value = false;
@@ -81,22 +74,17 @@ export function useToken() {
     if (window.isLoggingOut || isRefreshingToken.value) return;
     window.isLoggingOut = true;
     
-    console.log("Handling token expiration, attempting token refresh first...");
-    
     try {
       // First attempt to refresh the token
       const refreshSuccess = await refreshToken();
       
       if (refreshSuccess) {
-        console.log("Token refresh successful, user can continue");
         window.isLoggingOut = false;
-        return true; // Token refreshed successfully
+        return true; 
       } else {
-        console.log("Token refresh failed, proceeding with logout...");
         // Continue to logout process below
       }
     } catch (error) {
-      console.error("Token refresh error:", error);
       // Continue to logout process below
     }
     
@@ -114,27 +102,22 @@ export function useToken() {
     
     // Show prompt and redirect
     setTimeout(() => {
-      alert("Login expired, please login again");
       
       // Use Vue Router for redirection
       try {
-        console.log("Redirecting to login page...");
         router.push('/login');
-        console.log("Redirected to login page via Vue Router");
       } catch (error) {
-        console.error("Vue Router redirection failed, using native redirection:", error);
         window.location.href = "/login";
-        console.log("Redirected to login page via native method");
       }
       
       // Reset duplicate call flag
       setTimeout(() => {
         window.isLoggingOut = false;
-        console.log("Reset logout status flag");
       }, 1000);
     }, 100);
-    
-    return false; // Token refresh failed, user logged out
+
+    // Token refresh failed, user logged out
+    return false; 
   }
 
   return {

@@ -32,6 +32,8 @@ import { useRouter } from "vue-router";
 
 // CSS Imports
 import '@/assets/css/HomeUser.css';
+// Import Font Awesome for this page
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 // Components
 import UserProfile from "@/components/user/UserProfile.vue";

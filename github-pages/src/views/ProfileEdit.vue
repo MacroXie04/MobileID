@@ -1,8 +1,7 @@
 <template>
-  <div class="profile-edit-container">
-    <div class="profile-edit-card">
-      <div class="profile-edit-header">
-        <h1 class="md-typescale-headline-large">Edit Profile</h1>
+  <div class="page-container">
+    <div class="page-card">
+      <div class="page-header">
         <p class="md-typescale-body-large subtitle">Update your information</p>
       </div>
 
@@ -58,17 +57,17 @@
         </div>
 
         <!-- Submit Button -->
-        <md-filled-button type="submit" :disabled="loading" class="submit-button">
+        <md-filled-button type="submit" :disabled="loading" class="primary-button">
           <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
           {{ loading ? 'Saving...' : 'Save Changes' }}
         </md-filled-button>
       </form>
 
       <!-- Back Link -->
-      <div class="back-section">
+      <div class="nav-section">
         <md-divider></md-divider>
-        <p class="md-typescale-body-medium back-text">
-          <router-link to="/" class="back-link">
+        <p class="md-typescale-body-medium nav-text">
+          <router-link to="/" class="nav-link">
             <md-icon>arrow_back</md-icon>
             Back to Dashboard
           </router-link>
@@ -112,6 +111,7 @@ import { getUserProfile, updateUserProfile } from '@/api/auth';
 import { baseURL } from '@/config';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
+import '@/styles/auth-shared.css';
 
 const router = useRouter();
 
@@ -378,240 +378,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.profile-edit-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background-color: var(--md-sys-color-surface-container-lowest);
-}
-
-.profile-edit-card {
-  width: 100%;
-  max-width: 500px;
-  padding: 24px;
-  border-radius: 28px;
-  background-color: var(--md-sys-color-surface);
-  border: 2px solid #D1D5DB;
-  box-shadow: none;
-}
-
-.profile-edit-header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.profile-edit-header h1 {
-  color: var(--md-sys-color-on-surface);
-  margin: 0 0 8px 0;
-}
-
-.subtitle {
-  color: var(--md-sys-color-on-surface-variant);
-  margin: 0;
-}
-
-.avatar-upload-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 32px;
-}
-
-.avatar-wrapper {
-  position: relative;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.avatar-wrapper:hover {
-  transform: scale(1.05);
-}
-
-.avatar-preview {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--md-sys-color-outline-variant);
-}
-
-.avatar-overlay {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.avatar-wrapper:hover .avatar-overlay {
-  opacity: 1;
-}
-
-.avatar-overlay md-icon {
-  color: white;
-  font-size: 32px;
-}
-
-.avatar-hint {
-  margin-top: 12px;
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-.hidden-input {
-  display: none;
-}
-
-.form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-md-outlined-text-field::part(field),
-md-outlined-text-field::part(outline) {
-  border: 1.5px solid var(--md-sys-color-outline, #79747E) !important;
-  border-radius: 12px !important;
-}
-
-md-filled-button::part(button) {
-  border: 1.5px solid var(--md-sys-color-outline, #79747E) !important;
-  border-radius: 20px !important;
-}
-
-.error-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background-color: #fff;
-  color: #d32f2f;
-  border-radius: 12px;
-  margin: 12px 0;
-  border: 2px solid #d32f2f;
-  font-weight: 500;
-}
-
-.error-text {
-  color: var(--md-sys-color-error);
-  font-size: 0.875rem;
-  margin-top: 4px;
-}
-
-.submit-button {
-  width: 100%;
-  height: 56px;
-  font-size: 16px;
-}
-
-.submit-button md-circular-progress {
-  width: 24px;
-  height: 24px;
-  margin-right: 8px;
-  --md-circular-progress-active-indicator-color: var(--md-sys-color-on-primary);
-}
-
-.back-section {
-  margin-top: 32px;
-}
-
-.back-section md-divider {
-  margin-bottom: 24px;
-}
-
-.back-text {
-  text-align: center;
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-.back-link {
-  color: var(--md-sys-color-primary);
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.back-link:hover {
-  text-decoration: underline;
-}
-
-/* Cropper Dialog Styles */
-.cropper-dialog {
-  --md-dialog-container-max-inline-size: 600px;
-}
-
-.cropper-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-}
-
-.cropper-container {
-  width: 100%;
-  height: 400px;
-  background-color: var(--md-sys-color-surface-container);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.cropper-image {
-  max-width: 100%;
-  display: block;
-}
-
-.cropper-tips {
-  text-align: center;
-  color: var(--md-sys-color-on-surface-variant);
-  padding: 8px;
-  background-color: var(--md-sys-color-surface-container-low);
-  border-radius: 8px;
-}
-
-/* Responsive Design */
-@media (max-width: 600px) {
-  .profile-edit-card {
-    padding: 24px;
-  }
-  
-  .avatar-preview {
-    width: 100px;
-    height: 100px;
-  }
-  
-  .cropper-container {
-    height: 300px;
-  }
-}
-
-/* Cropper.js overrides */
-:deep(.cropper-view-box) {
-  border-radius: 50%;
-  outline: 2px solid var(--md-sys-color-primary);
-}
-
-:deep(.cropper-face) {
-  background-color: transparent;
-}
-
-:deep(.cropper-dashed) {
-  border-color: var(--md-sys-color-primary);
-}
-
-:deep(.cropper-center) {
-  opacity: 0.5;
-}
-
-:deep(.cropper-bg) {
-  background-image: none;
-  background-color: var(--md-sys-color-surface-container);
-}
+/* Page-specific styles for ProfileEdit.vue */
+/* All common styles are now in @/styles/auth-shared.css */
 </style> 

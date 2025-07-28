@@ -35,7 +35,7 @@
         <i class="fa fa-link fa-2x"></i>
         <p>Alynx</p>
       </a>
-      <a href="/logout/" class="btn-grid">
+      <a href="#" class="btn-grid" @click.prevent="handleLogout">
         <i class="fa fa-sign-out-alt fa-2x"></i>
         <p>Log out</p>
       </a>
@@ -46,6 +46,8 @@
 <script setup>
 import { toRefs } from 'vue';
 import { useRouter } from 'vue-router';
+import { logout } from '@/api/auth';
+import { clearAuthCookies, clearAuthStorage } from '@/utils/cookie';
 
 const router = useRouter();
 
@@ -67,6 +69,34 @@ function handleEditProfile() {
 
 function handleBarcodeDashboard() {
   router.push('/barcode/dashboard');
+}
+
+async function handleLogout() {
+  try {
+    // Call logout API
+    await logout();
+    
+    // Clear authentication data
+    clearAuthCookies();
+    clearAuthStorage();
+    
+    // Clear user profile cache
+    try {
+      const { clearUserProfile } = await import('@/composables/useUserInfo');
+      clearUserProfile();
+    } catch (error) {
+      console.warn("Could not clear user profile cache:", error);
+    }
+    
+    // Redirect to login page
+    router.push('/login');
+  } catch (error) {
+    console.error('Logout failed:', error);
+    // Even if API call fails, still clear local data and redirect
+    clearAuthCookies();
+    clearAuthStorage();
+    router.push('/login');
+  }
 }
 </script>
 

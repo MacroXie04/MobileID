@@ -1,5 +1,8 @@
 # authn/views.py
 import base64
+import imghdr
+import os
+from binascii import Error as BinasciiError
 from io import BytesIO
 
 from PIL import Image
@@ -17,10 +20,6 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from authn.services.webauthn import create_user_profile
-
-import base64
-import imghdr
-from binascii import Error as BinasciiError
 
 
 def _clean_base64(b64: str) -> str:
@@ -122,10 +121,23 @@ class CookieTokenObtainPairView(TokenObtainPairView):
         response = super().post(request, *args, **kwargs)
         if response.status_code == 200:
             access, refresh = response.data["access"], response.data["refresh"]
-            response.set_cookie("access_token", access, httponly=True,
-                                samesite="Lax", secure=False, max_age=1800)
-            response.set_cookie("refresh_token", refresh, httponly=True,
-                                samesite="Lax", secure=False, max_age=7 * 24 * 3600)
+
+            # Set cookies with configurable options
+            response.set_cookie(
+                "access_token", access,
+                httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
+                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
+                secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
+                max_age=int(os.getenv("ACCESS_TOKEN_AGE", 1800))
+            )
+
+            response.set_cookie(
+                "refresh_token", refresh,
+                httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
+                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
+                secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
+                max_age=int(os.getenv("REFRESH_TOKEN_AGE", 604800))
+            )
             response.data = {"message": "Login successful"}
         return response
 
@@ -186,7 +198,7 @@ def user_img(request):
     mime = f"image/{'jpeg' if ext == 'jpg' else ext}"
 
     response = HttpResponse(img_bytes, content_type=mime)
-    response["Cache-Control"] = "private, max-age=3600"   # 1 hour
+    response["Cache-Control"] = "private, max-age=3600"  # 1 hour
     return response
 
 
@@ -263,17 +275,17 @@ def api_register(request):
             response.set_cookie(
                 "access_token",
                 access_token,
-                httponly=True, # only accessible by the web server
-                samesite="Lax", # only send cookies to the same site
-                secure=False, # allow cookies to be sent over HTTP
+                httponly=True,  # only accessible by the web server
+                samesite="Lax",  # only send cookies to the same site
+                secure=False,  # allow cookies to be sent over HTTP
                 max_age=1800
             )
             response.set_cookie(
                 "refresh_token",
                 refresh_token,
-                httponly=True, # only accessible by the web server
-                samesite="Lax", # only send cookies to the same site
-                secure=False, # allow cookies to be sent over HTTP
+                httponly=True,  # only accessible by the web server
+                samesite="Lax",  # only send cookies to the same site
+                secure=False,  # allow cookies to be sent over HTTP
                 max_age=7 * 24 * 3600  # 7 days
             )
 
@@ -315,7 +327,7 @@ def api_profile(request):
             'success': False,
             'message': 'Profile not found'
         }, status=404)
-    
+
     if request.method == "GET":
         return Response({
             'success': True,
@@ -324,24 +336,24 @@ def api_profile(request):
                 'information_id': profile.information_id,
             }
         })
-    
+
     elif request.method == "PUT":
         # Update profile fields
         data = request.data
-        
+
         # Validate fields
         errors = {}
         if 'name' in data and not data['name'].strip():
             errors['name'] = 'Name cannot be empty'
         if 'information_id' in data and not data['information_id'].strip():
             errors['information_id'] = 'Information ID cannot be empty'
-        
+
         if errors:
             return Response({
                 'success': False,
                 'errors': errors
             }, status=400)
-        
+
         # Update fields
         if 'name' in data:
             profile.name = data['name']
@@ -363,9 +375,9 @@ def api_profile(request):
             else:
                 # Empty string means remove avatar
                 profile.user_profile_img = None
-        
+
         profile.save()
-        
+
         return Response({
             'success': True,
             'message': 'Profile updated successfully'
@@ -386,39 +398,39 @@ def api_avatar_upload(request):
             'success': False,
             'message': 'Profile not found'
         }, status=404)
-    
+
     if 'avatar' not in request.FILES:
         return Response({
             'success': False,
             'message': 'No avatar file provided'
         }, status=400)
-    
+
     avatar_file = request.FILES['avatar']
-    
+
     # Validate file type
     if not avatar_file.content_type.startswith('image/'):
         return Response({
             'success': False,
             'message': 'Invalid file type'
         }, status=400)
-    
+
     # Validate file size (5MB)
     if avatar_file.size > 5 * 1024 * 1024:
         return Response({
             'success': False,
             'message': 'File size must be less than 5MB'
         }, status=400)
-    
+
     try:
         # Process image
         form = UserRegisterForm()
         with Image.open(avatar_file) as im:
             b64 = form._pil_to_base64(im)
-        
+
         # Save to profile
         profile.user_profile_img = b64
         profile.save()
-        
+
         return Response({
             'success': True,
             'message': 'Avatar uploaded successfully'

@@ -8,8 +8,8 @@ import { baseURL } from './config';
 // import 'bootstrap/dist/css/bootstrap.min.css'; // Removed to avoid conflicts with Material Web
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
-// Font Awesome
-import '@fortawesome/fontawesome-free/css/all.min.css';
+// Font Awesome - Commented out to avoid style conflicts with Material Design
+// import '@fortawesome/fontawesome-free/css/all.min.css';
 
 // Cropper.js
 import 'cropperjs/dist/cropper.css';
