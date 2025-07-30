@@ -8,6 +8,20 @@
         </p>
       </div>
 
+      <!-- Passkey Login Option (Moved to top) -->
+      <div v-if="webAuthnSupported" class="passkey-primary-section">
+        <md-filled-button @click="handlePasskeyLogin" :disabled="passkeyLoading" class="passkey-primary-button">
+          <md-icon slot="icon">fingerprint</md-icon>
+          {{ passkeyLoading ? 'Authenticating...' : 'Sign in with Passkey' }}
+        </md-filled-button>
+        
+        <div class="divider-with-text">
+          <md-divider></md-divider>
+          <span class="divider-text md-typescale-body-small">OR</span>
+          <md-divider></md-divider>
+        </div>
+      </div>
+
       <!-- Login Form -->
       <form @submit.prevent="handleSubmit" novalidate class="form-fields">
         <md-outlined-text-field
@@ -43,22 +57,8 @@
 
         <!-- Submit Button -->
         <md-filled-button ref="submitBtn" type="submit" :disabled="loading" class="primary-button">
-          {{ loading ? 'Signing in...' : 'Sign In' }}
+          {{ loading ? 'Signing in...' : 'Sign In with Password' }}
         </md-filled-button>
-        
-        <!-- Passkey Login Option -->
-        <div v-if="webAuthnSupported" class="passkey-section">
-          <div class="divider-with-text">
-            <md-divider></md-divider>
-            <span class="divider-text md-typescale-body-small">OR</span>
-            <md-divider></md-divider>
-          </div>
-          
-          <md-outlined-button @click="handlePasskeyLogin" :disabled="passkeyLoading" class="passkey-button">
-            <md-icon slot="icon">fingerprint</md-icon>
-            {{ passkeyLoading ? 'Authenticating...' : 'Sign in with Passkey' }}
-          </md-outlined-button>
-        </div>
       </form>
 
       <!-- Divider and Register Link -->
@@ -157,8 +157,8 @@ async function handlePasskeyLogin() {
   
   try {
     // Try to authenticate with passkey
-    // Pass username if available for conditional UI
-    const result = await authenticateWithPasskey(formData.username);
+    // Don't pass username - let the user select from available passkeys
+    const result = await authenticateWithPasskey();
     
     if (result.success) {
       // Successful login, redirect
@@ -173,7 +173,7 @@ async function handlePasskeyLogin() {
     if (error.name === 'NotAllowedError') {
       errors.general = 'Authentication was cancelled or not allowed';
     } else if (error.name === 'InvalidStateError') {
-      errors.general = 'No passkey found for this account';
+      errors.general = 'No passkey found for this device';
     } else {
       errors.general = 'Passkey authentication failed. Please try password login.';
     }
@@ -185,15 +185,20 @@ async function handlePasskeyLogin() {
 
 <style scoped>
 /* Page-specific styles for Login.vue */
-.passkey-section {
-  margin-top: 0px;
+.passkey-primary-section {
+  margin-bottom: 24px;
+}
+
+.passkey-primary-button {
+  width: 100%;
+  margin-bottom: 16px;
 }
 
 .divider-with-text {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 10px 0;
+  gap: 12px;
+  margin: 20px 0;
 }
 
 .divider-with-text md-divider {

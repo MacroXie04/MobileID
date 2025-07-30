@@ -10,6 +10,7 @@ import uuid
 
 from authn.models import (
     UserProfile,
+    Passkey,
 )
 from mobileid.models import UserBarcodeSettings, Barcode
 
@@ -224,3 +225,13 @@ class UserProfileAdmin(admin.ModelAdmin):
             '<img src="data:image/png;base64,{}" width="48" height="48" style="object-fit:cover;border-radius:4px;" />',
             obj.user_profile_img,
         )
+
+@admin.register(Passkey)
+class PasskeyAdmin(admin.ModelAdmin):
+    list_display = ("user", "name", "credential_id", "public_key", "created_at")
+    search_fields = ("user__username", "name", "credential_id")
+    readonly_fields = ("created_at",)
+    list_select_related = ("user",)
+
+    def name(self, obj):
+        return obj.user.username

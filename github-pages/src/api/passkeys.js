@@ -1,20 +1,27 @@
 import { baseURL } from '@/config';
 
-// Helper to convert base64url to ArrayBuffer
-function base64urlToArrayBuffer(base64url) {
-  // Convert base64url to base64
-  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-  
-  // Pad with '=' if necessary
-  const padded = base64 + '=='.substring(0, (4 - base64.length % 4) % 4);
-  
-  // Decode base64
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
+// Helper to convert base64 to ArrayBuffer (handles both base64url and standard base64)
+function base64ToArrayBuffer(base64) {
+  // Check if it's standard base64 (has padding or +/)
+  if (base64.includes('+') || base64.includes('/') || base64.includes('=')) {
+    // Standard base64 - decode directly
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  } else {
+    // base64url - convert to standard base64 first
+    const base64std = base64.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64std + '=='.substring(0, (4 - base64std.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
   }
-  return bytes.buffer;
 }
 
 // Helper to convert ArrayBuffer to base64url
@@ -47,15 +54,15 @@ export async function registerPasskey() {
     // 2. Convert options for WebAuthn API
     const publicKeyCredentialCreationOptions = {
       ...options,
-      challenge: base64urlToArrayBuffer(options.challenge),
+      challenge: base64ToArrayBuffer(options.challenge),
       user: {
         ...options.user,
-        id: base64urlToArrayBuffer(options.user.id)
+        id: base64ToArrayBuffer(options.user.id)
       },
-      excludeCredentials: options.excludeCredentials.map(cred => ({
+      excludeCredentials: options.excludeCredentials?.map(cred => ({
         ...cred,
-        id: base64urlToArrayBuffer(cred.id)
-      }))
+        id: base64ToArrayBuffer(cred.id)
+      })) || []
     };
     
     // 3. Create credential
@@ -112,12 +119,17 @@ export async function authenticateWithPasskey(username = '') {
     // 2. Convert options for WebAuthn API
     const publicKeyCredentialRequestOptions = {
       ...options,
-      challenge: base64urlToArrayBuffer(options.challenge),
+      challenge: base64ToArrayBuffer(options.challenge),
       allowCredentials: options.allowCredentials?.map(cred => ({
         ...cred,
-        id: base64urlToArrayBuffer(cred.id)
-      }))
+        id: base64ToArrayBuffer(cred.id)
+      })) || undefined
     };
+    
+    // Remove empty allowCredentials to trigger platform authenticator UI
+    if (publicKeyCredentialRequestOptions.allowCredentials?.length === 0) {
+      delete publicKeyCredentialRequestOptions.allowCredentials;
+    }
     
     // 3. Get credential
     const credential = await navigator.credentials.get({

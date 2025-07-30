@@ -11,10 +11,37 @@ import webauthn
 from authn.models import Passkey
 
 
-# Get the origin from environment or use default
-ORIGIN = os.getenv("WEBAUTHN_ORIGIN", "http://localhost:3000")
-RP_ID = os.getenv("WEBAUTHN_RP_ID", "localhost")
+# Get default values from environment
+DEFAULT_ORIGIN = os.getenv("WEBAUTHN_ORIGIN", "http://localhost:8000")
+DEFAULT_RP_ID = os.getenv("WEBAUTHN_RP_ID", "localhost")
 RP_NAME = os.getenv("WEBAUTHN_RP_NAME", "Barcode Manager")
+RP_ICON = os.getenv("WEBAUTHN_RP_ICON", None)  # Icon is optional
+
+
+def get_rp_id(request):
+    """Get RP ID based on request host"""
+    host = request.get_host().split(':')[0]  # Remove port if present
+    
+    # For local development, handle common cases
+    if host in ['localhost', '127.0.0.1', '0.0.0.0']:
+        return host
+    
+    # For production, use the configured RP_ID or the host
+    return os.getenv("WEBAUTHN_RP_ID", host)
+
+
+def get_origin(request):
+    """Get origin based on request"""
+    # Build origin from request
+    scheme = 'https' if request.is_secure() else 'http'
+    host = request.get_host()
+    origin = f"{scheme}://{host}"
+    
+    # For production, you might want to use the configured origin
+    if os.getenv("WEBAUTHN_ORIGIN"):
+        return os.getenv("WEBAUTHN_ORIGIN")
+    
+    return origin
 
 
 @api_view(["POST"])
@@ -24,42 +51,48 @@ def passkey_registration_options(request):
     try:
         user = request.user
         
-        # Create webauthn user object
-        webauthn_user = webauthn.types.PublicKeyCredentialUserEntity(
-            id=str(user.id).encode('utf-8'),
-            name=user.username,
-            display_name=getattr(user.userprofile, 'name', user.username) if hasattr(user, 'userprofile') else user.username
+        # Get RP ID based on request
+        rp_id = get_rp_id(request)
+        
+        # Create RelyingParty object
+        rp = webauthn.types.RelyingParty(
+            id=rp_id,
+            name=RP_NAME,
+            icon=RP_ICON
         )
         
-        # Get existing passkeys for this user to exclude
-        exclude_credentials = []
+        # Create User object
+        user_entity = webauthn.types.User(
+            id=str(user.id).encode('utf-8'),
+            display_name=getattr(user.userprofile, 'name', user.username) if hasattr(user, 'userprofile') else user.username,
+            name=user.username,
+            icon=None  # Icon is optional
+        )
+        
+        # Get existing passkey credential IDs to exclude
+        existing_keys = []
         user_passkeys = Passkey.objects.filter(user=user)
         for passkey in user_passkeys:
-            exclude_credentials.append({
-                'id': passkey.credential_id,
-                'type': 'public-key'
-            })
+            # Decode the base64 credential ID to bytes
+            existing_keys.append(base64.b64decode(passkey.credential_id))
         
         # Generate registration options
-        registration_options = webauthn.create_webauthn_credentials(
-            rp_name=RP_NAME,
-            rp_id=RP_ID,
-            user=webauthn_user,
-            exclude_credentials=exclude_credentials,
-            authenticator_selection={
-                'authenticatorAttachment': 'platform',
-                'residentKey': 'preferred',
-                'userVerification': 'preferred'
-            },
-            attestation='direct'
+        options, challenge = webauthn.create_webauthn_credentials(
+            rp=rp,
+            user=user_entity,
+            existing_keys=existing_keys,
+            attachment=None,  # Allow both platform and cross-platform authenticators
+            require_resident=False,  # Don't require resident keys for better compatibility
+            user_verification=webauthn.types.UserVerification.Preferred,
+            attestation_request=webauthn.types.Attestation.NoneAttestation  # More compatible
         )
         
         # Store challenge in session
-        request.session['registration_challenge'] = registration_options['challenge']
+        request.session['registration_challenge'] = challenge
         
         return Response({
             "success": True,
-            "options": registration_options
+            "options": options
         })
         
     except Exception as e:
@@ -91,20 +124,33 @@ def passkey_registration_verify(request):
                 "message": "No registration challenge found"
             }, status=400)
         
+        # Get RP ID based on request
+        rp_id = get_rp_id(request)
+        
+        # Create RelyingParty object
+        rp = webauthn.types.RelyingParty(
+            id=rp_id,
+            name=RP_NAME,
+            icon=RP_ICON
+        )
+        
+        # Get origin based on request
+        origin = get_origin(request)
+        
         # Verify registration
         verification = webauthn.verify_create_webauthn_credentials(
+            rp=rp,
             credential=credential,
             expected_challenge=expected_challenge,
-            expected_origin=ORIGIN,
-            expected_rp_id=RP_ID
+            expected_origin=origin
         )
         
         if verification.verified:
             # Create new passkey
             Passkey.objects.create(
                 user=user,
-                credential_id=verification.credential_id,
-                public_key=verification.public_key,
+                credential_id=base64.b64encode(verification.credential_id).decode('utf-8'),
+                public_key=base64.b64encode(verification.public_key).decode('utf-8'),
                 sign_count=verification.sign_count,
                 transports=credential.get('response', {}).get('transports', [])
             )
@@ -137,34 +183,41 @@ def passkey_authentication_options(request):
         # Get username if provided (for conditional UI)
         username = request.data.get('username', '')
         
+        # Get RP ID based on request
+        rp_id = get_rp_id(request)
+        
+        # Create RelyingParty object
+        rp = webauthn.types.RelyingParty(
+            id=rp_id,
+            name=RP_NAME,
+            icon=RP_ICON
+        )
+        
         # Get credentials based on username
-        allow_credentials = []
+        existing_keys = []
         if username:
             try:
                 user = User.objects.get(username=username)
                 user_passkeys = Passkey.objects.filter(user=user)
                 for passkey in user_passkeys:
-                    allow_credentials.append({
-                        'id': passkey.credential_id,
-                        'type': 'public-key',
-                        'transports': passkey.transports or []
-                    })
+                    # Decode the base64 credential ID to bytes
+                    existing_keys.append(base64.b64decode(passkey.credential_id))
             except User.DoesNotExist:
                 pass
         
         # Generate authentication options
-        authentication_options = webauthn.get_webauthn_credentials(
-            rp_id=RP_ID,
-            allow_credentials=allow_credentials if allow_credentials else None,
-            user_verification='preferred'
+        options, challenge = webauthn.get_webauthn_credentials(
+            rp=rp,
+            existing_keys=existing_keys if existing_keys else None,
+            user_verification=webauthn.types.UserVerification.Preferred
         )
         
         # Store challenge in session
-        request.session['authentication_challenge'] = authentication_options['challenge']
+        request.session['authentication_challenge'] = challenge
         
         return Response({
             "success": True,
-            "options": authentication_options
+            "options": options
         })
         
     except Exception as e:
@@ -203,21 +256,46 @@ def passkey_authentication_verify(request):
                 "message": "No credential ID provided"
             }, status=400)
         
+        # Convert base64url to standard base64 for comparison
+        # Replace URL-safe characters
+        credential_id_b64 = credential_id.replace('-', '+').replace('_', '/')
+        # Add padding if necessary
+        padding = 4 - (len(credential_id_b64) % 4)
+        if padding != 4:
+            credential_id_b64 += '=' * padding
+        
         try:
-            passkey = Passkey.objects.get(credential_id=credential_id)
+            passkey = Passkey.objects.get(credential_id=credential_id_b64)
         except Passkey.DoesNotExist:
-            return Response({
-                "success": False,
-                "message": "Passkey not found"
-            }, status=400)
+            # Try without conversion in case it's already standard base64
+            try:
+                passkey = Passkey.objects.get(credential_id=credential_id)
+            except Passkey.DoesNotExist:
+                return Response({
+                    "success": False,
+                    "message": "Passkey not found"
+                }, status=400)
+        
+        # Get RP ID based on request
+        rp_id = get_rp_id(request)
+        
+        # Create RelyingParty object
+        rp = webauthn.types.RelyingParty(
+            id=rp_id,
+            name=RP_NAME,
+            icon=RP_ICON
+        )
+        
+        # Get origin based on request
+        origin = get_origin(request)
         
         # Verify authentication
         verification = webauthn.verify_get_webauthn_credentials(
+            rp=rp,
             credential=credential,
             expected_challenge=expected_challenge,
-            expected_origin=ORIGIN,
-            expected_rp_id=RP_ID,
-            credential_public_key=passkey.public_key,
+            expected_origin=origin,
+            credential_public_key=base64.b64decode(passkey.public_key),
             credential_current_sign_count=passkey.sign_count
         )
         
