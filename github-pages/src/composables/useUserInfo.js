@@ -23,23 +23,35 @@ export function useUserInfo() {
    */
   async function loadAvatar() {
     if (!hasAuthTokens()) {
+      console.log("No auth tokens found, skipping avatar load");
       avatarBlobUrl.value = "";
       return;
     }
     
     try {
+      console.log("Loading avatar from:", `${baseURL}/authn/user_img/`);
       const response = await fetch(`${baseURL}/authn/user_img/`, {
-        credentials: "include"
+        method: "GET",
+        credentials: "include",
+        headers: {
+          'Accept': 'image/*'
+        }
       });
+      
+      console.log("Avatar response status:", response.status);
       
       if (response.ok) {
         const blob = await response.blob();
+        console.log("Avatar blob received, size:", blob.size, "type:", blob.type);
+        
         // Revoke previous blob URL to avoid memory leaks
         if (avatarBlobUrl.value) {
           URL.revokeObjectURL(avatarBlobUrl.value);
         }
         avatarBlobUrl.value = URL.createObjectURL(blob);
+        console.log("Avatar blob URL created:", avatarBlobUrl.value);
       } else {
+        console.log("Avatar not found or error, status:", response.status);
         avatarBlobUrl.value = "";
       }
     } catch (error) {

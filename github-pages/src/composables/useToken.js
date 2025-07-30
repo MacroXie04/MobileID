@@ -4,6 +4,7 @@ import { getCookie, clearAuthCookies, clearAuthStorage } from '@/utils/cookie';
 import { baseURL } from '@/config'
 
 const isRefreshingToken = ref(false);
+let activeRefreshTokenPromise = null;
 
 export function useToken() {
   const router = useRouter();
@@ -31,39 +32,41 @@ export function useToken() {
    * Refresh the access token
    */
   async function refreshToken() {
-    // Prevent concurrent refresh
-    if (isRefreshingToken.value) {
-      // Wait for current refresh to complete
-      while (isRefreshingToken.value) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      return true; // Assume refresh success, let the caller retry
+    // If a refresh is already in progress, wait for it to complete
+    if (activeRefreshTokenPromise) {
+      return activeRefreshTokenPromise;
     }
 
     isRefreshingToken.value = true;
     
-    try {
-      const res = await fetch(`${baseURL}/authn/token/refresh/`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "X-CSRFToken": getCookie("csrftoken"),
-          "Content-Type": "application/json"
+    // Start a new token refresh
+    activeRefreshTokenPromise = (async () => {
+      try {
+        const res = await fetch(`${baseURL}/authn/token/refresh/`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/json"
+          }
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok && data) {
+          return true;
+        } else {
+          return false;
         }
-      });
-      
-      const data = await res.json();
-      
-      if (res.ok && data) {
-        return true;
-      } else {
+      } catch (error) {
         return false;
+      } finally {
+        isRefreshingToken.value = false;
+        activeRefreshTokenPromise = null;
       }
-    } catch (error) {
-      return false;
-    } finally {
-      isRefreshingToken.value = false;
-    }
+    })();
+    
+    return activeRefreshTokenPromise;
   }
 
   /**

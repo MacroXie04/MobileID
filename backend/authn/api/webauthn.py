@@ -159,7 +159,6 @@ def user_info(request):
         profile_data = {
             "name": profile.name,
             "information_id": profile.information_id,
-            "user_profile_img": profile.user_profile_img,
         }
     except Exception:
         profile_data = None
@@ -275,18 +274,18 @@ def api_register(request):
             response.set_cookie(
                 "access_token",
                 access_token,
-                httponly=True,  # only accessible by the web server
-                samesite="Lax",  # only send cookies to the same site
-                secure=False,  # allow cookies to be sent over HTTP
-                max_age=1800
+                httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
+                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
+                secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
+                max_age=int(os.getenv("ACCESS_TOKEN_AGE", 1800))
             )
             response.set_cookie(
                 "refresh_token",
                 refresh_token,
-                httponly=True,  # only accessible by the web server
-                samesite="Lax",  # only send cookies to the same site
-                secure=False,  # allow cookies to be sent over HTTP
-                max_age=7 * 24 * 3600  # 7 days
+                httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
+                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
+                secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
+                max_age=int(os.getenv("REFRESH_TOKEN_AGE", 604800))
             )
 
             return response

@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <div class="page-card">
+    <div class="page-card dashboard-card">
       <div class="page-header">
         <p class="md-typescale-body-large subtitle">Change & Manage Barcode Settings</p>
       </div>
@@ -126,6 +126,21 @@
             <!-- Scanner Section -->
             <transition name="fade">
               <div v-show="showScanner" class="scanner-section">
+                <md-outlined-select
+                  v-if="cameras.length > 1"
+                  label="Select Camera"
+                  v-model="selectedCameraId"
+                  class="camera-select"
+                >
+                  <md-select-option
+                    v-for="device in cameras"
+                    :key="device.deviceId"
+                    :value="device.deviceId"
+                  >
+                    <div slot="headline">{{ device.label }}</div>
+                  </md-select-option>
+                </md-outlined-select>
+
                 <div class="scanner-card">
                   <div class="video-wrapper">
                     <video 
@@ -289,6 +304,8 @@ const scanning = ref(false);
 const scannerStatus = ref('Position the barcode within the camera view');
 const videoRef = ref(null);
 let codeReader = null;
+const cameras = ref([]);
+const selectedCameraId = ref(null);
 
 // Dialog state
 const showConfirmDialog = ref(false);
@@ -421,11 +438,13 @@ async function addBarcode() {
       // Handle validation errors from API
       if (error.errors.barcode && error.errors.barcode.length > 0) {
         errors.value.newBarcode = error.errors.barcode[0];
+      } else if (error.status === 400 && error.message && error.message.includes('barcode with this barcode already exists')) {
+        errors.value.newBarcode = 'Barcode already exists';
       } else {
         errors.value.newBarcode = 'Invalid barcode';
       }
     } else {
-      showMessage('Failed to add barcode: ' + error.message, 'danger');
+      showMessage('Failed to add barcode', 'danger');
     }
   }
 }
@@ -480,7 +499,7 @@ async function toggleScanner() {
   } else {
     showScanner.value = true;
     await nextTick();
-    startScanner();
+    await startScanner();
   }
 }
 
@@ -489,30 +508,48 @@ async function startScanner() {
     scanning.value = true;
     scannerStatus.value = 'Initializing scanner...';
     
-    // Dynamically import ZXing library
     const { BrowserMultiFormatReader } = await import('@zxing/library');
     codeReader = new BrowserMultiFormatReader();
-    
-    // Start scanning
+
+    if (cameras.value.length === 0) {
+      const videoInputDevices = await codeReader.listVideoInputDevices();
+      cameras.value = videoInputDevices;
+      if (videoInputDevices.length > 0) {
+        if (!selectedCameraId.value) {
+          selectedCameraId.value = videoInputDevices[0].deviceId;
+        }
+      } else {
+        scannerStatus.value = 'No cameras found.';
+        scanning.value = false;
+        return;
+      }
+    }
+
+    if (!selectedCameraId.value) {
+      scannerStatus.value = 'No camera selected.';
+      scanning.value = false;
+      return;
+    }
+
     scannerStatus.value = 'Position the barcode within the camera view';
     
-    await codeReader.decodeFromVideoDevice(
-      undefined,
+    codeReader.decodeFromVideoDevice(
+      selectedCameraId.value,
       videoRef.value,
       (result, error) => {
         if (result) {
           newBarcode.value = result.getText();
           showMessage('Barcode scanned successfully!', 'success');
           stopScanner();
-          showScanner.value = false;
         }
         
         if (error && error.name !== 'NotFoundException') {
+          // This error is expected when no barcode is in view.
         }
       }
     );
   } catch (error) {
-    scannerStatus.value = 'Failed to access camera';
+    scannerStatus.value = `Failed to start scanner: ${error.message}`;
     scanning.value = false;
   }
 }
@@ -522,8 +559,10 @@ function stopScanner() {
     codeReader.reset();
     codeReader = null;
   }
+  showScanner.value = false;
   scanning.value = false;
   scannerStatus.value = 'Position the barcode within the camera view';
+  cameras.value = [];
 }
 
 // Utility functions
@@ -561,11 +600,32 @@ watch(() => settings.value.barcode_pull, (newValue) => {
     settings.value.barcode = null;
   }
 });
+
+watch(selectedCameraId, async (newId, oldId) => {
+  if (showScanner.value && newId && oldId && newId !== oldId) {
+    if (codeReader) {
+      codeReader.reset();
+    }
+    await nextTick();
+    await startScanner();
+  }
+});
+
+watch(showScanner, (newValue) => {
+  if (!newValue) {
+    stopScanner();
+  }
+});
 </script>
 
 <style scoped>
 /* Page-specific styles for BarcodeDashboard.vue */
 /* All common styles are now in @/styles/auth-shared.css */
+
+.camera-select {
+  margin-bottom: 16px;
+  width: 100%;
+}
 
 .auto-save-indicator {
   display: flex;
@@ -595,4 +655,13 @@ watch(() => settings.value.barcode_pull, (newValue) => {
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
 }
+
+/* Responsive adjustments for the dashboard */
+@media (max-width: 800px) {
+  .settings-grid,
+  .barcodes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 </style> 

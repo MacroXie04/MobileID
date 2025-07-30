@@ -36,8 +36,8 @@ class UserProfile(models.Model):
         return f"{self.name} - ID: **{self.information_id[-4:]}"
 
 class Passkey(models.Model):
-    # foreign key to user(one to one)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    # foreign key to user (allow multiple passkeys per user)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='passkeys')
 
     # passkey credential id
     credential_id = models.CharField(max_length=191, unique=True)

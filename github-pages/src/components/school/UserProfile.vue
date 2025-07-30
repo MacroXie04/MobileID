@@ -3,8 +3,8 @@
   <div class="profile-section">
     <a href="/edit_profile/" id="setting-icon">
       <img
-        v-if="avatarUrl"
-        :src="avatarUrl"
+        v-if="shouldShowAvatar"
+        :src="avatarSrc"
         class="profile-avatar"
         alt="User profile picture"
         @error="handleImageError"
@@ -74,8 +74,8 @@ const { profile, avatarSrc, loading, isRefreshingToken } = toRefs(props);
 const showInitials = ref(false);
 
 // Computed
-const avatarUrl = computed(() => {
-  return showInitials.value ? null : props.avatarSrc;
+const shouldShowAvatar = computed(() => {
+  return avatarSrc.value && !showInitials.value;
 });
 
 // Get user initials

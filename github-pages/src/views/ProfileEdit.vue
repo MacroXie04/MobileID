@@ -63,6 +63,52 @@
         </md-filled-button>
       </form>
 
+      <!-- Passkey Management Section -->
+      <div v-if="webAuthnSupported" class="passkey-section">
+        <md-divider></md-divider>
+        
+        <div class="section-header">
+          <h3 class="md-typescale-title-medium">Passkeys</h3>
+          <p class="md-typescale-body-small section-description">
+            Passkeys provide a secure and convenient way to sign in without passwords
+          </p>
+        </div>
+
+        <!-- Passkeys List -->
+        <div v-if="passkeys.length > 0" class="passkeys-list">
+          <div v-for="passkey in passkeys" :key="passkey.id" class="passkey-item">
+            <div class="passkey-info">
+              <md-icon>key</md-icon>
+              <div class="passkey-details">
+                <p class="md-typescale-body-medium">Passkey</p>
+                <p class="md-typescale-body-small passkey-date">
+                  Added {{ formatDate(passkey.created_at) }}
+                </p>
+              </div>
+            </div>
+            <md-icon-button @click="confirmDeletePasskey(passkey.id)">
+              <md-icon>delete</md-icon>
+            </md-icon-button>
+          </div>
+        </div>
+
+        <!-- Add Passkey Button -->
+        <md-outlined-button 
+          @click="handleAddPasskey" 
+          :disabled="passkeyLoading"
+          class="add-passkey-button"
+        >
+          <md-icon slot="icon">add</md-icon>
+          {{ passkeyLoading ? 'Setting up...' : 'Add a Passkey' }}
+        </md-outlined-button>
+
+        <!-- Success/Error Messages for Passkey Operations -->
+        <div v-if="passkeyMessage" :class="['message-banner', passkeyMessageType]">
+          <md-icon>{{ passkeyMessageType === 'success' ? 'check_circle' : 'error_outline' }}</md-icon>
+          <span class="md-typescale-body-medium">{{ passkeyMessage }}</span>
+        </div>
+      </div>
+
       <!-- Back Link -->
       <div class="nav-section">
         <md-divider></md-divider>
@@ -102,12 +148,27 @@
       </md-filled-button>
     </div>
   </md-dialog>
+
+  <!-- Delete Passkey Confirmation Dialog -->
+  <md-dialog ref="deleteDialog" :open="showDeleteDialog" @close="() => showDeleteDialog = false">
+    <div slot="headline">Delete Passkey?</div>
+    <form slot="content" method="dialog">
+      <p class="md-typescale-body-medium">
+        Are you sure you want to delete this passkey? You won't be able to use it to sign in anymore.
+      </p>
+    </form>
+    <div slot="actions">
+      <md-text-button @click="() => showDeleteDialog = false">Cancel</md-text-button>
+      <md-filled-button @click="handleDeletePasskey">Delete</md-filled-button>
+    </div>
+  </md-dialog>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { getUserProfile, updateUserProfile } from '@/api/auth';
+import { registerPasskey, getPasskeys, deletePasskey, isWebAuthnSupported } from '@/api/passkeys';
 import { baseURL } from '@/config';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
@@ -120,6 +181,7 @@ const fileInput = ref(null);
 const cropperImage = ref(null);
 const cropperContainer = ref(null);
 const cropperDialog = ref(null);
+const deleteDialog = ref(null);
 
 // State
 const loading = ref(false);
@@ -133,6 +195,15 @@ const errors = ref({});
 const cropper = ref(null);
 const showCropper = ref(false);
 const tempImageUrl = ref('');
+
+// Passkey related state
+const webAuthnSupported = ref(false);
+const passkeys = ref([]);
+const passkeyLoading = ref(false);
+const passkeyMessage = ref('');
+const passkeyMessageType = ref('');
+const showDeleteDialog = ref(false);
+const passkeyToDelete = ref(null);
 
 // Methods
 const getAvatarSrc = () => {
@@ -351,6 +422,106 @@ const loadProfile = async () => {
   }
 };
 
+// Passkey management functions
+const loadPasskeys = async () => {
+  try {
+    const response = await getPasskeys();
+    if (response.success) {
+      passkeys.value = response.passkeys;
+    }
+  } catch (error) {
+    console.error('Failed to load passkeys:', error);
+  }
+};
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now - date);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) {
+    return 'today';
+  } else if (diffDays === 1) {
+    return 'yesterday';
+  } else if (diffDays < 7) {
+    return `${diffDays} days ago`;
+  } else {
+    return date.toLocaleDateString();
+  }
+};
+
+const handleAddPasskey = async () => {
+  passkeyLoading.value = true;
+  passkeyMessage.value = '';
+  
+  try {
+    const result = await registerPasskey();
+    
+    if (result.success) {
+      passkeyMessage.value = 'Passkey added successfully!';
+      passkeyMessageType.value = 'success';
+      await loadPasskeys(); // Reload the list
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        passkeyMessage.value = '';
+      }, 3000);
+    } else {
+      passkeyMessage.value = result.message || 'Failed to add passkey';
+      passkeyMessageType.value = 'error';
+    }
+  } catch (error) {
+    console.error('Passkey registration error:', error);
+    
+    // Handle specific errors
+    if (error.name === 'NotAllowedError') {
+      passkeyMessage.value = 'Registration was cancelled or not allowed';
+    } else if (error.name === 'InvalidStateError') {
+      passkeyMessage.value = 'A passkey already exists for this device';
+    } else {
+      passkeyMessage.value = 'Failed to add passkey. Please try again.';
+    }
+    passkeyMessageType.value = 'error';
+  } finally {
+    passkeyLoading.value = false;
+  }
+};
+
+const confirmDeletePasskey = (passkeyId) => {
+  passkeyToDelete.value = passkeyId;
+  showDeleteDialog.value = true;
+};
+
+const handleDeletePasskey = async () => {
+  if (!passkeyToDelete.value) return;
+  
+  try {
+    const result = await deletePasskey(passkeyToDelete.value);
+    
+    if (result.success) {
+      passkeyMessage.value = 'Passkey deleted successfully';
+      passkeyMessageType.value = 'success';
+      await loadPasskeys(); // Reload the list
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        passkeyMessage.value = '';
+      }, 3000);
+    } else {
+      passkeyMessage.value = result.message || 'Failed to delete passkey';
+      passkeyMessageType.value = 'error';
+    }
+  } catch (error) {
+    console.error('Failed to delete passkey:', error);
+    passkeyMessage.value = 'Failed to delete passkey';
+    passkeyMessageType.value = 'error';
+  } finally {
+    showDeleteDialog.value = false;
+    passkeyToDelete.value = null;
+  }
+};
+
 // Cleanup
 onUnmounted(() => {
   if (avatarPreviewUrl.value) {
@@ -373,11 +544,89 @@ watch(showCropper, (newVal) => {
 
 // Lifecycle
 onMounted(() => {
+  // Check WebAuthn support
+  webAuthnSupported.value = isWebAuthnSupported();
+  
   loadProfile();
+  
+  // Load passkeys if WebAuthn is supported
+  if (webAuthnSupported.value) {
+    loadPasskeys();
+  }
 });
 </script>
 
 <style scoped>
 /* Page-specific styles for ProfileEdit.vue */
 /* All common styles are now in @/styles/auth-shared.css */
+
+/* Passkey Section Styles */
+.passkey-section {
+  margin-top: 32px;
+}
+
+.section-header {
+  margin: 24px 0 16px 0;
+}
+
+.section-description {
+  color: var(--md-sys-color-on-surface-variant);
+  margin-top: 4px;
+}
+
+.passkeys-list {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.passkey-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: var(--md-sys-color-surface-variant);
+  border-radius: 8px;
+}
+
+.passkey-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.passkey-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.passkey-date {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.add-passkey-button {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.message-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 4px;
+  margin-top: 12px;
+}
+
+.message-banner.success {
+  background-color: var(--md-sys-color-success-container);
+  color: var(--md-sys-color-on-success-container);
+}
+
+.message-banner.error {
+  background-color: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
 </style> 
