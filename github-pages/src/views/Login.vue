@@ -8,43 +8,29 @@
         </p>
       </div>
 
-      <!-- Passkey Login Option (Moved to top) -->
-      <div v-if="webAuthnSupported" class="passkey-primary-section">
-        <md-filled-button @click="handlePasskeyLogin" :disabled="passkeyLoading" class="passkey-primary-button">
-          <md-icon slot="icon">fingerprint</md-icon>
-          {{ passkeyLoading ? 'Authenticating...' : 'Sign in with Passkey' }}
-        </md-filled-button>
-        
-        <div class="divider-with-text">
-          <md-divider></md-divider>
-          <span class="divider-text md-typescale-body-small">OR</span>
-          <md-divider></md-divider>
-        </div>
-      </div>
-
       <!-- Login Form -->
       <form @submit.prevent="handleSubmit" novalidate class="form-fields">
         <md-outlined-text-field
-          label="Username"
-          v-model="formData.username"
-          :error="!!errors.username"
-          :error-text="errors.username"
-          @input="clearError('username')"
-          @blur="validateField('username')"
-          @keyup.enter="!loading && handleSubmit()"
+            label="Username"
+            v-model="formData.username"
+            :error="!!errors.username"
+            :error-text="errors.username"
+            @input="clearError('username')"
+            @blur="validateField('username')"
+            @keyup.enter="!loading && handleSubmit()"
         >
           <md-icon slot="leading-icon">person</md-icon>
         </md-outlined-text-field>
 
         <md-outlined-text-field
-          :type="showPassword ? 'text' : 'password'"
-          label="Password"
-          v-model="formData.password"
-          :error="!!errors.password"
-          :error-text="errors.password"
-          @input="clearError('password')"
-          @blur="validateField('password')"
-          @keyup.enter="!loading && handleSubmit()"
+            :type="showPassword ? 'text' : 'password'"
+            label="Password"
+            v-model="formData.password"
+            :error="!!errors.password"
+            :error-text="errors.password"
+            @input="clearError('password')"
+            @blur="validateField('password')"
+            @keyup.enter="!loading && handleSubmit()"
         >
           <md-icon slot="leading-icon">lock</md-icon>
         </md-outlined-text-field>
@@ -56,9 +42,17 @@
         </div>
 
         <!-- Submit Button -->
-        <md-filled-button ref="submitBtn" type="submit" :disabled="loading" class="primary-button">
+        <md-filled-button ref="submitBtn" type="submit" :disabled="loading" class="primary-button unified-button">
           {{ loading ? 'Signing in...' : 'Sign In with Password' }}
         </md-filled-button>
+
+        <!-- Passkey Login Option -->
+        <div v-if="webAuthnSupported" class="passkey-primary-section">
+          <md-filled-button @click="handlePasskeyLogin" :disabled="passkeyLoading" class="passkey-primary-button unified-button">
+            <md-icon slot="icon">key</md-icon>
+            {{ passkeyLoading ? 'Authenticating...' : 'Sign in with Passkey' }}
+          </md-filled-button>
+        </div>
       </form>
 
       <!-- Divider and Register Link -->
@@ -74,14 +68,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
-import { login } from '@/api/auth';
-import { authenticateWithPasskey, isWebAuthnSupported } from '@/api/passkeys';
-import { useRouter } from 'vue-router';
+import {onMounted, reactive, ref} from 'vue';
+import {login} from '@/api/auth';
+import {authenticateWithPasskey, isWebAuthnSupported} from '@/api/passkeys';
+import {useRouter} from 'vue-router';
+import {baseURL} from '@/config';
 import '@/styles/auth-shared.css';
 
 const router = useRouter();
-const formData = reactive({ username: '', password: '' });
+const formData = reactive({username: '', password: ''});
 const errors = reactive({});
 const loading = ref(false);
 const passkeyLoading = ref(false);
@@ -93,7 +88,7 @@ const webAuthnSupported = ref(false);
 onMounted(() => {
   // Check WebAuthn support
   webAuthnSupported.value = isWebAuthnSupported();
-  
+
   if (iconBtn.value) {
     const internalBtn = iconBtn.value.shadowRoot?.querySelector('button');
     if (internalBtn) {
@@ -154,12 +149,12 @@ async function handleSubmit() {
 async function handlePasskeyLogin() {
   passkeyLoading.value = true;
   errors.general = '';
-  
+
   try {
     // Try to authenticate with passkey
     // Don't pass username - let the user select from available passkeys
     const result = await authenticateWithPasskey();
-    
+
     if (result.success) {
       // Successful login, redirect
       location.href = '/';
@@ -168,7 +163,7 @@ async function handlePasskeyLogin() {
     }
   } catch (error) {
     console.error('Passkey login error:', error);
-    
+
     // Handle specific errors
     if (error.name === 'NotAllowedError') {
       errors.general = 'Authentication was cancelled or not allowed';
@@ -186,12 +181,12 @@ async function handlePasskeyLogin() {
 <style scoped>
 /* Page-specific styles for Login.vue */
 .passkey-primary-section {
-  margin-bottom: 24px;
+  margin: 8px 0 0 0; /* Reduced spacing above the passkey button */
 }
 
 .passkey-primary-button {
   width: 100%;
-  margin-bottom: 16px;
+  /* No extra bottom margin here; spacing handled by unified-button */
 }
 
 .divider-with-text {
@@ -211,5 +206,14 @@ async function handlePasskeyLogin() {
 
 .passkey-button {
   width: 100%;
+}
+
+.unified-button {
+  width: 100%;
+  margin-bottom: 12px; /* Slightly smaller gap between buttons */
+}
+
+.unified-button:last-child {
+  margin-bottom: 0; /* Remove bottom margin for the last button in the group */
 }
 </style>

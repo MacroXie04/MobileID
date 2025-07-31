@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 
     # modules
     "widget_tweaks",
+    "django_extensions",
 
     # Default Django apps
     "django.contrib.admin",
@@ -90,7 +91,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.getenv(
         "CORS_ALLOWED_ORIGINS", 
-        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173"
+        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,https://localhost:8000,https://127.0.0.1:8000"
     ).split(",") if origin.strip()
 ]
 
@@ -98,7 +99,7 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     origin.strip() for origin in os.getenv(
         "CSRF_TRUSTED_ORIGINS", 
-        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173"
+        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,https://localhost:8000,https://127.0.0.1:8000"
     ).split(",") if origin.strip()
 ]
 
@@ -107,6 +108,14 @@ CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "True").lower() == 
 
 CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "Lax")
 CSRF_COOKIE_HTTPONLY = os.getenv("CSRF_COOKIE_HTTPONLY", "False").lower() == "true"
+
+# HTTPS settings for development
+# Note: These should be configured differently for production
+if os.getenv("USE_HTTPS", "False").lower() == "true":
+    SECURE_SSL_REDIRECT = False  # Don't redirect in development
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Session settings
 SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", "86400"))  # 1 day in seconds

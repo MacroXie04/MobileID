@@ -328,14 +328,14 @@ def passkey_authentication_verify(request):
             response.set_cookie(
                 "access_token", access_token,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
-                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
+                samesite="Lax",  # Use Lax for better compatibility
                 secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
                 max_age=int(os.getenv("ACCESS_TOKEN_AGE", 1800))
             )
             response.set_cookie(
                 "refresh_token", refresh_token,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
-                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
+                samesite="Lax",  # Use Lax for better compatibility
                 secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
                 max_age=int(os.getenv("REFRESH_TOKEN_AGE", 604800))
             )

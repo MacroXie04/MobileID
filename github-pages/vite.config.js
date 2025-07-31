@@ -12,7 +12,10 @@ export default defineConfig({
       }
     })
   ],
-  server: { host: "127.0.0.1" },
+  server: { 
+    host: "127.0.0.1",
+    https: true
+  },
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) }
   }

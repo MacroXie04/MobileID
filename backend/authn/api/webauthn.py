@@ -123,19 +123,24 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             access, refresh = response.data["access"], response.data["refresh"]
 
             # Set cookies with configurable options
+            # For HTTPS development, use Lax instead of None
+            cookie_samesite = os.getenv("COOKIE_SAMESITE", "Lax")
+            # Use secure for HTTPS, but allow override for development
+            cookie_secure = os.getenv("COOKIE_SECURE", "False").lower() == "true"
+
             response.set_cookie(
                 "access_token", access,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
-                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
-                secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
+                samesite="Lax",  # Use Lax for better compatibility
+                secure=cookie_secure,
                 max_age=int(os.getenv("ACCESS_TOKEN_AGE", 1800))
             )
 
             response.set_cookie(
                 "refresh_token", refresh,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
-                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
-                secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
+                samesite="Lax",  # Use Lax for better compatibility
+                secure=cookie_secure,
                 max_age=int(os.getenv("REFRESH_TOKEN_AGE", 604800))
             )
             response.data = {"message": "Login successful"}
@@ -275,7 +280,7 @@ def api_register(request):
                 "access_token",
                 access_token,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
-                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
+                samesite="Lax",
                 secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
                 max_age=int(os.getenv("ACCESS_TOKEN_AGE", 1800))
             )
@@ -283,7 +288,7 @@ def api_register(request):
                 "refresh_token",
                 refresh_token,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
-                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
+                samesite="Lax",  # Use Lax for better compatibility
                 secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
                 max_age=int(os.getenv("REFRESH_TOKEN_AGE", 604800))
             )

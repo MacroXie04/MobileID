@@ -12,7 +12,10 @@ export async function login(username, password) {
 
 export async function userInfo() {
   const res = await fetch(`${baseURL}/authn/user_info/`, {
-    credentials: "include"
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json"
+    }
   });
   if (!res.ok) return null;
   return res.json();
