@@ -68,12 +68,17 @@ def _touch_barcode_usage(barcode: Barcode) -> None:
 
     # Try to update existing record first
     updated = BarcodeUsage.objects.filter(barcode=barcode).update(
-        total_usage=F("total_usage") + 1, last_used=now
+        total_usage=F("total_usage") + 1,
+        last_used=now
     )
 
     # If no rows were updated, create a new record
     if not updated:
-        BarcodeUsage.objects.create(barcode=barcode, total_usage=1, last_used=now)
+        BarcodeUsage.objects.create(
+            barcode=barcode,
+            total_usage=1,
+            last_used=now
+        )
 
 
 def _select_optimal_dynamic_barcode() -> Barcode | None:
@@ -113,9 +118,7 @@ def generate_barcode(user) -> dict:
 
     # STAFF — not allowed
     if is_staff:
-        result.update(
-            status="error", message="Staff accounts cannot generate barcodes."
-        )
+        result.update(status="error", message="Staff accounts cannot generate barcodes.")
         return result
 
     # Unknown or missing group
@@ -138,9 +141,7 @@ def generate_barcode(user) -> dict:
         if settings.barcode_pull and is_school:
             selected = _select_optimal_dynamic_barcode()
             if not selected:
-                result.update(
-                    status="error", message="No dynamic barcode available for pull."
-                )
+                result.update(status="error", message="No dynamic barcode available for pull.")
                 return result
         else:
             selected = settings.barcode

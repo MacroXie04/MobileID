@@ -8,7 +8,7 @@ from mobileid.models import Barcode, UserBarcodeSettings
 from mobileid.serializers import (
     BarcodeSerializer,
     BarcodeCreateSerializer,
-    UserBarcodeSettingsSerializer,
+    UserBarcodeSettingsSerializer
 )
 
 
@@ -25,7 +25,6 @@ class BarcodeDashboardAPIView(APIView):
     2. When barcode_pull is True, barcode field must be disabled and cleared
     3. Only DynamicBarcode and Others types can be managed
     """
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -36,10 +35,10 @@ class BarcodeDashboardAPIView(APIView):
         settings, created = UserBarcodeSettings.objects.get_or_create(
             user=user,
             defaults={
-                "barcode": None,
-                "server_verification": False,
-                "barcode_pull": False,
-            },
+                'barcode': None,
+                'server_verification': False,
+                'barcode_pull': False
+            }
         )
 
         # Force barcode_pull to False for User group members
@@ -50,23 +49,23 @@ class BarcodeDashboardAPIView(APIView):
 
         # Get user's barcodes (excluding Identification type)
         barcodes = Barcode.objects.filter(
-            user=user, barcode_type__in=["DynamicBarcode", "Others"]
-        ).order_by("-time_created")
+            user=user,
+            barcode_type__in=['DynamicBarcode', 'Others']
+        ).order_by('-time_created')
 
         # Serialize data
         settings_serializer = UserBarcodeSettingsSerializer(
-            settings, context={"request": request}
+            settings,
+            context={'request': request}
         )
         barcodes_serializer = BarcodeSerializer(barcodes, many=True)
 
-        return Response(
-            {
-                "settings": settings_serializer.data,
-                "barcodes": barcodes_serializer.data,
-                "is_user_group": is_user_group,
-                "is_school_group": user.groups.filter(name="School").exists(),
-            }
-        )
+        return Response({
+            'settings': settings_serializer.data,
+            'barcodes': barcodes_serializer.data,
+            'is_user_group': is_user_group,
+            'is_school_group': user.groups.filter(name="School").exists()
+        })
 
     def post(self, request):
         """Update user barcode settings"""
@@ -79,82 +78,79 @@ class BarcodeDashboardAPIView(APIView):
         # Rule 1: Force barcode_pull to False for User group
         is_user_group = user.groups.filter(name="User").exists()
         if is_user_group:
-            data["barcode_pull"] = False
+            data['barcode_pull'] = False
 
         # Rule 2: Clear barcode when barcode_pull is True
-        if data.get("barcode_pull", False):
-            data["barcode"] = None
+        if data.get('barcode_pull', False):
+            data['barcode'] = None
 
         serializer = UserBarcodeSettingsSerializer(
-            settings, data=data, context={"request": request}, partial=True
+            settings,
+            data=data,
+            context={'request': request},
+            partial=True
         )
 
         if serializer.is_valid():
             serializer.save()
-            return Response(
-                {
-                    "status": "success",
-                    "message": "Barcode settings updated successfully",
-                    "settings": serializer.data,
-                }
-            )
+            return Response({
+                'status': 'success',
+                'message': 'Barcode settings updated successfully',
+                'settings': serializer.data
+            })
 
-        return Response(
-            {"status": "error", "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({
+            'status': 'error',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
         """Create new barcode"""
         serializer = BarcodeCreateSerializer(
-            data=request.data, context={"request": request}
+            data=request.data,
+            context={'request': request}
         )
 
         if serializer.is_valid():
             barcode = serializer.save()
-            return Response(
-                {
-                    "status": "success",
-                    "message": "New barcode added successfully",
-                    "barcode": BarcodeSerializer(barcode).data,
-                },
-                status=status.HTTP_201_CREATED,
-            )
+            return Response({
+                'status': 'success',
+                'message': 'New barcode added successfully',
+                'barcode': BarcodeSerializer(barcode).data
+            }, status=status.HTTP_201_CREATED)
 
-        return Response(
-            {"status": "error", "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({
+            'status': 'error',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
         """Delete barcode - only allows DynamicBarcode and Others types"""
-        barcode_id = request.data.get("barcode_id")
+        barcode_id = request.data.get('barcode_id')
 
         if not barcode_id:
-            return Response(
-                {"status": "error", "message": "Barcode ID is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({
+                'status': 'error',
+                'message': 'Barcode ID is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         # Get barcode and verify ownership and type
         try:
             barcode = Barcode.objects.get(
                 pk=barcode_id,
                 user=request.user,
-                barcode_type__in=["DynamicBarcode", "Others"],
+                barcode_type__in=['DynamicBarcode', 'Others']
             )
         except Barcode.DoesNotExist:
-            return Response(
-                {
-                    "status": "error",
-                    "message": "Barcode not found or cannot be deleted",
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({
+                'status': 'error',
+                'message': 'Barcode not found or cannot be deleted'
+            }, status=status.HTTP_404_NOT_FOUND)
 
         # Check if this barcode is currently selected in settings
         settings = UserBarcodeSettings.objects.filter(
-            user=request.user, barcode=barcode
+            user=request.user,
+            barcode=barcode
         ).first()
 
         if settings:
@@ -163,6 +159,7 @@ class BarcodeDashboardAPIView(APIView):
 
         barcode.delete()
 
-        return Response(
-            {"status": "success", "message": "Barcode deleted successfully"}
-        )
+        return Response({
+            'status': 'success',
+            'message': 'Barcode deleted successfully'
+        })

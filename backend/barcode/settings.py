@@ -44,20 +44,16 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 INSTALLED_APPS = [
     # mobileid app
     "mobileid.apps.MobileidConfig",
-
     # user authentication
     "authn.apps.AuthnConfig",
-    
     # Django REST framework
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework.authtoken",
     "corsheaders",
-
     # modules
     "widget_tweaks",
     "django_extensions",
-
     # Default Django apps
     "django.contrib.admin",
     "django.contrib.auth",
@@ -86,21 +82,24 @@ MIDDLEWARE = [
 ]
 
 
-
 # URL configuration
 CORS_ALLOWED_ORIGINS = [
-    origin.strip() for origin in os.getenv(
-        "CORS_ALLOWED_ORIGINS", 
-        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,https://localhost:8000,https://127.0.0.1:8000"
-    ).split(",") if origin.strip()
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,https://localhost:8000,https://127.0.0.1:8000",
+    ).split(",")
+    if origin.strip()
 ]
 
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = [
-    origin.strip() for origin in os.getenv(
-        "CSRF_TRUSTED_ORIGINS", 
-        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,https://localhost:8000,https://127.0.0.1:8000"
-    ).split(",") if origin.strip()
+    origin.strip()
+    for origin in os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,https://localhost:8000,https://127.0.0.1:8000",
+    ).split(",")
+    if origin.strip()
 ]
 
 # Allow credentials in CORS requests
@@ -115,12 +114,16 @@ if os.getenv("USE_HTTPS", "False").lower() == "true":
     SECURE_SSL_REDIRECT = False  # Don't redirect in development
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Session settings
 SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", "86400"))  # 1 day in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv("SESSION_EXPIRE_AT_BROWSER_CLOSE", "False").lower() == "true"
-SESSION_SAVE_EVERY_REQUEST = os.getenv("SESSION_SAVE_EVERY_REQUEST", "True").lower() == "true"
+SESSION_EXPIRE_AT_BROWSER_CLOSE = (
+    os.getenv("SESSION_EXPIRE_AT_BROWSER_CLOSE", "False").lower() == "true"
+)
+SESSION_SAVE_EVERY_REQUEST = (
+    os.getenv("SESSION_SAVE_EVERY_REQUEST", "True").lower() == "true"
+)
 
 # CORS settings
 REST_FRAMEWORK = {
@@ -145,10 +148,18 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", "15"))),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "1"))),
-    "ROTATE_REFRESH_TOKENS": os.getenv("JWT_ROTATE_REFRESH_TOKENS", "False").lower() == "true",
-    "BLACKLIST_AFTER_ROTATION": os.getenv("JWT_BLACKLIST_AFTER_ROTATION", "False").lower() == "true",
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=int(os.getenv("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", "15"))
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=int(os.getenv("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "1"))
+    ),
+    "ROTATE_REFRESH_TOKENS": os.getenv("JWT_ROTATE_REFRESH_TOKENS", "False").lower()
+    == "true",
+    "BLACKLIST_AFTER_ROTATION": os.getenv(
+        "JWT_BLACKLIST_AFTER_ROTATION", "False"
+    ).lower()
+    == "true",
     "ALGORITHM": os.getenv("JWT_ALGORITHM", "HS256"),
     "SIGNING_KEY": SECRET_KEY,
 }
@@ -238,7 +249,9 @@ ACCOUNT_LOCKOUT_DURATION = int(os.getenv("ACCOUNT_LOCKOUT_DURATION", "30"))
 
 # Cache configuration
 # Use only local memory cache and database session backend (no Redis support)
-CACHE_BACKEND = os.getenv("CACHE_BACKEND", "django.core.cache.backends.locmem.LocMemCache")
+CACHE_BACKEND = os.getenv(
+    "CACHE_BACKEND", "django.core.cache.backends.locmem.LocMemCache"
+)
 CACHE_LOCATION = os.getenv("CACHE_LOCATION", "unique-snowflake")
 
 CACHES = {
