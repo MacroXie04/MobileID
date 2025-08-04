@@ -2,8 +2,8 @@
 
 from django.urls import path
 
-from api.barcode import GenerateBarcodeAPIView
-from api.dashboard import BarcodeDashboardAPIView
+from index.api.barcode import GenerateBarcodeAPIView
+from index.api.dashboard import BarcodeDashboardAPIView
 
 app_name = "index"
 

@@ -2,7 +2,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from mobileid.services.barcode import generate_barcode
+from index.services.barcode import generate_barcode
 
 
 class GenerateBarcodeAPIView(APIView):

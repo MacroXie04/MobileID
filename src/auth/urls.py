@@ -1,6 +1,6 @@
 from django.urls import path
 
-from src.authn.api.webauthn import (
+from src.auth.api.webauthn import (
     CookieTokenObtainPairView,
     api_logout,
     user_info,
@@ -9,7 +9,7 @@ from src.authn.api.webauthn import (
     api_profile,
     api_avatar_upload,
 )
-from src.authn.api.passkeys import (
+from src.auth.api.passkeys import (
     passkey_registration_options,
     passkey_registration_verify,
     passkey_authentication_options,
@@ -20,7 +20,7 @@ from src.authn.api.passkeys import (
 
 from rest_framework_simplejwt.views import TokenRefreshView
 
-app_name = "authn"
+app_name = "auth"
 
 urlpatterns = [
     # JWT authentication endpoints
