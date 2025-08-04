@@ -25,9 +25,9 @@ urlpatterns = [
     path("", include("index.urls")),
 
     # path for auth app
-    path("auth/", include("src.auth.urls")),
+    path("auth/", include("authn.urls")),
 
     # path for wallet app
-    path("wallet/", include("src.wallet.urls")),
+    path("wallet/", include("wallet.urls")),
 
 ]

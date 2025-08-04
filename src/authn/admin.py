@@ -8,11 +8,11 @@ import json
 import textwrap
 import uuid
 
-from src.authn.models import (
+from authn.models import (
     UserProfile,
     Passkey,
 )
-from mobileid.models import UserBarcodeSettings, Barcode
+from index.models import UserBarcodeSettings, Barcode
 
 
 # ──────────────────────────────────────────────────────────────

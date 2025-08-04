@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     # index app
     "index.apps.IndexConfig",
     # user authentication
-    "auth.apps.AuthnConfig",
+    "authn.apps.AuthnConfig",
     # Django REST framework
     "rest_framework",
     "rest_framework_simplejwt",
