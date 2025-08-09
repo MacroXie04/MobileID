@@ -6,6 +6,14 @@
         <div class="barcode-card">
           <div id="barcode-container" class="barcode-canvas"></div>
           <div class="barcode-hint">{{ successMessage || 'Scan barcode at terminal' }}</div>
+          
+          <!-- Progress Bar -->
+          <transition name="fade">
+            <div v-if="showProgressBar" class="progress-wrapper">
+              <md-linear-progress :value="progressValue / 100" />
+              <div class="progress-time">{{ Math.ceil(progressValue / 10) }}s</div>
+            </div>
+          </transition>
         </div>
       </div>
     </transition>
@@ -45,6 +53,7 @@ import { computed, ref } from "vue";
 import '@material/web/button/elevated-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/progress/circular-progress.js';
+import '@material/web/progress/linear-progress.js';
 import '@material/web/ripple/ripple.js';
 
 // State
@@ -53,6 +62,8 @@ const successMessage = ref('');
 const errorMessage = ref('');
 const barcodeDisplayed = ref(false);
 const buttonMessage = ref('PAY / Check-in');
+const progressValue = ref(100);
+const showProgressBar = ref(false);
 
 // Computed
 const buttonIcon = computed(() => {
@@ -85,6 +96,8 @@ function resetUI() {
   successMessage.value = '';
   errorMessage.value = '';
   buttonMessage.value = 'PAY / Check-in';
+  progressValue.value = 100;
+  showProgressBar.value = false;
 }
 
 function startProcessing() {
@@ -98,13 +111,24 @@ function showSuccess(message) {
   successMessage.value = message || 'Success';
   buttonMessage.value = message || 'Success';
   barcodeDisplayed.value = true;
+  progressValue.value = 100;
+  showProgressBar.value = true;
 
-  // 10秒后自动重置UI
-  setTimeout(() => {
-    if (barcodeDisplayed.value) {
-      resetUI();
+  // Start countdown
+  const duration = 10000; // 10 seconds
+  const interval = 100; // Update every 100ms
+  const decrement = (interval / duration) * 100;
+  
+  const progressInterval = setInterval(() => {
+    progressValue.value -= decrement;
+    
+    if (progressValue.value <= 0) {
+      clearInterval(progressInterval);
+      if (barcodeDisplayed.value) {
+        resetUI();
+      }
     }
-  }, 10000);
+  }, interval);
 }
 
 function showError(message) {
@@ -120,37 +144,70 @@ function showError(message) {
 }
 
 function drawPDF417(data) {
+  console.log('drawPDF417 called with data:', data);
+  
   if (!window.PDF417) {
     console.error('PDF417 library not loaded');
     return;
   }
 
-  window.PDF417.init(data);
-  const barcode = window.PDF417.getBarcodeArray();
-
-  const bw = 2.5;
-  const bh = 1;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = bw * barcode['num_cols'];
-  canvas.height = bh * barcode['num_rows'];
-  canvas.className = 'pdf417-canvas';
-
-  const barcodeContainer = document.getElementById('barcode-container');
-  if (barcodeContainer) {
-    barcodeContainer.innerHTML = '';
-    barcodeContainer.appendChild(canvas);
-
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#000';
-
-    for (let r = 0; r < barcode['num_rows']; ++r) {
-      for (let c = 0; c < barcode['num_cols']; ++c) {
-        if (barcode['bcode'][r][c] == 1) {
-          ctx.fillRect(c * bw, r * bh, bw, bh);
-        }
-      }
+  try {
+    window.PDF417.init(data);
+    const barcodeArray = window.PDF417.getBarcodeArray();
+    
+    console.log('Barcode array:', barcodeArray);
+    
+    if (!barcodeArray || !barcodeArray['num_cols'] || !barcodeArray['num_rows'] || !barcodeArray['bcode']) {
+      console.error('Invalid barcode array generated');
+      return;
     }
+
+    // Match the dimensions used in working implementation
+    const moduleWidth = 2.5;
+    const moduleHeight = 1;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = moduleWidth * barcodeArray['num_cols'];
+    canvas.height = moduleHeight * barcodeArray['num_rows'];
+    canvas.className = 'pdf417-canvas';
+    
+    // Remove style width/height to prevent scaling issues
+    canvas.style.width = '';
+    canvas.style.height = '';
+    
+    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+
+    const barcodeContainer = document.getElementById('barcode-container');
+    if (barcodeContainer) {
+      barcodeContainer.innerHTML = '';
+      barcodeContainer.appendChild(canvas);
+
+      const ctx = canvas.getContext('2d');
+      
+      // Clear canvas with white background
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw barcode with proper positioning
+      ctx.fillStyle = '#000000';
+      let y = 0;
+      for (let r = 0; r < barcodeArray['num_rows']; r++) {
+        let x = 0;
+        for (let c = 0; c < barcodeArray['num_cols']; c++) {
+          if (barcodeArray['bcode'][r][c] == 1) {
+            ctx.fillRect(x, y, moduleWidth, moduleHeight);
+          }
+          x += moduleWidth;
+        }
+        y += moduleHeight;
+      }
+      
+      console.log('Barcode drawn successfully');
+    } else {
+      console.error('Barcode container not found');
+    }
+  } catch (error) {
+    console.error('Error drawing PDF417:', error);
   }
 }
 
@@ -205,19 +262,26 @@ defineExpose({
 }
 
 .barcode-canvas {
-  min-height: 80px;
+  min-height: 120px;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
   z-index: 1;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
 }
 
 .pdf417-canvas {
   image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
   max-width: 100%;
   height: auto;
-  filter: contrast(1.1);
+  display: block;
+  margin: 0 auto;
 }
 
 .barcode-hint {
@@ -389,6 +453,31 @@ defineExpose({
   20%, 40%, 60%, 80% {
     transform: translateX(4px);
   }
+}
+
+/* Progress Bar Styles */
+.progress-wrapper {
+  margin-top: 20px;
+  position: relative;
+}
+
+.progress-wrapper md-linear-progress {
+  --md-linear-progress-track-height: 8px;
+  --md-linear-progress-track-shape: var(--md-sys-shape-corner-full);
+  --md-linear-progress-active-indicator-color: var(--md-sys-color-primary);
+  --md-linear-progress-track-color: var(--md-sys-color-surface-container-highest);
+  width: 100%;
+}
+
+.progress-time {
+  position: absolute;
+  top: -20px;
+  right: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: 'Roboto', sans-serif;
+  letter-spacing: 0.4px;
 }
 
 /* Responsive Design */
