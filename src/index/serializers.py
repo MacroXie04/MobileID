@@ -1,6 +1,5 @@
+from index.models import Barcode, UserBarcodeSettings, BarcodeUsage
 from rest_framework import serializers
-from django.contrib.auth.models import Group
-from mobileid.models import Barcode, UserBarcodeSettings, BarcodeUsage
 
 
 class BarcodeSerializer(serializers.ModelSerializer):

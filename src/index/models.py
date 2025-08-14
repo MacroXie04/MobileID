@@ -48,9 +48,6 @@ class Barcode(models.Model):
     # barcode information
     barcode = models.CharField(max_length=120, unique=True)
 
-    # server verification information
-    session = models.TextField(blank=True, null=True)
-
     def __str__(self):
         if self.barcode_type == "DynamicBarcode":
             return f"Dynamic barcode ending with {self.barcode[-4:]}"
@@ -77,3 +74,24 @@ class UserBarcodeSettings(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Barcode Settings"
+
+
+class DynamicBarcodeAddon(models.Model):
+    # foreign key to barcode
+    barcode = models.ForeignKey(Barcode, on_delete=models.CASCADE)
+
+    # server verification information
+    session = models.TextField(blank=True, null=True)
+
+    # User Account Data
+    user_name = models.CharField(max_length=100, blank=True, null=True)
+    user_id = models.CharField(max_length=100, blank=True, null=True)
+    userprofile_img = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.",
+        verbose_name="avatar (Base64)",
+    )
+
+    def __str__(self):
+        return f"{self.addon_type} for {self.barcode.barcode} - Data: {self.addon_data[:20]}..."

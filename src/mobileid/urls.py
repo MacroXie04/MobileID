@@ -15,6 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
@@ -25,9 +27,13 @@ urlpatterns = [
     path("", include("index.urls")),
 
     # path for auth app
-    path("auth/", include("authn.urls")),
+    path("authn/", include("authn.urls")),
 
     # path for wallet app
     path("wallet/", include("wallet.urls")),
 
 ]
+
+# Serve static files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

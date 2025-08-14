@@ -6,14 +6,13 @@ from typing import Final
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
-
-from barcode.settings import SELENIUM_ENABLED
-from mobileid.models import (
+from index.models import (
     Barcode,
     BarcodeUsage,
     UserBarcodeSettings,
 )
-from mobileid.project_code.dynamic_barcode import auto_send_code
+from index.project_code.dynamic_barcode import auto_send_code
+from mobileid.settings import SELENIUM_ENABLED
 
 # ---------------------------------------------------------------------------
 # Constants

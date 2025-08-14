@@ -1,7 +1,6 @@
 from django.contrib import admin
-from django.utils.html import format_html
 from django.utils import timezone
-
+from django.utils.html import format_html
 from index.models import Barcode, UserBarcodeSettings, BarcodeUsage
 
 admin.site.site_header = "MobileID Admin"

@@ -1,9 +1,8 @@
 import random
 
-from mobileid.models import UserBarcodeSettings, Barcode
-from src.authn.models import UserProfile
-
+from authn.models import UserProfile
 from django.contrib.auth.models import Group
+from index.models import UserBarcodeSettings, Barcode
 
 
 def generate_unique_identification_barcode():
@@ -14,7 +13,7 @@ def generate_unique_identification_barcode():
 
 
 def create_user_profile(
-    user, name: str, information_id: str, user_profile_img: str | None
+        user, name: str, information_id: str, user_profile_img: str | None
 ):
     # Profile
     UserProfile.objects.create(

@@ -1,13 +1,13 @@
 import base64
 import os
+
+import webauthn
+from authn.models import Passkey
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-import webauthn
-from src.authn.models import Passkey
-
 
 # Get default values from environment
 DEFAULT_ORIGIN = os.getenv("WEBAUTHN_ORIGIN", "http://localhost:8000")

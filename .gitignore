@@ -47,10 +47,10 @@ var/
 # ========================================
 
 # Node modules and build output
-GitHub_Pages/node_modules/
-GitHub_Pages/.parcel-cache/
-GitHub_Pages/dist/
-GitHub_Pages/build/
+pages/node_modules/
+pages/.parcel-cache/
+pages/dist/
+pages/build/
 
 # Logs
 npm-debug.log*
@@ -67,12 +67,12 @@ pnpm-debug.log*
 .yarn/install-state.gz
 
 # Vite cache and files
-GitHub_Pages/.vite/
+pages/.vite/
 
 # Local env and config
-GitHub_Pages/.env
-GitHub_Pages/.env.local
-GitHub_Pages/.env.*.local
+pages/.env
+pages/.env.local
+pages/.env.*.local
 
 # ========================================
 # IDE / EDITOR
@@ -128,3 +128,9 @@ htmlcov/
 .cache
 .noseids
 pytest_cache/
+
+
+# ========================================
+# CLAUDE CODE IGNORE
+# ========================================
+CLAUDE.md

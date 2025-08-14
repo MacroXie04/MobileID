@@ -1,9 +1,9 @@
-from django.db.models.signals import post_migrate, m2m_changed
-from django.dispatch import receiver
+from authn.models import UserProfile
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
-from src.authn.models import UserProfile
-from mobileid.models import Barcode, UserBarcodeSettings, BarcodeUsage
+from django.db.models.signals import post_migrate, m2m_changed
+from django.dispatch import receiver
+from index.models import Barcode, UserBarcodeSettings, BarcodeUsage
 
 
 @receiver(post_migrate)

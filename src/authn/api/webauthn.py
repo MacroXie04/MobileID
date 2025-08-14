@@ -6,6 +6,7 @@ from binascii import Error as BinasciiError
 from io import BytesIO
 
 from PIL import Image
+from authn.services.webauthn import create_user_profile
 from django import forms
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
@@ -18,8 +19,6 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
-
-from src.authn.services.webauthn import create_user_profile
 
 
 def _clean_base64(b64: str) -> str:
@@ -125,14 +124,15 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             # Set cookies with configurable options
             # For HTTPS development, use Lax instead of None
             cookie_samesite = os.getenv("COOKIE_SAMESITE", "Lax")
-            # Use secure for HTTPS, but allow override for development
-            cookie_secure = os.getenv("COOKIE_SECURE", "False").lower() == "true"
+            # Determine HTTPS by env USE_HTTPS or request.is_secure()
+            use_https = os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()
+            cookie_secure = True if use_https else (os.getenv("COOKIE_SECURE", "False").lower() == "true")
 
             response.set_cookie(
                 "access_token",
                 access,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
-                samesite="Lax",  # Use Lax for better compatibility
+                samesite=cookie_samesite,
                 secure=cookie_secure,
                 max_age=int(os.getenv("ACCESS_TOKEN_AGE", 1800)),
             )
@@ -141,7 +141,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 "refresh_token",
                 refresh,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
-                samesite="Lax",  # Use Lax for better compatibility
+                samesite=cookie_samesite,
                 secure=cookie_secure,
                 max_age=int(os.getenv("REFRESH_TOKEN_AGE", 604800)),
             )
@@ -300,16 +300,18 @@ def api_register(request):
                 "access_token",
                 access_token,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
-                samesite="Lax",
-                secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
+                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
+                secure=(os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()) or (
+                            os.getenv("COOKIE_SECURE", "False").lower() == "true"),
                 max_age=int(os.getenv("ACCESS_TOKEN_AGE", 1800)),
             )
             response.set_cookie(
                 "refresh_token",
                 refresh_token,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
-                samesite="Lax",  # Use Lax for better compatibility
-                secure=os.getenv("COOKIE_SECURE", "False").lower() == "true",
+                samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
+                secure=(os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()) or (
+                            os.getenv("COOKIE_SECURE", "False").lower() == "true"),
                 max_age=int(os.getenv("REFRESH_TOKEN_AGE", 604800)),
             )
 

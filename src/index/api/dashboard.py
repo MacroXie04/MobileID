@@ -1,15 +1,13 @@
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404
-
-from mobileid.models import Barcode, UserBarcodeSettings
-from mobileid.serializers import (
+from index.models import Barcode, UserBarcodeSettings
+from index.serializers import (
     BarcodeSerializer,
     BarcodeCreateSerializer,
     UserBarcodeSettingsSerializer
 )
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 
 class BarcodeDashboardAPIView(APIView):

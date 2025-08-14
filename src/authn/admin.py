@@ -1,9 +1,3 @@
-from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import User, Group
-from django.contrib.auth.forms import UserCreationForm
-from django import forms
-from django.utils.html import format_html
 import json
 import textwrap
 import uuid
@@ -12,6 +6,12 @@ from authn.models import (
     UserProfile,
     Passkey,
 )
+from django import forms
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User, Group
+from django.utils.html import format_html
 from index.models import UserBarcodeSettings, Barcode
 
 
@@ -186,7 +186,7 @@ class LimitedGroupUserAdmin(UserAdmin):
                     UserProfile.objects.create(
                         user=user,
                         name=f"{user.first_name} {user.last_name}".strip()
-                        or user.username,
+                             or user.username,
                         information_id=user.username,  # Default to username, can be updated later
                         user_profile_img="",  # Empty profile image
                     )
@@ -204,7 +204,7 @@ class LimitedGroupUserAdmin(UserAdmin):
 
                 # Create an identification barcode for the user if it doesn't exist
                 if not Barcode.objects.filter(
-                    user=user, barcode_type="Identification"
+                        user=user, barcode_type="Identification"
                 ).exists():
                     # Generate a unique identification barcode
                     barcode_value = f"{user.username}_{uuid.uuid4().hex[:8]}"

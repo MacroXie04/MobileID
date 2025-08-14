@@ -40,7 +40,6 @@ SELENIUM_ENABLED = os.getenv("SELENIUM_ENABLED", "False").lower() == "true"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-
 INSTALLED_APPS = [
     # index app
     "index.apps.IndexConfig",
@@ -67,7 +66,6 @@ INSTALLED_APPS = [
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-
 MIDDLEWARE = [
     # CORS middleware must be placed before Django's security middleware
     "corsheaders.middleware.CorsMiddleware",
@@ -80,7 +78,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
 
 # URL configuration
 CORS_ALLOWED_ORIGINS = [
@@ -119,10 +116,10 @@ if os.getenv("USE_HTTPS", "False").lower() == "true":
 # Session settings
 SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", "86400"))  # 1 day in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = (
-    os.getenv("SESSION_EXPIRE_AT_BROWSER_CLOSE", "False").lower() == "true"
+        os.getenv("SESSION_EXPIRE_AT_BROWSER_CLOSE", "False").lower() == "true"
 )
 SESSION_SAVE_EVERY_REQUEST = (
-    os.getenv("SESSION_SAVE_EVERY_REQUEST", "True").lower() == "true"
+        os.getenv("SESSION_SAVE_EVERY_REQUEST", "True").lower() == "true"
 )
 
 # CORS settings
@@ -155,17 +152,16 @@ SIMPLE_JWT = {
         days=int(os.getenv("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "1"))
     ),
     "ROTATE_REFRESH_TOKENS": os.getenv("JWT_ROTATE_REFRESH_TOKENS", "False").lower()
-    == "true",
+                             == "true",
     "BLACKLIST_AFTER_ROTATION": os.getenv(
         "JWT_BLACKLIST_AFTER_ROTATION", "False"
     ).lower()
-    == "true",
+                                == "true",
     "ALGORITHM": os.getenv("JWT_ALGORITHM", "HS256"),
     "SIGNING_KEY": SECRET_KEY,
 }
 
-
-ROOT_URLCONF = "barcode.urls"
+ROOT_URLCONF = "mobileid.urls"
 
 TEMPLATES = [
     {
@@ -182,7 +178,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "barcode.wsgi.application"
+WSGI_APPLICATION = "mobileid.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -206,7 +202,6 @@ if DATABASES["default"]["ENGINE"].endswith("mysql"):
         "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
     }
     DATABASES["default"]["CONN_MAX_AGE"] = 60
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
