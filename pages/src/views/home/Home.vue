@@ -45,7 +45,6 @@
 import {onMounted, ref} from "vue";
 import HomeSchool from "./HomeSchool.vue";
 import HomeUser from "./HomeUser.vue";
-import '@/styles/material-theme.css';
 
 const loading = ref(true);
 const groups = ref([]);
@@ -91,7 +90,7 @@ function retryConnection() {
 /* Error page specific styles */
 .error-page {
   min-height: 100vh;
-  background: var(--md-sys-color-background);
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
 .error-content {

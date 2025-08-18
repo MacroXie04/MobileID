@@ -1,5 +1,5 @@
 <template>
-  <div class="auth-container md-theme-dark">
+  <div class="auth-container">
     <!-- Decorative Background -->
     <div class="auth-background">
       <div class="shape shape-1"></div>
@@ -10,17 +10,6 @@
     <!-- Main Content -->
     <main class="auth-main">
       <div class="auth-card md-card md-rounded-xl">
-        <!-- Logo and Welcome -->
-        <div class="auth-header md-text-center">
-          <div class="logo-container md-rounded-lg">
-            <md-icon class="logo-icon">badge</md-icon>
-          </div>
-          <h1 class="md-typescale-display-small md-m-0 md-mb-2">Welcome Back</h1>
-          <p class="md-typescale-body-large md-m-0">
-            Sign in to access your digital ID
-          </p>
-        </div>
-
         <!-- Login Form -->
         <form class="auth-form" novalidate @submit.prevent="handleSubmit">
           <div class="form-fields">
@@ -95,7 +84,6 @@
 import {onMounted, reactive, ref} from 'vue';
 import {login} from '@/api/auth.js';
 import {useRouter} from 'vue-router';
-import '@/styles/material-theme.css';
 
 const router = useRouter();
 const formData = reactive({username: '', password: ''});
@@ -132,7 +120,6 @@ function validateField(field) {
   }
   if (field === 'password') {
     if (!formData.password) errors.password = 'Password is required';
-    else if (formData.password.length < 6) errors.password = 'Password must be at least 6 characters';
   }
 }
 
@@ -179,7 +166,7 @@ async function handleSubmit() {
   padding: var(--md-sys-spacing-6);
   position: relative;
   overflow: hidden;
-  background: var(--md-sys-color-background);
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
 /* Decorative Background Shapes */
@@ -247,9 +234,10 @@ async function handleSubmit() {
 
 .auth-card {
   padding: var(--md-sys-spacing-12) var(--md-sys-spacing-10);
-  box-shadow: var(--md-sys-elevation-3);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
 }
 
 /* Logo Container */

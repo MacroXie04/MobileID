@@ -356,7 +356,6 @@
 import {nextTick, onMounted, onUnmounted, ref, watch, computed} from 'vue';
 import {useRouter} from 'vue-router';
 import {useApi} from '@/composables/useApi';
-import '@/styles/material-theme.css';
 
 // Router
 const router = useRouter();

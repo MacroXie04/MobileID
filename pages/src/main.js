@@ -5,6 +5,9 @@ import App from './App.vue';
 import router from './router';
 import {baseURL} from './config';
 
+// Global Material 3 Styles
+import '@/styles/global.css';
+
 // Cropper.js
 import 'cropperjs/dist/cropper.css';
 

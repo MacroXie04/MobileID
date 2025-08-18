@@ -1,5 +1,5 @@
 <template>
-  <div class="auth-container md-theme-dark">
+  <div class="auth-container">
     <!-- Decorative Background -->
     <div class="auth-background">
       <div class="shape shape-1"></div>
@@ -10,16 +10,6 @@
     <!-- Main Content -->
     <main class="auth-main">
       <div class="auth-card md-card md-rounded-xl">
-        <!-- Logo and Welcome -->
-        <div class="auth-header md-text-center">
-          <div class="logo-container md-rounded-lg">
-            <md-icon class="logo-icon">person_add</md-icon>
-          </div>
-          <h1 class="md-typescale-display-small md-m-0 md-mb-2">Create Account</h1>
-          <p class="md-typescale-body-large md-m-0">
-            Join MobileID to get your digital identity
-          </p>
-        </div>
 
         <!-- Registration Form -->
         <form class="auth-form" novalidate @submit.prevent="handleSubmit">
@@ -230,7 +220,6 @@ import {useRouter} from 'vue-router';
 import {register} from '@/api/auth.js';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
-import '@/styles/material-theme.css';
 
 const router = useRouter();
 
@@ -308,8 +297,6 @@ const validateField = (field) => {
     case 'password1':
       if (!formData.value.password1) {
         errors.value.password1 = 'Password is required';
-      } else if (formData.value.password1.length < 6) {
-        errors.value.password1 = 'Password must be at least 6 characters';
       }
       break;
 
@@ -707,7 +694,7 @@ watch(showCropper, (newVal) => {
   padding: var(--md-sys-spacing-6);
   position: relative;
   overflow: hidden;
-  background: var(--md-sys-color-background);
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
 /* Decorative Background Shapes */
@@ -776,9 +763,10 @@ watch(showCropper, (newVal) => {
 /* Auth Card */
 .auth-card {
   padding: var(--md-sys-spacing-12) var(--md-sys-spacing-10);
-  box-shadow: var(--md-sys-elevation-3);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
 }
 
 /* Logo Container - secondary color for registration */

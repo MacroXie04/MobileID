@@ -60,9 +60,6 @@
 import {onMounted, ref} from "vue";
 import {useRouter} from "vue-router";
 
-// CSS Imports
-import '@/styles/material-theme.css';
-
 // Components
 import UserProfile from "@/components/user/UserProfile.vue";
 import BarcodeDisplay from "@/components/user/BarcodeDisplay.vue";
@@ -160,11 +157,7 @@ async function handleLogout() {
 
 /* Profile card gradient background */
 .profile-overview-card {
-  background: linear-gradient(
-    135deg,
-    var(--md-sys-color-primary-container) 0%,
-    var(--md-sys-color-surface) 100%
-  );
+  background: var(--md-sys-color-surface-container-low);
 }
 
 /* Grid responsive adjustments */

@@ -155,7 +155,6 @@ import {getUserProfile, updateUserProfile} from '@/api/auth';
 import {baseURL} from '@/config';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
-import '@/styles/material-theme.css';
 
 const router = useRouter();
 
