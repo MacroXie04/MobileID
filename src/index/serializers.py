@@ -1,4 +1,4 @@
-from index.models import Barcode, UserBarcodeSettings, BarcodeUsage
+from index.models import Barcode, UserBarcodeSettings, BarcodeUsage, BarcodeUserProfile
 from rest_framework import serializers
 
 
@@ -8,6 +8,9 @@ class BarcodeSerializer(serializers.ModelSerializer):
     usage_count = serializers.SerializerMethodField()
     last_used = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
+    owner = serializers.SerializerMethodField()
+    is_owned_by_current_user = serializers.SerializerMethodField()
+    has_profile_addon = serializers.SerializerMethodField()
 
     class Meta:
         model = Barcode
@@ -19,6 +22,9 @@ class BarcodeSerializer(serializers.ModelSerializer):
             "usage_count",
             "last_used",
             "display_name",
+            "owner",
+            "is_owned_by_current_user",
+            "has_profile_addon",
         ]
         read_only_fields = ["id", "barcode_type", "time_created"]
 
@@ -44,6 +50,28 @@ class BarcodeSerializer(serializers.ModelSerializer):
             return f"Dynamic Barcode ending with {obj.barcode[-4:]}"
         else:  # Others type (Static Barcode)
             return f"Barcode ending with {obj.barcode[-4:]}"
+
+    def get_owner(self, obj):
+        """Get the owner username of the barcode"""
+        return obj.user.username
+
+    def get_is_owned_by_current_user(self, obj):
+        """Check if the barcode is owned by the current user"""
+        request = self.context.get('request')
+        if request and request.user:
+            return obj.user == request.user
+        return False
+
+    def get_has_profile_addon(self, obj):
+        """Return True if a BarcodeUserProfile is linked to this barcode"""
+        try:
+            # Reverse OneToOne relation; will raise DoesNotExist if missing
+            _ = obj.barcodeuserprofile
+            return True
+        except BarcodeUserProfile.DoesNotExist:
+            return False
+        except Exception:
+            return False
 
 
 class BarcodeCreateSerializer(serializers.ModelSerializer):
@@ -89,35 +117,93 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
         model = UserBarcodeSettings
         fields = [
             "barcode",
-            "barcode_pull",
+            "associate_user_profile_with_barcode",
             "server_verification",
             "barcode_choices",
             "field_states",
         ]
 
     def get_barcode_choices(self, obj):
-        """Get available barcode choices for the user"""
+        """Get available barcode choices for the user
+        
+        For School type users:
+        - All dynamic barcodes (regardless of owner)
+        - Their own identification barcodes
+        - Their own other type barcodes
+        
+        For other users:
+        - Only their own barcodes
+        """
         user = self.context["request"].user
-        barcodes = Barcode.objects.filter(user=user).order_by("-time_created")
+        is_school = user.groups.filter(name="School").exists()
         choices = []
 
-        for b in barcodes:
-            if b.barcode_type == "Identification":
-                display = f"{user.username}'s identification barcode"
-            elif b.barcode_type == "DynamicBarcode":
-                display = f"Dynamic Barcode ending with {b.barcode[-4:]}"
-            else:  # Others type (Static Barcode)
-                display = f"Barcode ending with {b.barcode[-4:]}"
-
-            choices.append(
-                {
+        if is_school:
+            # For School users: get all dynamic barcodes
+            all_dynamic_barcodes = Barcode.objects.filter(
+                barcode_type="DynamicBarcode"
+            ).select_related('user').order_by("-time_created")
+            
+            # Add all dynamic barcodes
+            for b in all_dynamic_barcodes:
+                owner_name = b.user.username if b.user != user else "Your"
+                display = f"{owner_name} Dynamic Barcode ending with {b.barcode[-4:]}"
+                choices.append({
+                    "id": b.id,
+                    "display": display,
+                    "barcode": b.barcode,
+                    "barcode_type": b.barcode_type,
+                    "full_display": f"{b.barcode_type} - {b.barcode} (Owner: {b.user.username})",
+                })
+            
+            # Get user's own identification and other barcodes
+            own_other_barcodes = Barcode.objects.filter(
+                user=user,
+                barcode_type__in=["Identification", "Others"]
+            ).order_by("-time_created")
+            
+            for b in own_other_barcodes:
+                if b.barcode_type == "Identification":
+                    display = f"{user.username}'s identification barcode"
+                else:  # Others type
+                    display = f"Your Barcode ending with {b.barcode[-4:]}"
+                    
+                choices.append({
                     "id": b.id,
                     "display": display,
                     "barcode": b.barcode,
                     "barcode_type": b.barcode_type,
                     "full_display": f"{b.barcode_type} - {b.barcode}",
-                }
-            )
+                })
+        else:
+            # Check if user is in User group - they only get identification barcode
+            is_user = user.groups.filter(name="User").exists()
+            
+            if is_user:
+                # User type only sees identification barcode
+                barcodes = Barcode.objects.filter(
+                    user=user,
+                    barcode_type="Identification"
+                ).order_by("-time_created")
+            else:
+                # Other non-School users see all their own barcodes
+                barcodes = Barcode.objects.filter(user=user).order_by("-time_created")
+            
+            for b in barcodes:
+                if b.barcode_type == "Identification":
+                    display = f"{user.username}'s identification barcode"
+                elif b.barcode_type == "DynamicBarcode":
+                    display = f"Dynamic Barcode ending with {b.barcode[-4:]}"
+                else:  # Others type
+                    display = f"Barcode ending with {b.barcode[-4:]}"
+
+                choices.append({
+                    "id": b.id,
+                    "display": display,
+                    "barcode": b.barcode,
+                    "barcode_type": b.barcode_type,
+                    "full_display": f"{b.barcode_type} - {b.barcode}",
+                })
 
         return choices
 
@@ -127,27 +213,19 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
         is_user_group = user.groups.filter(name="User").exists()
 
         return {
-            "barcode_pull_disabled": is_user_group,  # Rule 1: User group cannot enable pull
-            "barcode_disabled": (
-                obj.barcode_pull if obj else False
-            ),  # Rule 2: When pull is ON, barcode is disabled
+            "associate_user_profile_disabled": is_user_group,  # Disabled for User group only
+            "barcode_disabled": False,  # Barcode selection is always enabled
         }
 
     def validate(self, data):
-        """Validate settings based on user group and pull setting"""
+        """Simple validation based on user group only"""
         user = self.context["request"].user
-
-        # Check if user is in "User" group
         is_user_group = user.groups.filter(name="User").exists()
 
-        # Rule 1: Standard users cannot enable barcode pull
-        if is_user_group and data.get("barcode_pull", False):
+        # Standard users cannot enable profile association
+        if is_user_group and data.get("associate_user_profile_with_barcode", False):
             raise serializers.ValidationError(
-                {"barcode_pull": "Standard users cannot enable automatic barcode pull."}
+                {"associate_user_profile_with_barcode": "Standard users cannot enable profile association."}
             )
-
-        # Rule 2: When pull is ON, barcode must be empty
-        if data.get("barcode_pull", False) and data.get("barcode"):
-            data["barcode"] = None  # Clear barcode when pull is enabled
 
         return data

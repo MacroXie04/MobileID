@@ -1,41 +1,42 @@
 <!-- src/views/Home.vue -->
 <template>
-  <div v-if="loading" class="loading-container">
-    <div class="loading-spinner">
-      <svg class="circular-progress" viewBox="0 0 50 50">
-        <circle class="progress-circle" cx="25" cy="25" fill="none" r="20" stroke-width="4"/>
-      </svg>
-    </div>
-    <p class="loading-text">Loading...</p>
+  <div v-if="loading" class="md-loading-container md-flex md-flex-column md-items-center md-justify-center md-theme-dark">
+    <md-circular-progress indeterminate></md-circular-progress>
+    <p class="md-typescale-body-large md-mt-4">Loading...</p>
   </div>
 
   <!-- Based on user groups -->
   <HomeSchool v-else-if="groups.includes('School')"/>
   <HomeUser v-else-if="groups.includes('User')"/>
-  <div v-else class="error-page">
-    <div class="error-content">
-      <div class="error-icon">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-        </svg>
+  <div v-else class="error-page md-flex md-items-center md-justify-center md-p-6">
+    <div class="error-content md-card md-rounded-xl md-p-8 md-text-center md-max-w-lg">
+      <div class="error-icon-wrapper md-flex md-justify-center md-mb-6">
+        <div class="error-icon md-flex md-items-center md-justify-center">
+          <md-icon>error</md-icon>
+        </div>
       </div>
-      <h2 class="error-title">连接错误</h2>
-      <p class="error-message">{{ window.apiError || '未知用户组，请联系管理员' }}</p>
-      <div v-if="window.apiError" class="error-details">
-        <p>无法连接到服务器，请检查：</p>
-        <ul>
-          <li>服务器是否正在运行</li>
-          <li>网络连接是否正常</li>
-          <li>防火墙设置是否正确</li>
+      <h2 class="md-typescale-headline-medium md-mb-2">{{ window.apiError ? 'Connection Error' : 'Access Denied' }}</h2>
+      <p class="md-typescale-body-large md-mb-6">{{ window.apiError || 'Unknown user group. Please contact your administrator.' }}</p>
+      <div v-if="window.apiError" class="error-details md-card md-card-filled md-rounded-lg md-p-4 md-mb-6 md-text-left">
+        <p class="md-typescale-body-medium md-mb-3">Unable to connect to the server. Please check:</p>
+        <ul class="error-list md-m-0 md-p-0">
+          <li class="md-typescale-body-medium">Your internet connection is active</li>
+          <li class="md-typescale-body-medium">The server is running and accessible</li>
+          <li class="md-typescale-body-medium">Your network allows access to the server</li>
+        </ul>
+        <p class="error-code md-typescale-label-medium md-mt-4">Error: {{ window.apiError }}</p>
+      </div>
+      <div v-else class="error-details md-card md-card-filled md-rounded-lg md-p-4 md-mb-6 md-text-left">
+        <p class="md-typescale-body-medium md-mb-3">Your account is not assigned to a valid user group.</p>
+        <ul class="error-list md-m-0 md-p-0">
+          <li class="md-typescale-body-medium">Contact your system administrator</li>
+          <li class="md-typescale-body-medium">Request assignment to either "User" or "School" group</li>
         </ul>
       </div>
-      <button class="retry-button" @click="retryConnection">
-        <svg class="retry-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path
-              d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-        </svg>
-        重试连接
-      </button>
+      <md-filled-button @click="retryConnection" class="retry-button">
+        <md-icon slot="icon">refresh</md-icon>
+        Retry Connection
+      </md-filled-button>
     </div>
   </div>
 </template>
@@ -44,9 +45,7 @@
 import {onMounted, ref} from "vue";
 import HomeSchool from "./HomeSchool.vue";
 import HomeUser from "./HomeUser.vue";
-
-// Import Font Awesome for this page
-import '@fortawesome/fontawesome-free/css/all.min.css';
+import '@/styles/material-theme.css';
 
 const loading = ref(true);
 const groups = ref([]);
@@ -63,6 +62,7 @@ onMounted(() => {
     return;
   }
 
+  
   // If data exists, set groups
   if (data) {
     groups.value = data.groups || [];
@@ -81,189 +81,110 @@ function retryConnection() {
 </script>
 
 <style scoped>
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+/* Page-specific styles for Home.vue - minimal overrides only */
+
+/* Loading container height */
+.md-loading-container {
   min-height: 100vh;
-  gap: 1.5rem;
 }
 
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-}
-
-.circular-progress {
-  animation: rotate 2s linear infinite;
-}
-
-.progress-circle {
-  stroke: var(--md-sys-color-primary);
-  stroke-linecap: round;
-  animation: dash 1.5s ease-in-out infinite;
-}
-
-@keyframes rotate {
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes dash {
-  0% {
-    stroke-dasharray: 1, 150;
-    stroke-dashoffset: 0;
-  }
-  50% {
-    stroke-dasharray: 90, 150;
-    stroke-dashoffset: -35;
-  }
-  100% {
-    stroke-dasharray: 90, 150;
-    stroke-dashoffset: -124;
-  }
-}
-
-.loading-text {
-  color: var(--md-sys-color-on-surface-variant);
-  font-size: 1rem;
-  font-weight: 400;
-  margin: 0;
-}
-
+/* Error page specific styles */
 .error-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   min-height: 100vh;
-  padding: 2rem;
   background: var(--md-sys-color-background);
 }
 
 .error-content {
-  background: var(--md-sys-color-surface-container-lowest);
-  border-radius: var(--md-sys-shape-corner-extra-large);
-  padding: 3rem 2rem;
-  max-width: 480px;
   width: 100%;
-  text-align: center;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 }
 
+/* Error icon wrapper */
 .error-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.5rem;
+  width: 64px;
+  height: 64px;
   background: var(--md-sys-color-error-container);
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  animation: pulse 2s ease-in-out infinite;
 }
 
-.error-icon svg {
-  width: 48px;
-  height: 48px;
-  fill: var(--md-sys-color-on-error-container);
+.error-icon::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  background: var(--md-sys-color-error-container);
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: pulse-ring 2s ease-in-out infinite;
 }
 
-.error-title {
-  color: var(--md-sys-color-on-surface);
-  font-size: 1.75rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  line-height: 1.2;
+.error-icon md-icon {
+  font-size: 36px;
+  color: var(--md-sys-color-on-error-container);
+  position: relative;
+  z-index: 1;
 }
 
-.error-message {
-  color: var(--md-sys-color-on-surface-variant);
-  font-size: 1.125rem;
-  margin-bottom: 2rem;
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pulse-ring {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.1;
+  }
+}
+
+/* Error list styling */
+.error-list {
+  list-style: none;
+}
+
+.error-list li {
+  margin-bottom: var(--md-sys-spacing-2);
   line-height: 1.5;
+  position: relative;
+  padding-left: var(--md-sys-spacing-6);
 }
 
-.error-details {
-  background: var(--md-sys-color-surface-container);
-  border-radius: var(--md-sys-shape-corner-medium);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  text-align: left;
+.error-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--md-sys-color-primary);
+  font-weight: bold;
+  font-size: 1.2rem;
 }
 
-.error-details p {
-  color: var(--md-sys-color-on-surface-variant);
-  margin: 0 0 0.75rem;
-  font-weight: 500;
-}
-
-.error-details ul {
-  margin: 0;
-  padding-left: 1.5rem;
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-.error-details li {
-  margin-bottom: 0.5rem;
-  line-height: 1.5;
-}
-
-.retry-button {
-  background: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
-  border: none;
-  border-radius: var(--md-sys-shape-corner-full);
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.retry-button:hover {
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.retry-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.retry-icon {
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
+/* Error code styling */
+.error-code {
+  padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4);
+  background: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+  border-radius: var(--md-sys-shape-corner-small);
+  font-family: 'Roboto Mono', monospace;
+  display: inline-block;
 }
 
 /* Responsive adjustments */
-@media (max-width: 480px) {
-  .error-content {
-    padding: 2rem 1.5rem;
-  }
-
+@media (max-width: 599px) {
   .error-icon {
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
   }
 
-  .error-icon svg {
-    width: 36px;
-    height: 36px;
-  }
-
-  .error-title {
-    font-size: 1.5rem;
-  }
-
-  .error-message {
-    font-size: 1rem;
+  .error-icon md-icon {
+    font-size: 32px;
   }
 }
 </style>

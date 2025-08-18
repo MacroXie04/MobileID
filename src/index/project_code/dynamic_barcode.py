@@ -141,6 +141,7 @@ def request_mobile_id(user_cookie):
     return html_source
 
 
+#TODO: process user base64 profile img, student id and name from the original html
 def parse_html_data(html_content):
     try:
         # get mobile_id_rand_array

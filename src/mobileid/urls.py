@@ -29,9 +29,6 @@ urlpatterns = [
     # path for auth app
     path("authn/", include("authn.urls")),
 
-    # path for wallet app
-    path("wallet/", include("wallet.urls")),
-
 ]
 
 # Serve static files during development

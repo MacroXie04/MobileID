@@ -25,17 +25,27 @@ router.beforeEach(async (to, _from, next) => {
     try {
         if (!to.meta.requiresAuth) return next();
 
-        // If already cached, allow
-        if (window.userInfo) return next();
+        // If already cached, check access
+        if (window.userInfo) {
+            // Check if User type trying to access barcode dashboard
+            if (to.path === '/barcode/dashboard' && window.userInfo.groups && window.userInfo.groups.includes('User')) {
+                return next({path: "/"});
+            }
+            return next();
+        }
 
         const data = await userInfo();
         if (data) {
             window.userInfo = data;
+            // Check if User type trying to access barcode dashboard
+            if (to.path === '/barcode/dashboard' && data.groups && data.groups.includes('User')) {
+                return next({path: "/"});
+            }
             return next();
         }
         return next({path: "/login", query: {redirect: to.fullPath}});
     } catch (_err) {
-        window.apiError = "API服务器离线";
+        window.apiError = "API server is offline";
         // If navigating to a protected route but API is down, still allow to hit Home which shows an error panel.
         return next();
     }

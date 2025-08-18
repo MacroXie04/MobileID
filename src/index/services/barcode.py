@@ -80,23 +80,6 @@ def _touch_barcode_usage(barcode: Barcode) -> None:
         )
 
 
-def _select_optimal_dynamic_barcode() -> Barcode | None:
-    """Select the optimal Dynamic barcode based on usage patterns."""
-    dynamic_with_usage = (
-        BarcodeUsage.objects.select_related("barcode")
-        .filter(barcode__barcode_type=BARCODE_DYNAMIC)
-        .order_by("total_usage", "last_used")
-    )
-    if dynamic_with_usage.exists():
-        return dynamic_with_usage.first().barcode
-
-    unused = (
-        Barcode.objects.filter(barcode_type=BARCODE_DYNAMIC)
-        .exclude(id__in=BarcodeUsage.objects.values_list("barcode_id", flat=True))
-        .order_by("time_created")
-    )
-    return unused.first() if unused.exists() else None
-
 
 def _timestamp() -> str:
     """Return a timestamp string for dynamic barcodes."""
@@ -125,6 +108,9 @@ def generate_barcode(user) -> dict:
         result.update(status="error", message="Invalid user group.")
         return result
 
+    # --------------------------------------------------------------
+    # handle generate barcode
+
     # Wrap DB operations in an explicit transaction for select_for_update
     with transaction.atomic():
         settings, _ = UserBarcodeSettings.objects.select_for_update().get_or_create(
@@ -132,18 +118,29 @@ def generate_barcode(user) -> dict:
             defaults={
                 "barcode": None,
                 "server_verification": False,
-                "barcode_pull": False,
+                "associate_user_profile_with_barcode": False,
             },
         )
 
-        # Determine which barcode to use
-        if settings.barcode_pull and is_school:
-            selected = _select_optimal_dynamic_barcode()
-            if not selected:
-                result.update(status="error", message="No dynamic barcode available for pull.")
-                return result
-        else:
-            selected = settings.barcode
+        # Use the user-selected barcode
+        selected = settings.barcode
+
+        # For User type, ensure they have an identification barcode
+        if is_user:
+            # Find or create their identification barcode
+            ident_barcode = Barcode.objects.filter(
+                user=user, barcode_type=BARCODE_IDENTIFICATION
+            ).first()
+            
+            if not ident_barcode:
+                # Create one if it doesn't exist
+                ident_barcode = _create_identification_barcode(user)
+            
+            # Force the selection to identification barcode
+            selected = ident_barcode
+            settings.barcode = ident_barcode
+            settings.associate_user_profile_with_barcode = False
+            settings.save()
 
         if not selected:
             result.update(status="error", message="No barcode selected.")

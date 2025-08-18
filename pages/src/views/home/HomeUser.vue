@@ -1,28 +1,58 @@
 <template>
-  <div class="home-user-container">
-    <div class="background-gradient"></div>
-    <div class="content-wrapper">
-      <div class="profile-card elevation-3">
-        <!-- User Profile Section -->
-        <UserProfile
+  <div class="md-layout-container">
+    <!-- Header Section -->
+    <header class="md-top-app-bar">
+      <div class="md-top-app-bar-content">
+        <div class="header-title">
+          <h1 class="md-typescale-headline-large md-m-0">Welcome Back</h1>
+          <p class="md-typescale-body-large md-m-0 md-mt-1">
+            {{ profile?.name || 'User' }}
+          </p>
+        </div>
+        <md-filled-tonal-button @click="handleLogout">
+          <md-icon slot="icon">logout</md-icon>
+          Sign Out
+        </md-filled-tonal-button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="md-content">
+      <div class="home-grid md-grid-container md-grid-cols-1 md-grid-cols-2 md-grid-cols-3">
+        <!-- User Profile Card -->
+        <section class="md-card profile-overview-card">
+          <UserProfile
             :avatar-src="avatarSrc"
             :profile="profile"
-            class="user-profile-section"
-        />
+            class="user-profile-component"
+          />
+        </section>
 
-        <!-- Barcode Display Section -->
-        <BarcodeDisplay
+        <!-- Barcode Card -->
+        <section class="md-card">
+          <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
+            <md-icon>qr_code_2</md-icon>
+            <h2 class="md-typescale-headline-small md-m-0">Digital ID Barcode</h2>
+          </div>
+          <BarcodeDisplay
             ref="barcodeDisplayRef"
             @generate="handleGenerate"
-        />
+          />
+        </section>
 
-        <!-- User Menu Section -->
-        <UserMenu
-            class="menu-section"
+        <!-- Quick Actions Card -->
+        <section class="md-card md-card-filled">
+          <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
+            <md-icon>dashboard</md-icon>
+            <h2 class="md-typescale-headline-small md-m-0">Quick Actions</h2>
+          </div>
+          <UserMenu
+            class="user-menu-component"
             @logout="handleLogout"
-        />
+          />
+        </section>
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
@@ -31,9 +61,7 @@ import {onMounted, ref} from "vue";
 import {useRouter} from "vue-router";
 
 // CSS Imports
-import '@/assets/css/HomeUser.css';
-// Import Font Awesome for this page
-import '@fortawesome/fontawesome-free/css/all.min.css';
+import '@/styles/material-theme.css';
 
 // Components
 import UserProfile from "@/components/user/UserProfile.vue";
@@ -123,93 +151,62 @@ async function handleLogout() {
 </script>
 
 <style scoped>
-/* Material 3 Design System - Enhanced */
-.home-user-container {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: var(--md-sys-color-surface);
-  overflow: hidden;
-  font-family: 'Roboto', sans-serif; /* Add Material default font */
+/* Page-specific styles for HomeUser.vue - minimal overrides only */
+
+/* Header icon color */
+.card-header md-icon {
+  color: var(--md-sys-color-primary);
 }
 
-/* Enhanced gradient background */
-.background-gradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(
-      ellipse at top left,
-      var(--md-sys-color-primary-container) 0%,
-      transparent 70%
-  ),
-  radial-gradient(
-      ellipse at bottom right,
-      var(--md-sys-color-tertiary-container) 0%,
-      transparent 70%
+/* Profile card gradient background */
+.profile-overview-card {
+  background: linear-gradient(
+    135deg,
+    var(--md-sys-color-primary-container) 0%,
+    var(--md-sys-color-surface) 100%
   );
-  opacity: 0.1; /* More subtle gradient */
-  z-index: 0;
 }
 
-.content-wrapper {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 420px;
-  padding: 16px;
+/* Grid responsive adjustments */
+.home-grid {
+  grid-template-columns: 1fr;
 }
 
-/* Enhanced card with proper elevation */
-.profile-card {
-  background: var(--md-sys-color-surface-container-low);
-  border-radius: var(--md-sys-shape-corner-extra-large);
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-  box-shadow: var(--md-sys-elevation-level3); /* Use elevation token */
-}
-
-/* Section spacing with MD3 grid */
-.user-profile-section {
-  padding: 32px 24px 24px;
-  border-bottom: 1px solid var(--md-sys-color-outline-variant);
-}
-
-.menu-section {
-  padding: 24px; /* Increased padding for better spacing */
-}
-
-/* Responsive adjustments with MD3 breakpoints */
-@media (max-width: 600px) {
-  /* Standard MD3 breakpoint */
-  .content-wrapper {
-    padding: 0;
-    max-width: 100%;
+/* Medium screens - 2 columns */
+@media (min-width: 905px) {
+  .home-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
-
-  .profile-card {
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .user-profile-section {
-    padding: 24px 16px;
+  
+  .profile-overview-card {
+    grid-column: 1 / -1;
   }
 }
 
-/* Add hover effect for interactive elements */
-.profile-card:hover {
-  box-shadow: var(--md-sys-elevation-level4);
-  transform: translateY(-2px);
+/* Large screens - 3 columns */
+@media (min-width: 1240px) {
+  .home-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .profile-overview-card {
+    grid-column: auto;
+  }
 }
 
-/* Add focus states for accessibility */
-*:focus-visible {
-  outline: 2px solid var(--md-sys-color-primary);
-  outline-offset: 2px;
+/* Component padding adjustments */
+.user-profile-component {
+  padding: var(--md-sys-spacing-2) 0;
+}
+
+.user-menu-component {
+  padding: 0;
+}
+
+/* Responsive header text */
+@media (max-width: 599px) {
+  .header-title h1 {
+    font-size: var(--md-sys-typescale-headline-medium-size);
+  }
 }
 </style>

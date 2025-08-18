@@ -43,10 +43,6 @@ class BarcodeAdmin(admin.ModelAdmin):
         ('User & Timestamps', {
             'fields': ('user', 'time_created')
         }),
-        ('Server Verification', {
-            'fields': ('session',),
-            'classes': ('collapse',)
-        }),
     )
 
     inlines = [BarcodeUsageInline]
@@ -184,4 +180,24 @@ class BarcodeUsageAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related('barcode', 'barcode__user')
 
 
-admin.site.register(UserBarcodeSettings)
+@admin.register(UserBarcodeSettings)
+class UserBarcodeSettingsAdmin(admin.ModelAdmin):
+    """Admin configuration for UserBarcodeSettings model"""
+    list_display = ('user', 'barcode', 'server_verification', 'associate_user_profile_with_barcode')
+    list_filter = ('server_verification', 'associate_user_profile_with_barcode')
+    search_fields = ('user__username', 'barcode__barcode')
+    ordering = ('user__username',)
+    autocomplete_fields = ['user', 'barcode']
+
+    fieldsets = (
+        (None, {
+            'fields': ('user',)
+        }),
+        ('Settings', {
+            'fields': ('barcode', 'server_verification', 'associate_user_profile_with_barcode')
+        }),
+    )
+
+    def get_queryset(self, request):
+        """Optimize queryset with select_related"""
+        return super().get_queryset(request).select_related('user', 'barcode')

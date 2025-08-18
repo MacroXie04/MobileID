@@ -1,6 +1,7 @@
 import uuid
 
 from django.contrib.auth.models import User
+from django.core.validators import MaxLengthValidator
 from django.db import models
 
 
@@ -56,6 +57,26 @@ class Barcode(models.Model):
         return f"Barcode ending with {self.barcode[-4:]}"
 
 
+class BarcodeUserProfile(models.Model):
+    # foreign key to barcode
+    linked_barcode = models.OneToOneField(Barcode, on_delete=models.CASCADE)
+
+    # user name and id
+    name = models.CharField(max_length=100)
+    information_id = models.CharField(max_length=100)
+
+    # user profile image (base64 encoded png 128*128)
+    user_profile_img = models.TextField(
+        null=True,
+        blank=True,
+        validators=[MaxLengthValidator(10_000)],
+        help_text=(
+            "Base64 encoded PNG of the user's 128*128 avatar. " "No data-URI prefix."
+        ),
+        verbose_name="avatar (Base64)",
+    )
+
+
 # user barcode settings
 class UserBarcodeSettings(models.Model):
     # foreign key to user
@@ -69,29 +90,8 @@ class UserBarcodeSettings(models.Model):
     # server verification settings
     server_verification = models.BooleanField(default=False)
 
-    # barcode pull settings
-    barcode_pull = models.BooleanField(default=True)
+    # associate user profile with barcode
+    associate_user_profile_with_barcode = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username}'s Barcode Settings"
-
-
-class DynamicBarcodeAddon(models.Model):
-    # foreign key to barcode
-    barcode = models.ForeignKey(Barcode, on_delete=models.CASCADE)
-
-    # server verification information
-    session = models.TextField(blank=True, null=True)
-
-    # User Account Data
-    user_name = models.CharField(max_length=100, blank=True, null=True)
-    user_id = models.CharField(max_length=100, blank=True, null=True)
-    userprofile_img = models.TextField(
-        null=True,
-        blank=True,
-        help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.",
-        verbose_name="avatar (Base64)",
-    )
-
-    def __str__(self):
-        return f"{self.addon_type} for {self.barcode.barcode} - Data: {self.addon_data[:20]}..."

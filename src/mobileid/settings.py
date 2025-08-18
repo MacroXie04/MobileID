@@ -113,14 +113,10 @@ if os.getenv("USE_HTTPS", "False").lower() == "true":
     CSRF_COOKIE_SECURE = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Session settings
-SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", "86400"))  # 1 day in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = (
-        os.getenv("SESSION_EXPIRE_AT_BROWSER_CLOSE", "False").lower() == "true"
-)
-SESSION_SAVE_EVERY_REQUEST = (
-        os.getenv("SESSION_SAVE_EVERY_REQUEST", "True").lower() == "true"
-)
+# Session settings - Set to 10 years (effectively unlimited)
+SESSION_COOKIE_AGE = 315360000  # 10 years in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser close
+SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on each request
 
 # CORS settings
 REST_FRAMEWORK = {
@@ -145,19 +141,11 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=int(os.getenv("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", "15"))
-    ),
-    "REFRESH_TOKEN_LIFETIME": timedelta(
-        days=int(os.getenv("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "1"))
-    ),
-    "ROTATE_REFRESH_TOKENS": os.getenv("JWT_ROTATE_REFRESH_TOKENS", "False").lower()
-                             == "true",
-    "BLACKLIST_AFTER_ROTATION": os.getenv(
-        "JWT_BLACKLIST_AFTER_ROTATION", "False"
-    ).lower()
-                                == "true",
-    "ALGORITHM": os.getenv("JWT_ALGORITHM", "HS256"),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=3650),  # 10 years
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=3650),  # 10 years
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
 }
 

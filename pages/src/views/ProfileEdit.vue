@@ -1,125 +1,122 @@
 <template>
-  <div class="page-container">
-    <div class="page-card">
-      <div class="page-header">
-        <p class="md-typescale-body-large subtitle">Update your information</p>
+  <div class="md-layout-container">
+    <!-- Header Section -->
+    <header class="md-top-app-bar">
+      <div class="md-top-app-bar-content">
+        <div class="header-title">
+          <h1 class="md-typescale-display-small md-m-0">Edit Profile</h1>
+          <p class="md-typescale-body-large md-m-0 md-mt-1">Update your personal information</p>
+        </div>
+        <md-filled-tonal-button @click="router.push('/')">
+          <md-icon slot="icon">arrow_back</md-icon>
+          Back to Home
+        </md-filled-tonal-button>
       </div>
+    </header>
 
-      <form novalidate @submit.prevent="handleSubmit">
-        <!-- Avatar Section - Centered -->
-        <div class="avatar-upload-section">
-          <div class="avatar-wrapper">
-            <img :src="getAvatarSrc()" alt="Avatar" class="avatar-preview">
-            <div class="avatar-overlay" @click="selectImage">
-              <md-icon>photo_camera</md-icon>
+    <!-- Success Message Toast -->
+    <transition name="slide-down">
+      <div v-if="successMessage" class="message-toast md-banner md-banner-success">
+        <md-icon>check_circle</md-icon>
+        <span class="md-typescale-body-medium">{{ successMessage }}</span>
+        <md-icon-button @click="successMessage = ''">
+          <md-icon>close</md-icon>
+        </md-icon-button>
+      </div>
+    </transition>
+
+    <!-- Main Content -->
+    <main class="md-content">
+      <section class="md-card md-max-w-xl">
+        <form class="md-form" novalidate @submit.prevent="handleSubmit">
+          <!-- Avatar Upload Section -->
+          <div class="avatar-section md-mb-8">
+            <h2 class="md-typescale-headline-small section-title md-mb-6">Profile Photo</h2>
+            
+            <div class="avatar-upload-container md-flex md-items-center md-gap-8">
+              <div class="avatar-wrapper md-avatar-xl" @click="selectImage">
+                <img :src="getAvatarSrc()" alt="Profile" class="avatar-image">
+                <div class="avatar-overlay">
+                  <md-icon>photo_camera</md-icon>
+                  <span class="md-typescale-label-medium">Change Photo</span>
+                </div>
+              </div>
+              
+              <div class="avatar-info">
+                <p class="md-typescale-body-medium md-m-0">Click to upload a new profile photo</p>
+                <p class="md-typescale-body-small md-m-0 md-mt-1">JPG or PNG • Max 5MB • Recommended: Square image</p>
+              </div>
             </div>
-          </div>
-          <input
+            
+            <input
               ref="fileInput"
               accept="image/jpeg,image/jpg,image/png"
               class="hidden-input"
               type="file"
               @change="handleFileSelect"
-          >
-          <p class="avatar-hint md-typescale-body-small">Click to upload new photo</p>
-          <p v-if="errors.user_profile_img" class="error-text">{{ errors.user_profile_img }}</p>
-        </div>
-
-        <!-- Form Fields -->
-        <div class="form-fields">
-          <md-outlined-text-field
-              v-model="formData.name"
-              :error="!!errors.name"
-              :error-text="errors.name"
-              label="Full Name"
-              @input="clearError('name')"
-              @keyup.enter="!loading && handleSubmit()"
-          >
-            <md-icon slot="leading-icon">badge</md-icon>
-          </md-outlined-text-field>
-
-          <md-outlined-text-field
-              v-model="formData.information_id"
-              :error="!!errors.information_id"
-              :error-text="errors.information_id"
-              label="Information ID"
-              @input="clearError('information_id')"
-              @keyup.enter="!loading && handleSubmit()"
-          >
-            <md-icon slot="leading-icon">fingerprint</md-icon>
-          </md-outlined-text-field>
-        </div>
-
-        <!-- Error Message -->
-        <div v-if="errors.general" class="error-banner">
-          <md-icon>error_outline</md-icon>
-          <span class="md-typescale-body-medium">{{ errors.general }}</span>
-        </div>
-
-        <!-- Submit Button -->
-        <md-filled-button :disabled="loading" class="primary-button" type="submit">
-          <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
-          {{ loading ? 'Saving...' : 'Save Changes' }}
-        </md-filled-button>
-      </form>
-
-      <!-- Passkey Management Section -->
-      <div v-if="webAuthnSupported" class="passkey-section">
-        <md-divider></md-divider>
-
-        <div class="section-header">
-          <h3 class="md-typescale-title-medium">Passkeys</h3>
-          <p class="md-typescale-body-small section-description">
-            Passkeys provide a secure and convenient way to sign in without passwords
-          </p>
-        </div>
-
-        <!-- Passkeys List -->
-        <div v-if="passkeys.length > 0" class="passkeys-list">
-          <div v-for="passkey in passkeys" :key="passkey.id" class="passkey-item">
-            <div class="passkey-info">
-              <md-icon>key</md-icon>
-              <div class="passkey-details">
-                <p class="md-typescale-body-medium">Passkey</p>
-                <p class="md-typescale-body-small passkey-date">
-                  Added {{ formatDate(passkey.created_at) }}
-                </p>
+            >
+            
+            <transition name="fade">
+              <div v-if="errors.user_profile_img" class="md-banner md-banner-error md-mt-4">
+                <md-icon>error</md-icon>
+                <span>{{ errors.user_profile_img }}</span>
               </div>
-            </div>
-            <md-icon-button @click="confirmDeletePasskey(passkey.id)">
-              <md-icon>delete</md-icon>
-            </md-icon-button>
+            </transition>
           </div>
-        </div>
 
-        <!-- Add Passkey Button -->
-        <md-outlined-button
-            :disabled="passkeyLoading"
-            class="add-passkey-button"
-            @click="handleAddPasskey"
-        >
-          <md-icon slot="icon">add</md-icon>
-          {{ passkeyLoading ? 'Setting up...' : 'Add a Passkey' }}
-        </md-outlined-button>
+          <md-divider></md-divider>
 
-        <!-- Success/Error Messages for Passkey Operations -->
-        <div v-if="passkeyMessage" :class="['message-banner', passkeyMessageType]">
-          <md-icon>{{ passkeyMessageType === 'success' ? 'check_circle' : 'error_outline' }}</md-icon>
-          <span class="md-typescale-body-medium">{{ passkeyMessage }}</span>
-        </div>
-      </div>
+          <!-- Personal Information Section -->
+          <div class="info-section md-mt-8">
+            <h2 class="md-typescale-headline-small section-title md-mb-6">Personal Information</h2>
+            
+            <div class="md-form-field">
+              <md-outlined-text-field
+                v-model="formData.name"
+                :error="!!errors.name"
+                :error-text="errors.name"
+                label="Full Name"
+                @input="clearError('name')"
+                @keyup.enter="!loading && handleSubmit()"
+              >
+                <md-icon slot="leading-icon">badge</md-icon>
+              </md-outlined-text-field>
 
-      <!-- Back Link -->
-      <div class="nav-section">
-        <md-divider></md-divider>
-        <p class="md-typescale-body-medium nav-text">
-          <router-link class="nav-link" to="/">
-            <md-icon>arrow_back</md-icon>
-            Back to Dashboard
-          </router-link>
-        </p>
-      </div>
-    </div>
+              <md-outlined-text-field
+                v-model="formData.information_id"
+                :error="!!errors.information_id"
+                :error-text="errors.information_id"
+                label="Information ID"
+                @input="clearError('information_id')"
+                @keyup.enter="!loading && handleSubmit()"
+              >
+                <md-icon slot="leading-icon">fingerprint</md-icon>
+              </md-outlined-text-field>
+            </div>
+          </div>
+
+          <!-- Error Banner -->
+          <transition name="fade">
+            <div v-if="errors.general" class="md-banner md-banner-error md-mt-6">
+              <md-icon>error_outline</md-icon>
+              <span class="md-typescale-body-medium">{{ errors.general }}</span>
+            </div>
+          </transition>
+
+          <!-- Form Actions -->
+          <div class="form-actions md-flex md-justify-end md-gap-3 md-mt-8">
+            <md-outlined-button type="button" @click="router.push('/')">
+              Cancel
+            </md-outlined-button>
+            <md-filled-button type="submit" :disabled="loading">
+              <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
+              <md-icon v-else slot="icon">save</md-icon>
+              {{ loading ? 'Saving...' : 'Save Changes' }}
+            </md-filled-button>
+          </div>
+        </form>
+      </section>
+    </main>
   </div>
 
   <!-- Cropper Dialog -->
@@ -129,10 +126,10 @@
       Crop Your Photo
     </div>
     <form slot="content" class="cropper-content" method="dialog">
-      <div ref="cropperContainer" class="cropper-container">
+      <div ref="cropperContainer" class="cropper-container md-rounded-lg">
         <img ref="cropperImage" alt="Image to crop" class="cropper-image">
       </div>
-      <div class="cropper-tips md-typescale-body-small">
+      <div class="cropper-tips md-typescale-body-small md-p-4 md-mt-4 md-rounded-lg md-text-center">
         Drag to reposition • Scroll to zoom • Double-click to reset
       </div>
     </form>
@@ -149,30 +146,16 @@
     </div>
   </md-dialog>
 
-  <!-- Delete Passkey Confirmation Dialog -->
-  <md-dialog ref="deleteDialog" :open="showDeleteDialog" @close="() => showDeleteDialog = false">
-    <div slot="headline">Delete Passkey?</div>
-    <form slot="content" method="dialog">
-      <p class="md-typescale-body-medium">
-        Are you sure you want to delete this passkey? You won't be able to use it to sign in anymore.
-      </p>
-    </form>
-    <div slot="actions">
-      <md-text-button @click="() => showDeleteDialog = false">Cancel</md-text-button>
-      <md-filled-button @click="handleDeletePasskey">Delete</md-filled-button>
-    </div>
-  </md-dialog>
 </template>
 
 <script setup>
 import {nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import {getUserProfile, updateUserProfile} from '@/api/auth';
-import {deletePasskey, getPasskeys, isWebAuthnSupported, registerPasskey} from '@/api/passkeys';
 import {baseURL} from '@/config';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
-import '@/styles/auth-shared.css';
+import '@/styles/material-theme.css';
 
 const router = useRouter();
 
@@ -181,7 +164,6 @@ const fileInput = ref(null);
 const cropperImage = ref(null);
 const cropperContainer = ref(null);
 const cropperDialog = ref(null);
-const deleteDialog = ref(null);
 
 // State
 const loading = ref(false);
@@ -195,15 +177,7 @@ const errors = ref({});
 const cropper = ref(null);
 const showCropper = ref(false);
 const tempImageUrl = ref('');
-
-// Passkey related state
-const webAuthnSupported = ref(false);
-const passkeys = ref([]);
-const passkeyLoading = ref(false);
-const passkeyMessage = ref('');
-const passkeyMessageType = ref('');
-const showDeleteDialog = ref(false);
-const passkeyToDelete = ref(null);
+const successMessage = ref('');
 
 // Methods
 const getAvatarSrc = () => {
@@ -387,8 +361,11 @@ const handleSubmit = async () => {
       return;
     }
 
-    // Success - redirect to dashboard
-    router.push('/');
+    // Success - show message then redirect
+    successMessage.value = 'Profile updated successfully!';
+    setTimeout(() => {
+      router.push('/');
+    }, 1500);
   } catch (error) {
     console.error('Update error:', error);
     errors.value.general = 'Network error. Please try again.';
@@ -422,106 +399,6 @@ const loadProfile = async () => {
   }
 };
 
-// Passkey management functions
-const loadPasskeys = async () => {
-  try {
-    const response = await getPasskeys();
-    if (response.success) {
-      passkeys.value = response.passkeys;
-    }
-  } catch (error) {
-    console.error('Failed to load passkeys:', error);
-  }
-};
-
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now - date);
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    return 'today';
-  } else if (diffDays === 1) {
-    return 'yesterday';
-  } else if (diffDays < 7) {
-    return `${diffDays} days ago`;
-  } else {
-    return date.toLocaleDateString();
-  }
-};
-
-const handleAddPasskey = async () => {
-  passkeyLoading.value = true;
-  passkeyMessage.value = '';
-
-  try {
-    const result = await registerPasskey();
-
-    if (result.success) {
-      passkeyMessage.value = 'Passkey added successfully!';
-      passkeyMessageType.value = 'success';
-      await loadPasskeys(); // Reload the list
-
-      // Clear message after 3 seconds
-      setTimeout(() => {
-        passkeyMessage.value = '';
-      }, 3000);
-    } else {
-      passkeyMessage.value = result.message || 'Failed to add passkey';
-      passkeyMessageType.value = 'error';
-    }
-  } catch (error) {
-    console.error('Passkey registration error:', error);
-
-    // Handle specific errors
-    if (error.name === 'NotAllowedError') {
-      passkeyMessage.value = 'Registration was cancelled or not allowed';
-    } else if (error.name === 'InvalidStateError') {
-      passkeyMessage.value = 'A passkey already exists for this device';
-    } else {
-      passkeyMessage.value = 'Failed to add passkey. Please try again.';
-    }
-    passkeyMessageType.value = 'error';
-  } finally {
-    passkeyLoading.value = false;
-  }
-};
-
-const confirmDeletePasskey = (passkeyId) => {
-  passkeyToDelete.value = passkeyId;
-  showDeleteDialog.value = true;
-};
-
-const handleDeletePasskey = async () => {
-  if (!passkeyToDelete.value) return;
-
-  try {
-    const result = await deletePasskey(passkeyToDelete.value);
-
-    if (result.success) {
-      passkeyMessage.value = 'Passkey deleted successfully';
-      passkeyMessageType.value = 'success';
-      await loadPasskeys(); // Reload the list
-
-      // Clear message after 3 seconds
-      setTimeout(() => {
-        passkeyMessage.value = '';
-      }, 3000);
-    } else {
-      passkeyMessage.value = result.message || 'Failed to delete passkey';
-      passkeyMessageType.value = 'error';
-    }
-  } catch (error) {
-    console.error('Failed to delete passkey:', error);
-    passkeyMessage.value = 'Failed to delete passkey';
-    passkeyMessageType.value = 'error';
-  } finally {
-    showDeleteDialog.value = false;
-    passkeyToDelete.value = null;
-  }
-};
-
 // Cleanup
 onUnmounted(() => {
   if (avatarPreviewUrl.value) {
@@ -544,89 +421,157 @@ watch(showCropper, (newVal) => {
 
 // Lifecycle
 onMounted(() => {
-  // Check WebAuthn support
-  webAuthnSupported.value = isWebAuthnSupported();
-
   loadProfile();
-
-  // Load passkeys if WebAuthn is supported
-  if (webAuthnSupported.value) {
-    loadPasskeys();
-  }
 });
 </script>
 
 <style scoped>
-/* Page-specific styles for ProfileEdit.vue */
-/* All common styles are now in @/styles/auth-shared.css */
+/* Page-specific styles for ProfileEdit.vue - minimal overrides only */
 
-/* Passkey Section Styles */
-.passkey-section {
-  margin-top: 32px;
+/* Message Toast positioning */
+.message-toast {
+  position: fixed;
+  top: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  max-width: 600px;
 }
 
-.section-header {
-  margin: 24px 0 16px 0;
+/* Section Title styling */
+.section-title {
+  color: var(--md-sys-color-on-surface);
 }
 
-.section-description {
-  color: var(--md-sys-color-on-surface-variant);
-  margin-top: 4px;
+/* Avatar Section */
+.avatar-wrapper {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  box-shadow: var(--md-elevation-1);
 }
 
-.passkeys-list {
-  margin: 16px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.avatar-wrapper:hover {
+  transform: scale(1.05);
 }
 
-.passkey-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  background-color: var(--md-sys-color-surface-variant);
-  border-radius: 8px;
-}
-
-.passkey-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.passkey-details {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.passkey-date {
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-.add-passkey-button {
+.avatar-image {
   width: 100%;
-  margin-top: 16px;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
-.message-banner {
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 4px;
-  margin-top: 12px;
+  justify-content: center;
+  gap: var(--md-sys-spacing-1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: 50%;
 }
 
-.message-banner.success {
-  background-color: var(--md-sys-color-success-container);
-  color: var(--md-sys-color-on-success-container);
+.avatar-wrapper:hover .avatar-overlay {
+  opacity: 1;
 }
 
-.message-banner.error {
-  background-color: var(--md-sys-color-error-container);
-  color: var(--md-sys-color-on-error-container);
+.avatar-overlay md-icon {
+  font-size: 32px;
+  color: white;
 }
-</style> 
+
+.avatar-overlay span {
+  color: white;
+}
+
+.avatar-info {
+  flex: 1;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.hidden-input {
+  display: none;
+}
+
+/* Form fields spacing */
+.md-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-spacing-4);
+}
+
+/* Cropper Dialog */
+.cropper-dialog {
+  --md-dialog-container-max-width: min(90vw, 600px);
+}
+
+.cropper-content {
+  padding: 0;
+}
+
+.cropper-container {
+  height: 300px;
+  background: var(--md-sys-color-surface-container-low);
+  overflow: hidden;
+}
+
+.cropper-image {
+  max-width: 100%;
+  display: block;
+}
+
+.cropper-tips {
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .avatar-upload-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .avatar-info {
+    text-align: center;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .form-actions > * {
+    width: 100%;
+  }
+}
+
+/* Transitions */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-down-enter-from {
+  transform: translate(-50%, -100%);
+  opacity: 0;
+}
+
+.slide-down-leave-to {
+  transform: translate(-50%, -100%);
+  opacity: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}</style> 

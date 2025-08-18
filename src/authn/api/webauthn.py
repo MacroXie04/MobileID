@@ -134,7 +134,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
                 samesite=cookie_samesite,
                 secure=cookie_secure,
-                max_age=int(os.getenv("ACCESS_TOKEN_AGE", 1800)),
+                max_age=315360000,  # 10 years in seconds
             )
 
             response.set_cookie(
@@ -143,7 +143,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
                 samesite=cookie_samesite,
                 secure=cookie_secure,
-                max_age=int(os.getenv("REFRESH_TOKEN_AGE", 604800)),
+                max_age=315360000,  # 10 years in seconds
             )
             response.data = {"message": "Login successful"}
         return response
@@ -303,7 +303,7 @@ def api_register(request):
                 samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
                 secure=(os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()) or (
                             os.getenv("COOKIE_SECURE", "False").lower() == "true"),
-                max_age=int(os.getenv("ACCESS_TOKEN_AGE", 1800)),
+                max_age=315360000,  # 10 years in seconds
             )
             response.set_cookie(
                 "refresh_token",
@@ -312,7 +312,7 @@ def api_register(request):
                 samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
                 secure=(os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()) or (
                             os.getenv("COOKIE_SECURE", "False").lower() == "true"),
-                max_age=int(os.getenv("REFRESH_TOKEN_AGE", 604800)),
+                max_age=315360000,  # 10 years in seconds
             )
 
             return response

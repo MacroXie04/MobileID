@@ -2,10 +2,7 @@ import json
 import textwrap
 import uuid
 
-from authn.models import (
-    UserProfile,
-    Passkey,
-)
+from authn.models import UserProfile
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -199,7 +196,7 @@ class LimitedGroupUserAdmin(UserAdmin):
                         user=user,
                         barcode=None,
                         server_verification=False,
-                        barcode_pull=False,  # Default to False for new users
+                        associate_user_profile_with_barcode=False,  # Default to False for new users
                     )
 
                 # Create an identification barcode for the user if it doesn't exist
@@ -211,6 +208,39 @@ class LimitedGroupUserAdmin(UserAdmin):
                     Barcode.objects.create(
                         user=user, barcode=barcode_value, barcode_type="Identification"
                     )
+        
+        # Check if user changed from School to User group
+        if change:
+            school_group = Group.objects.filter(name="School").first()
+            user_group = Group.objects.filter(name="User").first()
+            
+            # If changed from School to User
+            if school_group in old_groups and school_group not in new_groups and user_group in new_groups:
+                # Update UserBarcodeSettings to use identification barcode
+                try:
+                    settings = UserBarcodeSettings.objects.get(user=user)
+                    # Find the user's identification barcode
+                    ident_barcode = Barcode.objects.filter(
+                        user=user, barcode_type="Identification"
+                    ).first()
+                    
+                    if ident_barcode:
+                        settings.barcode = ident_barcode
+                        settings.associate_user_profile_with_barcode = False  # Force this to False for User type
+                        settings.save()
+                except UserBarcodeSettings.DoesNotExist:
+                    # Create settings with identification barcode
+                    ident_barcode = Barcode.objects.filter(
+                        user=user, barcode_type="Identification"
+                    ).first()
+                    
+                    if ident_barcode:
+                        UserBarcodeSettings.objects.create(
+                            user=user,
+                            barcode=ident_barcode,
+                            server_verification=False,
+                            associate_user_profile_with_barcode=False,
+                        )
 
     def get_form(self, request, obj=None, **kwargs):
         # Store old groups before form is processed
@@ -234,13 +264,18 @@ admin.site.register(User, LimitedGroupUserAdmin)
 # ──────────────────────────────────────────────────────────────
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "name", "information_id", "avatar", "profile_uuid")
-    search_fields = ("user__username", "name", "information_id")
-    readonly_fields = ("profile_uuid", "avatar")
+    list_display = ("user", "name", "information_id", "avatar_preview", "profile_uuid_short")
+    search_fields = ("user__username", "name", "information_id", "profile_uuid")
+    readonly_fields = ("profile_uuid", "avatar_display")
     list_select_related = ("user",)
+    fieldsets = (
+        (None, {"fields": ("user",)}),
+        ("Profile Details", {"fields": ("name", "information_id", "profile_uuid")}),
+        ("Avatar", {"fields": ("user_profile_img", "avatar_display")}),
+    )
 
-    @admin.display(description="Avatar", ordering=False)
-    def avatar(self, obj):
+    @admin.display(description="Avatar")
+    def avatar_preview(self, obj):
         if not obj.user_profile_img:
             return "—"
         return format_html(
@@ -248,13 +283,18 @@ class UserProfileAdmin(admin.ModelAdmin):
             obj.user_profile_img,
         )
 
+    @admin.display(description="Current Avatar")
+    def avatar_display(self, obj):
+        if not obj.user_profile_img:
+            return "Not set"
+        return format_html(
+            '<img src="data:image/png;base64,{}" width="128" height="128" style="object-fit:cover;border-radius:4px;" />',
+            obj.user_profile_img,
+        )
 
-@admin.register(Passkey)
-class PasskeyAdmin(admin.ModelAdmin):
-    list_display = ("user", "name", "credential_id", "public_key", "created_at")
-    search_fields = ("user__username", "name", "credential_id")
-    readonly_fields = ("created_at",)
-    list_select_related = ("user",)
+    @admin.display(description="UUID")
+    def profile_uuid_short(self, obj):
+        return str(obj.profile_uuid)[:8] + "…"
 
-    def name(self, obj):
-        return obj.user.username
+
+

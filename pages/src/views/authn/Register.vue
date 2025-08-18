@@ -1,33 +1,60 @@
 <template>
-  <div class="page-container">
-    <div class="page-card">
-      <div class="page-header">
-        <p class="md-typescale-body-large subtitle">Fill in the following information to create an account</p>
-      </div>
+  <div class="auth-container md-theme-dark">
+    <!-- Decorative Background -->
+    <div class="auth-background">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
 
-      <form novalidate @submit.prevent="handleSubmit">
-        <!-- Avatar Section - Centered -->
-        <div class="avatar-upload-section">
-          <div class="avatar-wrapper">
-            <img :src="getAvatarSrc()" alt="Avatar" class="avatar-preview">
-            <div class="avatar-overlay" @click="selectImage">
-              <md-icon>photo_camera</md-icon>
-            </div>
+    <!-- Main Content -->
+    <main class="auth-main">
+      <div class="auth-card md-card md-rounded-xl">
+        <!-- Logo and Welcome -->
+        <div class="auth-header md-text-center">
+          <div class="logo-container md-rounded-lg">
+            <md-icon class="logo-icon">person_add</md-icon>
           </div>
-          <input
+          <h1 class="md-typescale-display-small md-m-0 md-mb-2">Create Account</h1>
+          <p class="md-typescale-body-large md-m-0">
+            Join MobileID to get your digital identity
+          </p>
+        </div>
+
+        <!-- Registration Form -->
+        <form class="auth-form" novalidate @submit.prevent="handleSubmit">
+          <!-- Avatar Upload Section -->
+          <div class="avatar-section">
+            <div class="avatar-upload-wrapper md-flex md-items-center md-gap-4 md-p-3 md-rounded-lg">
+              <div class="avatar-container" @click="selectImage">
+                <img :src="getAvatarSrc()" alt="Profile" class="avatar-image">
+                <div class="avatar-overlay">
+                  <md-icon>photo_camera</md-icon>
+                </div>
+              </div>
+              <div class="avatar-text">
+                <p class="md-typescale-label-large md-m-0">Profile Photo</p>
+                <p class="md-typescale-body-small md-m-0 md-mt-1">Optional • Click to upload</p>
+              </div>
+            </div>
+            <input
               ref="fileInput"
               accept="image/jpeg,image/jpg,image/png"
               class="hidden-input"
               type="file"
               @change="handleFileSelect"
-          >
-          <p class="avatar-hint md-typescale-body-small">Click to upload photo</p>
-          <p v-if="errors.user_profile_img" class="error-text">{{ errors.user_profile_img[0] }}</p>
-        </div>
+            >
+            <transition name="slide-up">
+              <div v-if="errors.user_profile_img" class="md-banner md-banner-error md-mt-2">
+                <md-icon>error</md-icon>
+                <span>{{ errors.user_profile_img[0] || errors.user_profile_img }}</span>
+              </div>
+            </transition>
+          </div>
 
-        <!-- Form Fields Grid -->
-        <div class="form-fields">
-          <md-outlined-text-field
+          <!-- Form Fields -->
+          <div class="form-fields">
+            <md-outlined-text-field
               v-model="formData.username"
               :error="!!errors.username"
               :error-text="errors.username"
@@ -35,11 +62,11 @@
               @blur="validateField('username')"
               @input="clearError('username')"
               @keyup.enter="!loading && handleSubmit()"
-          >
-            <md-icon slot="leading-icon">person</md-icon>
-          </md-outlined-text-field>
+            >
+              <md-icon slot="leading-icon">person</md-icon>
+            </md-outlined-text-field>
 
-          <md-outlined-text-field
+            <md-outlined-text-field
               v-model="formData.name"
               :error="!!errors.name"
               :error-text="errors.name"
@@ -47,11 +74,11 @@
               @blur="validateField('name')"
               @input="clearError('name')"
               @keyup.enter="!loading && handleSubmit()"
-          >
-            <md-icon slot="leading-icon">badge</md-icon>
-          </md-outlined-text-field>
+            >
+              <md-icon slot="leading-icon">badge</md-icon>
+            </md-outlined-text-field>
 
-          <md-outlined-text-field
+            <md-outlined-text-field
               v-model="formData.information_id"
               :error="!!errors.information_id"
               :error-text="errors.information_id"
@@ -59,11 +86,11 @@
               @blur="validateField('information_id')"
               @input="clearError('information_id')"
               @keyup.enter="!loading && handleSubmit()"
-          >
-            <md-icon slot="leading-icon">fingerprint</md-icon>
-          </md-outlined-text-field>
+            >
+              <md-icon slot="leading-icon">fingerprint</md-icon>
+            </md-outlined-text-field>
 
-          <md-outlined-text-field
+            <md-outlined-text-field
               v-model="formData.password1"
               :error="!!errors.password1"
               :error-text="errors.password1"
@@ -72,14 +99,14 @@
               @blur="validateField('password1')"
               @input="clearError('password1')"
               @keyup.enter="!loading && handleSubmit()"
-          >
-            <md-icon slot="leading-icon">lock</md-icon>
-            <md-icon-button slot="trailing-icon" type="button" @click="showPassword1 = !showPassword1">
-              <md-icon>{{ showPassword1 ? 'visibility_off' : 'visibility' }}</md-icon>
-            </md-icon-button>
-          </md-outlined-text-field>
+            >
+              <md-icon slot="leading-icon">lock</md-icon>
+              <md-icon-button slot="trailing-icon" type="button" @click="showPassword1 = !showPassword1">
+                <md-icon>{{ showPassword1 ? 'visibility_off' : 'visibility' }}</md-icon>
+              </md-icon-button>
+            </md-outlined-text-field>
 
-          <md-outlined-text-field
+            <md-outlined-text-field
               v-model="formData.password2"
               :error="!!errors.password2"
               :error-text="errors.password2"
@@ -88,36 +115,40 @@
               @blur="validateField('password2')"
               @input="clearError('password2')"
               @keyup.enter="!loading && handleSubmit()"
-          >
-            <md-icon slot="leading-icon">lock</md-icon>
-            <md-icon-button slot="trailing-icon" type="button" @click="showPassword2 = !showPassword2">
-              <md-icon>{{ showPassword2 ? 'visibility_off' : 'visibility' }}</md-icon>
-            </md-icon-button>
-          </md-outlined-text-field>
+            >
+              <md-icon slot="leading-icon">lock</md-icon>
+              <md-icon-button slot="trailing-icon" type="button" @click="showPassword2 = !showPassword2">
+                <md-icon>{{ showPassword2 ? 'visibility_off' : 'visibility' }}</md-icon>
+              </md-icon-button>
+            </md-outlined-text-field>
+          </div>
+
+          <!-- Error Message -->
+          <transition name="slide-up">
+            <div v-if="errors.general" class="md-banner md-banner-error">
+              <md-icon>error_outline</md-icon>
+              <span class="md-typescale-body-medium">{{ errors.general }}</span>
+            </div>
+          </transition>
+
+          <!-- Submit Button -->
+          <md-filled-button :disabled="loading" class="submit-button" type="submit">
+            <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
+            <md-icon v-else slot="icon">how_to_reg</md-icon>
+            {{ loading ? 'Creating Account...' : 'Create Account' }}
+          </md-filled-button>
+        </form>
+
+        <!-- Login Link -->
+        <div class="auth-footer">
+          <md-divider></md-divider>
+          <p class="md-typescale-body-medium footer-text">
+            Already have an account?
+            <router-link class="auth-link" to="/login">Sign in instead</router-link>
+          </p>
         </div>
-
-        <!-- Error Message -->
-        <div v-if="errors.general" class="error-banner">
-          <md-icon>error_outline</md-icon>
-          <span class="md-typescale-body-medium">{{ errors.general }}</span>
-        </div>
-
-        <!-- Submit Button -->
-        <md-filled-button :disabled="loading" class="primary-button" type="submit">
-          <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
-          {{ loading ? 'Creating Account...' : 'Create Account' }}
-        </md-filled-button>
-      </form>
-
-      <!-- Login Link -->
-      <div class="nav-section">
-        <md-divider></md-divider>
-        <p class="md-typescale-body-medium nav-text">
-          Already have an account?
-          <router-link class="nav-link" to="/login">Sign in</router-link>
-        </p>
       </div>
-    </div>
+    </main>
   </div>
 
   <!-- Cropper Dialog -->
@@ -199,7 +230,7 @@ import {useRouter} from 'vue-router';
 import {register} from '@/api/auth.js';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
-import '@/styles/auth-shared.css';
+import '@/styles/material-theme.css';
 
 const router = useRouter();
 
@@ -665,10 +696,317 @@ watch(showCropper, (newVal) => {
 </script>
 
 <style scoped>
-/* Page-specific styles for Register.vue */
-/* All common styles are now in @/styles/auth-shared.css */
+/* Page-specific styles for Register.vue - minimal overrides only */
 
-/* Enhanced Cropper Dialog Styles */
+/* Auth Container (reuse from Login) */
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--md-sys-spacing-6);
+  position: relative;
+  overflow: hidden;
+  background: var(--md-sys-color-background);
+}
+
+/* Decorative Background Shapes */
+.auth-background {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+}
+
+.shape-1 {
+  width: 400px;
+  height: 400px;
+  background: var(--md-sys-color-primary);
+  top: -200px;
+  right: -100px;
+  animation: float 20s ease-in-out infinite;
+}
+
+.shape-2 {
+  width: 300px;
+  height: 300px;
+  background: var(--md-sys-color-secondary);
+  bottom: -150px;
+  left: -100px;
+  animation: float 25s ease-in-out infinite reverse;
+}
+
+.shape-3 {
+  width: 250px;
+  height: 250px;
+  background: var(--md-sys-color-tertiary);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: float 30s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-20px) rotate(120deg);
+  }
+  66% {
+    transform: translateY(20px) rotate(240deg);
+  }
+}
+
+/* Auth Main - wider for registration */
+.auth-main {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+}
+
+/* Auth Card */
+.auth-card {
+  padding: var(--md-sys-spacing-12) var(--md-sys-spacing-10);
+  box-shadow: var(--md-sys-elevation-3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Logo Container - secondary color for registration */
+.logo-container {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto var(--md-sys-spacing-6);
+  background: var(--md-sys-color-secondary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.logo-icon {
+  font-size: 40px;
+  color: var(--md-sys-color-on-secondary-container);
+  z-index: 1;
+}
+
+/* Avatar Section */
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-spacing-3);
+  align-items: center;
+}
+
+.avatar-upload-wrapper {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 100%;
+}
+
+.avatar-upload-wrapper:hover {
+  background: var(--md-sys-color-surface-container);
+}
+
+.avatar-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-sys-spacing-1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.avatar-container:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.avatar-overlay md-icon {
+  color: white;
+  font-size: 28px;
+}
+
+.avatar-text {
+  flex: 1;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.hidden-input {
+  display: none;
+}
+
+/* Form Structure */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-spacing-6);
+}
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-spacing-4);
+}
+
+/* Submit button full width */
+.submit-button {
+  width: 100%;
+}
+
+/* Footer spacing */
+.auth-footer {
+  margin-top: var(--md-sys-spacing-8);
+}
+
+.auth-footer md-divider {
+  margin-bottom: var(--md-sys-spacing-6);
+}
+
+.footer-text {
+  text-align: center;
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Link styling */
+.auth-link {
+  position: relative;
+  text-decoration: none;
+  color: var(--md-sys-color-primary);
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.auth-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--md-sys-color-primary);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.auth-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* Transitions */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from {
+  transform: translateY(10px);
+  opacity: 0;
+}
+
+.slide-up-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
+/* Loading state */
+.auth-card:has(.submit-button[disabled]) {
+  pointer-events: none;
+}
+
+.auth-card:has(.submit-button[disabled]) .form-fields {
+  opacity: 0.7;
+}
+
+/* Page-specific responsive adjustments */
+@media (max-width: 599px) {
+  .auth-container {
+    padding: var(--md-sys-spacing-4);
+  }
+  
+  .auth-card {
+    padding: var(--md-sys-spacing-8) var(--md-sys-spacing-6);
+    border-radius: var(--md-sys-shape-corner-large);
+  }
+  
+  .avatar-upload-wrapper {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .avatar-container {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .logo-container {
+    width: 64px;
+    height: 64px;
+  }
+  
+  .logo-icon {
+    font-size: 32px;
+  }
+  
+  .form-fields {
+    gap: var(--md-sys-spacing-3);
+  }
+  
+  .shape {
+    filter: blur(100px);
+  }
+}
+
+/* Cropper Dialog Styles */
 .cropper-dialog {
   --md-dialog-container-max-width: min(90vw, 800px);
   --md-dialog-container-max-height: min(85vh, 600px);
@@ -681,7 +1019,7 @@ watch(showCropper, (newVal) => {
 
 .cropper-main {
   display: flex;
-  gap: 16px;
+  gap: var(--md-sys-spacing-4);
   min-height: 400px;
 }
 
@@ -690,8 +1028,8 @@ watch(showCropper, (newVal) => {
   min-width: 300px;
   height: 400px;
   position: relative;
-  background: #f5f5f5;
-  border-radius: 8px;
+  background: var(--md-sys-color-surface-container-low);
+  border-radius: var(--md-sys-shape-corner-medium);
   overflow: hidden;
 }
 
@@ -707,7 +1045,7 @@ watch(showCropper, (newVal) => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 16px;
+  gap: var(--md-sys-spacing-4);
   color: var(--md-sys-color-on-surface-variant);
 }
 
@@ -715,16 +1053,16 @@ watch(showCropper, (newVal) => {
   width: 240px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 16px;
+  gap: var(--md-sys-spacing-5);
+  padding: var(--md-sys-spacing-4);
   background: var(--md-sys-color-surface-container-low);
-  border-radius: 8px;
+  border-radius: var(--md-sys-shape-corner-medium);
   overflow-y: auto;
 }
 
 .cropper-preview-section h3,
 .cropper-controls h3 {
-  margin: 0 0 12px 0;
+  margin: 0 0 var(--md-sys-spacing-3) 0;
   color: var(--md-sys-color-on-surface);
 }
 
@@ -733,7 +1071,7 @@ watch(showCropper, (newVal) => {
   height: 128px;
   border: 2px solid var(--md-sys-color-outline-variant);
   border-radius: 50%;
-  margin: 0 auto 8px;
+  margin: 0 auto var(--md-sys-spacing-2);
   background: var(--md-sys-color-surface);
   overflow: hidden;
   display: flex;
@@ -748,12 +1086,12 @@ watch(showCropper, (newVal) => {
 }
 
 .control-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--md-sys-spacing-5);
 }
 
 .control-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: var(--md-sys-spacing-2);
   color: var(--md-sys-color-on-surface);
   font-weight: 500;
 }
@@ -761,13 +1099,13 @@ watch(showCropper, (newVal) => {
 .zoom-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--md-sys-spacing-2);
 }
 
 .zoom-value {
   text-align: center;
   color: var(--md-sys-color-on-surface-variant);
-  margin-top: 4px;
+  margin-top: var(--md-sys-spacing-1);
   font-weight: 500;
 }
 
@@ -801,13 +1139,13 @@ watch(showCropper, (newVal) => {
 }
 
 .cropper-tips {
-  padding: 16px;
+  padding: var(--md-sys-spacing-4);
   background: var(--md-sys-color-surface-container-low);
-  border-radius: 8px;
-  margin-top: 16px;
+  border-radius: var(--md-sys-shape-corner-medium);
+  margin-top: var(--md-sys-spacing-4);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--md-sys-spacing-2);
   color: var(--md-sys-color-on-surface-variant);
 }
 
@@ -825,7 +1163,7 @@ watch(showCropper, (newVal) => {
 }
 
 /* Mobile-first responsive design */
-@media (max-width: 640px) {
+@media (max-width: 599px) {
   .cropper-dialog {
     --md-dialog-container-max-width: 95vw;
     --md-dialog-container-max-height: 90vh;
@@ -834,7 +1172,7 @@ watch(showCropper, (newVal) => {
   .cropper-main {
     flex-direction: column;
     min-height: auto;
-    gap: 12px;
+    gap: var(--md-sys-spacing-3);
   }
 
   .cropper-container {
@@ -846,8 +1184,8 @@ watch(showCropper, (newVal) => {
   .cropper-sidebar {
     width: 100%;
     order: 2;
-    padding: 12px;
-    gap: 16px;
+    padding: var(--md-sys-spacing-3);
+    gap: var(--md-sys-spacing-4);
   }
 
   .cropper-preview {
@@ -856,11 +1194,11 @@ watch(showCropper, (newVal) => {
   }
 
   .control-group {
-    margin-bottom: 16px;
+    margin-bottom: var(--md-sys-spacing-4);
   }
 
   .zoom-controls {
-    gap: 6px;
+    gap: var(--md-sys-spacing-1);
   }
 
   .zoom-slider {
@@ -877,7 +1215,7 @@ watch(showCropper, (newVal) => {
 }
 
 /* Tablet adjustments */
-@media (min-width: 641px) and (max-width: 1024px) {
+@media (min-width: 600px) and (max-width: 904px) {
   .cropper-dialog {
     --md-dialog-container-max-width: 85vw;
     --md-dialog-container-max-height: 80vh;
@@ -894,7 +1232,7 @@ watch(showCropper, (newVal) => {
 }
 
 /* Desktop optimization */
-@media (min-width: 1025px) {
+@media (min-width: 905px) {
   .cropper-main {
     min-height: 450px;
   }
@@ -915,7 +1253,8 @@ watch(showCropper, (newVal) => {
 }
 
 :deep(.cropper-face) {
-  background-color: rgba(var(--md-sys-color-primary-rgb), 0.1);
+  background-color: var(--md-sys-color-surface-container);
+  opacity: 0.1;
 }
 
 :deep(.cropper-line) {

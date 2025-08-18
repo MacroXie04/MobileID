@@ -8,16 +8,26 @@ import {baseURL} from './config';
 // Cropper.js
 import 'cropperjs/dist/cropper.css';
 
+// Local jQuery (for legacy jQuery animations used in HomeSchool)
+import $ from 'jquery';
+window.$ = $;
+window.jQuery = $;
+
 // Material Web - Import all components and the typescale styles
 import '@material/web/all.js';
 import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
 
-const app = createApp(App);
+// Local fonts (replace Google Fonts CDN)
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/500.css';
+import '@fontsource/roboto/700.css';
+import '@fontsource/open-sans/400.css';
+import '@fontsource/open-sans/600.css';
+import '@fontsource/roboto-mono/400.css';
+// Optional: Material Symbols Outlined as local font (if <md-icon> uses glyphs)
+import '@fontsource/material-symbols-outlined/400.css';
 
-// --- KEY CONFIGURATION ---
-// Tell Vue to recognize all tags starting with "md-" as custom elements.
-// This prevents Vue from trying to resolve them as Vue components.
-app.config.compilerOptions.isCustomElement = (tag) => tag.startsWith('md-');
+const app = createApp(App);
 
 app.provide('baseURL', baseURL);
 

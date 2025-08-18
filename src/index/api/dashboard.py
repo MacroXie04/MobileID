@@ -19,8 +19,8 @@ class BarcodeDashboardAPIView(APIView):
     - DELETE: Delete barcode
 
     Business rules:
-    1. If user is in "User" group: barcode_pull is permanently False and disabled
-    2. When barcode_pull is True, barcode field must be disabled and cleared
+    1. If user is in "User" group: associate_user_profile_with_barcode is permanently False and disabled
+    2. When associate_user_profile_with_barcode is True, barcode field must be disabled and cleared
     3. Only DynamicBarcode and Others types can be managed
     """
     permission_classes = [IsAuthenticated]
@@ -28,6 +28,12 @@ class BarcodeDashboardAPIView(APIView):
     def get(self, request):
         """Get user settings and barcodes"""
         user = request.user
+        
+        # Check if user is in User group - they shouldn't access this endpoint
+        if user.groups.filter(name="User").exists():
+            return Response({
+                'detail': 'User type accounts cannot access barcode dashboard'
+            }, status=status.HTTP_403_FORBIDDEN)
 
         # Get or create user settings
         settings, created = UserBarcodeSettings.objects.get_or_create(
@@ -35,28 +41,49 @@ class BarcodeDashboardAPIView(APIView):
             defaults={
                 'barcode': None,
                 'server_verification': False,
-                'barcode_pull': False
+                'associate_user_profile_with_barcode': False
             }
         )
 
-        # Force barcode_pull to False for User group members
+        # Force associate_user_profile_with_barcode to False for User group members
         is_user_group = user.groups.filter(name="User").exists()
-        if is_user_group and settings.barcode_pull:
-            settings.barcode_pull = False
+        if is_user_group and settings.associate_user_profile_with_barcode:
+            settings.associate_user_profile_with_barcode = False
             settings.save()
 
-        # Get user's barcodes (excluding Identification type)
-        barcodes = Barcode.objects.filter(
-            user=user,
-            barcode_type__in=['DynamicBarcode', 'Others']
-        ).order_by('-time_created')
+        # Get barcodes based on user type
+        is_school_group = user.groups.filter(name="School").exists()
+        
+        if is_school_group:
+            # School users see all dynamic barcodes plus their own others
+            from django.db.models import Q
+            barcodes = (
+                Barcode.objects.filter(
+                    Q(barcode_type='DynamicBarcode') |  # All dynamic barcodes
+                    Q(user=user, barcode_type='Others')  # Their own Others type
+                )
+                .select_related('user')
+                .prefetch_related('barcodeuserprofile', 'barcodeusage_set')
+                .order_by('-time_created')
+            )
+        else:
+            # Other users only see their own non-identification barcodes
+            barcodes = (
+                Barcode.objects.filter(
+                    user=user,
+                    barcode_type__in=['DynamicBarcode', 'Others']
+                )
+                .select_related('user')
+                .prefetch_related('barcodeuserprofile', 'barcodeusage_set')
+                .order_by('-time_created')
+            )
 
         # Serialize data
         settings_serializer = UserBarcodeSettingsSerializer(
             settings,
             context={'request': request}
         )
-        barcodes_serializer = BarcodeSerializer(barcodes, many=True)
+        barcodes_serializer = BarcodeSerializer(barcodes, many=True, context={'request': request})
 
         return Response({
             'settings': settings_serializer.data,
@@ -68,19 +95,19 @@ class BarcodeDashboardAPIView(APIView):
     def post(self, request):
         """Update user barcode settings"""
         user = request.user
+        
+        # Check if user is in User group - they shouldn't access this endpoint
+        if user.groups.filter(name="User").exists():
+            return Response({
+                'detail': 'User type accounts cannot access barcode dashboard'
+            }, status=status.HTTP_403_FORBIDDEN)
         settings, _ = UserBarcodeSettings.objects.get_or_create(user=user)
 
         # Create a copy of request data to potentially modify
         data = request.data.copy()
 
-        # Rule 1: Force barcode_pull to False for User group
-        is_user_group = user.groups.filter(name="User").exists()
-        if is_user_group:
-            data['barcode_pull'] = False
-
-        # Rule 2: Clear barcode when barcode_pull is True
-        if data.get('barcode_pull', False):
-            data['barcode'] = None
+        # Let the serializer handle automatic setting of associate_user_profile_with_barcode
+        # based on barcode type. No manual intervention needed here.
 
         serializer = UserBarcodeSettingsSerializer(
             settings,
@@ -104,6 +131,12 @@ class BarcodeDashboardAPIView(APIView):
 
     def put(self, request):
         """Create new barcode"""
+        # Check if user is in User group - they shouldn't access this endpoint
+        if request.user.groups.filter(name="User").exists():
+            return Response({
+                'detail': 'User type accounts cannot access barcode dashboard'
+            }, status=status.HTTP_403_FORBIDDEN)
+            
         serializer = BarcodeCreateSerializer(
             data=request.data,
             context={'request': request}
@@ -114,7 +147,7 @@ class BarcodeDashboardAPIView(APIView):
             return Response({
                 'status': 'success',
                 'message': 'New barcode added successfully',
-                'barcode': BarcodeSerializer(barcode).data
+                'barcode': BarcodeSerializer(barcode, context={'request': request}).data
             }, status=status.HTTP_201_CREATED)
 
         return Response({
@@ -123,7 +156,13 @@ class BarcodeDashboardAPIView(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
-        """Delete barcode - only allows DynamicBarcode and Others types"""
+        """Delete barcode - users may delete only their own barcodes (DynamicBarcode and Others types)"""
+        # Check if user is in User group - they shouldn't access this endpoint
+        if request.user.groups.filter(name="User").exists():
+            return Response({
+                'detail': 'User type accounts cannot access barcode dashboard'
+            }, status=status.HTTP_403_FORBIDDEN)
+            
         barcode_id = request.data.get('barcode_id')
 
         if not barcode_id:
@@ -132,7 +171,7 @@ class BarcodeDashboardAPIView(APIView):
                 'message': 'Barcode ID is required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Get barcode and verify ownership and type
+        # All users can only delete barcodes they own
         try:
             barcode = Barcode.objects.get(
                 pk=barcode_id,
@@ -142,7 +181,7 @@ class BarcodeDashboardAPIView(APIView):
         except Barcode.DoesNotExist:
             return Response({
                 'status': 'error',
-                'message': 'Barcode not found or cannot be deleted'
+                'message': 'Barcode not found or you do not have permission to delete it'
             }, status=status.HTTP_404_NOT_FOUND)
 
         # Check if this barcode is currently selected in settings

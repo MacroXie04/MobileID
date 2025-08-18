@@ -40,7 +40,7 @@ def create_user_profile(
         user=user,
         barcode=ident_barcode,
         server_verification=False,
-        barcode_pull=False,
+        associate_user_profile_with_barcode=False,
     )
 
     return user
