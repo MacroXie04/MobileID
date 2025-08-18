@@ -14,7 +14,7 @@ const router = createRouter({
         {path: "/register", component: Register},
         {path: "/", component: Home, meta: {requiresAuth: true}},
         {path: "/profile/edit", component: ProfileEdit, meta: {requiresAuth: true}},
-        {path: "/barcode/dashboard", component: BarcodeDashboard, meta: {requiresAuth: true}},
+        {path: "/dashboard", component: BarcodeDashboard, meta: {requiresAuth: true}},
         // Catch-all 404: redirect authenticated users to home, others to login
         {path: "/:pathMatch(.*)*", redirect: (to) => ({path: "/"})}
     ]
@@ -28,7 +28,7 @@ router.beforeEach(async (to, _from, next) => {
         // If already cached, check access
         if (window.userInfo) {
             // Check if User type trying to access barcode dashboard
-            if (to.path === '/barcode/dashboard' && window.userInfo.groups && window.userInfo.groups.includes('User')) {
+            if (to.path === '/dashboard' && window.userInfo.groups && window.userInfo.groups.includes('User')) {
                 return next({path: "/"});
             }
             return next();
@@ -38,7 +38,7 @@ router.beforeEach(async (to, _from, next) => {
         if (data) {
             window.userInfo = data;
             // Check if User type trying to access barcode dashboard
-            if (to.path === '/barcode/dashboard' && data.groups && data.groups.includes('User')) {
+            if (to.path === '/dashboard' && data.groups && data.groups.includes('User')) {
                 return next({path: "/"});
             }
             return next();

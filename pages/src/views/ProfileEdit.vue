@@ -4,8 +4,7 @@
     <header class="md-top-app-bar">
       <div class="md-top-app-bar-content">
         <div class="header-title">
-          <h1 class="md-typescale-display-small md-m-0">Edit Profile</h1>
-          <p class="md-typescale-body-large md-m-0 md-mt-1">Update your personal information</p>
+          <h3 class="md-typescale-title-medium md-m-0">Edit Profile</h3>
         </div>
         <md-filled-tonal-button @click="router.push('/')">
           <md-icon slot="icon">arrow_back</md-icon>
@@ -14,9 +13,20 @@
       </div>
     </header>
 
+    <!-- Auto-save Status Toast -->
+    <transition name="slide-down">
+      <div v-if="autoSaveStatus.show" :class="['message-toast md-banner', autoSaveStatus.type === 'success' ? 'md-banner-success' : 'md-banner-error']">
+        <md-icon>{{ autoSaveStatus.type === 'success' ? 'check_circle' : 'error' }}</md-icon>
+        <span class="md-typescale-body-medium">{{ autoSaveStatus.message }}</span>
+        <md-icon-button @click="autoSaveStatus.show = false">
+          <md-icon>close</md-icon>
+        </md-icon-button>
+      </div>
+    </transition>
+
     <!-- Success Message Toast -->
     <transition name="slide-down">
-      <div v-if="successMessage" class="message-toast md-banner md-banner-success">
+      <div v-if="successMessage" class="message-toast md-banner md-banner-success" style="top: 160px;">
         <md-icon>check_circle</md-icon>
         <span class="md-typescale-body-medium">{{ successMessage }}</span>
         <md-icon-button @click="successMessage = ''">
@@ -34,17 +44,19 @@
             <h2 class="md-typescale-headline-small section-title md-mb-6">Profile Photo</h2>
             
             <div class="avatar-upload-container md-flex md-items-center md-gap-8">
-              <div class="avatar-wrapper md-avatar-xl" @click="selectImage">
-                <img :src="getAvatarSrc()" alt="Profile" class="avatar-image">
-                <div class="avatar-overlay">
-                  <md-icon>photo_camera</md-icon>
-                  <span class="md-typescale-label-medium">Change Photo</span>
+              <div class="avatar-section-center">
+                <div class="avatar-wrapper md-avatar-xl" @click="selectImage">
+                  <img :src="getAvatarSrc()" alt="Profile" class="avatar-image">
+                  <div class="avatar-overlay">
+                    <md-icon>photo_camera</md-icon>
+                    <span class="md-typescale-label-medium">Change Photo</span>
+                  </div>
                 </div>
-              </div>
-              
-              <div class="avatar-info">
-                <p class="md-typescale-body-medium md-m-0">Click to upload a new profile photo</p>
-                <p class="md-typescale-body-small md-m-0 md-mt-1">JPG or PNG • Max 5MB • Recommended: Square image</p>
+                
+                <div class="avatar-info">
+                  <p class="md-typescale-body-medium md-m-0">Click to upload a new profile photo</p>
+                  <p class="md-typescale-body-small md-m-0 md-mt-1">JPG or PNG • Max 5MB • Recommended: Square image</p>
+                </div>
               </div>
             </div>
             
@@ -76,7 +88,7 @@
                 :error="!!errors.name"
                 :error-text="errors.name"
                 label="Full Name"
-                @input="clearError('name')"
+                @input="handleFieldChange('name')"
                 @keyup.enter="!loading && handleSubmit()"
               >
                 <md-icon slot="leading-icon">badge</md-icon>
@@ -87,11 +99,29 @@
                 :error="!!errors.information_id"
                 :error-text="errors.information_id"
                 label="Information ID"
-                @input="clearError('information_id')"
+                @input="handleFieldChange('information_id')"
                 @keyup.enter="!loading && handleSubmit()"
               >
                 <md-icon slot="leading-icon">fingerprint</md-icon>
               </md-outlined-text-field>
+            </div>
+          </div>
+
+          <!-- Auto-save Status Indicator -->
+          <div class="auto-save-status md-mt-4 md-p-3 md-rounded-lg md-bg-surface-container-low">
+            <div class="md-flex md-items-center md-gap-2">
+              <md-icon v-if="autoSaving" class="auto-save-icon">
+                <md-circular-progress indeterminate></md-circular-progress>
+              </md-icon>
+              <md-icon v-else-if="lastSaved" class="auto-save-icon md-text-primary">
+                check_circle
+              </md-icon>
+              <md-icon v-else class="auto-save-icon md-text-on-surface-variant">
+                schedule
+              </md-icon>
+              <span class="md-typescale-body-small">
+                {{ getAutoSaveStatusText() }}
+              </span>
             </div>
           </div>
 
@@ -102,18 +132,6 @@
               <span class="md-typescale-body-medium">{{ errors.general }}</span>
             </div>
           </transition>
-
-          <!-- Form Actions -->
-          <div class="form-actions md-flex md-justify-end md-gap-3 md-mt-8">
-            <md-outlined-button type="button" @click="router.push('/')">
-              Cancel
-            </md-outlined-button>
-            <md-filled-button type="submit" :disabled="loading">
-              <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
-              <md-icon v-else slot="icon">save</md-icon>
-              {{ loading ? 'Saving...' : 'Save Changes' }}
-            </md-filled-button>
-          </div>
         </form>
       </section>
     </main>
@@ -177,6 +195,18 @@ const cropper = ref(null);
 const showCropper = ref(false);
 const tempImageUrl = ref('');
 const successMessage = ref('');
+const autoSaving = ref(false);
+const lastSaved = ref(false);
+const autoSaveStatus = ref({
+  show: false,
+  type: 'info', // 'info', 'success', 'error'
+  message: ''
+});
+
+// Auto-save debounce timer
+const autoSaveTimer = ref(null);
+const originalData = ref({});
+const hasChanges = ref(false);
 
 // Methods
 const getAvatarSrc = () => {
@@ -319,6 +349,137 @@ const handleDialogClose = () => {
   closeCropper();
 };
 
+const handleFieldChange = (field) => {
+  // Clear error for the field
+  clearError(field);
+  
+  // Mark that we have changes
+  hasChanges.value = true;
+  lastSaved.value = false;
+  
+  // Clear previous auto-save timer
+  if (autoSaveTimer.value) {
+    clearTimeout(autoSaveTimer.value);
+  }
+  
+  // Set new auto-save timer (1.5 seconds delay)
+  autoSaveTimer.value = setTimeout(() => {
+    autoSaveChanges();
+  }, 1500);
+};
+
+const getAutoSaveStatusText = () => {
+  if (autoSaving.value) {
+    return 'Auto-saving...';
+  } else if (lastSaved.value) {
+    return 'Last saved: ' + new Date().toLocaleTimeString();
+  } else if (hasChanges.value) {
+    return 'Changes detected - auto-saving soon...';
+  } else {
+    return 'Auto-save enabled';
+  }
+};
+
+const autoSaveChanges = async () => {
+  if (!hasChanges.value || autoSaving.value) return;
+  
+  autoSaving.value = true;
+  
+  try {
+    // Prepare data for auto-save
+    const profileData = {
+      name: formData.value.name,
+      information_id: formData.value.information_id
+    };
+    
+    // Check if text fields have changed
+    const textFieldsChanged = JSON.stringify(profileData) !== JSON.stringify(originalData.value);
+    
+    // Add base64 avatar if there's a new one
+    if (avatarFile.value) {
+      const reader = new FileReader();
+      const base64Promise = new Promise((resolve) => {
+        reader.onloadend = () => {
+          const base64String = reader.result.split(',')[1]; // Remove data:image prefix
+          resolve(base64String);
+        };
+        reader.readAsDataURL(avatarFile.value);
+      });
+
+      profileData.user_profile_img_base64 = await base64Promise;
+    }
+    
+    // Only auto-save if data has actually changed
+    if (!textFieldsChanged && !avatarFile.value) {
+      hasChanges.value = false;
+      autoSaving.value = false;
+      return;
+    }
+    
+    const response = await updateUserProfile(profileData);
+    if (response.success) {
+      // Update original data to match current data
+      originalData.value = {
+        name: formData.value.name,
+        information_id: formData.value.information_id
+      };
+      
+      // Clear avatar file after successful save
+      if (avatarFile.value) {
+        avatarFile.value = null;
+      }
+      
+      hasChanges.value = false;
+      lastSaved.value = true;
+      
+      // Show success toast
+      autoSaveStatus.value = {
+        show: true,
+        type: 'success',
+        message: 'Profile auto-saved successfully'
+      };
+      
+      // Hide toast after 3 seconds
+      setTimeout(() => {
+        autoSaveStatus.value.show = false;
+      }, 3000);
+      
+      // Hide last saved indicator after 5 seconds
+      setTimeout(() => {
+        lastSaved.value = false;
+      }, 5000);
+    } else {
+      // Show error toast
+      autoSaveStatus.value = {
+        show: true,
+        type: 'error',
+        message: 'Auto-save failed: ' + (response.message || 'Unknown error')
+      };
+      
+      // Hide error toast after 5 seconds
+      setTimeout(() => {
+        autoSaveStatus.value.show = false;
+      }, 5000);
+    }
+  } catch (error) {
+    console.error('Auto-save error:', error);
+    
+    // Show error toast
+    autoSaveStatus.value = {
+      show: true,
+      type: 'error',
+      message: 'Auto-save failed: Network error'
+    };
+    
+    // Hide error toast after 5 seconds
+    setTimeout(() => {
+      autoSaveStatus.value.show = false;
+    }, 5000);
+  } finally {
+    autoSaving.value = false;
+  }
+};
+
 const handleSubmit = async () => {
   if (loading.value) return;
 
@@ -362,6 +523,18 @@ const handleSubmit = async () => {
 
     // Success - show message then redirect
     successMessage.value = 'Profile updated successfully!';
+    lastSaved.value = true;
+    hasChanges.value = false;
+    
+    // Update original data to match current data
+    originalData.value = {
+      name: formData.value.name,
+      information_id: formData.value.information_id
+    };
+    
+    setTimeout(() => {
+      lastSaved.value = false;
+    }, 3000); // Hide last saved message after 3 seconds
     setTimeout(() => {
       router.push('/');
     }, 1500);
@@ -370,6 +543,7 @@ const handleSubmit = async () => {
     errors.value.general = 'Network error. Please try again.';
   } finally {
     loading.value = false;
+    autoSaving.value = false;
   }
 };
 
@@ -378,6 +552,12 @@ const loadProfile = async () => {
     const response = await getUserProfile();
     if (response.success) {
       formData.value = {...response.data};
+      
+      // Initialize original data for auto-save comparison
+      originalData.value = {
+        name: response.data.name || '',
+        information_id: response.data.information_id || ''
+      };
 
       // Load avatar separately
       try {
@@ -400,6 +580,11 @@ const loadProfile = async () => {
 
 // Cleanup
 onUnmounted(() => {
+  // Clear auto-save timer
+  if (autoSaveTimer.value) {
+    clearTimeout(autoSaveTimer.value);
+  }
+  
   if (avatarPreviewUrl.value) {
     URL.revokeObjectURL(avatarPreviewUrl.value);
   }
@@ -415,6 +600,24 @@ onUnmounted(() => {
 watch(showCropper, (newVal) => {
   if (!newVal) {
     closeCropper();
+  }
+});
+
+// Watch for avatar changes to trigger auto-save
+watch(avatarFile, (newVal) => {
+  if (newVal) {
+    hasChanges.value = true;
+    lastSaved.value = false;
+    
+    // Clear previous auto-save timer
+    if (autoSaveTimer.value) {
+      clearTimeout(autoSaveTimer.value);
+    }
+    
+    // Set new auto-save timer for avatar (longer delay for image processing)
+    autoSaveTimer.value = setTimeout(() => {
+      autoSaveChanges();
+    }, 2000);
   }
 });
 
@@ -443,6 +646,14 @@ onMounted(() => {
 }
 
 /* Avatar Section */
+.avatar-section-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--md-sys-spacing-4);
+}
+
 .avatar-wrapper {
   position: relative;
   cursor: pointer;
@@ -489,8 +700,8 @@ onMounted(() => {
 }
 
 .avatar-info {
-  flex: 1;
   color: var(--md-sys-color-on-surface-variant);
+  max-width: 300px;
 }
 
 .hidden-input {
@@ -529,6 +740,35 @@ onMounted(() => {
   color: var(--md-sys-color-on-surface-variant);
 }
 
+/* Auto-save Status Indicator */
+.auto-save-status {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+  border-radius: var(--md-sys-shape-small);
+  background-color: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  transition: all 0.2s ease;
+}
+
+.auto-save-status:hover {
+  background-color: var(--md-sys-color-surface-container);
+}
+
+.auto-save-icon {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auto-save-icon md-circular-progress {
+  width: 20px;
+  height: 20px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .avatar-upload-container {
@@ -546,6 +786,18 @@ onMounted(() => {
   
   .form-actions > * {
     width: 100%;
+  }
+}
+
+/* Large screen adjustments */
+@media (min-width: 769px) {
+  .avatar-upload-container {
+    justify-content: center;
+  }
+  
+  .avatar-section-center {
+    width: 100%;
+    max-width: 400px;
   }
 }
 

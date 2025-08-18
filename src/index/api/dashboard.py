@@ -55,23 +55,23 @@ class BarcodeDashboardAPIView(APIView):
         is_school_group = user.groups.filter(name="School").exists()
         
         if is_school_group:
-            # School users see all dynamic barcodes plus their own others
+            # School users see all dynamic barcodes plus their own identification and others
             from django.db.models import Q
             barcodes = (
                 Barcode.objects.filter(
                     Q(barcode_type='DynamicBarcode') |  # All dynamic barcodes
-                    Q(user=user, barcode_type='Others')  # Their own Others type
+                    Q(user=user, barcode_type__in=['Others', 'Identification'])  # Their own Identification and Others
                 )
                 .select_related('user')
                 .prefetch_related('barcodeuserprofile', 'barcodeusage_set')
                 .order_by('-time_created')
             )
         else:
-            # Other users only see their own non-identification barcodes
+            # Other users see all of their own barcodes, including Identification
             barcodes = (
                 Barcode.objects.filter(
                     user=user,
-                    barcode_type__in=['DynamicBarcode', 'Others']
+                    barcode_type__in=['DynamicBarcode', 'Others', 'Identification']
                 )
                 .select_related('user')
                 .prefetch_related('barcodeuserprofile', 'barcodeusage_set')

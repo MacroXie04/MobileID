@@ -7,7 +7,7 @@
         <i class="fa fa-credit-card fa-2x"></i>
         <p>Add Funds</p>
       </a>
-      <a class="btn-grid" href="/barcode/dashboard" @click.prevent="handleBarcodeDashboard">
+      <a class="btn-grid" href="/dashboard" @click.prevent="handleBarcodeDashboard">
         <i class="fa fa-money-bill fa-2x"></i>
         <p>Balance</p>
       </a>
@@ -68,7 +68,7 @@ function handleEditProfile() {
 }
 
 function handleBarcodeDashboard() {
-  router.push('/barcode/dashboard');
+  router.push('/dashboard');
 }
 
 async function handleLogout() {

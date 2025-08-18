@@ -4,8 +4,7 @@
     <header class="md-top-app-bar">
       <div class="md-top-app-bar-content">
         <div class="header-title">
-          <h1 class="md-typescale-display-small md-m-0">Barcode Management</h1>
-          <p class="md-typescale-body-large md-m-0 md-mt-1">Configure and manage your digital ID barcodes</p>
+          <h3 class="md-typescale-title-medium md-m-0">Barcode Dashboard</h3>
         </div>
         <md-filled-tonal-button @click="router.push('/')">
           <md-icon slot="icon">arrow_back</md-icon>
@@ -50,7 +49,7 @@
             </div>
           </div>
 
-          <div class="settings-grid md-flex md-flex-column md-gap-4">
+          <div v-if="isDynamicSelected" class="settings-grid md-flex md-flex-column md-gap-4">
             <!-- Profile Association -->
             <div class="setting-item md-flex md-items-center md-justify-between md-p-4 md-rounded-lg">
               <div class="setting-header md-flex md-gap-3">
@@ -105,15 +104,6 @@
 
         <!-- Filter Bar -->
         <div class="filter-bar md-flex md-gap-3 md-items-center md-mb-6 md-flex-wrap">
-          <md-outlined-text-field
-            v-model="searchQuery"
-            class="search-field md-flex-1"
-            placeholder="Search by owner or barcode digits"
-            @input="onFilterChange"
-          >
-            <md-icon slot="leading-icon">search</md-icon>
-          </md-outlined-text-field>
-
           <div class="filter-controls md-flex md-items-center md-gap-2">
             <md-filter-chip
               :selected="filterType === 'All'"
@@ -133,6 +123,12 @@
             >
               Static
             </md-filter-chip>
+            <md-filter-chip
+              :selected="filterType === 'Identification'"
+              @click="filterType = 'Identification'; onFilterChange()"
+            >
+              Identification
+            </md-filter-chip>
             
             <md-divider vertical></md-divider>
             
@@ -144,18 +140,6 @@
               Owned only
             </md-filter-chip>
           </div>
-
-          <md-outlined-select v-model="sortBy" class="sort-select" @change="onFilterChange">
-            <md-select-option value="Newest">
-              <div slot="headline">Newest first</div>
-            </md-select-option>
-            <md-select-option value="Oldest">
-              <div slot="headline">Oldest first</div>
-            </md-select-option>
-            <md-select-option value="MostUsed">
-              <div slot="headline">Most used</div>
-            </md-select-option>
-          </md-outlined-select>
         </div>
 
         <!-- Barcodes Grid -->
@@ -177,7 +161,7 @@
             <!-- Barcode Type Icon -->
             <div class="barcode-type-icon md-flex md-items-center md-justify-center md-rounded-lg">
               <md-icon>
-                {{ barcode.barcode_type === 'DynamicBarcode' ? 'qr_code_2' : 'barcode' }}
+                {{ barcode.barcode_type === 'DynamicBarcode' ? 'qr_code_2' : barcode.barcode_type === 'Identification' ? 'badge' : 'barcode' }}
               </md-icon>
             </div>
 
@@ -185,13 +169,22 @@
             <div class="barcode-content">
               <div class="barcode-title-row">
                 <h3 class="md-typescale-title-medium md-m-0">
-                  {{ barcode.barcode_type === 'DynamicBarcode' ? 'Dynamic' : 'Static' }} Barcode
+                  {{ getBarcodeDisplayTitle(barcode.barcode_type) }}
                 </h3>
                 <div class="barcode-badges md-flex md-gap-2 md-flex-wrap">
-                  <span v-if="Number(settings.barcode) === Number(barcode.id)" class="md-badge badge-active">
-                    <md-icon>check_circle</md-icon>
+                  <md-assist-chip>
+                    <md-icon slot="icon">
+                      {{ barcode.barcode_type === 'DynamicBarcode' ? 'qr_code_2' : barcode.barcode_type === 'Identification' ? 'badge' : 'barcode' }}
+                    </md-icon>
+                    {{ getBarcodeTypeLabel(barcode.barcode_type) }}
+                  </md-assist-chip>
+                  <md-assist-chip
+                    v-if="Number(settings.barcode) === Number(barcode.id)"
+                    aria-label="Active barcode"
+                  >
+                    <md-icon slot="icon">check_circle</md-icon>
                     Active
-                  </span>
+                  </md-assist-chip>
                   <span v-if="!barcode.is_owned_by_current_user" class="md-badge badge-shared">
                     <md-icon>group</md-icon>
                     Shared
@@ -204,7 +197,7 @@
               </div>
 
               <p class="barcode-id md-typescale-body-medium md-mt-2 md-mb-0">
-                •••• {{ barcode.barcode.slice(-4) }}
+                {{ getBarcodeDisplayId(barcode) }}
                 <span v-if="!barcode.is_owned_by_current_user" class="owner-label">
                   by {{ barcode.owner }}
                 </span>
@@ -233,7 +226,7 @@
               </md-filled-tonal-button>
               
               <md-icon-button
-                v-if="barcode.is_owned_by_current_user"
+                v-if="barcode.is_owned_by_current_user && barcode.barcode_type !== 'Identification'"
                 @click="deleteBarcode(barcode)"
               >
                 <md-icon>delete</md-icon>
@@ -243,13 +236,13 @@
         </transition-group>
 
         <!-- Empty State -->
-        <div v-else class="md-empty-state">
+        <div v-else class="md-empty-state empty-state-box">
           <md-icon class="md-empty-state-icon">qr_code_scanner</md-icon>
-          <h3 class="md-typescale-headline-small md-mb-2">No barcodes found</h3>
+          <h3 class="md-typescale-headline-small md-mb-2">
+            {{ hasActiveFilters ? 'No barcodes match your filters' : 'No barcodes found' }}
+          </h3>
           <p class="md-typescale-body-medium md-m-0">
-            {{ searchQuery || filterType !== 'All' || ownedOnly 
-              ? 'Try adjusting your filters' 
-              : 'Add your first barcode to get started' }}
+            {{ hasActiveFilters ? 'Try clearing filters or selecting a different type.' : 'Add your first barcode to get started.' }}
           </p>
         </div>
       </section>
@@ -385,6 +378,11 @@ const barcodes = ref([]);
 const barcodeChoices = ref([]);
 const isUserGroup = ref(false);
 const isSchoolGroup = ref(false);
+const isDynamicSelected = computed(() => {
+  if (!settings.value.barcode) return false;
+  const current = barcodeChoices.value.find(c => Number(c.id) === Number(settings.value.barcode));
+  return current?.barcode_type === 'DynamicBarcode';
+});
 
 // Form data
 const newBarcode = ref('');
@@ -515,7 +513,7 @@ async function updateSettings() {
 
 // Filter/sort state and helpers
 const searchQuery = ref('');
-const filterType = ref('All'); // All | Dynamic | Static
+const filterType = ref('All'); // All | Dynamic | Static | Identification
 const sortBy = ref('Newest'); // Newest | Oldest | MostUsed
 const ownedOnly = ref(false);
 
@@ -531,32 +529,31 @@ const filteredBarcodes = computed(() => {
   }
 
   if (filterType.value !== 'All') {
-    const wantDynamic = filterType.value === 'Dynamic';
-    result = result.filter(b => (b.barcode_type === 'DynamicBarcode') === wantDynamic || (b.barcode_type !== 'DynamicBarcode') === !wantDynamic);
+    if (filterType.value === 'Dynamic') {
+      result = result.filter(b => b.barcode_type === 'DynamicBarcode');
+    } else if (filterType.value === 'Static') {
+      result = result.filter(b => b.barcode_type === 'Others');
+    } else if (filterType.value === 'Identification') {
+      result = result.filter(b => b.barcode_type === 'Identification');
+    }
   }
 
-  const q = normalize(searchQuery.value);
-  if (q) {
-    result = result.filter(b => {
-      const owner = normalize(b.owner);
-      const value = String(b.barcode || '');
-      return owner.includes(q) || value.includes(q);
-    });
-  }
-
-  if (sortBy.value === 'Newest') {
-    result.sort((a, b) => new Date(b.time_created) - new Date(a.time_created));
-  } else if (sortBy.value === 'Oldest') {
-    result.sort((a, b) => new Date(a.time_created) - new Date(b.time_created));
-  } else if (sortBy.value === 'MostUsed') {
-    result.sort((a, b) => (b.usage_count || 0) - (a.usage_count || 0));
-  }
+  // removed search and sort controls; keep default ordering from API
 
   return result;
 });
 
 function onFilterChange() {
   // Computed handles updates. This is here for explicit @change bindings.
+}
+
+const hasActiveFilters = computed(() => {
+  return filterType.value !== 'All' || ownedOnly.value;
+});
+
+function resetFilters() {
+  filterType.value = 'All';
+  ownedOnly.value = false;
 }
 
 // Add new barcode
@@ -767,12 +764,53 @@ function getAssociationStatusText() {
   return 'Inactive - No profile association';
 }
 
+// Get barcode display title
+function getBarcodeDisplayTitle(barcodeType) {
+  switch (barcodeType) {
+    case 'DynamicBarcode':
+      return 'Dynamic Barcode';
+    case 'Others':
+      return 'Barcode';
+    case 'Identification':
+      return 'Identification Barcode';
+    default:
+      return 'Barcode';
+  }
+}
+
+// Get barcode display ID
+function getBarcodeDisplayId(barcode) {
+  switch (barcode.barcode_type) {
+    case 'DynamicBarcode':
+      return `Dynamic •••• ${barcode.barcode.slice(-4)}`;
+    case 'Others':
+      return `Barcode ending with ${barcode.barcode.slice(-4)}`;
+    case 'Identification':
+      return 'Identification Barcode';
+    default:
+      return `•••• ${barcode.barcode.slice(-4)}`;
+  }
+}
+
+function getBarcodeTypeLabel(type) {
+  if (type === 'DynamicBarcode') return 'Dynamic';
+  if (type === 'Identification') return 'Identification';
+  return 'Static';
+}
+
 // Get current barcode info
 const currentBarcodeInfo = computed(() => {
   if (!settings.value.barcode) return null;
   const current = barcodeChoices.value.find(c => Number(c.id) === Number(settings.value.barcode));
   if (!current) return null;
-  return `${current.barcode_type} ending with ...${current.barcode.slice(-8)}`;
+  
+  // Check if it's an Identification barcode
+  if (current.barcode_type === 'Identification') {
+    return `${current.barcode_type}`;
+  }
+  
+  // For other barcode types, show last 4 digits
+  return `${current.barcode_type} ending with ...${current.barcode.slice(-4)}`;
 });
 
 
@@ -891,6 +929,26 @@ watch(showScanner, (newValue) => {
 
 .sort-select {
   min-width: 150px;
+}
+
+/* Keep all chips on a single row with horizontal scroll */
+.filter-controls {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  width: 100%;
+  gap: var(--md-sys-spacing-2);
+  padding-bottom: var(--md-sys-spacing-1);
+  -webkit-overflow-scrolling: touch;
+  /* hide scrollbar cross-browser */
+  scrollbar-width: none;           /* Firefox */
+  -ms-overflow-style: none;        /* IE 10+ */
+}
+
+/* WebKit-based browsers */
+.filter-controls::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Barcode Items */
@@ -1016,6 +1074,25 @@ watch(showScanner, (newValue) => {
   border: 3px solid var(--md-sys-color-primary);
   border-radius: var(--md-sys-shape-corner-medium);
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+}
+
+/* Empty state border box */
+.empty-state-box {
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  padding: var(--md-sys-spacing-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--md-sys-spacing-2);
+  min-height: 160px;
+}
+
+.empty-state-box .md-empty-state-icon {
+  font-size: 40px;
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 /* Camera select */

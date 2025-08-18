@@ -1,30 +1,32 @@
 <template>
   <div class="home-school-container">
     <!-- Header Component -->
-    <Header/>
+    <Header />
 
     <!-- User Profile Component -->
-    <UserProfile
-        :avatar-src="avatarSrc"
-        :is-refreshing-token="isRefreshingToken"
-        :loading="loading || userInfoLoading"
-        :profile="profile"
-        @generate="handleGenerate"
+    <UserProfile 
+      :profile="profile" 
+      :avatar-src="avatarSrc"
+      :loading="loading || userInfoLoading"
+      :is-refreshing-token="isRefreshingToken"
+      @generate="handleGenerate"
     />
 
     <!-- Barcode Display Component -->
-    <BarcodeDisplay ref="barcodeDisplayRef"/>
+    <BarcodeDisplay ref="barcodeDisplayRef" />
 
     <!-- Grid Menu Component -->
-    <GridMenu :server-status="serverStatus"/>
+    <GridMenu :server-status="serverStatus" />
   </div>
 </template>
 
 <script setup>
-import {nextTick, onMounted, ref} from "vue";
-import {useRouter} from "vue-router";
+import { ref, nextTick, onMounted } from "vue";
+import { useRouter } from "vue-router";
 
 // CSS Imports
+import "@/assets/css/HomeSchool.css";
+// Import Font Awesome for this page (needed for GridMenu component)
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
 // Components
@@ -34,10 +36,10 @@ import BarcodeDisplay from "@/components/school/BarcodeDisplay.vue";
 import GridMenu from "@/components/school/GridMenu.vue";
 
 // Composables
-import {useUserInfo} from "@/composables/useUserInfo.js";
-import {useToken} from "@/composables/useToken.js";
-import {useApi} from "@/composables/useApi.js";
-import {usePdf417} from "@/composables/usePdf417.js";
+import { useUserInfo } from "@/composables/useUserInfo";
+import { useToken } from "@/composables/useToken";
+import { useApi } from "@/composables/useApi";
+import { usePdf417 } from "@/composables/usePdf417";
 
 /* ── reactive state ─────────────────────────────────────────────────────── */
 const router = useRouter();
@@ -46,10 +48,10 @@ const serverStatus = ref("Emergency");
 const barcodeDisplayRef = ref(null);
 
 // Use composables
-const {profile, avatarSrc, loadAvatar} = useUserInfo();
-const {isRefreshingToken} = useToken();
-const {apiGenerateBarcode} = useApi();
-const {drawPdf417} = usePdf417();
+const { profile, avatarSrc, loadAvatar } = useUserInfo();
+const { isRefreshingToken } = useToken();
+const { apiGenerateBarcode } = useApi();
+const { drawPdf417 } = usePdf417();
 
 /* ── lifecycle ──────────────────────────────────────────────────────────── */
 onMounted(() => {
@@ -58,7 +60,7 @@ onMounted(() => {
   if (data && data.profile) {
     profile.value = data.profile;
   }
-
+  
   // Load user avatar
   loadAvatar();
 });
@@ -69,13 +71,13 @@ async function handleGenerate() {
   serverStatus.value = "Processing";
 
   try {
-    const {status, barcode, message} = await apiGenerateBarcode();
+    const { status, barcode, message } = await apiGenerateBarcode();
     serverStatus.value = message || "Success";
 
     if (status === "success" && barcode) {
       // First generate the barcode
       await nextTick();
-
+      
       // Get canvas from BarcodeDisplay component
       const canvas = barcodeDisplayRef.value?.barcodeCanvas;
       if (canvas) {
@@ -84,7 +86,7 @@ async function handleGenerate() {
 
       // Check if elements are already visible (matching original logic)
       const isFaded = window.$('#show-info-button').css('display') === 'none';
-
+      
       if (isFaded) {
         setTimeout(() => {
           window.$('#show-info-button').fadeIn();
@@ -146,4 +148,3 @@ async function handleGenerate() {
   }
 }
 </script>
-

@@ -4,10 +4,7 @@
     <header class="md-top-app-bar">
       <div class="md-top-app-bar-content">
         <div class="header-title">
-          <h1 class="md-typescale-headline-large md-m-0">Welcome Back</h1>
-          <p class="md-typescale-body-large md-m-0 md-mt-1">
-            {{ profile?.name || 'User' }}
-          </p>
+          <h1 class="md-typescale-title-medium md-m-0">{{ profile?.name || 'User' }}</h1>
         </div>
         <md-filled-tonal-button @click="handleLogout">
           <md-icon slot="icon">logout</md-icon>

@@ -4,18 +4,18 @@
     <md-list class="user-menu-list">
       <md-list-item
           class="menu-item"
-          headline="Edit Profile"
           @click="handleEditProfile"
       >
         <md-icon slot="start">edit</md-icon>
+        <div slot="headline">Edit Profile</div>
       </md-list-item>
       <md-divider></md-divider>
       <md-list-item
           class="menu-item menu-item-logout"
-          headline="Log out"
           @click="handleLogout"
       >
         <md-icon slot="start">logout</md-icon>
+        <div slot="headline">Log out</div>
       </md-list-item>
     </md-list>
   </div>
