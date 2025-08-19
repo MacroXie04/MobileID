@@ -330,3 +330,73 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 ⭐ If this project helps you, please give us a star!
+
+## Dockerized Local HTTPS Setup (WebAuthn/Passkeys)
+
+This repository includes a multi-stage Dockerfile and a docker-compose setup that serve the Vue 3 SPA and the Django API behind a local HTTPS reverse proxy. This enables testing WebAuthn/Passkeys in a trusted HTTPS environment on `https://localhost`.
+
+### Prerequisites
+- Docker and Docker Compose
+- [mkcert](https://github.com/FiloSottile/mkcert) (to create locally trusted TLS certificates)
+
+### 1) Generate local certificates
+
+```bash
+brew install mkcert nss   # macOS (or see mkcert docs for your OS)
+mkdir -p certs
+mkcert -install
+mkcert -key-file certs/localhost-key.pem -cert-file certs/localhost.pem localhost 127.0.0.1 ::1
+```
+
+This creates `./certs/localhost.pem` and `./certs/localhost-key.pem` used by the proxy.
+
+### 2) Configure environment
+
+Copy the example env and adjust as needed:
+
+```bash
+cp .env.example .env
+```
+
+Defaults use SQLite and enable HTTPS headers for local dev. Frontend builds with `VITE_API_BASE_URL=https://localhost/api`.
+
+### 3) Build images
+
+```bash
+# Build both images via compose
+VITE_API_BASE_URL=https://localhost/api docker compose build
+
+# Or build individually
+# Frontend image
+docker build --target frontend-runtime -t mobileid-frontend:local .
+# Backend image
+docker build --target backend-runtime -t mobileid-backend:local .
+```
+
+### 4) Run the stack
+
+```bash
+docker compose up -d
+```
+
+- Reverse proxy: `https://localhost` (TLS via mkcert)
+- Frontend: served by nginx (proxied at `/`)
+- Backend API: proxied at `/api` → Django at `http://backend:8000`
+
+### 5) Notes for WebAuthn/Passkeys
+- The site is served over HTTPS at `https://localhost`, which is required for WebAuthn.
+- The proxy sets `X-Forwarded-Proto: https`; ensure `USE_HTTPS=True` in `.env` so Django trusts proxy headers.
+- If using Postgres, set `DB_ENGINE=django.db.backends.postgresql` and provide `DB_*` variables. Optionally start the `db` service in compose.
+
+### Useful commands
+
+```bash
+# Tail logs
+docker compose logs -f proxy backend frontend
+
+# Rebuild after frontend changes
+VITE_API_BASE_URL=https://localhost/api docker compose build frontend && docker compose up -d frontend
+
+# Rebuild after backend changes
+docker compose build backend && docker compose up -d backend
+```

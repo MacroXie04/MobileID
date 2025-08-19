@@ -1,0 +1,37 @@
+{
+  "name": "pages",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint --ext .js,.vue src",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@fontsource/material-symbols-outlined": "^5.2.18",
+    "@fontsource/open-sans": "^5.2.6",
+    "@fontsource/roboto": "^5.2.6",
+    "@fontsource/roboto-mono": "^5.2.6",
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@material/web": "^2.3.0",
+    "@zxing/library": "^0.21.3",
+    "axios": "^1.10.0",
+    "bootstrap": "^5.3.7",
+    "cropperjs": "^1.6.1",
+    "jquery": "^3.7.1",
+    "vue": "^3.5.17",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.15",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "eslint": "^9.8.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-vue": "^9.29.0",
+    "prettier": "^3.3.3",
+    "vite": "^7.0.4"
+  }
+}
