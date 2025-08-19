@@ -538,3 +538,4 @@ pages/.output/
 # - README.md                    (project documentation)
 # - SECURITY.md                  (security policy)
 # ===================================================================
+/src/staticfiles/
