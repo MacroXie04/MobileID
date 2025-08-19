@@ -1,402 +1,203 @@
-# Barcode Manager
+# MobileID
 
-A powerful full-stack barcode management application with barcode generation, user authentication, profile management, and more. Built with Django backend and Vue.js frontend.
+A secure, dual-stack web application for mobile identification and barcode management built with Django and Vue.js.
 
-## Table of Contents
+## Overview
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
-- [Project Structure](#project-structure)
-- [API Documentation](#api-documentation)
-- [Deployment Guide](#deployment-guide)
-- [Contributing](#contributing)
-- [License](#license)
+MobileID provides a comprehensive platform for generating, managing, and authenticating PDF417 barcodes with role-based access control. 
 
 ## Features
 
-### User Authentication
-- **WebAuthn Support**: Modern biometric and hardware key authentication
-- **Secure Login**: Brute force protection with login attempt limiting
-- **Session Management**: Secure user session handling
+- **Dual Authentication System**: Traditional login/password and WebAuthn passwordless authentication
+- **Role-Based Access Control**: Separate interfaces for Users and School administrators
+- **PDF417 Barcode Generation**: Dynamic barcode creation and management
+- **User Profile Management**: Avatar upload and profile customization
+- **Real-Time Dashboard**: Usage analytics and barcode management interface
+- **Long-Term Sessions**: JWT tokens with extended validity for seamless user experience
+- **Responsive Design**: Material Design 3 UI components for modern user interface
 
-### Barcode Management
-- **Multiple Formats**: Support for PDF417, Code128, QR Code, and more
-- **Batch Generation**: Create and manage barcodes in bulk
-- **Barcode Preview**: Real-time preview of generated barcodes
-- **Export Functionality**: Export barcode images
+## Architecture
 
-### User Management
-- **Profile Management**: Users can edit and manage personal information
-- **Settings Management**: Personalized application settings and preferences
-- **Access Control**: Role-based access control
+### Backend (Django REST API)
+- **Framework**: Django 5.2+ with Django REST Framework
+- **Authentication**: JWT tokens with cookie-based storage
+- **Database**: SQLite (development) with PostgreSQL/MySQL support
+- **Security**: WebAuthn integration, CORS configuration, CSRF protection
 
-### Interface Design
-- **Responsive Design**: Adapts to desktop and mobile devices
-- **Theme Switching**: Support for multiple UI themes
-- **Modern Interface**: Built with Bootstrap and Font Awesome icons
+### Frontend (Vue.js SPA)
+- **Framework**: Vue 3 with Composition API
+- **Build Tool**: Vite
+- **UI Library**: Material Web Components
+- **Routing**: Vue Router with authentication guards
+- **Styling**: Material Design 3 principles
 
-## Tech Stack
+## Prerequisites
 
-### Backend Technologies
-- **[Django 4.x](https://www.djangoproject.com/)**: Powerful Python web framework
-- **[Django REST Framework](https://www.django-rest-framework.org/)**: Building RESTful APIs
-- **[Django-cors-headers](https://github.com/adamchainz/django-cors-headers)**: Handling CORS requests
-- **[WebAuthn](https://pypi.org/project/webauthn/)**: Modern web authentication standard
-- **[PostgreSQL](https://www.postgresql.org/)**: Enterprise-grade relational database
+- Python 3.8+
+- Node.js 16+
+- npm or yarn
 
-### Frontend Technologies
-- **[Vue.js 3](https://vuejs.org/)**: Progressive JavaScript framework
-- **[Vue Router](https://router.vuejs.org/)**: Official router for Vue.js
-- **[Vite](https://vitejs.dev/)**: Next-generation frontend build tool
-- **[Axios](https://axios-http.com/)**: HTTP client library
-- **[Bootstrap 5](https://getbootstrap.com/)**: CSS framework
-- **[Font Awesome](https://fontawesome.com/)**: Icon library
+## Installation
 
-## Quick Start
-
-### Prerequisites
-
-- **Python**: 3.10 or higher
-- **Node.js**: 20.x or higher
-- **PostgreSQL**: 12 or higher
-- **Git**: For version control
-
-### Backend Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/Barcode_Manager.git
-   cd Barcode_Manager/backend
-   ```
-
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/macOS
-   # or
-   venv\Scripts\activate     # Windows
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configure database**
-   ```bash
-   # Create PostgreSQL database
-   createdb barcode_manager
-   
-   # Copy environment configuration file
-   cp .env.example .env
-   # Edit .env file and update database connection details
-   ```
-
-5. **Run database migrations**
-   ```bash
-   python manage.py migrate
-   ```
-
-6. **Create superuser** (optional)
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-### Frontend Setup
-
-1. **Navigate to frontend directory**
-   ```bash
-   cd ../GitHub_Pages
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-## Running the Application
-
-### Start Backend Server
-
-Run from the `backend` directory:
-
+### 1. Clone the Repository
 ```bash
+git clone <repository-url>
+cd MobileID
+```
+
+### 2. Backend Setup
+```bash
+cd src/
+pip install -r ../requirements.txt
+
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your configuration
+
+# Run database migrations
+python manage.py makemigrations
+python manage.py migrate
+
+# Create a superuser (optional)
+python manage.py createsuperuser
+```
+
+### 3. Frontend Setup
+```bash
+cd ../pages/
+npm install
+# or
+yarn install
+```
+
+## Development
+
+### Starting the Development Servers
+
+#### Backend Server
+```bash
+cd src/
 python manage.py runserver
 ```
+The Django API will be available at `http://127.0.0.1:8000`
 
-Backend server will be running at `http://127.0.0.1:8000`
-
-### Start Frontend Server
-
-Run from the `GitHub_Pages` directory:
-
+#### Frontend Server
 ```bash
+cd pages/
 npm run dev
+# or
+yarn dev
 ```
+The Vue.js application will be available at `http://127.0.0.1:5173`
 
-Frontend development server will be running at `http://localhost:5173`
+### Code Quality
 
-### Production Build
-
+#### Frontend Linting and Formatting
 ```bash
-npm run build
+cd pages/
+npm run lint        # Check for linting errors
+npm run format      # Format code with Prettier
 ```
 
-## Project Structure
+## Configuration
 
-```
-Barcode_Manager/
-├── backend/                 # Django backend
-│   ├── barcode/            # Django project configuration
-│   ├── mobileid/           # Main application
-│   │   ├── api/            # API views
-│   │   ├── forms/          # Form definitions
-│   │   ├── models.py       # Data models
-│   │   ├── serializers/    # API serializers
-│   │   ├── static/         # Static files
-│   │   ├── templates/      # HTML templates
-│   │   └── views/          # View functions
-│   └── requirements.txt    # Python dependencies
-├── GitHub_Pages/           # Vue.js frontend
-│   ├── src/
-│   │   ├── views/          # Page components
-│   │   ├── router/         # Route configuration
-│   │   └── assets/         # Static assets
-│   └── package.json        # Node.js dependencies
-└── README.md              # Project documentation
-```
+### Environment Variables
 
-## 📚 API Documentation
+The application uses environment variables for configuration. Key variables include:
 
-### Authentication API
+- `SECRET_KEY`: Django secret key for cryptographic operations
+- `DEBUG`: Enable/disable debug mode
+- `ALLOWED_HOSTS`: Comma-separated list of allowed hostnames
+- `CORS_ALLOWED_ORIGINS`: Frontend URLs for CORS configuration
+- `DATABASE_URL`: Database connection string (optional)
+- `SELENIUM_ENABLED`: Enable dynamic barcode generation features
 
-#### User Registration
-```http
-POST /api/auth/register/
-Content-Type: application/json
+### Database Configuration
 
-{
-  "username": "user@example.com",
-  "password": "secure_password"
-}
+By default, the application uses SQLite for development. For production, configure PostgreSQL or MySQL via environment variables:
+
+```env
+DB_ENGINE=django.db.backends.postgresql
+DB_NAME=mobileid
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
 ```
 
-#### User Login
-```http
-POST /api/auth/login/
-Content-Type: application/json
+## API Endpoints
 
-{
-  "username": "user@example.com",
-  "password": "secure_password"
-}
-```
+### Authentication
+- `POST /authn/login/` - User login
+- `POST /authn/register/` - User registration
+- `POST /authn/logout/` - User logout
+- `GET /authn/user-info/` - Get current user information
 
-### Barcode API
+### Barcode Management
+- `GET /api/barcodes/` - List user barcodes
+- `POST /api/barcodes/` - Create new barcode
+- `GET /api/barcodes/{id}/` - Get barcode details
+- `DELETE /api/barcodes/{id}/` - Delete barcode
 
-#### Generate Barcode
-```http
-POST /api/barcode/generate/
-Content-Type: application/json
+### Dashboard (School Role)
+- `GET /api/dashboard/` - Get dashboard statistics
+- `GET /api/dashboard/barcodes/` - List all barcodes (admin view)
 
-{
-  "content": "123456789",
-  "format": "PDF417",
-  "width": 300,
-  "height": 100
-}
-```
+## User Roles
 
-#### Get Barcode List
-```http
-GET /api/barcode/list/
-Authorization: Bearer <token>
-```
+### User Role
+- Create and manage personal barcodes
+- Access basic profile features
+- View personal barcode usage statistics
 
-### User API
+### School Role
+- Access administrative dashboard
+- View system-wide barcode analytics
+- Manage multiple user barcodes
+- Advanced barcode management features
 
-#### Get User Profile
-```http
-GET /api/user/profile/
-Authorization: Bearer <token>
-```
+## Security Features
 
-#### Update User Profile
-```http
-PUT /api/user/profile/
-Authorization: Bearer <token>
-Content-Type: application/json
+- **JWT Authentication**: Secure token-based authentication with HTTP-only cookies
+- **Rate Limiting**: API throttling to prevent abuse
+- **CORS Protection**: Configured cross-origin resource sharing
+- **CSRF Protection**: Cross-site request forgery prevention
+- **Input Validation**: Comprehensive data validation and sanitization
 
-{
-  "first_name": "John",
-  "last_name": "Doe",
-  "email": "john.doe@example.com"
-}
-```
+## Deployment
 
-## Testing
+### Production Checklist
 
-### Backend Testing
+1. Set `DEBUG=False` in environment variables
+2. Configure a production database (PostgreSQL recommended)
+3. Set up proper `ALLOWED_HOSTS` and `CORS_ALLOWED_ORIGINS`
+4. Configure static file serving
+5. Set up HTTPS with proper SSL certificates
+6. Configure environment-specific secrets
+7. Set up monitoring and logging
 
+### Static Files
+
+For production deployment:
 ```bash
-cd backend
-pytest
+cd src/
+python manage.py collectstatic
 ```
-
-### Frontend Testing
-
-```bash
-cd GitHub_Pages
-npm run test
-```
-
-### Code Quality Checks
-
-```bash
-# Backend
-cd backend
-flake8 .
-black .
-
-# Frontend
-cd GitHub_Pages
-npm run lint
-```
-
-## Deployment Guide
-
-### Frontend Deployment
-
-The project is configured for automatic GitHub Pages deployment:
-
-1. Push code to the `main` branch
-2. GitHub Actions will automatically build and deploy to GitHub Pages
-3. Access at `https://your-username.github.io/Barcode_Manager`
-
-### Backend Deployment
-
-Recommended deployment methods:
-
-1. **Docker Deployment**
-   ```bash
-   docker build -t barcode-manager .
-   docker run -p 8000:8000 barcode-manager
-   ```
-
-2. **Traditional Deployment**
-   - Use Gunicorn as WSGI server
-   - Configure Nginx as reverse proxy
-   - Set environment variables and database connections
 
 ## Contributing
 
-We welcome all forms of contributions!
-
-### Contribution Process
-
-1. **Fork the project**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Commit your changes**
-   ```bash
-   git commit -m 'Add some amazing feature'
-   ```
-4. **Push to the branch**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-5. **Create a Pull Request**
-
-### Development Standards
-
-- Follow PEP 8 Python code standards
-- Use ESLint for JavaScript code checking
-- Write test cases for new features
-- Update relevant documentation
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run linting and tests
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is proprietary software. All rights reserved.
 
-## Contact Us
+## Support
 
-- **Project Homepage**: [GitHub Repository](https://github.com/your-username/Barcode_Manager)
-- **Issue Reports**: [Issues](https://github.com/your-username/Barcode_Manager/issues)
-- **Feature Requests**: [Discussions](https://github.com/your-username/Barcode_Manager/discussions)
-
----
-
-⭐ If this project helps you, please give us a star!
-
-## Dockerized Local HTTPS Setup (WebAuthn/Passkeys)
-
-This repository includes a multi-stage Dockerfile and a docker-compose setup that serve the Vue 3 SPA and the Django API behind a local HTTPS reverse proxy. This enables testing WebAuthn/Passkeys in a trusted HTTPS environment on `https://localhost`.
-
-### Prerequisites
-- Docker and Docker Compose
-- [mkcert](https://github.com/FiloSottile/mkcert) (to create locally trusted TLS certificates)
-
-### 1) Generate local certificates
-
-```bash
-brew install mkcert nss   # macOS (or see mkcert docs for your OS)
-mkdir -p certs
-mkcert -install
-mkcert -key-file certs/localhost-key.pem -cert-file certs/localhost.pem localhost 127.0.0.1 ::1
-```
-
-This creates `./certs/localhost.pem` and `./certs/localhost-key.pem` used by the proxy.
-
-### 2) Configure environment
-
-Copy the example env and adjust as needed:
-
-```bash
-cp .env.example .env
-```
-
-Defaults use SQLite and enable HTTPS headers for local dev. Frontend builds with `VITE_API_BASE_URL=https://localhost/api`.
-
-### 3) Build images
-
-```bash
-# Build both images via compose
-VITE_API_BASE_URL=https://localhost/api docker compose build
-
-# Or build individually
-# Frontend image
-docker build --target frontend-runtime -t mobileid-frontend:local .
-# Backend image
-docker build --target backend-runtime -t mobileid-backend:local .
-```
-
-### 4) Run the stack
-
-```bash
-docker compose up -d
-```
-
-- Reverse proxy: `https://localhost` (TLS via mkcert)
-- Frontend: served by nginx (proxied at `/`)
-- Backend API: proxied at `/api` → Django at `http://backend:8000`
-
-### 5) Notes for WebAuthn/Passkeys
-- The site is served over HTTPS at `https://localhost`, which is required for WebAuthn.
-- The proxy sets `X-Forwarded-Proto: https`; ensure `USE_HTTPS=True` in `.env` so Django trusts proxy headers.
-- If using Postgres, set `DB_ENGINE=django.db.backends.postgresql` and provide `DB_*` variables. Optionally start the `db` service in compose.
-
-### Useful commands
-
-```bash
-# Tail logs
-docker compose logs -f proxy backend frontend
-
-# Rebuild after frontend changes
-VITE_API_BASE_URL=https://localhost/api docker compose build frontend && docker compose up -d frontend
-
-# Rebuild after backend changes
-docker compose build backend && docker compose up -d backend
-```
+For technical support and questions, please contact the development team or open an issue in the project repository.
