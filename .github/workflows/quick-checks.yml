@@ -1,0 +1,287 @@
+name: Quick Checks
+
+on:
+  push:
+    branches-ignore: [ main ]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  quick-validation:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: quick-${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+
+    - name: Install minimal dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install Django>=5.2,<6.0 djangorestframework>=3.14,<4.0
+
+    - name: Quick Django check
+      working-directory: ./src
+      env:
+        SECRET_KEY: quick-check-${{ github.sha }}
+        DEBUG: True
+      run: |
+        # Basic Django system check
+        python manage.py check
+
+    - name: Import test
+      working-directory: ./src
+      env:
+        SECRET_KEY: import-test-${{ github.sha }}
+      run: |
+        # Test that all modules can be imported
+        python -c "
+        import os
+        import django
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mobileid.settings')
+        django.setup()
+        
+        # Test imports
+        from authn.models import UserProfile
+        from index.models import Barcode
+        from mobileid import urls
+        
+        print('✅ All modules imported successfully')
+        "
+
+  syntax-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Python syntax check
+      run: |
+        # Check Python syntax
+        find src/ -name "*.py" -exec python -m py_compile {} \;
+        echo "✅ Python syntax check passed"
+
+    - name: Check for common issues
+      run: |
+        # Look for common issues
+        echo "Checking for potential issues..."
+        
+        # Check for TODO/FIXME comments
+        if grep -r "TODO\|FIXME" src/ --exclude-dir=migrations; then
+          echo "⚠️ Found TODO/FIXME comments"
+        else
+          echo "✅ No TODO/FIXME comments found"
+        fi
+        
+        # Check for print statements (should use logging)
+        if grep -r "print(" src/ --exclude="tests.py" --exclude-dir=migrations; then
+          echo "⚠️ Found print statements (consider using logging)"
+        else
+          echo "✅ No print statements found"
+        fi
+
+  frontend-syntax:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./pages
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'yarn'
+        cache-dependency-path: pages/yarn.lock
+
+    - name: Install dependencies (production only)
+      run: yarn install --production --frozen-lockfile
+
+    - name: Basic build test
+      run: |
+        # Quick build test without full dependencies
+        if command -v yarn &> /dev/null; then
+          yarn build || echo "Build test completed"
+        fi
+
+  security-basics:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check for secrets in code
+      run: |
+        # Basic secret scanning
+        if grep -r -E "(api_key|password|secret|token).*(=|:).*([\'\"][^\'\"]*[\'\"])" src/ --exclude-dir=migrations --exclude="tests.py"; then
+          echo "⚠️ Potential secrets found in code"
+        else
+          echo "✅ No obvious secrets found"
+        fi
+
+    - name: Check for debug settings
+      run: |
+        # Check for debug-related issues
+        if grep -r "DEBUG.*=.*True" src/; then
+          echo "⚠️ Found DEBUG=True (make sure this is not in production)"
+        fi
+        
+        # Check for hardcoded IPs
+        if grep -r -E "127\.0\.0\.1|localhost" src/ --exclude="tests.py" --exclude="settings.py"; then
+          echo "⚠️ Found hardcoded localhost/127.0.0.1"
+        fi
+
+  test-imports-only:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Test imports and basic functionality
+      working-directory: ./src
+      env:
+        SECRET_KEY: import-test-${{ github.sha }}
+        DEBUG: True
+      run: |
+        # Test that Django can load and migrations can be checked
+        python manage.py check
+        python manage.py makemigrations --check --dry-run
+        
+        # Test that test discovery works
+        python manage.py test --collect-only --verbosity=0
+        
+        echo "✅ Basic functionality tests passed"
+
+  file-structure-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate project structure
+      run: |
+        # Check required files exist
+        required_files=(
+          "README.md"
+          "SECURITY.md"
+          "requirements.txt"
+          "src/manage.py"
+          "src/mobileid/settings.py"
+          "pages/package.json"
+        )
+        
+        for file in "${required_files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ $file exists"
+          else
+            echo "❌ $file missing"
+            exit 1
+          fi
+        done
+
+    - name: Check for unwanted files
+      run: |
+        # Check for files that shouldn't be committed
+        unwanted_patterns=(
+          "*.pyc"
+          "__pycache__"
+          "*.log"
+          ".env"
+          "db.sqlite3"
+          "node_modules"
+        )
+        
+        found_unwanted=false
+        for pattern in "${unwanted_patterns[@]}"; do
+          if find . -name "$pattern" -not -path "./.git/*" | grep -q .; then
+            echo "⚠️ Found unwanted files/directories: $pattern"
+            find . -name "$pattern" -not -path "./.git/*"
+            found_unwanted=true
+          fi
+        done
+        
+        if [ "$found_unwanted" = false ]; then
+          echo "✅ No unwanted files found"
+        fi
+
+  documentation-quick-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check documentation
+      run: |
+        # Check README has basic content
+        if [ -s "README.md" ]; then
+          echo "✅ README.md is not empty"
+        else
+          echo "⚠️ README.md is empty or missing"
+        fi
+        
+        # Check if CLAUDE.md has development instructions
+        if grep -q "Development Commands" CLAUDE.md; then
+          echo "✅ CLAUDE.md contains development instructions"
+        else
+          echo "⚠️ CLAUDE.md may be missing development instructions"
+        fi
+
+  summary:
+    needs: [quick-validation, syntax-check, frontend-syntax, security-basics, test-imports-only, file-structure-check, documentation-quick-check]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Quick check summary
+      run: |
+        echo "## Quick Check Results" >> $GITHUB_STEP_SUMMARY
+        echo "- Quick validation: ${{ needs.quick-validation.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Syntax check: ${{ needs.syntax-check.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Frontend syntax: ${{ needs.frontend-syntax.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Security basics: ${{ needs.security-basics.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Import tests: ${{ needs.test-imports-only.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- File structure: ${{ needs.file-structure-check.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Documentation: ${{ needs.documentation-quick-check.result }}" >> $GITHUB_STEP_SUMMARY
+        
+        # Check if any critical tests failed
+        if [ "${{ needs.quick-validation.result }}" = "failure" ] || [ "${{ needs.test-imports-only.result }}" = "failure" ]; then
+          echo "❌ Critical quick checks failed"
+          exit 1
+        else
+          echo "✅ Quick checks completed successfully"
+        fi

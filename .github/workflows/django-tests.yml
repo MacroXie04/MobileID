@@ -1,0 +1,484 @@
+name: Django Backend Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'requirements.txt'
+      - '.github/workflows/django-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'requirements.txt'
+      - '.github/workflows/django-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: [3.11, 3.12]
+        django-version: [5.2]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: mobileid_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    env:
+      # Django settings
+      DJANGO_SETTINGS_MODULE: mobileid.settings
+      SECRET_KEY: test-secret-key-for-ci-only-not-production
+      DEBUG: False
+      
+      # Test database configuration
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: mobileid_test
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+      
+      # Cache configuration
+      CACHE_BACKEND: django.core.cache.backends.redis.RedisCache
+      CACHE_LOCATION: redis://localhost:6379/1
+      
+      # Security and CORS settings for testing
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      CORS_ALLOW_CREDENTIALS: True
+      
+      # Disable features not needed for testing
+      SELENIUM_ENABLED: False
+      WEB_ADMIN: True
+      USE_HTTPS: False
+      
+      # Session settings
+      SESSION_ENGINE: django.contrib.sessions.backends.cache
+      
+      # Throttling settings for tests
+      REST_FRAMEWORK_DEFAULT_THROTTLE_RATES: anon=1000/day,user=10000/day,registration=100/day
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libpq-dev \
+          python3-dev \
+          build-essential \
+          libjpeg-dev \
+          zlib1g-dev \
+          libfreetype6-dev \
+          liblcms2-dev \
+          libopenjp2-7-dev \
+          libtiff5-dev \
+          tk-dev \
+          tcl-dev \
+          libharfbuzz-dev \
+          libfribidi-dev \
+          libxcb1-dev
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+        # Install additional test dependencies
+        pip install \
+          coverage \
+          pytest \
+          pytest-django \
+          pytest-cov \
+          factory-boy \
+          freezegun
+
+    - name: Verify Django installation
+      working-directory: ./src
+      run: |
+        python -c "import django; print(f'Django version: {django.get_version()}')"
+        python manage.py --version
+
+    - name: Run Django system check
+      working-directory: ./src
+      run: |
+        python manage.py check --deploy
+
+    - name: Run database migrations
+      working-directory: ./src
+      run: |
+        python manage.py migrate --no-input
+
+    - name: Collect static files
+      working-directory: ./src
+      run: |
+        python manage.py collectstatic --no-input
+
+    - name: Run Django tests with coverage
+      working-directory: ./src
+      run: |
+        coverage run --source='.' --omit='*/venv/*,*/migrations/*,*/tests.py,*/test_*.py,manage.py,*/settings.py,*/wsgi.py,*/asgi.py' \
+          manage.py test --verbosity=2 --parallel --keepdb
+
+    - name: Generate coverage report
+      working-directory: ./src
+      run: |
+        coverage report --show-missing --skip-covered
+        coverage xml
+
+    - name: Upload coverage to Codecov
+      if: matrix.python-version == '3.12'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./src/coverage.xml
+        flags: backend
+        name: django-backend-coverage
+        fail_ci_if_error: false
+
+    - name: Run specific test suites
+      working-directory: ./src
+      run: |
+        echo "Running authentication tests..."
+        python manage.py test authn.tests --verbosity=2
+        
+        echo "Running barcode management tests..."
+        python manage.py test index.tests --verbosity=2
+        
+        echo "Running main project tests..."
+        python manage.py test mobileid.tests --verbosity=2
+
+    - name: Test with SQLite (fallback database)
+      working-directory: ./src
+      env:
+        DB_ENGINE: django.db.backends.sqlite3
+        DB_NAME: ':memory:'
+        CACHE_BACKEND: django.core.cache.backends.locmem.LocMemCache
+        CACHE_LOCATION: test-cache
+      run: |
+        echo "Testing with SQLite in-memory database..."
+        python manage.py test --verbosity=1 --parallel=1
+
+    - name: Check for missing migrations
+      working-directory: ./src
+      run: |
+        python manage.py makemigrations --check --dry-run
+
+    - name: Validate models
+      working-directory: ./src
+      run: |
+        python manage.py validate
+
+    - name: Test management commands
+      working-directory: ./src
+      run: |
+        # Test that management commands can be imported
+        python manage.py help
+        
+        # Test Django shell can start
+        echo "import django; print('Django shell test passed')" | python manage.py shell
+
+    - name: Security check with Django deployment checklist
+      working-directory: ./src
+      env:
+        DEBUG: False
+        SECRET_KEY: production-like-secret-key-for-security-check-${{ github.sha }}
+        ALLOWED_HOSTS: example.com
+        USE_HTTPS: True
+      run: |
+        python manage.py check --deploy --fail-level=WARNING
+
+  lint-and-security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install linting tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install \
+          flake8 \
+          black \
+          isort \
+          bandit \
+          safety \
+          django-stubs \
+          mypy
+
+    - name: Run Black code formatter check
+      run: |
+        black --check --diff src/
+
+    - name: Run isort import sorting check
+      run: |
+        isort --check-only --diff src/
+
+    - name: Run flake8 linter
+      run: |
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 src/ --count --max-complexity=10 --max-line-length=100 --statistics
+
+    - name: Run Bandit security linter
+      run: |
+        bandit -r src/ -f json -o bandit-report.json || true
+        bandit -r src/ --severity-level medium
+
+    - name: Check for known security vulnerabilities
+      run: |
+        pip install -r requirements.txt
+        safety check --json --output safety-report.json || true
+        safety check
+
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  test-different-environments:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        test-case:
+          - name: "Minimal Dependencies"
+            install: "Django>=5.2,<6.0 djangorestframework>=3.14,<4.0"
+          - name: "With PostgreSQL"
+            db: "postgresql"
+          - name: "Production-like Settings"
+            production: true
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ "${{ matrix.test-case.install }}" ]; then
+          pip install ${{ matrix.test-case.install }}
+        else
+          pip install -r requirements.txt
+        fi
+
+    - name: Configure environment
+      working-directory: ./src
+      run: |
+        if [ "${{ matrix.test-case.production }}" = "true" ]; then
+          export DEBUG=False
+          export SECRET_KEY=production-test-key-${{ github.sha }}
+          export ALLOWED_HOSTS=localhost,127.0.0.1
+        fi
+
+    - name: Run core tests
+      working-directory: ./src
+      env:
+        SECRET_KEY: test-key-for-matrix-${{ github.sha }}
+        DEBUG: ${{ matrix.test-case.production != 'true' }}
+      run: |
+        python manage.py test --verbosity=1 --parallel=1
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install requests
+
+    - name: Start Django development server
+      working-directory: ./src
+      env:
+        SECRET_KEY: integration-test-key-${{ github.sha }}
+        DEBUG: True
+      run: |
+        python manage.py migrate
+        python manage.py collectstatic --noinput
+        python manage.py runserver 8000 &
+        echo $! > django_server.pid
+        sleep 5
+
+    - name: Run integration tests
+      run: |
+        # Test server is responding
+        curl -f http://localhost:8000/admin/ || exit 1
+        
+        # Test API endpoints exist (should return 401 for unauthenticated requests)
+        curl -f -I http://localhost:8000/authn/user_info/ | grep -q "401" || exit 1
+        curl -f -I http://localhost:8000/generate_barcode/ | grep -q "401" || exit 1
+
+    - name: Stop Django server
+      if: always()
+      working-directory: ./src
+      run: |
+        if [ -f django_server.pid ]; then
+          kill $(cat django_server.pid) || true
+          rm django_server.pid
+        fi
+
+  performance-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install django-debug-toolbar memory-profiler
+
+    - name: Run performance tests
+      working-directory: ./src
+      env:
+        SECRET_KEY: performance-test-key-${{ github.sha }}
+      run: |
+        # Test that test suite completes within reasonable time
+        timeout 300 python manage.py test --verbosity=0 --parallel
+
+    - name: Memory usage test
+      working-directory: ./src
+      env:
+        SECRET_KEY: memory-test-key-${{ github.sha }}
+      run: |
+        # Simple memory usage check
+        python -c "
+        import django
+        import os
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mobileid.settings')
+        django.setup()
+        from django.test.utils import get_runner
+        from django.conf import settings
+        TestRunner = get_runner(settings)
+        print('Django setup completed successfully')
+        "
+
+  docker-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create minimal Dockerfile for testing
+      run: |
+        cat << 'EOF' > Dockerfile.test
+        FROM python:3.12-slim
+        
+        WORKDIR /app
+        
+        # Install system dependencies
+        RUN apt-get update && apt-get install -y \
+            libpq-dev \
+            gcc \
+            && rm -rf /var/lib/apt/lists/*
+        
+        # Copy requirements and install Python dependencies
+        COPY requirements.txt .
+        RUN pip install --no-cache-dir -r requirements.txt
+        
+        # Copy source code
+        COPY src/ ./src/
+        
+        WORKDIR /app/src
+        
+        # Set environment variables
+        ENV DJANGO_SETTINGS_MODULE=mobileid.settings
+        ENV SECRET_KEY=docker-test-secret-key
+        ENV DEBUG=False
+        
+        # Run tests
+        CMD ["python", "manage.py", "test", "--verbosity=2"]
+        EOF
+
+    - name: Build test Docker image
+      run: |
+        docker build -f Dockerfile.test -t mobileid-test .
+
+    - name: Run tests in Docker
+      run: |
+        docker run --rm mobileid-test
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [test, lint-and-security, integration-tests]
+    if: always()
+    
+    steps:
+    - name: Notify test results
+      run: |
+        if [ "${{ needs.test.result }}" = "success" ] && [ "${{ needs.lint-and-security.result }}" = "success" ] && [ "${{ needs.integration-tests.result }}" = "success" ]; then
+          echo "✅ All Django backend tests passed!"
+        else
+          echo "❌ Some Django backend tests failed. Check the logs above."
+          exit 1
+        fi

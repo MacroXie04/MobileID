@@ -1,0 +1,277 @@
+name: Test Coverage Report
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run coverage report weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: mobileid_coverage
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      DJANGO_SETTINGS_MODULE: mobileid.settings
+      SECRET_KEY: coverage-test-secret-key-${{ github.sha }}
+      DEBUG: False
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: mobileid_coverage
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libpq-dev python3-dev build-essential
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install coverage pytest pytest-django pytest-cov
+
+    - name: Run comprehensive test coverage
+      working-directory: ./src
+      run: |
+        # Run tests with coverage
+        coverage run --source='.' --omit='*/venv/*,*/migrations/*,*/tests.py,*/test_*.py,manage.py,*/wsgi.py,*/asgi.py' \
+          manage.py test --verbosity=2 --parallel
+
+        # Generate coverage reports
+        coverage report --show-missing --skip-covered
+        coverage xml
+        coverage html
+
+    - name: Generate coverage badge
+      run: |
+        pip install coverage-badge
+        cd src
+        coverage-badge -o coverage.svg
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./src/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: true
+
+    - name: Archive coverage HTML report
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: src/htmlcov/
+
+    - name: Archive coverage badge
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-badge
+        path: src/coverage.svg
+
+    - name: Coverage summary
+      working-directory: ./src
+      run: |
+        echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+        coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+
+    - name: Check coverage threshold
+      working-directory: ./src
+      run: |
+        # Fail if coverage is below 80%
+        coverage report --fail-under=80
+
+  test-matrix:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.11, 3.12]
+        django-version: [5.2]
+        database: [sqlite, postgresql]
+        test-suite: [authn, index, mobileid]
+
+    env:
+      DJANGO_SETTINGS_MODULE: mobileid.settings
+      SECRET_KEY: matrix-test-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ github.sha }}
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: mobileid_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Configure database
+      run: |
+        if [ "${{ matrix.database }}" = "postgresql" ]; then
+          echo "DB_ENGINE=django.db.backends.postgresql" >> $GITHUB_ENV
+          echo "DB_NAME=mobileid_test" >> $GITHUB_ENV
+          echo "DB_USER=postgres" >> $GITHUB_ENV
+          echo "DB_PASSWORD=postgres" >> $GITHUB_ENV
+          echo "DB_HOST=localhost" >> $GITHUB_ENV
+          echo "DB_PORT=5432" >> $GITHUB_ENV
+        fi
+
+    - name: Run specific test suite
+      working-directory: ./src
+      run: |
+        python manage.py migrate --no-input
+        python manage.py test ${{ matrix.test-suite }}.tests --verbosity=2
+
+  performance-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install memory-profiler
+
+    - name: Run performance benchmark
+      working-directory: ./src
+      env:
+        SECRET_KEY: performance-test-${{ github.sha }}
+        DEBUG: False
+      run: |
+        # Time the test suite execution
+        echo "Running performance benchmark..."
+        time python manage.py test --verbosity=0 --parallel=1
+
+    - name: Memory usage test
+      working-directory: ./src
+      env:
+        SECRET_KEY: memory-test-${{ github.sha }}
+      run: |
+        python -c "
+        import psutil
+        import os
+        import django
+        from django.conf import settings
+        
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mobileid.settings')
+        django.setup()
+        
+        process = psutil.Process()
+        memory_before = process.memory_info().rss / 1024 / 1024  # MB
+        
+        # Import all models and run basic operations
+        from authn.models import UserProfile
+        from index.models import Barcode, BarcodeUsage
+        from django.contrib.auth.models import User
+        
+        memory_after = process.memory_info().rss / 1024 / 1024  # MB
+        
+        print(f'Memory usage: {memory_after:.2f} MB')
+        print(f'Memory increase: {memory_after - memory_before:.2f} MB')
+        
+        if memory_after > 200:  # 200MB threshold
+            print('⚠️ High memory usage detected')
+        else:
+            print('✅ Memory usage is within normal limits')
+        "
+
+  long-running-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[run-long-tests]')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run stress tests
+      working-directory: ./src
+      env:
+        SECRET_KEY: stress-test-${{ github.sha }}
+      run: |
+        # Run tests multiple times to check for flaky tests
+        echo "Running stress tests (3 iterations)..."
+        for i in {1..3}; do
+          echo "Iteration $i"
+          python manage.py test --verbosity=1
+        done
+
+    - name: Run tests with different settings
+      working-directory: ./src
+      env:
+        SECRET_KEY: settings-test-${{ github.sha }}
+      run: |
+        # Test with DEBUG=True
+        export DEBUG=True
+        python manage.py test --verbosity=1
+        
+        # Test with different cache backend
+        export CACHE_BACKEND=django.core.cache.backends.dummy.DummyCache
+        python manage.py test --verbosity=1
