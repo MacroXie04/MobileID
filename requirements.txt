@@ -20,5 +20,7 @@ django-widget-tweaks>=1.5,<2.0
 gunicorn>=21.2,<22.0
 # Optional Postgres driver (not used when defaulting to sqlite3)
 psycopg2-binary>=2.9,<3.0
+# Redis cache backend (required for CI/CD and production)
+redis>=5.0,<6.0
 
 

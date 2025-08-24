@@ -141,7 +141,7 @@ async function handleSubmit() {
       // Prefer SPA navigation to preserve app state
       await router.push('/');
     } else {
-      errors.general = res.detail || res.message || 'Login failed. Please check your credentials.';
+      errors.general = 'Invalid credentials. Please check your username and password.';
     }
   } catch (err) {
     console.error('Login error:', err);

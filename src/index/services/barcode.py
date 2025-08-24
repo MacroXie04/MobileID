@@ -11,7 +11,7 @@ from index.models import (
     BarcodeUsage,
     UserBarcodeSettings,
 )
-from index.project_code.dynamic_barcode import auto_send_code
+# from index.project_code.dynamic_barcode import auto_send_code
 from mobileid.settings import SELENIUM_ENABLED
 
 # ---------------------------------------------------------------------------
