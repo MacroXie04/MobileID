@@ -88,13 +88,13 @@ jobs:
         fail_ci_if_error: true
 
     - name: Archive coverage HTML report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report
         path: src/htmlcov/
 
     - name: Archive coverage badge
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-badge
         path: src/coverage.svg
