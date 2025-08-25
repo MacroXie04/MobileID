@@ -157,7 +157,7 @@ class UCMercedMobileIdClient:
         self.headless = headless
         self.config = UCMercedConfig()
 
-    def send_otc(self, mobile_id_rand: str, student_id: str, barcode: str) -> ApiResponse:
+    def send_otc(self, mobile_id_rand: str, student_id: str, barcode: str, user_cookies: str) -> ApiResponse:
         """
         Send OTC (One-Time Code) using provided parameters.
 
@@ -165,6 +165,7 @@ class UCMercedMobileIdClient:
             mobile_id_rand: Random mobile ID code
             student_id: Student ID number
             barcode: Barcode string
+            user_cookies: Raw Cookie header string from the authenticated browser session
 
         Returns:
             ApiResponse object with status and details
@@ -173,10 +174,58 @@ class UCMercedMobileIdClient:
 
         try:
             with WebDriverManager(self.headless) as driver:
-                # Navigate to the page first
-                driver.get(self.config.RAND_API_URL)
+                # Enable network and set headers to mirror the provided cURL as closely as possible
+                driver.execute_cdp_cmd("Network.enable", {})
 
-                # Prepare the JavaScript payload
+                # Some headers (like Cookie) are best applied via CDP extra headers
+                ajax_headers = {
+                    "Accept": "*/*",
+                    "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+                    "Cache-Control": "no-cache",
+                    "Pragma": "no-cache",
+                    "Origin": self.config.BASE_URL,
+                    "Referer": self.config.MOBILE_ID_URL,
+                    "DNT": "1",
+                    "X-Requested-With": "XMLHttpRequest",
+                    # UA hints and sec headers are best-effort; harmless if ignored
+                    "Sec-Fetch-Dest": "empty",
+                    "Sec-Fetch-Mode": "cors",
+                    "Sec-Fetch-Site": "same-origin",
+                    "sec-ch-ua": '"Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"',
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": '"macOS"',
+                    # Include the authenticated cookies captured from the user
+                    "Cookie": user_cookies,
+                }
+
+                try:
+                    # Attempt to mirror the UA from the user's curl example
+                    driver.execute_cdp_cmd(
+                        "Network.setUserAgentOverride",
+                        {
+                            "userAgent": (
+                                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                "Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"
+                            )
+                        },
+                    )
+                except Exception:
+                    # Non-fatal if UA override fails
+                    pass
+
+                driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": ajax_headers})
+
+                # Navigate to the same-origin page first to avoid CORS issues
+                logger.info(f"Navigating to: {self.config.MOBILE_ID_URL}")
+                driver.get(self.config.MOBILE_ID_URL)
+
+                # Wait for page to be ready
+                WebDriverWait(driver, self.config.EXPLICIT_WAIT).until(
+                    lambda d: d.execute_script("return document.readyState") == "complete"
+                )
+
+                # Prepare the JavaScript payload using fetch()
                 js_payload = self._build_js_payload(mobile_id_rand, student_id, barcode)
 
                 # Execute the AJAX request
@@ -197,14 +246,14 @@ class UCMercedMobileIdClient:
                     return ApiResponse(
                         status="success",
                         code=mobile_id_rand,
-                        response=response_text
+                        response=response_text,
                     )
                 else:
                     logger.warning(f"OTC failed with code: {mobile_id_rand}")
                     return ApiResponse(
                         status="failed",
                         code=mobile_id_rand,
-                        response=response_text
+                        response=response_text,
                     )
 
         except TimeoutException:
@@ -223,30 +272,41 @@ class UCMercedMobileIdClient:
             return ApiResponse(status="error", error=error_msg)
 
     def _build_js_payload(self, mobile_id_rand: str, student_id: str, barcode: str) -> str:
-        """Build JavaScript payload for AJAX request."""
-        # Safely encode parameters
-        encoded_params = f"mobileidrand={quote(mobile_id_rand)}&studentid={quote(student_id)}&barcode={quote(barcode)}"
+        """Build JavaScript fetch payload for AJAX request, mirroring the provided cURL.
+
+        Ensures student ID is prefixed with 'S'.
+        """
+        # Ensure the student ID starts with 'S'
+        student_id_formatted = f"S{re.sub(r'^s?', '', student_id, flags=re.IGNORECASE)}"
+
+        # Safely encode parameters for x-www-form-urlencoded
+        encoded_params = (
+            f"mobileidrand={quote(mobile_id_rand)}"
+            f"&studentid={quote(student_id_formatted)}"
+            f"&barcode={quote(barcode)}"
+        )
 
         return f"""
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "{self.config.RAND_API_URL}", true);
-        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-        xhr.setRequestHeader("Cookie", "{self.config.DEFAULT_SESSION_COOKIE}");
-
-        xhr.onload = function () {{
-            document.body.innerHTML = "<pre>" + xhr.responseText + "</pre>";
-        }};
-
-        xhr.onerror = function () {{
+        try {{
+            fetch("/mobileid/rand.php", {{
+                method: "POST",
+                headers: {{
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "X-Requested-With": "XMLHttpRequest"
+                }},
+                body: "{encoded_params}",
+                credentials: "include"
+            }})
+                .then(function(resp) {{ return resp.text(); }})
+                .then(function(text) {{
+                    document.body.innerHTML = "<pre>" + text + "</pre>";
+                }})
+                .catch(function(err) {{
+                    document.body.innerHTML = "<pre>ERROR: Request failed</pre>";
+                }});
+        }} catch (e) {{
             document.body.innerHTML = "<pre>ERROR: Request failed</pre>";
-        }};
-
-        xhr.ontimeout = function () {{
-            document.body.innerHTML = "<pre>ERROR: Request timeout</pre>";
-        }};
-
-        xhr.timeout = {self.config.EXPLICIT_WAIT * 1000};
-        xhr.send("{encoded_params}");
+        }}
         """
 
     def _is_success_response(self, response_text: str) -> bool:
@@ -287,7 +347,8 @@ class UCMercedMobileIdClient:
                 response = self.send_otc(
                     mobile_id_rand,
                     mobile_data.student_id,
-                    mobile_data.barcode
+                    mobile_data.barcode,
+                    user_cookies
                 )
 
                 if response.status == "success":
@@ -602,6 +663,21 @@ class UCMercedMobileIdClient:
         except Exception as e:
             logger.error(f"Error parsing HTML data: {e}")
             return MobileIdData(None, None, None, None)
+
+
+# ---------------------------------------------------------------------------
+# Module-level convenience wrappers
+# ---------------------------------------------------------------------------
+def auto_send_code(user_cookies: str, headless: bool = True) -> Optional[Dict[str, str]]:
+    """Send OTC codes automatically using a headless browser session.
+
+    Returns a dict like {"code": str, "response": str} on success, otherwise None.
+    """
+    client = UCMercedMobileIdClient(headless=headless)
+    response = client.auto_send_code(user_cookies)
+    if response and response.status == "success":
+        return {"code": response.code or "", "response": response.response or ""}
+    return None
 
 
 # Interface for direct script execution

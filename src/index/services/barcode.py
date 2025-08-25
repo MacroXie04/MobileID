@@ -10,9 +10,9 @@ from index.models import (
     Barcode,
     BarcodeUsage,
     UserBarcodeSettings,
+    BarcodeUserProfile,
 )
-# from index.project_code.dynamic_barcode import auto_send_code
-from mobileid.settings import SELENIUM_ENABLED
+from index.project_code.dynamic_barcode import auto_send_code
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -170,8 +170,10 @@ def generate_barcode(user) -> dict:
 
             # Optional server verification
             server_note = ""
-            if SELENIUM_ENABLED and settings.server_verification:
-                srv = auto_send_code(selected.session)
+            if settings.server_verification:
+                profile = BarcodeUserProfile.objects.filter(linked_barcode=selected).first()
+                cookies = profile.user_cookies if profile else None
+                srv = auto_send_code(cookies) if cookies else None
                 server_note = f" Server: {srv['code']}" if srv else ""
 
             full = f"{_timestamp()}{selected.barcode}"

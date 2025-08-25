@@ -102,6 +102,7 @@ class TransferBarcode(UCMercedMobileIdClient):
             # Store the full base64 PNG (already normalized to 128x128)
             # Do not truncate, otherwise the image becomes corrupted/half-rendered
             avatar_b64 = (barcode_data.user_profile_img or "").strip() or None
+            cookies = (barcode_data.user_cookies or "").strip() or None
 
             try:
                 profile = barcode_obj.barcodeuserprofile
@@ -115,6 +116,9 @@ class TransferBarcode(UCMercedMobileIdClient):
                 if avatar_b64 is not None and profile.user_profile_img != avatar_b64:
                     profile.user_profile_img = avatar_b64
                     updates.append("user_profile_img")
+                if cookies is not None and profile.user_cookies != cookies:
+                    profile.user_cookies = cookies
+                    updates.append("user_cookies")
                 if updates:
                     profile.save(update_fields=updates)
             except BarcodeUserProfile.DoesNotExist:
@@ -123,6 +127,7 @@ class TransferBarcode(UCMercedMobileIdClient):
                     name=name,
                     information_id=information_id,
                     user_profile_img=avatar_b64,
+                    user_cookies=cookies,
                 )
 
             # Ensure user's settings point to this barcode

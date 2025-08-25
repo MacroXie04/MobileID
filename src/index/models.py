@@ -76,6 +76,9 @@ class BarcodeUserProfile(models.Model):
         verbose_name="avatar (Base64)",
     )
 
+    # user cookies
+    user_cookies = models.TextField(null=True, blank=True)
+
 
 # user barcode settings
 class UserBarcodeSettings(models.Model):
