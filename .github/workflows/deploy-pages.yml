@@ -24,7 +24,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js (Yarn cache)
+        if: ${{ hashFiles('pages/yarn.lock') != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: yarn
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Setup Node.js (npm cache)
+        if: ${{ hashFiles('pages/package-lock.json') != '' }}
         uses: actions/setup-node@v4
         with:
           node-version: 18
@@ -33,7 +42,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ -f package-lock.json ]; then
+          if [ -f yarn.lock ]; then
+            corepack enable
+            # Try Yarn Berry first; fall back to classic
+            if yarn --version 2>/dev/null | grep -qE '^(2|3|4)'; then
+              yarn install --immutable
+            else
+              yarn install --frozen-lockfile
+            fi
+          elif [ -f package-lock.json ]; then
             npm ci
           else
             npm install
@@ -44,7 +61,12 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Build
-        run: npm run build
+        run: |
+          if [ -f yarn.lock ]; then
+            yarn build
+          else
+            npm run build
+          fi
         env:
           # Prefer env-driven API base URL via Vite env
           VITE_API_BASE_URL: https://api.catcard.online
