@@ -250,10 +250,13 @@
                     <md-icon slot="icon">check_circle</md-icon>
                     Active
                   </md-assist-chip>
-                  <span v-if="!barcode.is_owned_by_current_user" class="md-badge badge-shared">
-                    <md-icon>group</md-icon>
+                  <md-assist-chip
+                    v-if="!barcode.is_owned_by_current_user"
+                    aria-label="Shared barcode"
+                  >
+                    <md-icon slot="icon">group</md-icon>
                     Shared
-                  </span>
+                  </md-assist-chip>
                   <md-assist-chip
                     v-if="barcode.barcode_type === 'DynamicBarcode' && barcode.has_profile_addon"
                     :title="getProfileTooltip(barcode)"
