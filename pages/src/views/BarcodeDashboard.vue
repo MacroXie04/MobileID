@@ -26,6 +26,61 @@
 
     <!-- Main Content -->
     <main class="md-content">
+      <!-- Transfer Barcode Section -->
+      <section class="md-card md-mb-6">
+        <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
+          <md-icon>cookie</md-icon>
+          <h2 class="md-typescale-headline-small md-m-0">Transfer Barcode</h2>
+          <transition name="fade">
+            <div v-if="transferLoading" class="save-indicator md-flex md-items-center md-gap-2 md-ml-auto">
+              <md-circular-progress indeterminate></md-circular-progress>
+              <span class="md-typescale-body-small">Requesting...</span>
+            </div>
+          </transition>
+        </div>
+
+        <div class="settings-content md-flex md-flex-column md-gap-4">
+          <md-outlined-text-field
+            v-model="transferCookie"
+            :error="!!transferErrors.cookie"
+            :error-text="transferErrors.cookie"
+            label="Barcode Cookie"
+            placeholder="Paste your Barcode cookies here"
+            @input="clearTransferError('cookie')"
+          >
+            <md-icon slot="leading-icon">cookie</md-icon>
+          </md-outlined-text-field>
+
+          <div class="md-flex md-items-center md-gap-2">
+            <md-icon>link</md-icon>
+            <span class="md-typescale-body-medium">Source Page URL:</span>
+            <code class="md-typescale-body-medium">https://icatcard.ucmerced.edu/mobileid/</code>
+          </div>
+
+          <div class="form-actions md-flex md-gap-3 md-flex-wrap">
+            <md-filled-button @click="requestTransferCode" :disabled="transferLoading || !transferCookie.trim()">
+              <md-icon slot="icon">sync_alt</md-icon>
+              Request Transfer
+            </md-filled-button>
+          </div>
+
+          <transition name="fade">
+            <div v-if="transferSuccess" class="md-banner md-banner-success">
+              <md-icon>check_circle</md-icon>
+              <span class="md-typescale-body-medium">
+                {{ transferSuccessMessage || 'Barcode data stored successfully!' }}
+              </span>
+            </div>
+          </transition>
+
+          <transition name="fade">
+            <div v-if="transferError" class="md-banner md-banner-error">
+              <md-icon>error</md-icon>
+              <span class="md-typescale-body-medium">{{ transferError }}</span>
+            </div>
+          </transition>
+        </div>
+      </section>
       <!-- Settings Card -->
       <section class="md-card md-mb-6">
         <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
@@ -49,7 +104,8 @@
             </div>
           </div>
 
-          <div v-if="isDynamicSelected" class="settings-grid md-flex md-flex-column md-gap-4">
+          <!-- Settings available only for barcodes with profile -->
+          <div v-if="isDynamicSelected && currentBarcodeHasProfile" class="settings-grid md-flex md-flex-column md-gap-4">
             <!-- Profile Association -->
             <div class="setting-item md-flex md-items-center md-justify-between md-p-4 md-rounded-lg">
               <div class="setting-header md-flex md-gap-3">
@@ -61,9 +117,9 @@
               </div>
               
               <md-switch
-                v-model="settings.associate_user_profile_with_barcode"
+                :selected="Boolean(settings.associate_user_profile_with_barcode)"
                 :disabled="isUserGroup"
-                @change="onSettingChange"
+                @change="(e) => { settings.associate_user_profile_with_barcode = e.target.selected; onSettingChange(); }"
               ></md-switch>
             </div>
 
@@ -78,10 +134,19 @@
               </div>
               
               <md-switch
-                v-model="settings.server_verification"
-                @change="onSettingChange"
+                :selected="Boolean(settings.server_verification)"
+                @change="(e) => { settings.server_verification = e.target.selected; onSettingChange(); }"
               ></md-switch>
             </div>
+          </div>
+
+          <!-- Info message when dynamic barcode is selected but has no profile -->
+          <div v-if="isDynamicSelected && !currentBarcodeHasProfile" class="md-banner md-banner-info md-mt-4">
+            <md-icon>info</md-icon>
+            <span class="md-typescale-body-medium">
+              Profile settings are only available for barcodes with attached profile data. 
+              Transfer a barcode with profile information to access these settings.
+            </span>
           </div>
 
           <div v-if="Object.keys(errors).length > 0" class="md-banner md-banner-error md-mt-4">
@@ -189,10 +254,13 @@
                     <md-icon>group</md-icon>
                     Shared
                   </span>
-                  <span v-if="barcode.barcode_type === 'DynamicBarcode' && barcode.has_profile_addon" class="md-badge badge-addon">
-                    <md-icon>badge</md-icon>
-                    Profile
-                  </span>
+                  <md-assist-chip
+                    v-if="barcode.barcode_type === 'DynamicBarcode' && barcode.has_profile_addon"
+                    :title="getProfileTooltip(barcode)"
+                  >
+                    <md-icon slot="icon">{{ barcode.profile_info?.has_avatar ? 'account_circle' : 'badge' }}</md-icon>
+                    {{ getProfileLabel(barcode) }}
+                  </md-assist-chip>
                 </div>
               </div>
 
@@ -358,7 +426,9 @@ const {
   apiGetBarcodeDashboard,
   apiUpdateBarcodeSettings,
   apiCreateBarcode,
-  apiDeleteBarcode
+  apiDeleteBarcode,
+  apiTransferCatCard,
+  apiGetActiveProfile
 } = useApi();
 
 // Reactive state
@@ -384,6 +454,12 @@ const isDynamicSelected = computed(() => {
   return current?.barcode_type === 'DynamicBarcode';
 });
 
+const currentBarcodeHasProfile = computed(() => {
+  if (!settings.value.barcode) return false;
+  const current = barcodeChoices.value.find(c => Number(c.id) === Number(settings.value.barcode));
+  return current?.has_profile_addon || false;
+});
+
 // Form data
 const newBarcode = ref('');
 
@@ -407,6 +483,61 @@ const addSection = ref(null);
 const clearError = (field) => {
   delete errors.value[field];
 };
+
+// Transfer CatCard state
+const transferCookie = ref('');
+const transferLoading = ref(false);
+const transferSuccess = ref(false);
+const transferSuccessMessage = ref('');
+const transferError = ref('');
+const transferErrors = ref({});
+
+function clearTransferError(field) {
+  delete transferErrors.value[field];
+  transferError.value = '';
+  transferSuccess.value = false;
+  transferSuccessMessage.value = '';
+}
+
+async function requestTransferCode() {
+  try {
+    transferError.value = '';
+    transferSuccess.value = false;
+    transferSuccessMessage.value = '';
+    transferErrors.value = {};
+
+    if (!transferCookie.value || !transferCookie.value.trim()) {
+      transferErrors.value.cookie = 'Cookie is required';
+      return;
+    }
+
+    transferLoading.value = true;
+
+    const data = await apiTransferCatCard(transferCookie.value);
+
+    if (data && data.success) {
+      transferSuccess.value = true;
+      transferSuccessMessage.value = data.message || 'Barcode data stored successfully!';
+      // Clear the cookie field on success
+      transferCookie.value = '';
+      // Reload dashboard to show any new barcode data
+      setTimeout(() => {
+        loadDashboard();
+      }, 1000);
+    } else {
+      transferError.value = data.error || 'Transfer failed.';
+    }
+  } catch (error) {
+    if (error.status === 400 && error.errors) {
+      // Handle validation errors from API
+      transferError.value = error.message || 'Invalid request';
+    } else {
+      transferError.value = error.message || 'Network error occurred';
+    }
+  } finally {
+    transferLoading.value = false;
+  }
+}
 
 // Load dashboard data
 async function loadDashboard() {
@@ -438,10 +569,32 @@ async function loadDashboard() {
     isUserGroup.value = Boolean(data.is_user_group);
     isSchoolGroup.value = Boolean(data.is_school_group);
 
+    // Check for active profile (for School users with barcode profile association)
+    await checkActiveProfile();
+
   } catch (error) {
     showMessage('Failed to load dashboard: ' + error.message, 'danger');
   } finally {
     loading.value = false;
+  }
+}
+
+// Check and apply active profile
+async function checkActiveProfile() {
+  try {
+    console.log('Dashboard: Checking active profile...');
+    const response = await apiGetActiveProfile();
+    console.log('Dashboard: Active profile response:', response);
+    
+    if (response && response.profile_info) {
+      console.log('Dashboard: Active profile found, updating page title and info');
+      // Show a brief notification about active profile association
+      showMessage(`Profile Association Active: ${response.profile_info.name}`, 'success');
+    } else {
+      console.log('Dashboard: No active profile association');
+    }
+  } catch (error) {
+    console.error('Dashboard: Failed to check active profile:', error);
   }
 }
 
@@ -798,6 +951,43 @@ function getBarcodeTypeLabel(type) {
   return 'Static';
 }
 
+function getProfileLabel(barcode) {
+  if (!barcode.profile_info) return 'Profile';
+  
+  const { name, information_id, has_avatar } = barcode.profile_info;
+  
+  // Show name if available and not too long
+  if (name && name.length <= 15) {
+    return name;
+  }
+  
+  // Show information ID if available and name is too long or not available
+  if (information_id) {
+    // Show last 4 digits if it's a long ID number
+    if (information_id.length > 8 && /^\d+$/.test(information_id)) {
+      return `ID: ${information_id.slice(-4)}`;
+    }
+    // Show full ID if it's short or contains letters
+    return `ID: ${information_id}`;
+  }
+  
+  // Fallback to generic label with avatar indicator
+  return has_avatar ? 'Profile+' : 'Profile';
+}
+
+function getProfileTooltip(barcode) {
+  if (!barcode.profile_info) return 'Profile attached';
+  
+  const { name, information_id, has_avatar } = barcode.profile_info;
+  const parts = [];
+  
+  if (name) parts.push(`Name: ${name}`);
+  if (information_id) parts.push(`ID: ${information_id}`);
+  if (has_avatar) parts.push('Has avatar image');
+  
+  return parts.length ? parts.join('\n') : 'Profile attached';
+}
+
 // Get current barcode info
 const currentBarcodeInfo = computed(() => {
   if (!settings.value.barcode) return null;
@@ -856,6 +1046,12 @@ watch(showScanner, (newValue) => {
   transform: translateX(-50%);
   z-index: 1000;
   max-width: 600px;
+}
+
+/* Info banner styling */
+.md-banner-info {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
 }
 
 /* Header card icon colors */

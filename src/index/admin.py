@@ -1,7 +1,13 @@
 from django.contrib import admin
 from django.utils import timezone
 from django.utils.html import format_html
-from index.models import Barcode, UserBarcodeSettings, BarcodeUsage
+import json
+from index.models import (
+    Barcode,
+    UserBarcodeSettings,
+    BarcodeUsage,
+    BarcodeUserProfile,
+)
 
 admin.site.site_header = "MobileID Admin"
 admin.site.site_title = "MobileID Admin Portal"
@@ -201,3 +207,40 @@ class UserBarcodeSettingsAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Optimize queryset with select_related"""
         return super().get_queryset(request).select_related('user', 'barcode')
+
+
+@admin.register(BarcodeUserProfile)
+class BarcodeUserProfileAdmin(admin.ModelAdmin):
+    """Admin configuration for BarcodeUserProfile model"""
+    list_display = ('linked_barcode_display', 'name', 'information_id', 'avatar_preview')
+    search_fields = ('name', 'information_id', 'linked_barcode__barcode', 'linked_barcode__user__username')
+    readonly_fields = ('avatar_preview',)
+    ordering = ('name',)
+
+    fieldsets = (
+        ('Profile', {
+            'fields': ('linked_barcode', 'name', 'information_id')
+        }),
+        ('Avatar (PNG base64 128x128)', {
+            'fields': ('user_profile_img', 'avatar_preview')
+        }),
+    )
+
+    def linked_barcode_display(self, obj):
+        try:
+            return f"...{obj.linked_barcode.barcode[-4:]} ({obj.linked_barcode.barcode_type})"
+        except Exception:
+            return '-'
+
+    linked_barcode_display.short_description = 'Linked Barcode'
+
+    def avatar_preview(self, obj):
+        if obj.user_profile_img:
+            return format_html(
+                '<img src="data:image/png;base64,{}" style="height:64px;width:64px;border-radius:8px;object-fit:cover;" />',
+                obj.user_profile_img
+            )
+        return '-'
+
+    avatar_preview.short_description = 'Avatar'
+

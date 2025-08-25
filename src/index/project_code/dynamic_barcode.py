@@ -39,7 +39,7 @@ class MobileIdData:
     student_id: Optional[str]
     barcode: Optional[str]
     profile_img_base64: Optional[str]
-    username: Optional[str] = None  # Added username field
+    username: Optional[str] = None
 
 
 @dataclass

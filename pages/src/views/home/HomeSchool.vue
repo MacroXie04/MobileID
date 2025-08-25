@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from "vue";
+import { ref, nextTick, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 
 // CSS Imports
@@ -48,14 +48,22 @@ const serverStatus = ref("Emergency");
 const barcodeDisplayRef = ref(null);
 
 // Use composables
-const { profile, avatarSrc, loadAvatar } = useUserInfo();
+const { profile, avatarSrc: defaultAvatarSrc, loadAvatar } = useUserInfo();
 const { isRefreshingToken } = useToken();
-const { apiGenerateBarcode } = useApi();
+const { apiGenerateBarcode, apiGetActiveProfile } = useApi();
 const { drawPdf417 } = usePdf417();
 
+// Create a new ref for avatarSrc that can be overridden
+const avatarSrc = ref(defaultAvatarSrc.value);
+
+// Watch for changes in defaultAvatarSrc
+watch(defaultAvatarSrc, (newValue) => {
+  avatarSrc.value = newValue;
+});
+
 /* ── lifecycle ──────────────────────────────────────────────────────────── */
-onMounted(() => {
-  // 直接从 window.userInfo 赋值到 profile
+onMounted(async () => {
+  // directly assign window.userInfo to profile
   const data = window.userInfo;
   if (data && data.profile) {
     profile.value = data.profile;
@@ -63,6 +71,37 @@ onMounted(() => {
   
   // Load user avatar
   loadAvatar();
+  
+  // Check for active profile (for School users with barcode profile association)
+  try {
+    console.log('HomeSchool: Fetching active profile...');
+    const response = await apiGetActiveProfile();
+    console.log('HomeSchool: Active profile response:', response);
+    
+    if (response && response.profile_info) {
+      console.log('HomeSchool: Profile info found:', response.profile_info);
+      console.log('HomeSchool: Current profile before update:', profile.value);
+      
+      // Override with barcode profile info
+      profile.value = {
+        name: response.profile_info.name,
+        information_id: response.profile_info.information_id
+      };
+      
+      // Update avatar if provided
+      if (response.profile_info.avatar_data) {
+        console.log('HomeSchool: Updating avatar with profile data');
+        avatarSrc.value = response.profile_info.avatar_data;
+      }
+      
+      console.log('HomeSchool: Profile updated to:', profile.value);
+      console.log('HomeSchool: Avatar updated to:', avatarSrc.value?.substring(0, 50) + '...');
+    } else {
+      console.log('HomeSchool: No active profile info returned, using default profile');
+    }
+  } catch (error) {
+    console.error('HomeSchool: Failed to load active profile:', error);
+  }
 });
 
 /* ── UI actions with jQuery animations ─────────────────────────────────────── */
@@ -71,10 +110,26 @@ async function handleGenerate() {
   serverStatus.value = "Processing";
 
   try {
-    const { status, barcode, message } = await apiGenerateBarcode();
+    const { status, barcode, message, profile_info } = await apiGenerateBarcode();
     serverStatus.value = message || "Success";
 
     if (status === "success" && barcode) {
+      // Update profile if profile_info is returned (for School users with associate_user_profile_with_barcode)
+      if (profile_info) {
+        console.log('HomeSchool: Generate barcode returned profile info:', profile_info);
+        profile.value = {
+          name: profile_info.name,
+          information_id: profile_info.information_id
+        };
+        // Update avatar if provided
+        if (profile_info.avatar_data) {
+          console.log('HomeSchool: Updating avatar from generate barcode response');
+          avatarSrc.value = profile_info.avatar_data;
+        }
+        console.log('HomeSchool: Profile updated from generate response to:', profile.value);
+      } else {
+        console.log('HomeSchool: No profile_info in generate barcode response');
+      }
       // First generate the barcode
       await nextTick();
       

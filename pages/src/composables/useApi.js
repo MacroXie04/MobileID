@@ -114,6 +114,15 @@ export function useApi() {
     }
 
     /**
+     * Get active profile info based on user settings
+     */
+    async function apiGetActiveProfile() {
+        return await apiCallWithAutoRefresh(`${baseURL}/active_profile/`, {
+            method: "GET"
+        });
+    }
+
+    /**
      * Barcode Dashboard API calls
      */
     async function apiGetBarcodeDashboard() {
@@ -143,12 +152,28 @@ export function useApi() {
         });
     }
 
+    /**
+     * Transfer CatCard API call
+     */
+    async function apiTransferCatCard(cookies) {
+        return await apiCallWithAutoRefresh(`${baseURL}/transfer/`, {
+            method: "POST",
+            body: JSON.stringify({
+                cookies: cookies,
+                page: 'https://icatcard.ucmerced.edu/mobileid/',
+                ts: Date.now()
+            })
+        });
+    }
+
     return {
         apiCallWithAutoRefresh,
         apiGenerateBarcode,
+        apiGetActiveProfile,
         apiGetBarcodeDashboard,
         apiUpdateBarcodeSettings,
         apiCreateBarcode,
-        apiDeleteBarcode
+        apiDeleteBarcode,
+        apiTransferCatCard
     };
 } 
