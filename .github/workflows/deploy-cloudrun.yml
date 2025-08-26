@@ -47,6 +47,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate required secrets and variables
+        run: |
+          if [ -z "${{ secrets.WIF_PROVIDER }}" ]; then
+            echo "ERROR: WIF_PROVIDER secret is not set"
+            echo "Please run the bootstrap script (.ops/gcp/bootstrap.sh) to set up Workload Identity Federation"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DEPLOYER_SA_EMAIL }}" ]; then
+            echo "ERROR: DEPLOYER_SA_EMAIL secret is not set"
+            echo "Please run the bootstrap script (.ops/gcp/bootstrap.sh) to set up the service account"
+            exit 1
+          fi
+          if [ -z "${{ vars.GCP_PROJECT_ID }}" ]; then
+            echo "ERROR: GCP_PROJECT_ID variable is not set"
+            echo "Please run the bootstrap script (.ops/gcp/bootstrap.sh) to configure GitHub variables"
+            exit 1
+          fi
+          echo "All required secrets and variables are configured"
+
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
