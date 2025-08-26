@@ -39,7 +39,7 @@ env:
 
 jobs:
   deploy:
-    environment: production
+    environment: ".env.production"
     permissions:
       contents: read
       id-token: write
@@ -69,6 +69,6 @@ jobs:
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           DB_USER:    ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}   # ← 修正处（有空格）
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }} 
         run: |
           # 用 ^:^ 作为分隔符，避免逗号把值切开
