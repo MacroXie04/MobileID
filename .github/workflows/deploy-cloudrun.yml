@@ -5,13 +5,39 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# 这些来自 GitHub “Environment: production” 的 Variables（非敏感）
 env:
-  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-  REGION:     ${{ vars.GCP_REGION }}
-  REPO:       ${{ vars.GAR_REPO }}
-  SERVICE:    ${{ vars.CLOUD_RUN_SERVICE }}
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION:     ${{ vars.GCP_REGION }}
+  GAR_REPO:       ${{ vars.GAR_REPO }}
+  CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
   CLOUDSQL_INSTANCE: ${{ vars.CLOUDSQL_INSTANCE }}
-  IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GAR_REPO }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
+
+  # 应用/数据库的非敏感变量
+  DEBUG: ${{ vars.DEBUG }}
+  ALLOWED_HOSTS: ${{ vars.ALLOWED_HOSTS }}
+  CORS_ALLOWED_ORIGINS: ${{ vars.CORS_ALLOWED_ORIGINS }}
+  CSRF_TRUSTED_ORIGINS: ${{ vars.CSRF_TRUSTED_ORIGINS }}
+  CORS_ALLOW_CREDENTIALS: ${{ vars.CORS_ALLOW_CREDENTIALS }}
+  SESSION_COOKIE_SAMESITE: ${{ vars.SESSION_COOKIE_SAMESITE }}
+  SESSION_COOKIE_SECURE: ${{ vars.SESSION_COOKIE_SECURE }}
+  CSRF_COOKIE_SAMESITE: ${{ vars.CSRF_COOKIE_SAMESITE }}
+  CSRF_COOKIE_SECURE: ${{ vars.CSRF_COOKIE_SECURE }}
+  SESSION_COOKIE_DOMAIN: ${{ vars.SESSION_COOKIE_DOMAIN }}
+  CSRF_COOKIE_DOMAIN: ${{ vars.CSRF_COOKIE_DOMAIN }}
+  WEBAUTHN_RP_ID: ${{ vars.WEBAUTHN_RP_ID }}
+  BACKEND_ORIGIN: ${{ vars.BACKEND_ORIGIN }}
+  TIME_ZONE: ${{ vars.TIME_ZONE }}
+  MAX_FAILED_LOGIN_ATTEMPTS: ${{ vars.MAX_FAILED_LOGIN_ATTEMPTS }}
+  ACCOUNT_LOCKOUT_DURATION: ${{ vars.ACCOUNT_LOCKOUT_DURATION }}
+  CACHE_BACKEND: ${{ vars.CACHE_BACKEND }}
+  CACHE_LOCATION: ${{ vars.CACHE_LOCATION }}
+  SESSION_ENGINE: ${{ vars.SESSION_ENGINE }}
+
+  DB_ENGINE: ${{ vars.DB_ENGINE }}
+  DB_NAME:   ${{ vars.DB_NAME }}
+  DB_HOST:   ${{ vars.DB_HOST }}
+  DB_PORT:   ${{ vars.DB_PORT }}
 
 jobs:
   deploy:
@@ -24,6 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # WIF 登录（Secrets 放在 Environment secrets）
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
@@ -31,13 +58,39 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
-      - run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+      # 允许推镜像到 Artifact Registry
+      - run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+      # 计算镜像名，写入 $GITHUB_ENV，脚本里用 $IMAGE
+      - name: Compute image tag
+        run: echo "IMAGE=${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GAR_REPO}/${CLOUD_RUN_SERVICE}:${GITHUB_SHA}" >> "$GITHUB_ENV"
 
       - name: Build & Push image
         run: |
-          docker build -t "${IMAGE}" .
-          docker push "${IMAGE}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
 
+      # 把 Secrets 注入 step 的 env，脚本里用 $SECRET_KEY / $DB_USER / $DB_PASSWORD
       - name: Deploy to Cloud Run
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DB_USER:    ${{ secrets.DB_USER }}
+          DB_PASSWORD:${{ secrets.DB_PASSWORD }}
         run: |
-          ENV_VARS="SECRET_KEY=${{ secrets.SECRET_KEY }},DEBUG=${{ vars.DEBUG }},ALLOWED_HOSTS=${{ vars.ALLOWED_HOSTS }},CORS_ALLOWED_ORIGINS=${{ vars.CORS_ALLOWED_ORIGINS }},CSRF_TRUSTED_ORIGINS=${{ vars.CSRF_TRUSTED_ORIGINS }},CORS_ALLOW_CREDENTIALS=${{ vars.CORS_ALLOW_CREDENTIALS }},SESSION_COOKIE_SAMESITE=${{ vars.SESSION_COOKIE_SAMESITE }},SESSION_COOKIE_SECURE=${{ vars.SESSION_COOKIE_SECURE }},CSRF_COOKIE_SAMESITE=${{ vars.CSRF_COOKIE_SAMESITE }},CSRF_COOKIE_SECURE=${{ vars.CSRF_COOKIE_SECURE }},SESSION_COOKIE_DOMAIN=${{ vars.SESSION_COOKIE_DOMAIN }},CSRF_COOKIE_DOMAIN=${{ vars.CSRF_COOKIE_DOMAIN }},WEBAUTHN_RP_ID=${{ vars.WEBAUTHN_RP_ID }},BACKEND_ORIGIN=${{ vars.BACKEND_ORIGIN }},TIME_ZONE=${{ vars.TIME_ZONE }},MAX_FAILED_LOGIN_ATTEMPTS=${{ vars.MAX_FAILED_LOGIN_ATTEMPTS }},ACCOUNT_LOCKOUT_DURATION=${{ vars.ACCOUNT_LOCKO
+          ENV_VARS="SECRET_KEY=$SECRET_KEY,DEBUG=$DEBUG,ALLOWED_HOSTS=$ALLOWED_HOSTS,CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS,CSRF_TRUSTED_ORIGINS=$CSRF_TRUSTED_ORIGINS,CORS_ALLOW_CREDENTIALS=$CORS_ALLOW_CREDENTIALS,SESSION_COOKIE_SAMESITE=$SESSION_COOKIE_SAMESITE,SESSION_COOKIE_SECURE=$SESSION_COOKIE_SECURE,CSRF_COOKIE_SAMESITE=$CSRF_COOKIE_SAMESITE,CSRF_COOKIE_SECURE=$CSRF_COOKIE_SECURE,SESSION_COOKIE_DOMAIN=$SESSION_COOKIE_DOMAIN,CSRF_COOKIE_DOMAIN=$CSRF_COOKIE_DOMAIN,WEBAUTHN_RP_ID=$WEBAUTHN_RP_ID,BACKEND_ORIGIN=$BACKEND_ORIGIN,TIME_ZONE=$TIME_ZONE,MAX_FAILED_LOGIN_ATTEMPTS=$MAX_FAILED_LOGIN_ATTEMPTS,ACCOUNT_LOCKOUT_DURATION=$ACCOUNT_LOCKOUT_DURATION,CACHE_BACKEND=$CACHE_BACKEND,CACHE_LOCATION=$CACHE_LOCATION,SESSION_ENGINE=$SESSION_ENGINE,DB_ENGINE=$DB_ENGINE,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_HOST=$DB_HOST,DB_PORT=$DB_PORT"
+
+          # 可选：只有配置了 Cloud SQL 才加连接参数
+          ADD_CSQL=""
+          if [ -n "$CLOUDSQL_INSTANCE" ]; then
+            ADD_CSQL="--add-cloudsql-instances $CLOUDSQL_INSTANCE"
+          fi
+
+          gcloud run deploy "$CLOUD_RUN_SERVICE" \
+            --image "$IMAGE" \
+            --region "$GCP_REGION" \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 0 --max-instances 2 \
+            --cpu 1 --memory 512Mi \
+            $ADD_CSQL \
+            --set-env-vars "$ENV_VARS"
