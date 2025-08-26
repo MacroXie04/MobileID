@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Prefer real env vars; then supplement from .env if present (do NOT override)
@@ -163,24 +164,96 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "mobileid.wsgi.application"
 
-# Database
-_mysql_options = {"charset": "utf8mb4"}
-_db_init_cmd = env("DB_INIT_COMMAND")
-if _db_init_cmd:
-    _mysql_options["init_command"] = _db_init_cmd
+# Database (profile-based configuration)
+# --- DB profile switch ---
+# DB_PROFILE: "local" or "gcp" (or any custom name you like)
+DB_PROFILE = os.getenv("DB_PROFILE", "local").lower()
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": env("DB_NAME", "mobileid_dev"),
-        "USER": env("DB_USER", "mobileid"),
-        "PASSWORD": env("DB_PASSWORD", ""),
-        "HOST": env("DB_HOST", "host.docker.internal"),
-        "PORT": env("DB_PORT", "3306"),
-        "OPTIONS": _mysql_options,
-        "TEST": {"NAME": "mobileid_test"},
-    }
+# Common options
+DB_CONN_MAX_AGE = int(os.getenv("DB_CONN_MAX_AGE", "60"))  # persistent connections
+DB_SSL_MODE = os.getenv("DB_SSL_MODE", "").lower()  # "", "require", "verify-full"
+DB_DISABLE_SERVER_CERT_VERIFICATION = os.getenv("DB_SSL_DISABLE_VERIFY", "false").lower() == "true"
+
+def _apply_common(db_cfg: dict) -> dict:
+    db_cfg.setdefault("CONN_MAX_AGE", DB_CONN_MAX_AGE)
+    # SSL (useful for Cloud SQL / managed DBs)
+    if DB_SSL_MODE in {"require", "verify-ca", "verify-full"}:
+        db_cfg.setdefault("OPTIONS", {})
+        db_cfg["OPTIONS"]["sslmode"] = DB_SSL_MODE
+        if DB_DISABLE_SERVER_CERT_VERIFICATION:
+            # psycopg: sslrootcert='' + sslmode=require will skip verification; for mysqlclient use 'ssl' dict
+            db_cfg["OPTIONS"]["sslmode"] = "require"
+    return db_cfg
+
+def _from_url(url_env_name: str, default_url: str = "") -> dict:
+    url = os.getenv(url_env_name, default_url)
+    if not url:
+        return {}
+    cfg = dj_database_url.parse(url, conn_max_age=DB_CONN_MAX_AGE, ssl_require=(DB_SSL_MODE == "require"))
+    return _apply_common(cfg)
+
+DATABASES = {}
+
+# 1) Prefer explicit URL for the chosen profile
+#    - For local MySQL, set DATABASE_URL_LOCAL like: mysql://user:pass@127.0.0.1:3306/dbname
+#    - For local Postgres: postgres://user:pass@127.0.0.1:5432/dbname
+#    - For GCP/Cloud SQL TCP: same postgres/mysql URL pointing to the Cloud SQL proxy IP or public IP
+#    - For GCP/Cloud SQL Unix socket:
+#        postgres:  postgres://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE
+#        mysql:     mysql://user:pass@/dbname?unix_socket=/cloudsql/PROJECT:REGION:INSTANCE
+profile_to_env = {
+    "local": "DATABASE_URL_LOCAL",
+    "gcp": "DATABASE_URL_GCP",
 }
+
+db_cfg = _from_url(profile_to_env.get(DB_PROFILE, "DATABASE_URL"))
+if not db_cfg:
+    # 2) Fallback to legacy discrete vars (DB_ENGINE, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
+    ENGINE = os.getenv("DB_ENGINE", "postgresql").lower()
+    if ENGINE in {"postgres", "postgresql", "psql"}:
+        engine_path = "django.db.backends.postgresql"
+    elif ENGINE in {"mysql"}:
+        engine_path = "django.db.backends.mysql"
+    else:
+        engine_path = "django.db.backends.sqlite3"
+
+    host = os.getenv("DB_HOST", "")
+    port = os.getenv("DB_PORT", "")
+    name = os.getenv("DB_NAME", "")
+    user = os.getenv("DB_USER", "")
+    pwd  = os.getenv("DB_PASSWORD", "")
+
+    # Cloud SQL Unix socket override (if provided)
+    # For Postgres: set CLOUDSQL_UNIX_SOCKET=/cloudsql/PROJECT:REGION:INSTANCE
+    # For MySQL:   same var; django will pass via OPTIONS
+    unix_socket = os.getenv("CLOUDSQL_UNIX_SOCKET", "")
+
+    options = {}
+    if unix_socket:
+        if "postgresql" in engine_path:
+            # psycopg uses host=/cloudsql/instance to connect via socket
+            host = unix_socket
+        elif "mysql" in engine_path:
+            options["unix_socket"] = unix_socket
+
+    if DB_SSL_MODE in {"require", "verify-ca", "verify-full"}:
+        if "postgresql" in engine_path:
+            options["sslmode"] = DB_SSL_MODE
+        elif "mysql" in engine_path:
+            options["ssl"] = {"ssl-mode": DB_SSL_MODE}
+
+    db_cfg = {
+        "ENGINE": engine_path,
+        "NAME": name,
+        "USER": user,
+        "PASSWORD": pwd,
+        "HOST": host or None,
+        "PORT": port or None,
+        "OPTIONS": options or {},
+        "CONN_MAX_AGE": DB_CONN_MAX_AGE,
+    }
+
+DATABASES["default"] = db_cfg
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

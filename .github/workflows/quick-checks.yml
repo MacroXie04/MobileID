@@ -34,6 +34,7 @@ jobs:
     - name: Quick Django check
       working-directory: ./src
       env:
+        DJANGO_SETTINGS_MODULE: mobileid.test_settings
         SECRET_KEY: quick-check-${{ github.sha }}
         DEBUG: True
       run: |
@@ -43,13 +44,14 @@ jobs:
     - name: Import test
       working-directory: ./src
       env:
+        DJANGO_SETTINGS_MODULE: mobileid.test_settings
         SECRET_KEY: import-test-${{ github.sha }}
       run: |
         # Test that all modules can be imported
         python -c "
         import os
         import django
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mobileid.settings')
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mobileid.test_settings')
         django.setup()
         
         # Test imports
@@ -173,6 +175,7 @@ jobs:
     - name: Test imports and basic functionality
       working-directory: ./src
       env:
+        DJANGO_SETTINGS_MODULE: mobileid.test_settings
         SECRET_KEY: import-test-${{ github.sha }}
         DEBUG: True
       run: |

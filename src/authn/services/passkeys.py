@@ -40,8 +40,30 @@ def _origins() -> List[str]:
         allowed.append(backend)
     frontends = getattr(settings, "FRONTEND_ORIGINS", []) or []
     allowed.extend(frontends)
-    # De-dup
-    return sorted({o.rstrip('/') for o in allowed})
+
+    # Normalize and include localhost/127.0.0.1 variants for dev
+    normalized: set[str] = set()
+    for origin in allowed:
+        if not origin:
+            continue
+        origin = origin.rstrip('/')
+        normalized.add(origin)
+        try:
+            parsed = urlparse(origin)
+            scheme = parsed.scheme or "http"
+            host = parsed.hostname or "localhost"
+            port = f":{parsed.port}" if parsed.port else (":5173" if host in {"localhost", "127.0.0.1"} and parsed.scheme == "http" else "")
+
+            if host == "localhost":
+                normalized.add(f"{scheme}://127.0.0.1{port}")
+            if host == "127.0.0.1":
+                normalized.add(f"{scheme}://localhost{port}")
+        except Exception:
+            # Best effort only
+            pass
+
+    # De-dup and sort for stable output
+    return sorted(normalized)
 
 
 def _pydantic_load(model_cls, data):
@@ -157,7 +179,7 @@ def verify_and_create_passkey(user: User, credential: dict, expected_challenge) 
         credential=_pydantic_load(RegistrationCredential, credential),
         expected_challenge=expected_bytes,
         expected_rp_id=_rp_id(),
-        expected_origin=_origins()[0] if _origins() else "http://localhost:8000",
+        expected_origin=_origins() or "http://localhost:8000",
         require_user_verification=True,
     )
 
@@ -263,7 +285,7 @@ def verify_authentication(credential: dict, expected_challenge) -> User:
         credential=_pydantic_load(AuthenticationCredential, credential),
         expected_challenge=expected_bytes,
         expected_rp_id=_rp_id(),
-        expected_origin=_origins()[0] if _origins() else "http://localhost:8000",
+        expected_origin=_origins() or "http://localhost:8000",
         credential_public_key=base64url_to_bytes(stored.public_key),
         credential_current_sign_count=stored.sign_count,
         require_user_verification=True,

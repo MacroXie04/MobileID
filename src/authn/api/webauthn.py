@@ -223,7 +223,10 @@ def user_img(request):
         return HttpResponse(status=400)
 
     # guess image format (png / jpeg / gif / webp …)
-    ext = imghdr.what(None, h=img_bytes) or "png"
+    ext = imghdr.what(None, h=img_bytes)
+    if ext is None:
+        # Not a valid image format
+        return HttpResponse(status=400)
     mime = f"image/{'jpeg' if ext == 'jpg' else ext}"
 
     response = HttpResponse(img_bytes, content_type=mime)
@@ -413,7 +416,11 @@ def api_profile(request):
             if b64:
                 try:
                     # Validate/normalize base64 (accept url-safe)
-                    _ = _b64_any_to_bytes(b64)
+                    img_bytes = _b64_any_to_bytes(b64)
+                    # Also validate it's a valid image format
+                    ext = imghdr.what(None, h=img_bytes)
+                    if ext is None:
+                        raise ValueError("Not a valid image format")
                     profile.user_profile_img = b64
                 except Exception:
                     return Response(
