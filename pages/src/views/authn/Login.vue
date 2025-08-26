@@ -65,6 +65,11 @@
             <md-icon v-else slot="icon">login</md-icon>
             {{ loading ? 'Signing in...' : 'Sign In' }}
           </md-filled-button>
+          <md-text-button type="button" class="submit-button" :disabled="passkeyBusy" @click="signInWithPasskey">
+            <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
+            <md-icon v-else slot="icon">key</md-icon>
+            {{ passkeyBusy ? 'Waiting for device...' : 'Sign in with passkey' }}
+          </md-text-button>
         </form>
 
         <!-- Register Link -->
@@ -82,7 +87,7 @@
 
 <script setup>
 import {onMounted, reactive, ref} from 'vue';
-import {login} from '@/api/auth.js';
+import {login, passkeyAuthOptions, passkeyAuthVerify} from '@/api/auth.js';
 import {useRouter} from 'vue-router';
 
 const router = useRouter();
@@ -92,6 +97,7 @@ const loading = ref(false);
 const showPassword = ref(false);
 const iconBtn = ref(null);
 const submitBtn = ref(null);
+const passkeyBusy = ref(false);
 
 onMounted(() => {
   if (iconBtn.value) {
@@ -148,6 +154,77 @@ async function handleSubmit() {
     errors.general = 'Network error. Please check your connection and try again.';
   } finally {
     loading.value = false;
+  }
+}
+
+function b64urlToArrayBuffer(value) {
+  if (value instanceof ArrayBuffer) return value;
+  if (value instanceof Uint8Array) return value.buffer;
+  if (Array.isArray(value)) return new Uint8Array(value).buffer;
+  if (typeof value !== 'string') return new TextEncoder().encode(String(value)).buffer;
+  try {
+    const padding = '='.repeat((4 - (value.length % 4)) % 4);
+    const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const buffer = new ArrayBuffer(raw.length);
+    const view = new Uint8Array(buffer);
+    for (let i = 0; i < raw.length; ++i) view[i] = raw.charCodeAt(i);
+    return buffer;
+  } catch (e) {
+    return new TextEncoder().encode(value).buffer;
+  }
+}
+
+function arrayBufferToB64url(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary).replace(/=+$/g, '');
+  return base64.replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+async function signInWithPasskey() {
+  if (passkeyBusy.value) return;
+  passkeyBusy.value = true;
+  try {
+    const {success, publicKey, message} = await passkeyAuthOptions(formData.username || undefined);
+    if (!success) throw new Error(message || 'Failed to start passkey auth');
+
+    const requestOptions = {...publicKey};
+    requestOptions.challenge = b64urlToArrayBuffer(publicKey.challenge);
+    if (Array.isArray(publicKey.allowCredentials)) {
+      requestOptions.allowCredentials = publicKey.allowCredentials.map(c => ({
+        ...c,
+        id: b64urlToArrayBuffer(c.id)
+      }));
+    }
+
+    const assertion = await navigator.credentials.get({publicKey: requestOptions});
+    if (!assertion) throw new Error('User aborted');
+
+    const credential = {
+      id: assertion.id,
+      type: assertion.type,
+      rawId: arrayBufferToB64url(assertion.rawId),
+      response: {
+        clientDataJSON: arrayBufferToB64url(assertion.response.clientDataJSON),
+        authenticatorData: arrayBufferToB64url(assertion.response.authenticatorData),
+        signature: arrayBufferToB64url(assertion.response.signature),
+        userHandle: assertion.response.userHandle ? arrayBufferToB64url(assertion.response.userHandle) : null,
+      },
+    };
+
+    const verifyRes = await passkeyAuthVerify(credential);
+    if (verifyRes.success) {
+      await router.push('/');
+    } else {
+      errors.general = verifyRes.message || 'Passkey sign-in failed';
+    }
+  } catch (e) {
+    console.error('Passkey sign-in error:', e);
+    errors.general = e.message || 'Passkey sign-in failed';
+  } finally {
+    passkeyBusy.value = false;
   }
 }
 

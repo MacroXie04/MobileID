@@ -34,8 +34,71 @@ MobileID provides a comprehensive platform for generating, managing, and authent
 ## Prerequisites
 
 - Python 3.8+
-- Node.js 16+
-- npm or yarn
+- Docker Desktop (for local Docker compose workflows)
+- Optional: Node.js if you work on the separate `pages/` frontend (not containerized here)
+
+## Docker (Local Development)
+
+This repo runs the Django API in a single `api` service with Docker. Environment is loaded via `.env.development` by default; production overrides use `docker-compose.prod.yml`.
+
+### Environment
+
+Create or edit `.env.development` at the repository root. Use ONLY localhost origins and connect to your macOS host MySQL via `host.docker.internal`:
+
+```env
+ALLOWED_HOSTS=localhost
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
+CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://localhost:5173,http://localhost:8080
+DB_HOST=host.docker.internal
+
+# Optional DB creds (example for local root)
+DB_NAME=mobileid
+DB_USER=root
+DB_PASSWORD=rootpassword
+
+# Optional: if you have privileges and want strict SQL modes
+# DB_INIT_COMMAND=SET sql_mode='STRICT_ALL_TABLES', innodb_strict_mode=1
+```
+
+Important:
+- All browser-visible origins must use `http://localhost` (NOT `127.0.0.1`).
+- The API listens on `http://localhost:8000`.
+
+### Run (development)
+
+```bash
+docker compose up --build
+```
+
+Then visit `http://localhost:8000`.
+
+Common commands:
+```bash
+# Tail logs
+docker compose logs -f api
+
+# Run Django commands inside the container
+docker compose exec api python manage.py createsuperuser
+
+# Stop
+docker compose down
+```
+
+### Run (production override locally)
+
+This uses `gunicorn` with the Uvicorn worker and `.env.production`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+```
+
+## Settings behavior (env precedence)
+
+`src/mobileid/settings.py` prefers real environment variables first, then supplements from `.env` without overriding. Comma-separated lists are parsed for `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS`.
+
+Database defaults to MySQL with:
+- `DB_HOST=host.docker.internal` to reach host MySQL from the container
+- Optional `DB_INIT_COMMAND` to set strict SQL modes only when you have privileges
 
 ## Installation
 
@@ -62,7 +125,7 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-### 3. Frontend Setup
+### 3. Frontend Setup (optional, not containerized here)
 ```bash
 cd ../pages/
 npm install
@@ -79,7 +142,7 @@ yarn install
 cd src/
 python manage.py runserver
 ```
-The Django API will be available at `http://127.0.0.1:8000`
+The Django API will be available at `http://localhost:8000` (use localhost, not 127.0.0.1)
 
 #### Frontend Server
 ```bash
@@ -88,7 +151,7 @@ npm run dev
 # or
 yarn dev
 ```
-The Vue.js application will be available at `http://127.0.0.1:5173`
+The Vue.js application will be available at `http://localhost:5173`
 
 ### Code Quality
 

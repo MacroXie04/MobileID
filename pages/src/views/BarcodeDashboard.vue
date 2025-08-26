@@ -34,7 +34,7 @@
           <transition name="fade">
             <div v-if="transferLoading" class="save-indicator md-flex md-items-center md-gap-2 md-ml-auto">
               <md-circular-progress indeterminate></md-circular-progress>
-              <span class="md-typescale-body-small">Requesting...</span>
+              <span class="md-typescale-body-small">Collecting Data from URL...</span>
             </div>
           </transition>
         </div>
@@ -53,7 +53,7 @@
 
           <div class="md-flex md-items-center md-gap-2">
             <md-icon>link</md-icon>
-            <span class="md-typescale-body-medium">Source Page URL:</span>
+            <span class="md-typescale-body-medium">ID Server:</span>
             <code class="md-typescale-body-medium">https://icatcard.ucmerced.edu/mobileid/</code>
           </div>
 
@@ -112,7 +112,7 @@
                 <md-icon>person_pin</md-icon>
                 <div>
                   <h3 class="md-typescale-title-medium md-m-0">Profile Association</h3>
-                  <p class="md-typescale-body-small md-m-0 md-mt-1">Link your user profile to the active barcode</p>
+                  <p class="md-typescale-body-small md-m-0 md-mt-1">use profile data from ID server</p>
                 </div>
               </div>
               
@@ -129,7 +129,7 @@
                 <md-icon>security</md-icon>
                 <div>
                   <h3 class="md-typescale-title-medium md-m-0">Server Verification</h3>
-                  <p class="md-typescale-body-small md-m-0 md-mt-1">Enable server-side barcode validation</p>
+                  <p class="md-typescale-body-small md-m-0 md-mt-1">Enable server-side validation (longer time, may fail)</p>
                 </div>
               </div>
               

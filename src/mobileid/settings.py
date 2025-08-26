@@ -10,35 +10,35 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-import os
-import sys
-from datetime import timedelta
 from pathlib import Path
-
+import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Prefer real env vars; then supplement from .env if present (do NOT override)
+load_dotenv(BASE_DIR / ".env", override=False)
 
-# Load environment variables from .env file
-load_dotenv(BASE_DIR / ".env")
+def env(key, default=None):
+    return os.environ.get(key, default)
+
+def csv_env(key, default_list=None):
+    raw = env(key)
+    if not raw:
+        return default_list or []
+    return [x.strip() for x in raw.split(",") if x.strip()]
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = env("SECRET_KEY", "dev-secret")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEBUG = env("DEBUG", "False").lower() == "true"
 
-# Enable django default web admin interface
-WEB_ADMIN = os.getenv("WEB_ADMIN", "True").lower() == "true"
-
-# Enable selenium web scraping
-SELENIUM_ENABLED = os.getenv("SELENIUM_ENABLED", "False").lower() == "true"
-
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+# Hosts (localhost ONLY)
+ALLOWED_HOSTS = csv_env("ALLOWED_HOSTS", ["localhost"])
 
 INSTALLED_APPS = [
     # index app
@@ -79,31 +79,26 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# URL configuration
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "CORS_ALLOWED_ORIGINS",
-        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,https://localhost:8000,https://127.0.0.1:8000",
-    ).split(",")
-    if origin.strip()
-]
+BACKEND_ORIGIN = env("BACKEND_ORIGIN", "http://localhost:8000")
+FRONTEND_ORIGINS = csv_env(
+    "CORS_ALLOWED_ORIGINS", ["http://localhost:5173", "http://localhost:8080"]
+)
 
-# CSRF settings
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "CSRF_TRUSTED_ORIGINS",
-        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,https://localhost:8000,https://127.0.0.1:8000",
-    ).split(",")
-    if origin.strip()
-]
+# Django 5 requires scheme://host[:port]
+CSRF_TRUSTED_ORIGINS = csv_env(
+    "CSRF_TRUSTED_ORIGINS", [BACKEND_ORIGIN, *FRONTEND_ORIGINS]
+)
 
-# Allow credentials in CORS requests
-CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
+# If using django-cors-headers:
+CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
+CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
-CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "Lax")
-CSRF_COOKIE_HTTPONLY = os.getenv("CSRF_COOKIE_HTTPONLY", "False").lower() == "true"
+# Cookies (dev)
+SESSION_COOKIE_SAMESITE = env("COOKIE_SAMESITE", "Lax")
+CSRF_COOKIE_SAMESITE    = env("CSRF_COOKIE_SAMESITE", "Lax")
+SESSION_COOKIE_SECURE   = env("COOKIE_SECURE", "False").lower() == "true"
+CSRF_COOKIE_SECURE      = SESSION_COOKIE_SECURE
+CSRF_COOKIE_HTTPONLY    = env("CSRF_COOKIE_HTTPONLY", "False").lower() == "true"
 
 # HTTPS settings for development
 # Note: These should be configured differently for production
@@ -169,27 +164,23 @@ TEMPLATES = [
 WSGI_APPLICATION = "mobileid.wsgi.application"
 
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+_mysql_options = {"charset": "utf8mb4"}
+_db_init_cmd = env("DB_INIT_COMMAND")
+if _db_init_cmd:
+    _mysql_options["init_command"] = _db_init_cmd
 
-# Default to SQLite for development, allow override with environment variables
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
-        "USER": os.getenv("DB_USER", ""),
-        "PASSWORD": os.getenv("DB_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", ""),
-        "PORT": os.getenv("DB_PORT", ""),
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": env("DB_NAME", "mobileid_dev"),
+        "USER": env("DB_USER", "mobileid"),
+        "PASSWORD": env("DB_PASSWORD", ""),
+        "HOST": env("DB_HOST", "host.docker.internal"),
+        "PORT": env("DB_PORT", "3306"),
+        "OPTIONS": _mysql_options,
+        "TEST": {"NAME": "mobileid_test"},
     }
 }
-
-# MySQL extra options
-if DATABASES["default"]["ENGINE"].endswith("mysql"):
-    DATABASES["default"]["OPTIONS"] = {
-        "charset": "utf8mb4",
-        "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-    }
-    DATABASES["default"]["CONN_MAX_AGE"] = 60
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -203,7 +194,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "America/Los_Angeles"
+TIME_ZONE = env("TIME_ZONE", "America/Los_Angeles")
 
 USE_I18N = True
 

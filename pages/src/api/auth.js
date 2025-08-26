@@ -49,6 +49,44 @@ export async function updateUserProfile(profileData) {
     return res.json();
 }
 
+// Passkeys APIs
+export async function passkeyRegisterOptions() {
+    const res = await fetch(`${baseURL}/authn/passkeys/register/options/`, {
+        credentials: "include",
+    });
+    return res.json();
+}
+
+export async function passkeyRegisterVerify(credential) {
+    const res = await fetch(`${baseURL}/authn/passkeys/register/verify/`, {
+        method: "POST",
+        credentials: "include",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(credential)
+    });
+    return res.json();
+}
+
+export async function passkeyAuthOptions(username) {
+    const res = await fetch(`${baseURL}/authn/passkeys/auth/options/`, {
+        method: "POST",
+        credentials: "include",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username})
+    });
+    return res.json();
+}
+
+export async function passkeyAuthVerify(credential) {
+    const res = await fetch(`${baseURL}/authn/passkeys/auth/verify/`, {
+        method: "POST",
+        credentials: "include",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(credential)
+    });
+    return res.json();
+}
+
 // register
 export async function register(userData) {
     try {

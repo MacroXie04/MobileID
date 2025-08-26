@@ -107,6 +107,27 @@
             </div>
           </div>
 
+          <md-divider></md-divider>
+
+          <!-- Passkey Management Section -->
+          <div class="info-section md-mt-8">
+            <h2 class="md-typescale-headline-small section-title md-mb-6">Passkey</h2>
+            <div class="md-flex md-items-center md-justify-between md-gap-4">
+              <div class="md-typescale-body-medium">
+                <md-icon class="md-mr-2">{{ hasPasskey ? 'key' : 'key_off' }}</md-icon>
+                {{ hasPasskey ? 'Passkey registered' : 'No passkey registered' }}
+              </div>
+              <md-filled-button type="button" :disabled="passkeyBusy" @click="registerPasskey">
+                <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
+                <md-icon v-else slot="icon">{{ hasPasskey ? 'sync' : 'key' }}</md-icon>
+                {{ hasPasskey ? 'Replace Passkey' : 'Register Passkey' }}
+              </md-filled-button>
+            </div>
+            <p class="md-typescale-body-small md-text-on-surface-variant md-mt-2">
+              Passkeys let you sign in without a password using your device or security key.
+            </p>
+          </div>
+
           <!-- Auto-save Status Indicator -->
           <div class="auto-save-status md-mt-4 md-p-3 md-rounded-lg md-bg-surface-container-low">
             <div class="md-flex md-items-center md-gap-2">
@@ -169,7 +190,7 @@
 <script setup>
 import {nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
-import {getUserProfile, updateUserProfile} from '@/api/auth';
+import {getUserProfile, updateUserProfile, passkeyRegisterOptions, passkeyRegisterVerify} from '@/api/auth';
 import {baseURL} from '@/config';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
@@ -202,6 +223,8 @@ const autoSaveStatus = ref({
   type: 'info', // 'info', 'success', 'error'
   message: ''
 });
+const hasPasskey = ref(false);
+const passkeyBusy = ref(false);
 
 // Auto-save debounce timer
 const autoSaveTimer = ref(null);
@@ -552,6 +575,9 @@ const loadProfile = async () => {
     const response = await getUserProfile();
     if (response.success) {
       formData.value = {...response.data};
+      if (typeof response.data.has_passkey !== 'undefined') {
+        hasPasskey.value = !!response.data.has_passkey;
+      }
       
       // Initialize original data for auto-save comparison
       originalData.value = {
@@ -577,6 +603,92 @@ const loadProfile = async () => {
     errors.value.general = 'Failed to load profile data';
   }
 };
+
+// WebAuthn helpers
+function b64urlToArrayBuffer(value) {
+  // If already ArrayBuffer/Uint8Array/array of numbers, convert appropriately
+  if (value instanceof ArrayBuffer) return value;
+  if (value instanceof Uint8Array) return value.buffer;
+  if (Array.isArray(value)) return new Uint8Array(value).buffer;
+  if (typeof value !== 'string') return new TextEncoder().encode(String(value)).buffer;
+  try {
+    const padding = '='.repeat((4 - (value.length % 4)) % 4);
+    const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const buffer = new ArrayBuffer(raw.length);
+    const view = new Uint8Array(buffer);
+    for (let i = 0; i < raw.length; ++i) view[i] = raw.charCodeAt(i);
+    return buffer;
+  } catch (e) {
+    // Fallback: treat as UTF-8 text
+    return new TextEncoder().encode(value).buffer;
+  }
+}
+
+function arrayBufferToB64url(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary).replace(/=+$/g, '');
+  return base64.replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+async function registerPasskey() {
+  if (passkeyBusy.value) return;
+  passkeyBusy.value = true;
+  try {
+    const {success, publicKey, message} = await passkeyRegisterOptions();
+    if (!success) throw new Error(message || 'Failed to start passkey registration');
+
+    const publicKeyOptions = {...publicKey};
+    publicKeyOptions.challenge = b64urlToArrayBuffer(publicKey.challenge);
+    if (publicKey.user && publicKey.user.id != null) {
+      publicKeyOptions.user = {...publicKey.user, id: new Uint8Array(b64urlToArrayBuffer(publicKey.user.id))};
+    }
+    // Ensure required user.displayName exists (browser requires it)
+    if (publicKeyOptions.user && !publicKeyOptions.user.displayName) {
+      publicKeyOptions.user.displayName = publicKeyOptions.user.name || 'User';
+    }
+    // Clean up problematic/experimental fields that browsers reject
+    const cleanFields = ['hints', 'extensions'];
+    cleanFields.forEach(field => {
+      if (publicKeyOptions[field] !== undefined) {
+        delete publicKeyOptions[field];
+      }
+    });
+    if (Array.isArray(publicKey.excludeCredentials)) {
+      publicKeyOptions.excludeCredentials = publicKey.excludeCredentials.map(c => ({
+        ...c,
+        id: b64urlToArrayBuffer(c.id)
+      }));
+    }
+
+    const cred = await navigator.credentials.create({publicKey: publicKeyOptions});
+    if (!cred) throw new Error('User aborted');
+
+    const attestation = {
+      id: cred.id,
+      type: cred.type,
+      rawId: arrayBufferToB64url(cred.rawId),
+      response: {
+        clientDataJSON: arrayBufferToB64url(cred.response.clientDataJSON),
+        attestationObject: arrayBufferToB64url(cred.response.attestationObject),
+      },
+    };
+
+    const verifyRes = await passkeyRegisterVerify(attestation);
+    if (!verifyRes.success) throw new Error(verifyRes.message || 'Passkey registration failed');
+
+    hasPasskey.value = true;
+    successMessage.value = 'Passkey registered successfully!';
+    setTimeout(() => successMessage.value = '', 3000);
+  } catch (e) {
+    console.error('Passkey registration error:', e);
+    errors.value.general = e.message || 'Passkey registration failed';
+  } finally {
+    passkeyBusy.value = false;
+  }
+}
 
 // Cleanup
 onUnmounted(() => {

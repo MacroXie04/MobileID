@@ -121,10 +121,19 @@ class WebDriverManager:
         try:
             if platform.system() == "Linux":
                 from selenium.webdriver.chrome.service import Service
-                from webdriver_manager.chrome import ChromeDriverManager
-
-                chrome_options.binary_location = "/usr/bin/google-chrome"
-                service = Service(ChromeDriverManager().install())
+                # Prefer system chromium/chromedriver available in the container
+                chrome_options.binary_location = "/usr/bin/chromium"
+                service_path = "/usr/bin/chromedriver"
+                try:
+                    if os.path.exists(service_path):
+                        service = Service(service_path)
+                    else:
+                        # Fallback to webdriver-manager if system driver not present
+                        from webdriver_manager.chrome import ChromeDriverManager
+                        service = Service(ChromeDriverManager().install())
+                except Exception:
+                    from webdriver_manager.chrome import ChromeDriverManager
+                    service = Service(ChromeDriverManager().install())
                 driver = webdriver.Chrome(service=service, options=chrome_options)
 
             elif platform.system() == "Darwin":

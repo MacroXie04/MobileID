@@ -19,6 +19,13 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django.middleware.csrf import get_token
+from authn.services.passkeys import (
+    build_registration_options,
+    verify_and_create_passkey,
+    build_authentication_options,
+    verify_authentication,
+)
 
 
 def _clean_base64(b64: str) -> str:
@@ -28,6 +35,22 @@ def _clean_base64(b64: str) -> str:
     if b64.startswith("data:image"):
         b64 = b64.split(",", 1)[1]
     return b64.strip()
+
+
+def _b64_any_to_bytes(data: str) -> bytes:
+    """
+    Decode Base64 in a robust way:
+    - Accept both standard and URL-safe Base64
+    - Auto-fix missing padding
+    """
+    if not isinstance(data, str):
+        raise ValueError("Invalid base64 data")
+    s = data.strip().replace("-", "+").replace("_", "/")
+    # Add padding to multiple of 4
+    pad = (-len(s)) % 4
+    if pad:
+        s += "=" * pad
+    return base64.b64decode(s)
 
 
 class UserRegisterForm(UserCreationForm):
@@ -193,10 +216,10 @@ def user_img(request):
     if b64.startswith("data:image"):
         b64 = b64.split(",", 1)[1]
 
-    # Base64 → bytes
+    # Base64 → bytes (robust to url-safe and missing padding)
     try:
-        img_bytes = base64.b64decode(b64, validate=True)
-    except (BinasciiError, ValueError):
+        img_bytes = _b64_any_to_bytes(b64)
+    except Exception:
         return HttpResponse(status=400)
 
     # guess image format (png / jpeg / gif / webp …)
@@ -360,6 +383,7 @@ def api_profile(request):
                 "data": {
                     "name": profile.name,
                     "information_id": profile.information_id,
+                    "has_passkey": hasattr(request.user, "passkey"),
                 },
             }
         )
@@ -388,8 +412,8 @@ def api_profile(request):
             b64 = _clean_base64(data["user_profile_img_base64"])
             if b64:
                 try:
-                    # Validate base64
-                    base64.b64decode(b64, validate=True)
+                    # Validate/normalize base64 (accept url-safe)
+                    _ = _b64_any_to_bytes(b64)
                     profile.user_profile_img = b64
                 except Exception:
                     return Response(
@@ -455,3 +479,90 @@ def api_avatar_upload(request):
             {"success": False, "message": f"Failed to process image: {str(e)}"},
             status=500,
         )
+
+
+# Passkeys / WebAuthn endpoints
+
+@api_view(["GET"])  # Begin registration: returns PublicKeyCredentialCreationOptions
+@permission_classes([IsAuthenticated])
+def passkey_register_options(request):
+    options = build_registration_options(request.user)
+    # Store the challenge as base64url string (JSON serializable)
+    request.session["webauthn_reg_chal"] = options["challenge"]
+    get_token(request)
+    return Response({"success": True, "publicKey": options})
+
+
+@api_view(["POST"])  # Finish registration
+@permission_classes([IsAuthenticated])
+def passkey_register_verify(request):
+    expected = request.session.get("webauthn_reg_chal")
+    if not expected:
+        return Response({"success": False, "message": "Missing or expired challenge"}, status=400)
+    try:
+        verify_and_create_passkey(request.user, request.data, expected)
+        request.session.pop("webauthn_reg_chal", None)
+        return Response({"success": True})
+    except Exception as exc:
+        return Response({"success": False, "message": str(exc)}, status=400)
+
+
+@api_view(["POST"])  # Begin authentication
+@permission_classes([AllowAny])
+def passkey_auth_options(request):
+    # Optional username hint to narrow allowCredentials
+    from django.contrib.auth.models import User
+
+    username = None
+    try:
+        username = request.data.get("username")
+    except Exception:
+        pass
+    user = User.objects.filter(username=username).first() if username else None
+    options = build_authentication_options(user)
+    # Store the challenge as base64url string (JSON serializable)
+    request.session["webauthn_auth_chal"] = options["challenge"]
+    get_token(request)
+    return Response({"success": True, "publicKey": options})
+
+
+@api_view(["POST"])  # Finish authentication and set JWT cookies
+@permission_classes([AllowAny])
+def passkey_auth_verify(request):
+    expected = request.session.get("webauthn_auth_chal")
+    if not expected:
+        return Response({"success": False, "message": "Missing or expired challenge"}, status=400)
+    try:
+        user = verify_authentication(request.data, expected)
+    except Exception as exc:
+        return Response({"success": False, "message": str(exc)}, status=400)
+
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    refresh = RefreshToken.for_user(user)
+    access_token = str(refresh.access_token)
+    refresh_token = str(refresh)
+
+    response = Response({"success": True, "message": "Login successful"})
+    cookie_samesite = os.getenv("COOKIE_SAMESITE", "Lax")
+    use_https = os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()
+    cookie_secure = True if use_https else (os.getenv("COOKIE_SECURE", "False").lower() == "true")
+
+    response.set_cookie(
+        "access_token",
+        access_token,
+        httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
+        samesite=cookie_samesite,
+        secure=cookie_secure,
+        max_age=315360000,
+    )
+    response.set_cookie(
+        "refresh_token",
+        refresh_token,
+        httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
+        samesite=cookie_samesite,
+        secure=cookie_secure,
+        max_age=315360000,
+    )
+    request.session.pop("webauthn_auth_chal", None)
+    return response
