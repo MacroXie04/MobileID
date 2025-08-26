@@ -1,0 +1,57 @@
+# Frontend domain - serves the Vue.js application
+{$FRONTEND_DOMAIN} {
+    reverse_proxy web:80
+    
+    # Security headers
+    header {
+        # Enable XSS protection
+        X-XSS-Protection "1; mode=block"
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        # Enable frame options
+        X-Frame-Options "DENY"
+        # Add HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Content Security Policy (adjust as needed)
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://{$BACKEND_DOMAIN}; object-src 'none'; base-uri 'self';"
+    }
+    
+    # Enable compression
+    encode gzip
+    
+    # Cache static assets
+    @static {
+        path *.css *.js *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.ttf *.eot
+    }
+    header @static {
+        Cache-Control "public, max-age=31536000, immutable"
+    }
+}
+
+# Backend domain - serves the Django API
+{$BACKEND_DOMAIN} {
+    reverse_proxy api:8000
+    
+    # Security headers for API
+    header {
+        # Enable XSS protection
+        X-XSS-Protection "1; mode=block"
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        # Enable frame options
+        X-Frame-Options "DENY"
+        # Add HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # CORS headers are handled by Django
+    }
+    
+    # Enable compression
+    encode gzip
+    
+    # Handle WebSocket connections for Django Channels (if used)
+    @websockets {
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+    reverse_proxy @websockets api:8000
+}

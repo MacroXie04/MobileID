@@ -4,14 +4,95 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file:
+      - .env.development
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=${DEBUG:-false}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - TIME_ZONE=${TIME_ZONE:-UTC}
+      - DB_ENGINE=${DB_ENGINE}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID}
+      - BACKEND_ORIGIN=${BACKEND_ORIGIN}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
+      - SESSION_COOKIE_SAMESITE=${SESSION_COOKIE_SAMESITE:-Lax}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-true}
+      - CSRF_COOKIE_SAMESITE=${CSRF_COOKIE_SAMESITE:-Lax}
+      - CSRF_COOKIE_SECURE=${CSRF_COOKIE_SECURE:-true}
+    command: >
+      bash -lc "
+        python manage.py collectstatic --noinput &&
+        python manage.py migrate --noinput &&
+        cd src &&
+        gunicorn mobileid.asgi:application
+          -k uvicorn.workers.UvicornWorker
+          -b 0.0.0.0:8000 --workers 3 --timeout 60
+      "
+    expose:
+      - "8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "python - <<'PY'\nimport socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1',8000)); print('ok')\nPY"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    env_file:
       - .env.production
     environment:
-      - WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID:-example.com}
-      - BACKEND_ORIGIN=${BACKEND_ORIGIN:-https://api.example.com}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://example.com}
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
     command: >
-      bash -lc "python manage.py makemigrations --noinput && python manage.py migrate &&
-                cd src && gunicorn mobileid.asgi:application -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 --workers 3"
-    ports:
-      - "8000:8000"
+      sh -lc "
+        corepack enable || true;
+        yarn install --frozen-lockfile || yarn install;
+        yarn build;
+        apk add --no-cache nginx;
+        mkdir -p /var/log/nginx /var/lib/nginx/tmp;
+        echo 'server { listen 80; root /app/dist; index index.html; location / { try_files $$uri $$uri/ /index.html; } }' > /etc/nginx/http.d/default.conf;
+        nginx -g 'daemon off;'
+      "
+    expose:
+      - "80"
+    volumes:
+      - ./pages:/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
+  caddy:
+    image: caddy:2-alpine
+    env_file:
+      - .env.production
+    environment:
+      - FRONTEND_DOMAIN=${FRONTEND_DOMAIN}
+      - BACKEND_DOMAIN=${BACKEND_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
