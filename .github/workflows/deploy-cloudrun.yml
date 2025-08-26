@@ -1,3 +1,18 @@
+name: Build & Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION:     ${{ vars.GCP_REGION }}
+  REPO:       ${{ vars.GAR_REPO }}
+  SERVICE:    ${{ vars.CLOUD_RUN_SERVICE }}
+  CLOUDSQL_INSTANCE: ${{ vars.CLOUDSQL_INSTANCE }}
+  IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GAR_REPO }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
+
 jobs:
   deploy:
     environment: production
@@ -5,24 +20,24 @@ jobs:
       contents: read
       id-token: write
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.DEPLOYER_SA_EMAIL }}
+
       - uses: google-github-actions/setup-gcloud@v2
-      - run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
-      - run: |
-          IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GAR_REPO }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}"
-          docker build -t "$IMAGE" .
-          docker push "$IMAGE"
-          ENV_VARS="SECRET_KEY=${{ secrets.SECRET_KEY }},DEBUG=${{ vars.DEBUG }},ALLOWED_HOSTS=${{ vars.ALLOWED_HOSTS }},CORS_ALLOWED_ORIGINS=${{ vars.CORS_ALLOWED_ORIGINS }},CSRF_TRUSTED_ORIGINS=${{ vars.CSRF_TRUSTED_ORIGINS }},CORS_ALLOW_CREDENTIALS=${{ vars.CORS_ALLOW_CREDENTIALS }},SESSION_COOKIE_SAMESITE=${{ vars.SESSION_COOKIE_SAMESITE }},SESSION_COOKIE_SECURE=${{ vars.SESSION_COOKIE_SECURE }},CSRF_COOKIE_SAMESITE=${{ vars.CSRF_COOKIE_SAMESITE }},CSRF_COOKIE_SECURE=${{ vars.CSRF_COOKIE_SECURE }},SESSION_COOKIE_DOMAIN=${{ vars.SESSION_COOKIE_DOMAIN }},CSRF_COOKIE_DOMAIN=${{ vars.CSRF_COOKIE_DOMAIN }},WEBAUTHN_RP_ID=${{ vars.WEBAUTHN_RP_ID }},BACKEND_ORIGIN=${{ vars.BACKEND_ORIGIN }},TIME_ZONE=${{ vars.TIME_ZONE }},MAX_FAILED_LOGIN_ATTEMPTS=${{ vars.MAX_FAILED_LOGIN_ATTEMPTS }},ACCOUNT_LOCKOUT_DURATION=${{ vars.ACCOUNT_LOCKOUT_DURATION }},CACHE_BACKEND=${{ vars.CACHE_BACKEND }},CACHE_LOCATION=${{ vars.CACHE_LOCATION }},SESSION_ENGINE=${{ vars.SESSION_ENGINE }},DB_ENGINE=${{ vars.DB_ENGINE }},DB_NAME=${{ vars.DB_NAME }},DB_USER=${{ secrets.DB_USER }},DB_PASSWORD=${{ secrets.DB_PASSWORD }},DB_HOST=${{ vars.DB_HOST }},DB_PORT=${{ vars.DB_PORT }}"
-          gcloud run deploy "${{ vars.CLOUD_RUN_SERVICE }}" \
-            --image "$IMAGE" \
-            --region "${{ vars.GCP_REGION }}" \
-            --allow-unauthenticated \
-            --min-instances 0 --max-instances 2 \
-            --cpu 1 --memory 512Mi \
-            --add-cloudsql-instances "${{ vars.CLOUDSQL_INSTANCE }}" \
-            --set-env-vars "$ENV_VARS"
+
+      - run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build & Push image
+        run: |
+          docker build -t "${IMAGE}" .
+          docker push "${IMAGE}"
+
+      - name: Deploy to Cloud Run
+        run: |
+          ENV_VARS="SECRET_KEY=${{ secrets.SECRET_KEY }},DEBUG=${{ vars.DEBUG }},ALLOWED_HOSTS=${{ vars.ALLOWED_HOSTS }},CORS_ALLOWED_ORIGINS=${{ vars.CORS_ALLOWED_ORIGINS }},CSRF_TRUSTED_ORIGINS=${{ vars.CSRF_TRUSTED_ORIGINS }},CORS_ALLOW_CREDENTIALS=${{ vars.CORS_ALLOW_CREDENTIALS }},SESSION_COOKIE_SAMESITE=${{ vars.SESSION_COOKIE_SAMESITE }},SESSION_COOKIE_SECURE=${{ vars.SESSION_COOKIE_SECURE }},CSRF_COOKIE_SAMESITE=${{ vars.CSRF_COOKIE_SAMESITE }},CSRF_COOKIE_SECURE=${{ vars.CSRF_COOKIE_SECURE }},SESSION_COOKIE_DOMAIN=${{ vars.SESSION_COOKIE_DOMAIN }},CSRF_COOKIE_DOMAIN=${{ vars.CSRF_COOKIE_DOMAIN }},WEBAUTHN_RP_ID=${{ vars.WEBAUTHN_RP_ID }},BACKEND_ORIGIN=${{ vars.BACKEND_ORIGIN }},TIME_ZONE=${{ vars.TIME_ZONE }},MAX_FAILED_LOGIN_ATTEMPTS=${{ vars.MAX_FAILED_LOGIN_ATTEMPTS }},ACCOUNT_LOCKOUT_DURATION=${{ vars.ACCOUNT_LOCKO
