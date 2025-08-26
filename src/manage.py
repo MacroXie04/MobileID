@@ -6,11 +6,12 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    # Auto-detect test command and use test settings
+    # Set default settings module - use main settings for all operations including tests
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mobileid.settings")
+    
+    # Set testing flag when running tests
     if len(sys.argv) > 1 and sys.argv[1] == 'test':
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mobileid.test_settings")
-    else:
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mobileid.settings")
+        os.environ.setdefault("TESTING", "True")
     
     try:
         from django.core.management import execute_from_command_line

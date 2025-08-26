@@ -18,6 +18,14 @@ export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) }
   },
+  build: {
+    // Output directory for production builds
+    outDir: 'dist',
+    // Clear the output directory before building
+    emptyOutDir: true,
+    // Generate source maps for debugging
+    sourcemap: true
+  },
   // Only expose env vars with this prefix to the client
   envPrefix: 'VITE_'
 });

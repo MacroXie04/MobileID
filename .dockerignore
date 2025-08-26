@@ -49,9 +49,11 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Frontend (since we're only building backend)
-pages/
+# Frontend build artifacts (we'll include source but not build artifacts)
 node_modules/
+pages/node_modules/
+pages/dist/
+pages/.vite/
 *.log
 npm-debug.log*
 yarn-debug.log*

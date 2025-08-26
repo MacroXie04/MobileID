@@ -64,8 +64,21 @@ INSTALLED_APPS = [
 ]
 
 # Static files
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Additional locations to look for static files during development
+# Note: STATICFILES_DIRS should NOT include STATIC_ROOT
+STATICFILES_DIRS = [
+    # Add paths to additional static files directories here
+    # Example: BASE_DIR / "assets",
+]
+
+# Static files finders
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
 
 MIDDLEWARE = [
     # CORS middleware must be placed before Django's security middleware
@@ -82,7 +95,12 @@ MIDDLEWARE = [
 
 BACKEND_ORIGIN = env("BACKEND_ORIGIN", "http://localhost:8000")
 FRONTEND_ORIGINS = csv_env(
-    "CORS_ALLOWED_ORIGINS", ["http://localhost:5173", "http://localhost:8080"]
+    "CORS_ALLOWED_ORIGINS", [
+        "http://localhost:5173", 
+        "http://localhost:8080",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8080"
+    ]
 )
 
 # Django 5 requires scheme://host[:port]
@@ -136,9 +154,12 @@ REST_FRAMEWORK = {
     },
 }
 
+# Test environment detection
+TESTING = os.getenv("TESTING", "False").lower() == "true"
+
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=3650),  # 10 years
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=3650),  # 10 years
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1 if TESTING else 3650),  # 1 day for tests, 10 years for production
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1 if TESTING else 3650),  # 1 day for tests, 10 years for production
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
     "ALGORITHM": "HS256",
@@ -253,7 +274,14 @@ if not db_cfg:
         "CONN_MAX_AGE": DB_CONN_MAX_AGE,
     }
 
-DATABASES["default"] = db_cfg
+# Use SQLite for tests, configured database for everything else
+if TESTING:
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:",  # Use in-memory database for tests
+    }
+else:
+    DATABASES["default"] = db_cfg
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -295,4 +323,33 @@ CACHES = {
         "LOCATION": CACHE_LOCATION,
     }
 }
-SESSION_ENGINE = os.getenv("SESSION_ENGINE", "django.contrib.sessions.backends.db")
+SESSION_ENGINE = os.getenv("SESSION_ENGINE", "django.contrib.sessions.backends.cache" if TESTING else "django.contrib.sessions.backends.db")
+
+# Logging configuration
+if TESTING:
+    # Suppress warnings during testing to avoid noise from expected 4xx responses and dependencies
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'null': {
+                'class': 'logging.NullHandler',
+            },
+        },
+        'loggers': {
+            'django.request': {
+                'handlers': ['null'],
+                'level': 'ERROR',  # Only show actual errors, not warnings
+                'propagate': False,
+            },
+            'py.warnings': {
+                'handlers': ['null'],
+                'level': 'ERROR',
+                'propagate': False,
+            },
+        },
+    }
+    
+    # Also suppress Python warnings (like cbor2 deprecation warnings) during testing
+    import warnings
+    warnings.filterwarnings('ignore', category=UserWarning, module='cbor2')
