@@ -5,7 +5,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: src/Dockerfile
     container_name: mobileid_api
     restart: unless-stopped
     ports:
@@ -18,7 +18,7 @@ services:
       - ./manage.py:/app/manage.py
       - ./docker.env:/app/.env
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/"]
+      test: ["CMD", "curl", "-f", "${BACKEND_ORIGIN}/admin/"]
       timeout: 30s
       retries: 5
       start_period: 40s

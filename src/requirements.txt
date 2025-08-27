@@ -23,7 +23,8 @@ redis>=5.0,<6.0
 
 # Database URL parser and drivers
 dj-database-url>=2.2
-mysqlclient>=2.2
+# Use binary mysqlclient to avoid compilation
+mysqlclient>=2.2,<3.0
 psycopg[binary]>=3.2
 
 # ASGI worker for Gunicorn in prod override
