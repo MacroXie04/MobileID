@@ -24,8 +24,7 @@ coverage.xml
 .pytest_cache
 .hypothesis
 
-# Virtual environments
-.env
+# Virtual environments (but keep .env config file)
 .venv
 env/
 venv/
