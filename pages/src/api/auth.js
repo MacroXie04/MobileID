@@ -1,138 +1,95 @@
-import {baseURL} from '@/config'
+import { apiRequest, ApiError } from './client';
 
 export async function login(username, password) {
-    const res = await fetch(`${baseURL}/authn/token/`, {
-        method: "POST",
-        credentials: "include",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({username, password})
+    // NOTE: This is a change from the original behavior.
+    // The original `login` function did not throw an error on a non-2xx response
+    // (e.g., for invalid credentials). This new version WILL throw an `ApiError`.
+    // The `handleSubmit` function in `Login.vue` should be updated to catch this
+    // error and display the message from `error.data` or `error.message`.
+    // This creates a more consistent and robust error handling pattern.
+    return apiRequest('/authn/token/', {
+        method: 'POST',
+        body: { username, password },
     });
-    return res.json();
 }
 
 export async function userInfo() {
-    const res = await fetch(`${baseURL}/authn/user_info/`, {
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json"
+    try {
+        return await apiRequest('/authn/user_info/');
+    } catch (error) {
+        // The original implementation returned null on failure. Replicating this behavior.
+        if (error instanceof ApiError) {
+            console.error('Failed to fetch user info:', error.data);
+            return null;
         }
-    });
-    if (!res.ok) return null;
-    return res.json();
+        // Re-throw other errors (e.g., network errors)
+        throw error;
+    }
 }
 
 export async function logout() {
-    await fetch(`${baseURL}/authn/logout/`, {
-        method: "POST",
-        credentials: "include"
-    });
+    try {
+        // The original implementation ignored errors. We'll log a warning.
+        await apiRequest('/authn/logout/', { method: 'POST' });
+    } catch (error) {
+        console.warn('Logout request failed:', error);
+    }
 }
 
 // get user profile
 export async function getUserProfile() {
-    const res = await fetch(`${baseURL}/authn/profile/`, {
-        credentials: "include"
-    });
-    if (!res.ok) throw new Error('Failed to fetch profile');
-    return res.json();
+    return apiRequest('/authn/profile/');
 }
 
 // update user profile
 export async function updateUserProfile(profileData) {
-    const res = await fetch(`${baseURL}/authn/profile/`, {
-        method: "PUT",
-        credentials: "include",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(profileData)
+    return apiRequest('/authn/profile/', {
+        method: 'PUT',
+        body: profileData,
     });
-    if (!res.ok) throw new Error('Failed to update profile');
-    return res.json();
 }
 
 // Passkeys APIs
 export async function passkeyRegisterOptions() {
-    const res = await fetch(`${baseURL}/authn/passkeys/register/options/`, {
-        credentials: "include",
-    });
-    return res.json();
+    return apiRequest('/authn/passkeys/register/options/');
 }
 
 export async function passkeyRegisterVerify(credential) {
-    const res = await fetch(`${baseURL}/authn/passkeys/register/verify/`, {
-        method: "POST",
-        credentials: "include",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(credential)
+    return apiRequest('/authn/passkeys/register/verify/', {
+        method: 'POST',
+        body: credential,
     });
-    return res.json();
 }
 
 export async function passkeyAuthOptions(username) {
-    const res = await fetch(`${baseURL}/authn/passkeys/auth/options/`, {
-        method: "POST",
-        credentials: "include",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({username})
+    return apiRequest('/authn/passkeys/auth/options/', {
+        method: 'POST',
+        body: { username },
     });
-    return res.json();
 }
 
 export async function passkeyAuthVerify(credential) {
-    const res = await fetch(`${baseURL}/authn/passkeys/auth/verify/`, {
-        method: "POST",
-        credentials: "include",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(credential)
+    return apiRequest('/authn/passkeys/auth/verify/', {
+        method: 'POST',
+        body: credential,
     });
-    return res.json();
 }
 
 // register
 export async function register(userData) {
     try {
-        const res = await fetch(`${baseURL}/authn/register/`, {
-            method: "POST",
-            credentials: "include",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(userData)
+        return await apiRequest('/authn/register/', {
+            method: 'POST',
+            body: userData,
         });
-
-        if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(JSON.stringify(errorData));
-        }
-
-        return res.json();
     } catch (error) {
-        // if token related error, maybe because of expired cookie, try to call logout API to clear them
-        if (error.message.includes('token_not_valid') || error.message.includes('Token is expired')) {
-            // call logout API to clear HTTPOnly cookies
-            try {
-                await fetch(`${baseURL}/authn/logout/`, {
-                    method: "POST",
-                    credentials: "include"
-                });
-            } catch (logoutError) {
-                // even if logout fails, continue to try register
-                console.warn('Failed to logout:', logoutError);
-            }
-
-            // try register again
-            const retryRes = await fetch(`${baseURL}/authn/register/`, {
-                method: "POST",
-                credentials: "include",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(userData)
-            });
-
-            if (!retryRes.ok) {
-                const errorData = await retryRes.json();
-                throw new Error(JSON.stringify(errorData));
-            }
-
-            return retryRes.json();
+        // If token-related error, try to log out to clear cookies and then retry registration.
+        const errorMessage = JSON.stringify(error.data).toLowerCase();
+        if (error instanceof ApiError && (errorMessage.includes('token_not_valid') || errorMessage.includes('token is expired'))) {
+            await logout();
+            // Retry registration. A second failure will now correctly bubble up.
+            return apiRequest('/authn/register/', { method: 'POST', body: userData });
         }
-
         throw error;
     }
 }
