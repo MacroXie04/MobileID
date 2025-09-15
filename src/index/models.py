@@ -98,3 +98,13 @@ class UserBarcodeSettings(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Barcode Settings"
+
+
+class Transaction(models.Model):
+    # foreign key to user
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # usage detail
+    barcode_used = models.ForeignKey(Barcode, default=None, on_delete=models.SET_NULL, null=True)
+    used_barcode = models.TextField(null=True, blank=True, max_length=100)
+    time_created = models.DateTimeField(auto_now_add=True, null=True, verbose_name="time used")

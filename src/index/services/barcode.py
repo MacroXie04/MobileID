@@ -79,6 +79,10 @@ def _touch_barcode_usage(barcode: Barcode) -> None:
             last_used=now
         )
 
+    # storage user barcode transaction in the data base
+    #TODO: process logic
+
+
 
 
 def _timestamp() -> str:
