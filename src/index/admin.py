@@ -7,6 +7,7 @@ from index.models import (
     UserBarcodeSettings,
     BarcodeUsage,
     BarcodeUserProfile,
+    Transaction,
 )
 
 admin.site.site_header = "MobileID Admin"
@@ -243,4 +244,49 @@ class BarcodeUserProfileAdmin(admin.ModelAdmin):
         return '-'
 
     avatar_preview.short_description = 'Avatar'
+
+
+@admin.register(Transaction)
+class TransactionAdmin(admin.ModelAdmin):
+    """Admin configuration for Transaction model"""
+    list_display = (
+        'id',
+        'user',
+        'barcode_display',
+        'barcode_type',
+        'time_created',
+    )
+    list_filter = ('barcode_used__barcode_type', 'user')
+    search_fields = (
+        'user__username',
+        'user__email',
+        'barcode_used__barcode',
+    )
+    ordering = ('-time_created',)
+    readonly_fields = ('time_created',)
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .select_related('user', 'barcode_used')
+        )
+
+    def barcode_display(self, obj):
+        if obj.barcode_used:
+            try:
+                return f"...{obj.barcode_used.barcode[-4:]}"
+            except Exception:
+                return '-'
+        return '-'
+
+    barcode_display.short_description = 'Barcode'
+
+    def barcode_type(self, obj):
+        if obj.barcode_used:
+            return obj.barcode_used.barcode_type
+        return '-'
+
+    barcode_type.short_description = 'Type'
+    barcode_type.admin_order_field = 'barcode_used__barcode_type'
 

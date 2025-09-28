@@ -26,8 +26,20 @@
 
     <!-- Main Content -->
     <main class="md-content">
+      <!-- Tabs Navigation -->
+      <div class="tabs-bar md-flex md-gap-2 md-items-center md-mb-6">
+        <md-filter-chip :selected="activeTab === 'Overview'" @click="activeTab = 'Overview'">
+          Overview
+        </md-filter-chip>
+        <md-filter-chip :selected="activeTab === 'Barcodes'" @click="activeTab = 'Barcodes'">
+          My Barcodes
+        </md-filter-chip>
+        <md-filter-chip :selected="activeTab === 'Add'" @click="activeTab = 'Add'">
+          Add
+        </md-filter-chip>
+      </div>
       <!-- Transfer Barcode Section -->
-      <section class="md-card md-mb-6">
+      <section v-if="activeTab === 'Overview'" class="md-card md-mb-6">
         <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
           <md-icon>cookie</md-icon>
           <h2 class="md-typescale-headline-small md-m-0">Transfer Barcode</h2>
@@ -82,9 +94,11 @@
         </div>
       </section>
       <!-- Settings Card -->
-      <section class="md-card md-mb-6">
+      <section v-if="activeTab === 'Overview'" class="settings-card md-card md-mb-6">
         <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
-          <md-icon>tune</md-icon>
+          <div class="header-icon-wrapper">
+            <md-icon>tune</md-icon>
+          </div>
           <h2 class="md-typescale-headline-small md-m-0">Barcode Settings</h2>
           <transition name="fade">
             <div v-if="isSaving" class="save-indicator md-flex md-items-center md-gap-2 md-ml-auto">
@@ -96,57 +110,123 @@
 
         <div class="settings-content">
           <!-- Active Barcode Display -->
-          <div v-if="currentBarcodeInfo" class="active-barcode-display md-flex md-items-center md-gap-3 md-p-4 md-rounded-lg md-mb-6">
-            <md-icon>badge</md-icon>
-            <div class="active-info">
-              <span class="md-typescale-label-large">Active Barcode</span>
-              <span class="md-typescale-body-medium">{{ currentBarcodeInfo }}</span>
+          <transition name="scale-fade">
+            <div v-if="currentBarcodeInfo" class="active-barcode-card md-mb-6">
+              <div class="active-barcode-header">
+                <md-icon class="active-icon pulse">verified</md-icon>
+                <span class="md-typescale-label-medium">CURRENTLY ACTIVE</span>
+              </div>
+              <div class="active-barcode-info">
+                <div class="barcode-type-badge">
+                  <md-icon>
+                    {{ settings.barcode && barcodeChoices.find(c => Number(c.id) === Number(settings.barcode))?.barcode_type === 'DynamicBarcode' ? 'qr_code_2' : 
+                       settings.barcode && barcodeChoices.find(c => Number(c.id) === Number(settings.barcode))?.barcode_type === 'Identification' ? 'badge' : 'barcode' }}
+                  </md-icon>
+                </div>
+                <div class="barcode-details">
+                  <h3 class="md-typescale-title-medium md-m-0">{{ currentBarcodeInfo }}</h3>
+                  <p v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification'" class="md-typescale-body-small md-m-0 md-mt-1">
+                    {{ selectedBarcode.usage_count || 0 }} total scans
+                    <span v-if="selectedBarcode.last_used">• Last used {{ formatRelativeTime(selectedBarcode.last_used) }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- Usage Statistics Card (hide for Identification) -->
+          <div v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification' && selectedBarcode.usage_count > 0" class="usage-stats-card md-mb-6">
+            <div class="stats-header md-mb-4">
+              <md-icon>insights</md-icon>
+              <h3 class="md-typescale-title-small md-m-0">Usage Statistics</h3>
+            </div>
+            
+            <div class="stats-grid md-grid-cols-3 md-gap-4 md-mb-4">
+              <div class="stat-card">
+                <md-icon>trending_up</md-icon>
+                <div class="stat-value">{{ selectedBarcode.usage_count || 0 }}</div>
+                <div class="stat-label">Total Scans</div>
+              </div>
+              <div class="stat-card" v-if="selectedBarcode.usage_stats">
+                <md-icon>today</md-icon>
+                <div class="stat-value">{{ selectedBarcode.usage_stats.daily_used || 0 }}</div>
+                <div class="stat-label">Today's Scans</div>
+              </div>
+              <div class="stat-card" v-if="selectedBarcode.usage_stats && selectedBarcode.usage_stats.daily_limit > 0">
+                <md-icon>event_available</md-icon>
+                <div class="stat-value">{{ selectedBarcode.usage_stats.daily_remaining || 0 }}</div>
+                <div class="stat-label">Remaining Today</div>
+              </div>
+            </div>
+
+            <div class="recent-activity">
+              <h4 class="md-typescale-label-large md-mb-3">Recent Activity</h4>
+              <div v-if="selectedBarcode.recent_transactions && selectedBarcode.recent_transactions.length > 0" class="activity-list">
+                <div v-for="tx in selectedBarcode.recent_transactions" :key="tx.id" class="activity-item">
+                  <div class="activity-icon">
+                    <md-icon>person</md-icon>
+                  </div>
+                  <div class="activity-details">
+                    <span class="md-typescale-body-medium">{{ tx.user || 'Unknown User' }}</span>
+                    <span class="md-typescale-body-small">{{ formatDate(tx.time_created) }}</span>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="empty-activity">
+                <md-icon>history_toggle_off</md-icon>
+                <span class="md-typescale-body-medium">No recent activity</span>
+              </div>
             </div>
           </div>
 
           <!-- Settings available only for barcodes with profile -->
           <div v-if="isDynamicSelected && currentBarcodeHasProfile" class="settings-grid md-flex md-flex-column md-gap-4">
-            <!-- Profile Association -->
-            <div class="setting-item md-flex md-items-center md-justify-between md-p-4 md-rounded-lg">
-              <div class="setting-header md-flex md-gap-3">
-                <md-icon>person_pin</md-icon>
-                <div>
-                  <h3 class="md-typescale-title-medium md-m-0">Profile Association</h3>
-                  <p class="md-typescale-body-small md-m-0 md-mt-1">use profile data from ID server</p>
-                </div>
-              </div>
-              
-              <md-switch
-                :selected="Boolean(settings.associate_user_profile_with_barcode)"
-                :disabled="isUserGroup"
-                @change="(e) => { settings.associate_user_profile_with_barcode = e.target.selected; onSettingChange(); }"
-              ></md-switch>
-            </div>
+            <div class="md-typescale-title-small md-muted">Profile & Verification</div>
+            <md-list>
+              <md-list-item>
+                <md-icon slot="start">person_pin</md-icon>
+                <div slot="headline">Profile Association</div>
+                <div slot="supporting-text">Use profile data from the ID server</div>
+                <md-switch
+                  slot="end"
+                  :selected="Boolean(settings.associate_user_profile_with_barcode)"
+                  :disabled="isUserGroup"
+                  @change="(e) => { settings.associate_user_profile_with_barcode = e.target.selected; onSettingChange(); }"
+                ></md-switch>
+              </md-list-item>
 
-            <!-- Server Verification -->
-            <div class="setting-item md-flex md-items-center md-justify-between md-p-4 md-rounded-lg">
-              <div class="setting-header md-flex md-gap-3">
-                <md-icon>security</md-icon>
-                <div>
-                  <h3 class="md-typescale-title-medium md-m-0">Server Verification</h3>
-                  <p class="md-typescale-body-small md-m-0 md-mt-1">Enable server-side validation (longer time, may fail)</p>
-                </div>
-              </div>
-              
-              <md-switch
-                :selected="Boolean(settings.server_verification)"
-                @change="(e) => { settings.server_verification = e.target.selected; onSettingChange(); }"
-              ></md-switch>
-            </div>
+              <md-divider inset></md-divider>
+
+              <md-list-item>
+                <md-icon slot="start">security</md-icon>
+                <div slot="headline">Server Verification</div>
+                <div slot="supporting-text">Validate on server (may take longer or fail)</div>
+                <md-switch
+                  slot="end"
+                  :selected="Boolean(settings.server_verification)"
+                  @change="(e) => { settings.server_verification = e.target.selected; onSettingChange(); }"
+                ></md-switch>
+              </md-list-item>
+            </md-list>
           </div>
 
           <!-- Info message when dynamic barcode is selected but has no profile -->
-          <div v-if="isDynamicSelected && !currentBarcodeHasProfile" class="md-banner md-banner-info md-mt-4">
+          <div v-if="isDynamicSelected && !currentBarcodeHasProfile" class="info-banner md-mt-4">
             <md-icon>info</md-icon>
-            <span class="md-typescale-body-medium">
-              Profile settings are only available for barcodes with attached profile data. 
-              Transfer a barcode with profile information to access these settings.
-            </span>
+            <div class="info-content">
+              <h4 class="md-typescale-label-large md-m-0">Profile Settings Unavailable</h4>
+              <p class="md-typescale-body-medium md-m-0 md-mt-1">
+                Profile settings are only available for barcodes with attached profile data. 
+                Transfer a barcode with profile information to access these settings.
+              </p>
+            </div>
+          </div>
+          
+          <!-- Empty state when no barcode selected -->
+          <div v-if="!currentBarcodeInfo" class="empty-settings">
+            <md-icon>qr_code_scanner</md-icon>
+            <h3 class="md-typescale-headline-small">No Barcode Selected</h3>
+            <p class="md-typescale-body-medium">Select a barcode from the list below to view settings and statistics</p>
           </div>
 
           <div v-if="Object.keys(errors).length > 0" class="md-banner md-banner-error md-mt-4">
@@ -161,7 +241,7 @@
       </section>
 
       <!-- Barcodes List -->
-      <section class="md-card md-mb-6">
+      <section v-if="activeTab === 'Barcodes'" class="md-card md-mb-6">
         <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
           <md-icon>inventory_2</md-icon>
           <h2 class="md-typescale-headline-small md-m-0">My Barcodes</h2>
@@ -251,6 +331,13 @@
                     Active
                   </md-assist-chip>
                   <md-assist-chip
+                    v-if="barcode.owner"
+                    aria-label="Owner"
+                  >
+                    <md-icon slot="icon">person</md-icon>
+                    {{ barcode.owner }}
+                  </md-assist-chip>
+                  <md-assist-chip
                     v-if="!barcode.is_owned_by_current_user"
                     aria-label="Shared barcode"
                   >
@@ -269,12 +356,12 @@
 
               <p class="barcode-id md-typescale-body-medium md-mt-2 md-mb-0">
                 {{ getBarcodeDisplayId(barcode) }}
-                <span v-if="!barcode.is_owned_by_current_user" class="owner-label">
+                <span v-if="!barcode.is_owned_by_current_user && !barcode.owner" class="owner-label">
                   by {{ barcode.owner }}
                 </span>
               </p>
 
-              <div v-if="barcode.usage_count > 0" class="barcode-stats md-flex md-gap-4 md-flex-wrap md-mt-3">
+              <div v-if="barcode.barcode_type !== 'Identification' && barcode.usage_count > 0" class="barcode-stats md-flex md-gap-4 md-flex-wrap md-mt-3">
                 <span class="stat md-flex md-items-center md-gap-1">
                   <md-icon>trending_up</md-icon>
                   {{ barcode.usage_count }} scan{{ barcode.usage_count !== 1 ? 's' : '' }}
@@ -283,11 +370,16 @@
                   <md-icon>schedule</md-icon>
                   {{ formatRelativeTime(barcode.last_used) }}
                 </span>
+                <span v-if="barcode.usage_stats" class="stat md-flex md-items-center md-gap-1">
+                  <md-icon>today</md-icon>
+                  {{ barcode.usage_stats.daily_used }} today
+                  <span v-if="barcode.usage_stats.daily_limit > 0">/ {{ barcode.usage_stats.daily_limit }}</span>
+                </span>
               </div>
             </div>
 
             <!-- Barcode Actions -->
-            <div class="barcode-actions md-flex md-items-center md-gap-2">
+          <div class="barcode-actions md-flex md-items-center md-gap-2">
               <md-filled-tonal-button
                 v-if="Number(settings.barcode) !== Number(barcode.id)"
                 @click="setActiveBarcode(barcode)"
@@ -296,12 +388,50 @@
                 Set Active
               </md-filled-tonal-button>
               
+            <md-assist-chip v-if="barcode.is_owned_by_current_user && barcode.barcode_type !== 'Identification'"
+                             :selected="!!barcode.share_with_others"
+                             @click="toggleShare(barcode)"
+                             aria-label="Share with others">
+              <md-icon slot="icon">{{ barcode.share_with_others ? 'share' : 'lock' }}</md-icon>
+              {{ barcode.share_with_others ? 'Shared' : 'Private' }}
+            </md-assist-chip>
+
               <md-icon-button
                 v-if="barcode.is_owned_by_current_user && barcode.barcode_type !== 'Identification'"
                 @click="deleteBarcode(barcode)"
               >
                 <md-icon>delete</md-icon>
               </md-icon-button>
+            </div>
+
+            <!-- Daily Limit Controls for Owned Barcodes (except Identification) -->
+            <div v-if="barcode.is_owned_by_current_user && barcode.barcode_type !== 'Identification'" class="barcode-limit-controls md-flex md-items-center md-gap-2 md-mt-3">
+              <md-icon-button @click="decrementDailyLimit(barcode)" aria-label="Decrease daily limit">
+                <md-icon>remove</md-icon>
+              </md-icon-button>
+
+              <md-outlined-text-field
+                :value="barcode.daily_usage_limit || 0"
+                @input="(e) => updateDailyLimit(barcode, e.target.value)"
+                type="number"
+                min="0"
+                label="Daily Limit"
+                supporting-text="0 = unlimited"
+                class="limit-input"
+              >
+                <md-icon slot="leading-icon">event</md-icon>
+              </md-outlined-text-field>
+
+              <md-icon-button @click="incrementDailyLimit(barcode)" aria-label="Increase daily limit">
+                <md-icon>add</md-icon>
+              </md-icon-button>
+
+              <md-filter-chip :selected="(barcode.daily_usage_limit || 0) === 0" @click="toggleUnlimited(barcode)">
+                <md-icon slot="icon">all_inclusive</md-icon>
+                Unlimited
+              </md-filter-chip>
+
+              <md-circular-progress v-if="updatingLimit[barcode.id]" indeterminate></md-circular-progress>
             </div>
           </article>
         </transition-group>
@@ -319,7 +449,7 @@
       </section>
 
       <!-- Add Barcode Section -->
-      <section ref="addSection" class="md-card">
+      <section v-if="activeTab === 'Add'" ref="addSection" class="md-card">
         <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
           <md-icon>add_circle</md-icon>
           <h2 class="md-typescale-headline-small md-m-0">Add New Barcode</h2>
@@ -398,6 +528,11 @@
           </transition>
         </form>
       </section>
+      <!-- Floating Action Button to Add -->
+      <md-fab style="position: fixed; right: 24px; bottom: 24px; z-index: 10;" @click="goToAddTab">
+        <md-icon slot="icon">add</md-icon>
+        <div slot="label">Add Barcode</div>
+      </md-fab>
     </main>
 
     <!-- Delete Confirmation Dialog -->
@@ -420,6 +555,7 @@
 import {nextTick, onMounted, onUnmounted, ref, watch, computed} from 'vue';
 import {useRouter} from 'vue-router';
 import {useApi} from '@/composables/useApi';
+import '@/assets/css/BarcodeDashboard.css';
 
 // Router
 const router = useRouter();
@@ -431,7 +567,9 @@ const {
   apiCreateBarcode,
   apiDeleteBarcode,
   apiTransferCatCard,
-  apiGetActiveProfile
+  apiGetActiveProfile,
+  apiUpdateBarcodeShare,
+  apiUpdateBarcodeDailyLimit
 } = useApi();
 
 // Reactive state
@@ -440,6 +578,9 @@ const message = ref('');
 const messageType = ref('success');
 const errors = ref({});
 const isSaving = ref(false);
+
+// Tabs
+const activeTab = ref('Overview');
 
 // Dashboard data
 const settings = ref({
@@ -463,6 +604,13 @@ const currentBarcodeHasProfile = computed(() => {
   return current?.has_profile_addon || false;
 });
 
+// Selected barcode full object (from barcodes list)
+const selectedBarcode = computed(() => {
+  if (!settings.value.barcode) return null;
+  const id = Number(settings.value.barcode);
+  return (barcodes.value || []).find(b => Number(b.id) === id) || null;
+});
+
 // Form data
 const newBarcode = ref('');
 
@@ -474,6 +622,10 @@ const videoRef = ref(null);
 let codeReader = null;
 const cameras = ref([]);
 const selectedCameraId = ref(null);
+const hasCameraPermission = ref(false);
+
+// Per-barcode daily limit updating state
+const updatingLimit = ref({});
 
 // Dialog state
 const showConfirmDialog = ref(false);
@@ -776,11 +928,104 @@ async function confirmDelete() {
   }
 }
 
+// Toggle share_with_others for an owned barcode
+async function toggleShare(barcode) {
+  if (!barcode || !barcode.is_owned_by_current_user) return;
+  try {
+    const next = !barcode.share_with_others;
+    const res = await apiUpdateBarcodeShare(barcode.id, next);
+    if (res?.status === 'success' && res?.barcode) {
+      // Update local list entry optimistically with server echo
+      const idx = barcodes.value.findIndex(b => Number(b.id) === Number(barcode.id));
+      if (idx !== -1) {
+        barcodes.value[idx] = { ...barcodes.value[idx], share_with_others: res.barcode.share_with_others };
+      }
+      showMessage(next ? 'Sharing enabled' : 'Sharing disabled', 'success');
+    }
+  } catch (e) {
+    showMessage('Failed to update sharing: ' + (e?.message || 'Unknown error'), 'danger');
+  }
+}
+
+// Update daily usage limit with debounce
+let dailyLimitTimeout = null;
+async function updateDailyLimit(barcode, value) {
+  if (!barcode || !barcode.is_owned_by_current_user) return;
+  
+  // Clear previous timeout
+  if (dailyLimitTimeout) {
+    clearTimeout(dailyLimitTimeout);
+  }
+  
+  // Debounce for 1 second
+  dailyLimitTimeout = setTimeout(async () => {
+    try {
+      const limit = parseInt(value) || 0;
+      if (limit < 0) {
+        showMessage('Daily limit must be 0 or greater', 'danger');
+        return;
+      }
+      
+      updatingLimit.value = { ...updatingLimit.value, [barcode.id]: true };
+      const res = await apiUpdateBarcodeDailyLimit(barcode.id, limit);
+      if (res?.status === 'success' && res?.barcode) {
+        // Update local barcode data
+        const idx = barcodes.value.findIndex(b => Number(b.id) === Number(barcode.id));
+        if (idx !== -1) {
+          barcodes.value[idx] = { 
+            ...barcodes.value[idx], 
+            daily_usage_limit: res.barcode.daily_usage_limit,
+            usage_stats: res.barcode.usage_stats 
+          };
+        }
+        showMessage(`Daily limit set to ${limit === 0 ? 'unlimited' : limit}`, 'success');
+      }
+    } catch (e) {
+      showMessage('Failed to update daily limit: ' + (e?.message || 'Unknown error'), 'danger');
+    } finally {
+      updatingLimit.value = { ...updatingLimit.value, [barcode.id]: false };
+    }
+  }, 1000);
+}
+
+function incrementDailyLimit(barcode) {
+  if (!barcode || !barcode.is_owned_by_current_user) return;
+  const current = Number(barcode.daily_usage_limit || 0);
+  const next = current === 0 ? 1 : current + 1;
+  // Optimistic UI update
+  barcode.daily_usage_limit = next;
+  updateDailyLimit(barcode, next);
+}
+
+function decrementDailyLimit(barcode) {
+  if (!barcode || !barcode.is_owned_by_current_user) return;
+  const current = Number(barcode.daily_usage_limit || 0);
+  const next = Math.max(0, current - 1);
+  barcode.daily_usage_limit = next;
+  updateDailyLimit(barcode, next);
+}
+
+function toggleUnlimited(barcode) {
+  if (!barcode || !barcode.is_owned_by_current_user) return;
+  const next = (Number(barcode.daily_usage_limit || 0) === 0) ? 1 : 0;
+  barcode.daily_usage_limit = next;
+  updateDailyLimit(barcode, next);
+}
+
 // Scroll to add section
 function scrollToAdd() {
   if (addSection.value) {
     addSection.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+}
+
+function goToAddTab() {
+  activeTab.value = 'Add';
+  nextTick(() => {
+    if (addSection.value) {
+      addSection.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
 }
 
 // Format relative time
@@ -830,6 +1075,13 @@ async function toggleScanner() {
   } else {
     showScanner.value = true;
     await nextTick();
+    const granted = await ensureCameraPermission();
+    if (!granted) {
+      scanning.value = false;
+      scannerStatus.value = 'Camera permission is required to use the scanner.';
+      showMessage('Camera permission is required to use the scanner.', 'danger');
+      return;
+    }
     await startScanner();
   }
 }
@@ -841,6 +1093,15 @@ async function startScanner() {
 
     const {BrowserMultiFormatReader} = await import('@zxing/library');
     codeReader = new BrowserMultiFormatReader();
+
+    if (!hasCameraPermission.value) {
+      const granted = await ensureCameraPermission();
+      if (!granted) {
+        scannerStatus.value = 'Camera permission denied.';
+        scanning.value = false;
+        return;
+      }
+    }
 
     if (cameras.value.length === 0) {
       const videoInputDevices = await codeReader.listVideoInputDevices();
@@ -894,6 +1155,30 @@ function stopScanner() {
   scanning.value = false;
   scannerStatus.value = 'Position the barcode within the camera view';
   cameras.value = [];
+}
+
+async function ensureCameraPermission() {
+  try {
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      scannerStatus.value = 'Camera is not supported in this browser.';
+      return false;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    // Immediately stop tracks; we only needed to trigger permission
+    stream.getTracks().forEach(t => t.stop());
+    hasCameraPermission.value = true;
+    return true;
+  } catch (err) {
+    hasCameraPermission.value = false;
+    if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) {
+      scannerStatus.value = 'Camera permission was denied. Please enable it in browser settings.';
+    } else if (err && err.name === 'NotFoundError') {
+      scannerStatus.value = 'No camera device found.';
+    } else {
+      scannerStatus.value = `Unable to access camera: ${err?.message || 'Unknown error'}`;
+    }
+    return false;
+  }
 }
 
 // Utility functions
@@ -1018,6 +1303,10 @@ onUnmounted(() => {
   if (saveTimeout) {
     clearTimeout(saveTimeout);
   }
+  // Clear daily limit timeout
+  if (dailyLimitTimeout) {
+    clearTimeout(dailyLimitTimeout);
+  }
 });
 
 
@@ -1038,364 +1327,4 @@ watch(showScanner, (newValue) => {
 });
 </script>
 
-<style scoped>
-/* Page-specific styles for BarcodeDashboard.vue - minimal overrides only */
-
-/* Message Toast positioning */
-.message-toast {
-  position: fixed;
-  top: 88px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  max-width: 600px;
-}
-
-/* Info banner styling */
-.md-banner-info {
-  background-color: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
-}
-
-/* Header card icon colors */
-.card-header md-icon {
-  color: var(--md-sys-color-primary);
-}
-
-/* Action Cards */
-.action-card {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.action-card:hover {
-  transform: translateY(-2px);
-}
-
-.action-icon {
-  font-size: 48px;
-}
-
-.action-icon.primary {
-  color: var(--md-sys-color-primary);
-}
-
-.action-icon.secondary {
-  color: var(--md-sys-color-secondary);
-}
-
-.action-icon.tertiary {
-  color: var(--md-sys-color-tertiary);
-}
-
-/* Settings Section */
-.active-barcode-display {
-  background: var(--md-sys-color-primary-container);
-}
-
-.active-barcode-display md-icon {
-  color: var(--md-sys-color-on-primary-container);
-}
-
-.active-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--md-sys-spacing-1);
-}
-
-.setting-item {
-  background: var(--md-sys-color-surface-container);
-}
-
-.setting-header {
-  flex: 1;
-}
-
-.setting-header md-icon {
-  color: var(--md-sys-color-on-surface-variant);
-  margin-top: 2px;
-}
-
-/* Save indicator */
-.save-indicator md-circular-progress {
-  --md-circular-progress-size: 20px;
-}
-
-/* Filter Bar */
-.search-field {
-  min-width: 200px;
-}
-
-.sort-select {
-  min-width: 150px;
-}
-
-/* Keep all chips on a single row with horizontal scroll */
-.filter-controls {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  width: 100%;
-  gap: var(--md-sys-spacing-2);
-  padding-bottom: var(--md-sys-spacing-1);
-  -webkit-overflow-scrolling: touch;
-  /* hide scrollbar cross-browser */
-  scrollbar-width: none;           /* Firefox */
-  -ms-overflow-style: none;        /* IE 10+ */
-}
-
-/* WebKit-based browsers */
-.filter-controls::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
-/* Barcode Items */
-.barcode-item {
-  transition: all 0.2s ease;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-}
-
-.barcode-item.is-active {
-  background: var(--md-sys-color-primary-container);
-}
-
-.barcode-item.is-shared {
-  background: var(--md-sys-color-surface-container-low);
-}
-
-.barcode-item:hover {
-  background: var(--md-sys-color-surface-container-high);
-}
-
-.barcode-item.is-active:hover {
-  background: var(--md-sys-color-primary-container);
-}
-
-.barcode-type-icon {
-  width: 56px;
-  height: 56px;
-  background: var(--md-sys-color-surface-container-highest);
-}
-
-.barcode-type-icon md-icon {
-  font-size: 32px;
-  color: var(--md-sys-color-primary);
-}
-
-.barcode-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--md-sys-spacing-2);
-}
-
-.barcode-title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--md-sys-spacing-3);
-  flex-wrap: wrap;
-}
-
-/* Badge overrides */
-.badge-active {
-  background: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
-}
-
-.badge-shared {
-  background: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
-}
-
-.badge-addon {
-  background: var(--md-sys-color-tertiary-container);
-  color: var(--md-sys-color-on-tertiary-container);
-}
-
-.md-badge md-icon {
-  font-size: 14px;
-}
-
-.barcode-id {
-  font-family: 'Roboto Mono', monospace;
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-.owner-label {
-  color: var(--md-sys-color-primary);
-  font-weight: 500;
-}
-
-.stat {
-  color: var(--md-sys-color-on-surface-variant);
-  font-size: var(--md-sys-typescale-body-small-size);
-}
-
-.stat md-icon {
-  font-size: 16px;
-}
-
-/* Scanner Container */
-.scanner-header md-icon {
-  color: var(--md-sys-color-primary);
-}
-
-.scanner-viewport {
-  position: relative;
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  aspect-ratio: 4/3;
-  background: #000;
-  overflow: hidden;
-}
-
-.scanner-viewport video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.scanner-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.scanner-frame {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 80%;
-  height: 60%;
-  border: 3px solid var(--md-sys-color-primary);
-  border-radius: var(--md-sys-shape-corner-medium);
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
-}
-
-/* Empty state border box */
-.empty-state-box {
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-corner-medium);
-  padding: var(--md-sys-spacing-4);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: var(--md-sys-spacing-2);
-  min-height: 160px;
-}
-
-.empty-state-box .md-empty-state-icon {
-  font-size: 40px;
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-/* Camera select */
-.camera-select {
-  min-width: 200px;
-}
-
-/* Transitions */
-.list-enter-active,
-.list-leave-active,
-.list-move {
-  transition: all 0.3s ease;
-}
-
-.list-enter-from {
-  opacity: 0;
-  transform: translateX(-30px);
-}
-
-.list-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
-}
-
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-down-enter-from {
-  transform: translate(-50%, -100%);
-  opacity: 0;
-}
-
-.slide-down-leave-to {
-  transform: translate(-50%, -100%);
-  opacity: 0;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.expand-enter-active,
-.expand-leave-active {
-  transition: all 0.3s ease;
-  max-height: 600px;
-  overflow: hidden;
-}
-
-.expand-enter-from,
-.expand-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
-
-/* Responsive adjustments */
-@media (max-width: 904px) {
-  .md-grid-cols-3 {
-    grid-template-columns: 1fr;
-  }
-  
-  .filter-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .search-field {
-    width: 100%;
-  }
-  
-  .filter-controls {
-    overflow-x: auto;
-    padding-bottom: var(--md-sys-spacing-1);
-  }
-  
-  .barcode-item {
-    grid-template-columns: 1fr;
-  }
-  
-  .barcode-type-icon {
-    display: none;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .form-actions > * {
-    width: 100%;
-  }
-}
-
-@media (max-width: 599px) {
-  .setting-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--md-sys-spacing-3);
-  }
-}
-</style> 
+<!-- Styles moved to external CSS: see @/assets/css/BarcodeDashboard.css -->

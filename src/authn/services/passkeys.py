@@ -6,6 +6,7 @@ import json
 
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 from webauthn import (
     generate_registration_options,
@@ -25,12 +26,18 @@ from authn.models import PasskeyCredential
 
 
 def _rp_id() -> str:
-    # Prefer explicit env, else derive from BACKEND_ORIGIN
+    # Require RP ID or derive strictly from BACKEND_ORIGIN (no localhost fallback)
     rp = getattr(settings, "WEBAUTHN_RP_ID", None)
     if rp:
         return rp
-    parsed = urlparse(getattr(settings, "BACKEND_ORIGIN", "http://localhost:8000"))
-    return parsed.hostname or "localhost"
+    backend_origin = getattr(settings, "BACKEND_ORIGIN", None)
+    if not backend_origin:
+        raise ImproperlyConfigured("WEBAUTHN_RP_ID or BACKEND_ORIGIN must be set in environment")
+    parsed = urlparse(backend_origin)
+    host = parsed.hostname
+    if not host:
+        raise ImproperlyConfigured("BACKEND_ORIGIN must include a valid hostname (e.g., https://example.com)")
+    return host
 
 
 def _origins() -> List[str]:
@@ -41,29 +48,18 @@ def _origins() -> List[str]:
     frontends = getattr(settings, "FRONTEND_ORIGINS", []) or []
     allowed.extend(frontends)
 
-    # Normalize and include localhost/127.0.0.1 variants for dev
-    normalized: set[str] = set()
+    # Normalize (strip trailing slash). Do not inject any localhost variants.
+    normalized: List[str] = []
     for origin in allowed:
         if not origin:
             continue
-        origin = origin.rstrip('/')
-        normalized.add(origin)
-        try:
-            parsed = urlparse(origin)
-            scheme = parsed.scheme or "http"
-            host = parsed.hostname or "localhost"
-            port = f":{parsed.port}" if parsed.port else (":5173" if host in {"localhost", "127.0.0.1"} and parsed.scheme == "http" else "")
+        normalized.append(origin.rstrip('/'))
 
-            if host == "localhost":
-                normalized.add(f"{scheme}://127.0.0.1{port}")
-            if host == "127.0.0.1":
-                normalized.add(f"{scheme}://localhost{port}")
-        except Exception:
-            # Best effort only
-            pass
+    if not normalized:
+        raise ImproperlyConfigured("BACKEND_ORIGIN or FRONTEND_ORIGINS must be set in environment")
 
     # De-dup and sort for stable output
-    return sorted(normalized)
+    return sorted(set(normalized))
 
 
 def _pydantic_load(model_cls, data):
@@ -179,7 +175,7 @@ def verify_and_create_passkey(user: User, credential: dict, expected_challenge) 
         credential=_pydantic_load(RegistrationCredential, credential),
         expected_challenge=expected_bytes,
         expected_rp_id=_rp_id(),
-        expected_origin=_origins() or "http://localhost:8000",
+        expected_origin=_origins(),
         require_user_verification=True,
     )
 
@@ -285,7 +281,7 @@ def verify_authentication(credential: dict, expected_challenge) -> User:
         credential=_pydantic_load(AuthenticationCredential, credential),
         expected_challenge=expected_bytes,
         expected_rp_id=_rp_id(),
-        expected_origin=_origins() or "http://localhost:8000",
+        expected_origin=_origins(),
         credential_public_key=base64url_to_bytes(stored.public_key),
         credential_current_sign_count=stored.sign_count,
         require_user_verification=True,

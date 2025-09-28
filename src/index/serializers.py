@@ -1,4 +1,6 @@
-from index.models import Barcode, UserBarcodeSettings, BarcodeUsage, BarcodeUserProfile
+from index.models import Barcode, UserBarcodeSettings, BarcodeUsage, BarcodeUserProfile, Transaction
+from index.services.transactions import TransactionService
+from index.services.usage_limit import UsageLimitService
 from rest_framework import serializers
 
 
@@ -12,6 +14,9 @@ class BarcodeSerializer(serializers.ModelSerializer):
     is_owned_by_current_user = serializers.SerializerMethodField()
     has_profile_addon = serializers.SerializerMethodField()
     profile_info = serializers.SerializerMethodField()
+    recent_transactions = serializers.SerializerMethodField()
+    usage_stats = serializers.SerializerMethodField()
+    daily_usage_limit = serializers.SerializerMethodField()
 
     class Meta:
         model = Barcode
@@ -20,6 +25,7 @@ class BarcodeSerializer(serializers.ModelSerializer):
             "barcode_type",
             "barcode",
             "time_created",
+            "share_with_others",
             "usage_count",
             "last_used",
             "display_name",
@@ -27,11 +33,19 @@ class BarcodeSerializer(serializers.ModelSerializer):
             "is_owned_by_current_user",
             "has_profile_addon",
             "profile_info",
+            "recent_transactions",
+            "usage_stats",
+            "daily_usage_limit",
         ]
         read_only_fields = ["id", "barcode_type", "time_created"]
 
     def get_usage_count(self, obj):
-        """Get total usage count for the barcode"""
+        """Get total usage count for the barcode
+        
+        Note: Identification barcodes will always return 0 since we don't track
+        their usage (they regenerate each time). The data is still returned
+        for consistency and potential admin/debugging purposes.
+        """
         try:
             return obj.barcodeusage_set.first().total_usage
         except:
@@ -89,6 +103,37 @@ class BarcodeSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
+    def get_recent_transactions(self, obj):
+        """Return last 3 transactions for this barcode."""
+        try:
+            qs = (
+                Transaction.objects.filter(barcode_used=obj)
+                .select_related('user')
+                .order_by('-time_created')[:3]
+            )
+            return [
+                {
+                    'id': t.id,
+                    'user': t.user.username if t.user_id else None,
+                    'time_created': t.time_created,
+                }
+                for t in qs
+            ]
+        except Exception:
+            return []
+    
+    def get_usage_stats(self, obj):
+        """Get usage statistics including daily and total limits."""
+        return UsageLimitService.get_usage_stats(obj)
+    
+    def get_daily_usage_limit(self, obj):
+        """Get the daily usage limit for quick access."""
+        try:
+            usage = obj.barcodeusage_set.first()
+            return usage.daily_usage_limit if usage else 0
+        except:
+            return 0
+
 
 class BarcodeCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating new barcodes"""
@@ -118,9 +163,17 @@ class BarcodeCreateSerializer(serializers.ModelSerializer):
             # Other barcode type
             barcode_type = "Others"
 
-        return Barcode.objects.create(
+        barcode_obj = Barcode.objects.create(
             user=user, barcode=barcode_value, barcode_type=barcode_type
         )
+
+        # Record a transaction for barcode creation
+        TransactionService.create_transaction(
+            user=user,
+            barcode=barcode_obj,
+        )
+
+        return barcode_obj
 
 
 class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
@@ -155,13 +208,15 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
         choices = []
 
         if is_school:
-            # For School users: get all dynamic barcodes
+            # For School users: dynamic barcodes that are shared by others or owned by self
             all_dynamic_barcodes = Barcode.objects.filter(
                 barcode_type="DynamicBarcode"
             ).select_related('user').prefetch_related('barcodeuserprofile').order_by("-time_created")
             
-            # Add all dynamic barcodes
+            # Add dynamic barcodes (only show others' if they are shared)
             for b in all_dynamic_barcodes:
+                if b.user != user and not b.share_with_others:
+                    continue
                 owner_name = b.user.username if b.user != user else "Your"
                 display = f"{owner_name} Dynamic Barcode ending with {b.barcode[-4:]}"
                 
@@ -271,5 +326,19 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"associate_user_profile_with_barcode": "Standard users cannot enable profile association."}
             )
+
+        # For School users, when selecting a dynamic barcode owned by someone else,
+        # it must be shared_with_others
+        barcode = data.get("barcode")
+        if barcode is not None:
+            try:
+                # barcode can be an id or instance depending on partial update; ensure instance
+                b = barcode if isinstance(barcode, Barcode) else Barcode.objects.get(pk=barcode)
+                if b.barcode_type == "DynamicBarcode" and b.user != user and not b.share_with_others:
+                    raise serializers.ValidationError({
+                        "barcode": "Selected barcode is not shared by its owner."
+                    })
+            except Barcode.DoesNotExist:
+                raise serializers.ValidationError({"barcode": "Selected barcode does not exist."})
 
         return data
