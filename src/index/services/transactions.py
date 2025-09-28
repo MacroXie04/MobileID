@@ -62,7 +62,7 @@ class TransactionService:
         if hasattr(user, "is_active") and not user.is_active:
             raise PermissionError("Inactive user not allowed.")
 
-        # Validate barcode instance and ownership
+        # Validate barcode instance
         if barcode is None:
             raise ValueError("Provide `barcode`.")
         if not isinstance(barcode, Barcode):
