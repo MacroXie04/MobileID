@@ -681,8 +681,28 @@
 }
 
 .barcode-limit-controls {
-  padding-top: var(--md-sys-spacing-2);
+  padding-top: var(--md-sys-spacing-3);
   border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.limit-header {
+  align-items: center;
+}
+
+.limit-icon {
+  color: var(--md-sys-color-primary);
+}
+
+.limit-controls md-outlined-text-field.limit-input {
+  max-width: 160px;
+}
+
+.limit-presets md-assist-chip {
+  --md-assist-chip-container-shape: var(--md-sys-shape-corner-small);
+}
+
+.limit-support {
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 
