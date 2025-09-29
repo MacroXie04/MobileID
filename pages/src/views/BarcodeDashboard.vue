@@ -405,33 +405,52 @@
             </div>
 
             <!-- Daily Limit Controls for Owned Barcodes (except Identification) -->
-            <div v-if="barcode.is_owned_by_current_user && barcode.barcode_type !== 'Identification'" class="barcode-limit-controls md-flex md-items-center md-gap-2 md-mt-3">
-              <md-icon-button @click="decrementDailyLimit(barcode)" aria-label="Decrease daily limit">
-                <md-icon>remove</md-icon>
-              </md-icon-button>
+            <div v-if="barcode.is_owned_by_current_user && barcode.barcode_type !== 'Identification'" class="barcode-limit-controls md-mt-3">
+              <div class="limit-header md-flex md-items-center md-gap-3">
+                <div class="limit-header-left md-flex md-items-center md-gap-2">
+                  <md-icon class="limit-icon">event</md-icon>
+                  <div>
+                    <div class="md-typescale-label-large">Daily Limit</div>
+                    <div class="md-typescale-body-small md-text-on-surface-variant">Set maximum scans per day</div>
+                  </div>
+                </div>
+                <div class="md-ml-auto md-flex md-items-center md-gap-2">
+                  <span class="md-typescale-label-small">Unlimited</span>
+                  <md-switch :selected="Number(barcode.daily_usage_limit || 0) === 0" @change="(e) => toggleUnlimitedSwitch(barcode, e)"></md-switch>
+                </div>
+              </div>
 
-              <md-outlined-text-field
-                :value="barcode.daily_usage_limit || 0"
-                @input="(e) => updateDailyLimit(barcode, e.target.value)"
-                type="number"
-                min="0"
-                label="Daily Limit"
-                supporting-text="0 = unlimited"
-                class="limit-input"
-              >
-                <md-icon slot="leading-icon">event</md-icon>
-              </md-outlined-text-field>
+              <div class="limit-controls md-flex md-items-center md-gap-2 md-mt-3">
+                <md-icon-button :disabled="Number(barcode.daily_usage_limit || 0) === 0" @click="decrementDailyLimit(barcode)" aria-label="Decrease daily limit">
+                  <md-icon>remove</md-icon>
+                </md-icon-button>
 
-              <md-icon-button @click="incrementDailyLimit(barcode)" aria-label="Increase daily limit">
-                <md-icon>add</md-icon>
-              </md-icon-button>
+                <md-outlined-text-field
+                  :value="barcode.daily_usage_limit || 0"
+                  @input="(e) => updateDailyLimit(barcode, e.target.value)"
+                  :disabled="Number(barcode.daily_usage_limit || 0) === 0"
+                  type="number"
+                  min="0"
+                  label="Daily Limit"
+                  class="limit-input"
+                >
+                  <md-icon slot="leading-icon">pin</md-icon>
+                </md-outlined-text-field>
 
-              <md-filter-chip :selected="(barcode.daily_usage_limit || 0) === 0" @click="toggleUnlimited(barcode)">
-                <md-icon slot="icon">all_inclusive</md-icon>
-                Unlimited
-              </md-filter-chip>
+                <md-icon-button :disabled="Number(barcode.daily_usage_limit || 0) === 0" @click="incrementDailyLimit(barcode)" aria-label="Increase daily limit">
+                  <md-icon>add</md-icon>
+                </md-icon-button>
 
-              <md-circular-progress v-if="updatingLimit[barcode.id]" indeterminate></md-circular-progress>
+                <div class="limit-presets md-flex md-items-center md-gap-1 md-ml-2">
+                  <md-assist-chip @click="applyLimitPreset(barcode, 5)">5</md-assist-chip>
+                  <md-assist-chip @click="applyLimitPreset(barcode, 10)">10</md-assist-chip>
+                  <md-assist-chip @click="applyLimitPreset(barcode, 20)">20</md-assist-chip>
+                </div>
+
+                <md-circular-progress v-if="updatingLimit[barcode.id]" indeterminate></md-circular-progress>
+              </div>
+
+              <div class="limit-support md-typescale-body-small md-text-on-surface-variant md-mt-2">0 = unlimited</div>
             </div>
           </article>
         </transition-group>
