@@ -88,12 +88,13 @@ def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
                 last_used=now
             )
 
-    TransactionService.create_transaction(
-        user=request_user,
-        barcode=barcode,
-        time_created=now,
-        save=True,
-    )
+    if request_user is not None:
+        TransactionService.create_transaction(
+            user=request_user,
+            barcode=barcode,
+            time_created=now,
+            save=True,
+        )
 
 
 
