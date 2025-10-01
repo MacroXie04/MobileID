@@ -167,12 +167,7 @@ class BarcodeCreateSerializer(serializers.ModelSerializer):
             user=user, barcode=barcode_value, barcode_type=barcode_type
         )
 
-        # Record a transaction for barcode creation
-        TransactionService.create_transaction(
-            user=user,
-            barcode=barcode_obj,
-        )
-
+        # Transaction creation is handled in the view/service layer
         return barcode_obj
 
 

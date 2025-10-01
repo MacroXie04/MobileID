@@ -150,6 +150,9 @@ class BarcodeDashboardAPIView(APIView):
 
         if serializer.is_valid():
             barcode = serializer.save()
+            # Record a transaction for barcode creation via service layer
+            from index.services.transactions import TransactionService
+            TransactionService.create_transaction(user=request.user, barcode=barcode)
             return Response({
                 'status': 'success',
                 'message': 'New barcode added successfully',
