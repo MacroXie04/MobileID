@@ -96,7 +96,7 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
         user_display_name=getattr(getattr(user, "userprofile", None), "name", user.username),
         authenticator_selection=AuthenticatorSelectionCriteria(
             resident_key="preferred",
-            user_verification="preferred",
+            user_verification="required",
         ),
         exclude_credentials=exclude,
         attestation="none",
@@ -207,7 +207,7 @@ def build_authentication_options(user: Optional[User] = None) -> dict:
     options = generate_authentication_options(
         rp_id=_rp_id(),
         timeout=60000,
-        user_verification="preferred",
+        user_verification="required",
         allow_credentials=allow_credentials,
     )
     

@@ -1,11 +1,11 @@
 # authn/views.py
 import base64
-import imghdr
 import os
 from binascii import Error as BinasciiError
 from io import BytesIO
 
 from PIL import Image
+from django.conf import settings
 from authn.services.webauthn import create_user_profile
 from django import forms
 from django.contrib.auth import login
@@ -138,6 +138,7 @@ class UserRegisterForm(UserCreationForm):
 
 class CookieTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
+    throttle_scope = "login"
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -151,13 +152,16 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             use_https = os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()
             cookie_secure = True if use_https else (os.getenv("COOKIE_SECURE", "False").lower() == "true")
 
+            access_max_age = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
+            refresh_max_age = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
+
             response.set_cookie(
                 "access_token",
                 access,
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
                 samesite=cookie_samesite,
                 secure=cookie_secure,
-                max_age=315360000,  # 10 years in seconds
+                max_age=access_max_age,
             )
 
             response.set_cookie(
@@ -166,7 +170,8 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
                 samesite=cookie_samesite,
                 secure=cookie_secure,
-                max_age=315360000,  # 10 years in seconds
+                path="/authn/",
+                max_age=refresh_max_age,
             )
             response.data = {"message": "Login successful"}
         return response
@@ -174,9 +179,22 @@ class CookieTokenObtainPairView(TokenObtainPairView):
 
 @api_view(["POST"])
 def api_logout(request):
+    # Best-effort blacklist of the refresh token (if present)
+    try:
+        from rest_framework_simplejwt.tokens import RefreshToken
+        rt = request.COOKIES.get("refresh_token")
+        if rt:
+            try:
+                RefreshToken(rt).blacklist()
+            except Exception:
+                # Blacklist may be unavailable or token invalid/expired
+                pass
+    except Exception:
+        pass
+
     resp = Response({"message": "Logged out"})
     resp.delete_cookie("access_token")
-    resp.delete_cookie("refresh_token")
+    resp.delete_cookie("refresh_token", path="/authn/")
     return resp
 
 
@@ -222,12 +240,15 @@ def user_img(request):
     except Exception:
         return HttpResponse(status=400)
 
-    # guess image format (png / jpeg / gif / webp …)
-    ext = imghdr.what(None, h=img_bytes)
-    if ext is None:
-        # Not a valid image format
+    # Validate and detect MIME using Pillow (imghdr removed in Python 3.13)
+    try:
+        with Image.open(BytesIO(img_bytes)) as img:
+            fmt = img.format  # e.g. 'PNG', 'JPEG'
+            mime = Image.MIME.get(fmt)
+    except Exception:
         return HttpResponse(status=400)
-    mime = f"image/{'jpeg' if ext == 'jpg' else ext}"
+    if not mime:
+        return HttpResponse(status=400)
 
     response = HttpResponse(img_bytes, content_type=mime)
     response["Cache-Control"] = "private, max-age=3600"  # 1 hour
@@ -322,6 +343,9 @@ def api_register(request):
             )
 
             # set JWT cookies
+            access_max_age = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
+            refresh_max_age = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
+
             response.set_cookie(
                 "access_token",
                 access_token,
@@ -329,7 +353,7 @@ def api_register(request):
                 samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
                 secure=(os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()) or (
                             os.getenv("COOKIE_SECURE", "False").lower() == "true"),
-                max_age=315360000,  # 10 years in seconds
+                max_age=access_max_age,
             )
             response.set_cookie(
                 "refresh_token",
@@ -338,7 +362,8 @@ def api_register(request):
                 samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
                 secure=(os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()) or (
                             os.getenv("COOKIE_SECURE", "False").lower() == "true"),
-                max_age=315360000,  # 10 years in seconds
+                path="/authn/",
+                max_age=refresh_max_age,
             )
 
             return response
@@ -417,9 +442,11 @@ def api_profile(request):
                 try:
                     # Validate/normalize base64 (accept url-safe)
                     img_bytes = _b64_any_to_bytes(b64)
-                    # Also validate it's a valid image format
-                    ext = imghdr.what(None, h=img_bytes)
-                    if ext is None:
+                    # Also validate it's a valid image format via Pillow
+                    try:
+                        with Image.open(BytesIO(img_bytes)) as _:
+                            pass
+                    except Exception:
                         raise ValueError("Not a valid image format")
                     profile.user_profile_img = b64
                 except Exception:
@@ -555,13 +582,16 @@ def passkey_auth_verify(request):
     use_https = os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()
     cookie_secure = True if use_https else (os.getenv("COOKIE_SECURE", "False").lower() == "true")
 
+    access_max_age = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
+    refresh_max_age = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
+
     response.set_cookie(
         "access_token",
         access_token,
         httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
         samesite=cookie_samesite,
         secure=cookie_secure,
-        max_age=315360000,
+        max_age=access_max_age,
     )
     response.set_cookie(
         "refresh_token",
@@ -569,7 +599,8 @@ def passkey_auth_verify(request):
         httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
         samesite=cookie_samesite,
         secure=cookie_secure,
-        max_age=315360000,
+        path="/authn/",
+        max_age=refresh_max_age,
     )
     request.session.pop("webauthn_auth_chal", None)
     return response
