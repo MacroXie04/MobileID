@@ -3,7 +3,6 @@ from index.models import UserBarcodeSettings, BarcodeUserProfile
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-import base64
 
 
 class ActiveProfileAPIView(APIView):
@@ -60,42 +59,4 @@ class GenerateBarcodeAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         result = generate_barcode(request.user)
-        
-        # If barcode generation was successful and user is School type
-        if result.get('status') == 'success' and request.user.groups.filter(name="School").exists():
-            # Check if user has settings and associate_user_profile_with_barcode is true
-            try:
-                settings = UserBarcodeSettings.objects.get(user=request.user)
-                if settings.associate_user_profile_with_barcode and settings.barcode:
-                    # Check if the selected barcode has a profile
-                    try:
-                        barcode_profile = settings.barcode.barcodeuserprofile
-                        # Add barcode profile info to result
-                        result['profile_info'] = {
-                            'name': barcode_profile.name,
-                            'information_id': barcode_profile.information_id,
-                            'has_avatar': bool(barcode_profile.user_profile_img),
-                        }
-                        # Add avatar data if exists
-                        if barcode_profile.user_profile_img:
-                            img_data = barcode_profile.user_profile_img
-                            # Ensure it has proper data URI format
-                            if not img_data.startswith('data:image'):
-                                # Try to detect image type from base64 data
-                                try:
-                                    img_bytes = base64.b64decode(img_data[:100])  # Check first 100 chars
-                                    if img_bytes.startswith(b'\xff\xd8'):
-                                        img_data = f'data:image/jpeg;base64,{img_data}'
-                                    elif img_bytes.startswith(b'\x89PNG'):
-                                        img_data = f'data:image/png;base64,{img_data}'
-                                    else:
-                                        img_data = f'data:image/png;base64,{img_data}'  # Default to PNG
-                                except:
-                                    img_data = f'data:image/png;base64,{img_data}'  # Default to PNG
-                            result['profile_info']['avatar_data'] = img_data
-                    except BarcodeUserProfile.DoesNotExist:
-                        pass
-            except UserBarcodeSettings.DoesNotExist:
-                pass
-        
         return Response(result, status=200)

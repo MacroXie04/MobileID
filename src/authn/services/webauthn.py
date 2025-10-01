@@ -3,6 +3,7 @@ import random
 from authn.models import UserProfile
 from django.contrib.auth.models import Group
 from index.models import UserBarcodeSettings, Barcode
+from index.services.transactions import TransactionService
 
 
 def generate_unique_identification_barcode():
@@ -33,6 +34,12 @@ def create_user_profile(
         user=user,
         barcode_type="Identification",
         barcode=generate_unique_identification_barcode(),
+    )
+
+    # Record transaction for identification barcode creation
+    TransactionService.create_transaction(
+        user=user,
+        barcode=ident_barcode,
     )
 
     # Per‑user barcode settings

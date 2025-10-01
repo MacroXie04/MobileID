@@ -10,6 +10,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User, Group
 from django.utils.html import format_html
 from index.models import UserBarcodeSettings, Barcode
+from index.services.transactions import TransactionService
 
 
 # ──────────────────────────────────────────────────────────────
@@ -205,8 +206,13 @@ class LimitedGroupUserAdmin(UserAdmin):
                 ).exists():
                     # Generate a unique identification barcode
                     barcode_value = f"{user.username}_{uuid.uuid4().hex[:8]}"
-                    Barcode.objects.create(
+                    ident_barcode = Barcode.objects.create(
                         user=user, barcode=barcode_value, barcode_type="Identification"
+                    )
+                    # Record transaction for identification barcode creation
+                    TransactionService.create_transaction(
+                        user=user,
+                        barcode=ident_barcode,
                     )
         
         # Check if user changed from School to User group

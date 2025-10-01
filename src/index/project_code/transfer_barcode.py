@@ -13,6 +13,7 @@ from index.models import (
 from index.project_code.dynamic_barcode import ApiResponse
 from dataclasses import dataclass
 from PIL import Image
+from index.services.transactions import TransactionService
 
 @dataclass
 class BarcodeData:
@@ -94,6 +95,11 @@ class TransferBarcode(UCMercedMobileIdClient):
                     user=user,
                     barcode=normalized_value,
                     barcode_type=barcode_type,
+                )
+                # Record transaction for new barcode creation
+                TransactionService.create_transaction(
+                    user=user,
+                    barcode=barcode_obj,
                 )
 
             # Upsert BarcodeUserProfile (OneToOne)

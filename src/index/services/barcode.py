@@ -13,6 +13,8 @@ from index.models import (
     BarcodeUserProfile,
 )
 from index.project_code.dynamic_barcode import auto_send_code
+from index.services.transactions import TransactionService
+from index.services.usage_limit import UsageLimitService
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -61,22 +63,37 @@ def _create_identification_barcode(user) -> Barcode:
     )
 
 
-def _touch_barcode_usage(barcode: Barcode) -> None:
-    """Increment usage counters for *barcode* atomically."""
+def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
+    """Increment usage counters for *barcode* atomically.
+
+    If a barcode is being used by someone other than its owner, we still
+    update the `BarcodeUsage` counters but we do NOT create a `Transaction`.
+    """
     now = timezone.now()
-
-    # Try to update existing record first
-    updated = BarcodeUsage.objects.filter(barcode=barcode).update(
-        total_usage=F("total_usage") + 1,
-        last_used=now
-    )
-
-    # If no rows were updated, create a new record
-    if not updated:
-        BarcodeUsage.objects.create(
-            barcode=barcode,
-            total_usage=1,
+    
+    # Skip BarcodeUsage tracking for Identification barcodes since they regenerate each time
+    # But still log transactions for audit purposes
+    if barcode.barcode_type != BARCODE_IDENTIFICATION:
+        # Try to update existing record first
+        updated = BarcodeUsage.objects.filter(barcode=barcode).update(
+            total_usage=F("total_usage") + 1,
             last_used=now
+        )
+
+        # If no rows were updated, create a new record
+        if not updated:
+            BarcodeUsage.objects.create(
+                barcode=barcode,
+                total_usage=1,
+                last_used=now
+            )
+
+    if request_user is not None:
+        TransactionService.create_transaction(
+            user=request_user,
+            barcode=barcode,
+            time_created=now,
+            save=True,
         )
 
 
@@ -105,7 +122,7 @@ def generate_barcode(user) -> dict:
 
     # Unknown or missing group
     if not (is_user or is_school):
-        result.update(status="error", message="Invalid user group.")
+        result.update(status="error", message="Permission Denied.")
         return result
 
     # --------------------------------------------------------------
@@ -146,6 +163,18 @@ def generate_barcode(user) -> dict:
             result.update(status="error", message="No barcode selected.")
             return result
 
+        # Permission check:
+        # - Users can always use their own barcodes
+        # - For barcodes owned by others:
+        #   * Only DynamicBarcode is eligible, and only if share_with_others=True
+        if selected.user != user:
+            if selected.barcode_type != BARCODE_DYNAMIC:
+                result.update(status="error", message="Permission Denied.")
+                return result
+            if not getattr(selected, "share_with_others", False):
+                result.update(status="error", message="Permission Denied.")
+                return result
+
         # Handle by barcode type
         if selected.barcode_type == BARCODE_IDENTIFICATION:
             # Create fresh identification barcode
@@ -153,8 +182,14 @@ def generate_barcode(user) -> dict:
             settings.barcode = new_bc
             settings.save(update_fields=["barcode"])
 
+            # Check usage limits for the new barcode
+            allowed, limit_error = UsageLimitService.check_all_limits(new_bc)
+            if not allowed:
+                result.update(status="error", message=limit_error)
+                return result
+
             # Track usage for identification barcodes
-            _touch_barcode_usage(new_bc)
+            _touch_barcode_usage(new_bc, request_user=user)
 
             result.update(
                 status="success",
@@ -165,8 +200,14 @@ def generate_barcode(user) -> dict:
             return result
 
         if selected.barcode_type == BARCODE_DYNAMIC:
+            # Check usage limits before generating
+            allowed, limit_error = UsageLimitService.check_all_limits(selected)
+            if not allowed:
+                result.update(status="error", message=limit_error)
+                return result
+
             # Update usage stats
-            _touch_barcode_usage(selected)
+            _touch_barcode_usage(selected, request_user=user)
 
             # Optional server verification
             server_note = ""
@@ -186,8 +227,14 @@ def generate_barcode(user) -> dict:
             return result
 
         if selected.barcode_type == BARCODE_OTHERS:
+            # Check usage limits before generating
+            allowed, limit_error = UsageLimitService.check_all_limits(selected)
+            if not allowed:
+                result.update(status="error", message=limit_error)
+                return result
+
             # Track usage for other barcode types
-            _touch_barcode_usage(selected)
+            _touch_barcode_usage(selected, request_user=user)
 
             result.update(
                 status="success",

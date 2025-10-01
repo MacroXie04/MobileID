@@ -752,6 +752,15 @@ onMounted(() => {
   max-width: 600px;
 }
 
+/* Card styling aligned to Material 3 */
+.md-card {
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large);
+  box-shadow: var(--md-elevation-2);
+  padding: var(--md-sys-spacing-8);
+}
+
 /* Section Title styling */
 .section-title {
   color: var(--md-sys-color-on-surface);

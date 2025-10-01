@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # Django REST framework
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "rest_framework.authtoken",
     "corsheaders",
     # modules
@@ -142,6 +143,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/day",
@@ -158,10 +160,11 @@ REST_FRAMEWORK = {
 TESTING = os.getenv("TESTING", "False").lower() == "true"
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1 if TESTING else 3650),  # 1 day for tests, 10 years for production
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1 if TESTING else 3650),  # 1 day for tests, 10 years for production
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
+    # Tests: keep tokens long to avoid flakiness; Prod: short-lived access, moderate refresh
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1) if TESTING else timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1) if TESTING else timedelta(days=14),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
 }
@@ -287,7 +290,18 @@ else:
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    # Password validation disabled - no restrictions on password complexity
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 10}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+# Prefer Argon2; keep PBKDF2 variants as fallback for compatibility
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
 ]
 
 # Internationalization

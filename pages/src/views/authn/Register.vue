@@ -767,6 +767,8 @@ watch(showCropper, (newVal) => {
   -webkit-backdrop-filter: blur(10px);
   background-color: var(--md-sys-color-surface-container-low);
   border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large);
+  box-shadow: var(--md-elevation-2);
 }
 
 /* Logo Container - secondary color for registration */

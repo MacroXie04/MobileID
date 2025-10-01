@@ -13,6 +13,12 @@ class BarcodeUsage(models.Model):
     # total usage count
     total_usage = models.PositiveIntegerField(default=0)
 
+    # total usage limit
+    total_usage_limit = models.PositiveIntegerField(default=0)
+
+    # daily usage limit (0 means no limit)
+    daily_usage_limit = models.PositiveIntegerField(default=0)
+
     # last used timestamp
     last_used = models.DateTimeField(auto_now=True)
 
@@ -32,6 +38,9 @@ class Barcode(models.Model):
     barcode_uuid = models.UUIDField(
         default=uuid.uuid4, editable=False, unique=True, null=True
     )
+
+    # share with others option
+    share_with_others = models.BooleanField(default=False)
 
     # barcode type (will be set up automatically)
     BARCODE_TYPE_CHOICES = [
@@ -98,3 +107,12 @@ class UserBarcodeSettings(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Barcode Settings"
+
+
+class Transaction(models.Model):
+    # foreign key to user
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # usage detail
+    barcode_used = models.ForeignKey(Barcode, default=None, on_delete=models.SET_NULL, null=True)
+    time_created = models.DateTimeField(auto_now_add=True, null=True, verbose_name="time used")
