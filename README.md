@@ -180,12 +180,13 @@ The application uses environment variables for configuration. Key variables incl
 By default, the application uses SQLite for development. For production, configure PostgreSQL or MySQL via environment variables:
 
 ```env
-DB_ENGINE=django.db.backends.postgresql
-DB_NAME=mobileid
-DB_USER=your_username
-DB_PASSWORD=your_password
-DB_HOST=localhost
-DB_PORT=5432
+# Database configuration
+DB_ENGINE=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+DB_HOST=
+DB_PORT=
 ```
 
 ## API Endpoints
@@ -260,7 +261,3 @@ python manage.py collectstatic
 ## License
 
 This project is proprietary software. All rights reserved.
-
-## Support
-
-For technical support and questions, please contact the development team or open an issue in the project repository.
