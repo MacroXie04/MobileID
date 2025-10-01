@@ -128,9 +128,8 @@ class TransactionService:
             t = Transaction(
                 user=user,
                 barcode_used=barcode,
+                time_created=when,
             )
-            # allow overriding auto_now_add
-            t.time_created = when  # type: ignore[attr-defined]
             to_create.append(t)
 
         created = Transaction.objects.bulk_create(to_create, batch_size=batch_size)
