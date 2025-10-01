@@ -67,6 +67,11 @@ class TransactionService:
             raise ValueError("Provide `barcode`.")
         if not isinstance(barcode, Barcode):
             raise ValueError("`barcode` must be a Barcode instance.")
+        # Ownership validation: ensure the barcode belongs to the user
+        if hasattr(barcode, "owner") and barcode.owner != user:
+            raise PermissionError("User does not own the provided barcode.")
+        if hasattr(barcode, "user") and barcode.user != user:
+            raise PermissionError("User does not own the provided barcode.")
 
         instance = Transaction(
             user=user,
