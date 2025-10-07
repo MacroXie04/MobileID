@@ -1,4 +1,4 @@
-import { apiRequest, ApiError } from './client';
+import {ApiError, apiRequest} from './client';
 
 export async function login(username, password) {
     // NOTE: This is a change from the original behavior.
@@ -9,7 +9,7 @@ export async function login(username, password) {
     // This creates a more consistent and robust error handling pattern.
     return apiRequest('/authn/token/', {
         method: 'POST',
-        body: { username, password },
+        body: {username, password},
     });
 }
 
@@ -30,7 +30,7 @@ export async function userInfo() {
 export async function logout() {
     try {
         // The original implementation ignored errors. We'll log a warning.
-        await apiRequest('/authn/logout/', { method: 'POST' });
+        await apiRequest('/authn/logout/', {method: 'POST'});
     } catch (error) {
         console.warn('Logout request failed:', error);
     }
@@ -64,7 +64,7 @@ export async function passkeyRegisterVerify(credential) {
 export async function passkeyAuthOptions(username) {
     return apiRequest('/authn/passkeys/auth/options/', {
         method: 'POST',
-        body: { username },
+        body: {username},
     });
 }
 
@@ -88,7 +88,7 @@ export async function register(userData) {
         if (error instanceof ApiError && (errorMessage.includes('token_not_valid') || errorMessage.includes('token is expired'))) {
             await logout();
             // Retry registration. A second failure will now correctly bubble up.
-            return apiRequest('/authn/register/', { method: 'POST', body: userData });
+            return apiRequest('/authn/register/', {method: 'POST', body: userData});
         }
         throw error;
     }

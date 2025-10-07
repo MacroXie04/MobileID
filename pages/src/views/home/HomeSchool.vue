@@ -1,28 +1,28 @@
 <template>
   <div class="home-school-container">
     <!-- Header Component -->
-    <Header />
+    <Header/>
 
     <!-- User Profile Component -->
-    <UserProfile 
-      :profile="profile" 
-      :avatar-src="avatarSrc"
-      :loading="loading || userInfoLoading"
-      :is-refreshing-token="isRefreshingToken"
-      @generate="handleGenerate"
+    <UserProfile
+        :profile="profile"
+        :avatar-src="avatarSrc"
+        :loading="loading || userInfoLoading"
+        :is-refreshing-token="isRefreshingToken"
+        @generate="handleGenerate"
     />
 
     <!-- Barcode Display Component -->
-    <BarcodeDisplay ref="barcodeDisplayRef" />
+    <BarcodeDisplay ref="barcodeDisplayRef"/>
 
     <!-- Grid Menu Component -->
-    <GridMenu :server-status="serverStatus" />
+    <GridMenu :server-status="serverStatus"/>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import {ref, nextTick, onMounted, watch} from "vue";
+import {useRouter} from "vue-router";
 
 // CSS Imports
 import "@/assets/css/HomeSchool.css";
@@ -36,10 +36,10 @@ import BarcodeDisplay from "@/components/school/BarcodeDisplay.vue";
 import GridMenu from "@/components/school/GridMenu.vue";
 
 // Composables
-import { useUserInfo } from "@/composables/useUserInfo";
-import { useToken } from "@/composables/useToken";
-import { useApi } from "@/composables/useApi";
-import { usePdf417 } from "@/composables/usePdf417";
+import {useUserInfo} from "@/composables/useUserInfo";
+import {useToken} from "@/composables/useToken";
+import {useApi} from "@/composables/useApi";
+import {usePdf417} from "@/composables/usePdf417";
 
 /* ── reactive state ─────────────────────────────────────────────────────── */
 const router = useRouter();
@@ -48,10 +48,10 @@ const serverStatus = ref("Emergency");
 const barcodeDisplayRef = ref(null);
 
 // Use composables
-const { profile, avatarSrc: defaultAvatarSrc, loadAvatar } = useUserInfo();
-const { isRefreshingToken } = useToken();
-const { apiGenerateBarcode, apiGetActiveProfile } = useApi();
-const { drawPdf417 } = usePdf417();
+const {profile, avatarSrc: defaultAvatarSrc, loadAvatar} = useUserInfo();
+const {isRefreshingToken} = useToken();
+const {apiGenerateBarcode, apiGetActiveProfile} = useApi();
+const {drawPdf417} = usePdf417();
 
 // Create a new ref for avatarSrc that can be overridden
 const avatarSrc = ref(defaultAvatarSrc.value);
@@ -68,32 +68,32 @@ onMounted(async () => {
   if (data && data.profile) {
     profile.value = data.profile;
   }
-  
+
   // Load user avatar
   loadAvatar();
-  
+
   // Check for active profile (for School users with barcode profile association)
   try {
     console.log('HomeSchool: Fetching active profile...');
     const response = await apiGetActiveProfile();
     console.log('HomeSchool: Active profile response:', response);
-    
+
     if (response && response.profile_info) {
       console.log('HomeSchool: Profile info found:', response.profile_info);
       console.log('HomeSchool: Current profile before update:', profile.value);
-      
+
       // Override with barcode profile info
       profile.value = {
         name: response.profile_info.name,
         information_id: response.profile_info.information_id
       };
-      
+
       // Update avatar if provided
       if (response.profile_info.avatar_data) {
         console.log('HomeSchool: Updating avatar with profile data');
         avatarSrc.value = response.profile_info.avatar_data;
       }
-      
+
       console.log('HomeSchool: Profile updated to:', profile.value);
       console.log('HomeSchool: Avatar updated to:', avatarSrc.value?.substring(0, 50) + '...');
     } else {
@@ -110,7 +110,7 @@ async function handleGenerate() {
   serverStatus.value = "Processing";
 
   try {
-    const { status, barcode, message, profile_info } = await apiGenerateBarcode();
+    const {status, barcode, message, profile_info} = await apiGenerateBarcode();
     serverStatus.value = message || "Success";
 
     if (status === "success" && barcode) {
@@ -132,7 +132,7 @@ async function handleGenerate() {
       }
       // First generate the barcode
       await nextTick();
-      
+
       // Get canvas from BarcodeDisplay component
       const canvas = barcodeDisplayRef.value?.barcodeCanvas;
       if (canvas) {
@@ -141,7 +141,7 @@ async function handleGenerate() {
 
       // Check if elements are already visible (matching original logic)
       const isFaded = window.$('#show-info-button').css('display') === 'none';
-      
+
       if (isFaded) {
         setTimeout(() => {
           window.$('#show-info-button').fadeIn();

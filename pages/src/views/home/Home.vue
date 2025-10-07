@@ -1,6 +1,7 @@
 <!-- src/views/Home.vue -->
 <template>
-  <div v-if="loading" class="md-loading-container md-flex md-flex-column md-items-center md-justify-center md-theme-dark">
+  <div v-if="loading"
+       class="md-loading-container md-flex md-flex-column md-items-center md-justify-center md-theme-dark">
     <md-circular-progress indeterminate></md-circular-progress>
     <p class="md-typescale-body-large md-mt-4">Loading...</p>
   </div>
@@ -16,8 +17,10 @@
         </div>
       </div>
       <h2 class="md-typescale-headline-medium md-mb-2">{{ window.apiError ? 'Connection Error' : 'Access Denied' }}</h2>
-      <p class="md-typescale-body-large md-mb-6">{{ window.apiError || 'Unknown user group. Please contact your administrator.' }}</p>
-      <div v-if="window.apiError" class="error-details md-card md-card-filled md-rounded-lg md-p-4 md-mb-6 md-text-left">
+      <p class="md-typescale-body-large md-mb-6">
+        {{ window.apiError || 'Unknown user group. Please contact your administrator.' }}</p>
+      <div v-if="window.apiError"
+           class="error-details md-card md-card-filled md-rounded-lg md-p-4 md-mb-6 md-text-left">
         <p class="md-typescale-body-medium md-mb-3">Unable to connect to the server. Please check:</p>
         <ul class="error-list md-m-0 md-p-0">
           <li class="md-typescale-body-medium">Your internet connection is active</li>
@@ -33,7 +36,7 @@
           <li class="md-typescale-body-medium">Request assignment to either "User" or "School" group</li>
         </ul>
       </div>
-      <md-filled-button @click="retryConnection" class="retry-button">
+      <md-filled-button class="retry-button" @click="retryConnection">
         <md-icon slot="icon">refresh</md-icon>
         Retry Connection
       </md-filled-button>
@@ -61,7 +64,7 @@ onMounted(() => {
     return;
   }
 
-  
+
   // If data exists, set groups
   if (data) {
     groups.value = data.groups || [];

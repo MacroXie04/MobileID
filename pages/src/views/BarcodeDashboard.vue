@@ -15,7 +15,8 @@
 
     <!-- Flash Messages -->
     <transition name="slide-down">
-      <div v-if="message" :class="['message-toast', 'md-banner', messageType === 'success' ? 'md-banner-success' : 'md-banner-error']">
+      <div v-if="message"
+           :class="['message-toast', 'md-banner', messageType === 'success' ? 'md-banner-success' : 'md-banner-error']">
         <md-icon>{{ messageType === 'success' ? 'check_circle' : 'error' }}</md-icon>
         <span class="md-typescale-body-medium">{{ message }}</span>
         <md-icon-button @click="message = ''">
@@ -39,200 +40,52 @@
         </md-filter-chip>
       </div>
 
-      <!-- Transfer moved into AddBarcodeCard -->
-      
+      <!-- Barcode Settings -->
       <SettingsCard
-        v-if="activeTab === 'Overview'"
-        :is-saving="isSaving"
-        :current-barcode-info="currentBarcodeInfo"
-        :selected-barcode="selectedBarcode"
-        :barcode-choices="barcodeChoices"
-        :settings="settings"
-        :is-user-group="isUserGroup"
-        :is-dynamic-selected="isDynamicSelected"
-        :current-barcode-has-profile="currentBarcodeHasProfile"
-        :errors="errors"
-        :associate-user-profile-with-barcode="Boolean(settings.associate_user_profile_with_barcode)"
-        :server-verification="Boolean(settings.server_verification)"
-        :format-relative-time="formatRelativeTime"
-        :format-date="formatDate"
-        @update-associate="(val) => { settings.associate_user_profile_with_barcode = val; onSettingChange(); }"
-        @update-server="(val) => { settings.server_verification = val; onSettingChange(); }"
+          v-if="activeTab === 'Overview'"
+          :is-saving="isSaving"
+          :current-barcode-info="currentBarcodeInfo"
+          :selected-barcode="selectedBarcode"
+          :barcode-choices="barcodeChoices"
+          :settings="settings"
+          :is-user-group="isUserGroup"
+          :is-dynamic-selected="isDynamicSelected"
+          :current-barcode-has-profile="currentBarcodeHasProfile"
+          :errors="errors"
+          :associate-user-profile-with-barcode="Boolean(settings.associate_user_profile_with_barcode)"
+          :server-verification="Boolean(settings.server_verification)"
+          :format-relative-time="formatRelativeTime"
+          :format-date="formatDate"
+          @update-associate="(val) => { settings.associate_user_profile_with_barcode = val; onSettingChange(); }"
+          @update-server="(val) => { settings.server_verification = val; onSettingChange(); }"
       />
-      
-      <!-- Settings Card -->
-      <section v-if="activeTab === 'Overview'" class="settings-card md-card md-mb-6">
-        <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
-          <div class="header-icon-wrapper">
-            <md-icon>tune</md-icon>
-          </div>
-          <h2 class="md-typescale-headline-small md-m-0">Barcode Settings</h2>
-          <transition name="fade">
-            <div v-if="isSaving" class="save-indicator md-flex md-items-center md-gap-2 md-ml-auto">
-              <md-circular-progress indeterminate></md-circular-progress>
-              <span class="md-typescale-body-small">Saving...</span>
-            </div>
-          </transition>
-        </div>
-
-        <div class="settings-content">
-          <!-- Active Barcode Display -->
-          <transition name="scale-fade">
-            <div v-if="currentBarcodeInfo" class="active-barcode-card md-mb-6">
-              <div class="active-barcode-header">
-                <md-icon class="active-icon pulse">verified</md-icon>
-                <span class="md-typescale-label-medium">CURRENTLY ACTIVE</span>
-              </div>
-              <div class="active-barcode-info">
-                <div class="barcode-type-badge">
-                  <md-icon>
-                    {{ settings.barcode && barcodeChoices.find(c => Number(c.id) === Number(settings.barcode))?.barcode_type === 'DynamicBarcode' ? 'qr_code_2' : 
-                       settings.barcode && barcodeChoices.find(c => Number(c.id) === Number(settings.barcode))?.barcode_type === 'Identification' ? 'badge' : 'barcode' }}
-                  </md-icon>
-                </div>
-                <div class="barcode-details">
-                  <h3 class="md-typescale-title-medium md-m-0">{{ currentBarcodeInfo }}</h3>
-                  <p v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification'" class="md-typescale-body-small md-m-0 md-mt-1">
-                    {{ selectedBarcode.usage_count || 0 }} total scans
-                    <span v-if="selectedBarcode.last_used">• Last used {{ formatRelativeTime(selectedBarcode.last_used) }}</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </transition>
-
-          <!-- Usage Statistics Card (hide for Identification) -->
-          <div v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification' && selectedBarcode.usage_count > 0" class="usage-stats-card md-mb-6">
-            <div class="stats-header md-mb-4">
-              <md-icon>insights</md-icon>
-              <h3 class="md-typescale-title-small md-m-0">Usage Statistics</h3>
-            </div>
-            
-            <div class="stats-grid md-grid-cols-3 md-gap-4 md-mb-4">
-              <div class="stat-card">
-                <md-icon>trending_up</md-icon>
-                <div class="stat-value">{{ selectedBarcode.usage_count || 0 }}</div>
-                <div class="stat-label">Total Scans</div>
-              </div>
-              <div class="stat-card" v-if="selectedBarcode.usage_stats">
-                <md-icon>today</md-icon>
-                <div class="stat-value">{{ selectedBarcode.usage_stats.daily_used || 0 }}</div>
-                <div class="stat-label">Today's Scans</div>
-              </div>
-              <div class="stat-card" v-if="selectedBarcode.usage_stats && selectedBarcode.usage_stats.daily_limit > 0">
-                <md-icon>event_available</md-icon>
-                <div class="stat-value">{{ selectedBarcode.usage_stats.daily_remaining || 0 }}</div>
-                <div class="stat-label">Remaining Today</div>
-              </div>
-            </div>
-
-            <div class="recent-activity">
-              <h4 class="md-typescale-label-large md-mb-3">Recent Activity</h4>
-              <div v-if="selectedBarcode.recent_transactions && selectedBarcode.recent_transactions.length > 0" class="activity-list">
-                <div v-for="tx in selectedBarcode.recent_transactions" :key="tx.id" class="activity-item">
-                  <div class="activity-icon">
-                    <md-icon>person</md-icon>
-                  </div>
-                  <div class="activity-details">
-                    <span class="md-typescale-body-medium">{{ tx.user || 'Unknown User' }}</span>
-                    <span class="md-typescale-body-small">{{ formatDate(tx.time_created) }}</span>
-                  </div>
-                </div>
-              </div>
-              <div v-else class="empty-activity">
-                <md-icon>history_toggle_off</md-icon>
-                <span class="md-typescale-body-medium">No recent activity</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Settings available only for barcodes with profile -->
-          <div v-if="isDynamicSelected && currentBarcodeHasProfile" class="settings-grid md-flex md-flex-column md-gap-4">
-            <div class="md-typescale-title-small md-muted">Profile & Verification</div>
-            <md-list>
-              <md-list-item>
-                <md-icon slot="start">person_pin</md-icon>
-                <div slot="headline">Profile Association</div>
-                <div slot="supporting-text">Use profile data from the ID server</div>
-                <md-switch
-                  slot="end"
-                  :selected="Boolean(settings.associate_user_profile_with_barcode)"
-                  :disabled="isUserGroup"
-                  @change="(e) => { settings.associate_user_profile_with_barcode = e.target.selected; onSettingChange(); }"
-                ></md-switch>
-              </md-list-item>
-
-              <md-divider inset></md-divider>
-
-              <md-list-item>
-                <md-icon slot="start">security</md-icon>
-                <div slot="headline">Server Verification</div>
-                <div slot="supporting-text">Validate on server (may take longer or fail)</div>
-                <md-switch
-                  slot="end"
-                  :selected="Boolean(settings.server_verification)"
-                  @change="(e) => { settings.server_verification = e.target.selected; onSettingChange(); }"
-                ></md-switch>
-              </md-list-item>
-            </md-list>
-          </div>
-
-          <!-- Info message when dynamic barcode is selected but has no profile -->
-          <div v-if="isDynamicSelected && !currentBarcodeHasProfile" class="info-banner md-mt-4">
-            <md-icon>info</md-icon>
-            <div class="info-content">
-              <h4 class="md-typescale-label-large md-m-0">Profile Settings Unavailable</h4>
-              <p class="md-typescale-body-medium md-m-0 md-mt-1">
-                Profile settings are only available for barcodes with attached profile data. 
-                Transfer a barcode with profile information to access these settings.
-              </p>
-            </div>
-          </div>
-          
-          <!-- Empty state when no barcode selected -->
-          <div v-if="!currentBarcodeInfo" class="empty-settings">
-            <md-icon>qr_code_scanner</md-icon>
-            <h3 class="md-typescale-headline-small">No Barcode Selected</h3>
-            <p class="md-typescale-body-medium">Select a barcode from the list below to view settings and statistics</p>
-          </div>
-
-          <div v-if="Object.keys(errors).length > 0" class="md-banner md-banner-error md-mt-4">
-            <md-icon>error</md-icon>
-            <div class="error-messages">
-              <p v-for="(error, field) in errors" :key="field" class="md-typescale-body-medium md-m-0">
-                {{ error }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- Barcodes List -->
       <BarcodesListCard
-        :active-tab="activeTab"
-        :settings="settings"
-        :filtered-barcodes="filteredBarcodes"
-        :has-active-filters="hasActiveFilters"
-        :filter-type="filterType"
-        :owned-only="ownedOnly"
-        :updating-limit="updatingLimit"
-        @update-filter="(val) => { filterType = val; onFilterChange(); }"
-        @toggle-owned="() => { ownedOnly = !ownedOnly; onFilterChange(); }"
-        @set-active="setActiveBarcode"
-        @toggle-share="toggleShare"
-        @delete="deleteBarcode"
-        @update-limit="updateDailyLimit"
-        @increment-limit="incrementDailyLimit"
-        @decrement-limit="decrementDailyLimit"
-        @toggle-unlimited-switch="toggleUnlimitedSwitch"
-        @apply-limit-preset="applyLimitPreset"
+          :active-tab="activeTab"
+          :settings="settings"
+          :filtered-barcodes="filteredBarcodes"
+          :has-active-filters="hasActiveFilters"
+          :filter-type="filterType"
+          :owned-only="ownedOnly"
+          :updating-limit="updatingLimit"
+          @update-filter="(val) => { filterType = val; onFilterChange(); }"
+          @toggle-owned="() => { ownedOnly = !ownedOnly; onFilterChange(); }"
+          @set-active="setActiveBarcode"
+          @toggle-share="toggleShare"
+          @delete="deleteBarcode"
+          @update-limit="updateDailyLimit"
+          @increment-limit="incrementDailyLimit"
+          @decrement-limit="decrementDailyLimit"
+          @toggle-unlimited-switch="toggleUnlimitedSwitch"
+          @apply-limit-preset="applyLimitPreset"
       />
 
       <!-- Add Barcode Section -->
       <AddBarcodeCard
-        :active-tab="activeTab"
-        @added="loadDashboard"
-        @message="showMessage"
+          :active-tab="activeTab"
+          @added="loadDashboard"
+          @message="showMessage"
       />
       <!-- Floating Action Button to Add -->
       <md-fab style="position: fixed; right: 24px; bottom: 24px; z-index: 10;" @click="goToAddTab">
@@ -258,7 +111,7 @@
 </template>
 
 <script setup>
-import {nextTick, onMounted, onUnmounted, ref, watch, computed} from 'vue';
+import {computed, nextTick, onMounted, onUnmounted, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {useApi} from '@/composables/useApi';
 import SettingsCard from '@/components/dashboard/SettingsCard.vue';
@@ -386,7 +239,7 @@ async function checkActiveProfile() {
     console.log('Dashboard: Checking active profile...');
     const response = await apiGetActiveProfile();
     console.log('Dashboard: Active profile response:', response);
-    
+
     if (response && response.profile_info) {
       console.log('Dashboard: Active profile found, updating page title and info');
       // Show a brief notification about active profile association
@@ -472,7 +325,11 @@ const sortBy = ref('Newest'); // Newest | Oldest | MostUsed
 const ownedOnly = ref(false);
 
 function normalize(str) {
-  try { return String(str || '').toLowerCase(); } catch { return ''; }
+  try {
+    return String(str || '').toLowerCase();
+  } catch {
+    return '';
+  }
 }
 
 const filteredBarcodes = computed(() => {
@@ -584,7 +441,7 @@ async function toggleShare(barcode) {
       // Update local list entry optimistically with server echo
       const idx = barcodes.value.findIndex(b => Number(b.id) === Number(barcode.id));
       if (idx !== -1) {
-        barcodes.value[idx] = { ...barcodes.value[idx], share_with_others: res.barcode.share_with_others };
+        barcodes.value[idx] = {...barcodes.value[idx], share_with_others: res.barcode.share_with_others};
       }
       showMessage(next ? 'Sharing enabled' : 'Sharing disabled', 'success');
     }
@@ -595,14 +452,15 @@ async function toggleShare(barcode) {
 
 // Update daily usage limit with debounce
 let dailyLimitTimeout = null;
+
 async function updateDailyLimit(barcode, value) {
   if (!barcode || !barcode.is_owned_by_current_user) return;
-  
+
   // Clear previous timeout
   if (dailyLimitTimeout) {
     clearTimeout(dailyLimitTimeout);
   }
-  
+
   // Debounce for 1 second
   dailyLimitTimeout = setTimeout(async () => {
     try {
@@ -611,17 +469,17 @@ async function updateDailyLimit(barcode, value) {
         showMessage('Daily limit must be 0 or greater', 'danger');
         return;
       }
-      
-      updatingLimit.value = { ...updatingLimit.value, [barcode.id]: true };
+
+      updatingLimit.value = {...updatingLimit.value, [barcode.id]: true};
       const res = await apiUpdateBarcodeDailyLimit(barcode.id, limit);
       if (res?.status === 'success' && res?.barcode) {
         // Update local barcode data
         const idx = barcodes.value.findIndex(b => Number(b.id) === Number(barcode.id));
         if (idx !== -1) {
-          barcodes.value[idx] = { 
-            ...barcodes.value[idx], 
+          barcodes.value[idx] = {
+            ...barcodes.value[idx],
             daily_usage_limit: res.barcode.daily_usage_limit,
-            usage_stats: res.barcode.usage_stats 
+            usage_stats: res.barcode.usage_stats
           };
         }
         showMessage(`Daily limit set to ${limit === 0 ? 'unlimited' : limit}`, 'success');
@@ -629,7 +487,7 @@ async function updateDailyLimit(barcode, value) {
     } catch (e) {
       showMessage('Failed to update daily limit: ' + (e?.message || 'Unknown error'), 'danger');
     } finally {
-      updatingLimit.value = { ...updatingLimit.value, [barcode.id]: false };
+      updatingLimit.value = {...updatingLimit.value, [barcode.id]: false};
     }
   }, 1000);
 }
@@ -688,12 +546,12 @@ function formatRelativeTime(dateStr) {
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
-  
+
   if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
   if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
   if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-  
+
   return date.toLocaleDateString();
 }
 
@@ -815,7 +673,7 @@ async function ensureCameraPermission() {
       scannerStatus.value = 'Camera is not supported in this browser.';
       return false;
     }
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}});
     // Immediately stop tracks; we only needed to trigger permission
     stream.getTracks().forEach(t => t.stop());
     hasCameraPermission.value = true;
@@ -893,14 +751,14 @@ function getBarcodeTypeLabel(type) {
 
 function getProfileLabel(barcode) {
   if (!barcode.profile_info) return 'Profile';
-  
-  const { name, information_id, has_avatar } = barcode.profile_info;
-  
+
+  const {name, information_id, has_avatar} = barcode.profile_info;
+
   // Show name if available and not too long
   if (name && name.length <= 15) {
     return name;
   }
-  
+
   // Show information ID if available and name is too long or not available
   if (information_id) {
     // Show last 4 digits if it's a long ID number
@@ -910,21 +768,21 @@ function getProfileLabel(barcode) {
     // Show full ID if it's short or contains letters
     return `ID: ${information_id}`;
   }
-  
+
   // Fallback to generic label with avatar indicator
   return has_avatar ? 'Profile+' : 'Profile';
 }
 
 function getProfileTooltip(barcode) {
   if (!barcode.profile_info) return 'Profile attached';
-  
-  const { name, information_id, has_avatar } = barcode.profile_info;
+
+  const {name, information_id, has_avatar} = barcode.profile_info;
   const parts = [];
-  
+
   if (name) parts.push(`Name: ${name}`);
   if (information_id) parts.push(`ID: ${information_id}`);
   if (has_avatar) parts.push('Has avatar image');
-  
+
   return parts.length ? parts.join('\n') : 'Profile attached';
 }
 
@@ -933,12 +791,12 @@ const currentBarcodeInfo = computed(() => {
   if (!settings.value.barcode) return null;
   const current = barcodeChoices.value.find(c => Number(c.id) === Number(settings.value.barcode));
   if (!current) return null;
-  
+
   // Check if it's an Identification barcode
   if (current.barcode_type === 'Identification') {
     return `${current.barcode_type}`;
   }
-  
+
   // For other barcode types, show last 4 digits
   return `${current.barcode_type} ending with ...${current.barcode.slice(-4)}`;
 });
