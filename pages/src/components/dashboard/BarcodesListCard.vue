@@ -1,6 +1,5 @@
-<!-- moved from composables/barcodedashboard/BarcodesListCard.vue -->
 <template>
-  <section v-if="activeTab === 'Barcodes'" class="md-card md-mb-6">
+  <section class="md-card md-mb-6">
     <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
       <md-icon>inventory_2</md-icon>
       <h2 class="md-typescale-headline-small md-m-0">Available Barcodes</h2>
@@ -52,7 +51,7 @@
           </div>
           <p class="barcode-id md-typescale-body-medium md-mt-2 md-mb-0">
             {{ getBarcodeDisplayId(barcode) }}
-            <span v-if="!barcode.is_owned_by_current_user && !barcode.owner" class="owner-label">by {{ barcode.owner }}</span>
+            <span v-if="!barcode.is_owned_by_current_user && barcode.owner" class="owner-label">by {{ barcode.owner }}</span>
           </p>
           <div v-if="barcode.barcode_type !== 'Identification' && barcode.usage_count > 0" class="barcode-stats md-flex md-gap-4 md-flex-wrap md-mt-3">
             <span class="stat md-flex md-items-center md-gap-1"><md-icon aria-hidden="true">trending_up</md-icon>{{ barcode.usage_count }} scan{{ barcode.usage_count !== 1 ? 's' : '' }}</span>
@@ -157,6 +156,19 @@ function getProfileTooltip(barcode) {
   if (information_id) parts.push(`ID: ${information_id}`);
   if (has_avatar) parts.push('Has avatar image');
   return parts.length ? parts.join('\n') : 'Profile attached';
+}
+
+function getBarcodeDisplayId(barcode) {
+  switch (barcode.barcode_type) {
+    case 'DynamicBarcode':
+      return `Dynamic •••• ${barcode.barcode.slice(-4)}`;
+    case 'Others':
+      return `Barcode ending with ${barcode.barcode.slice(-4)}`;
+    case 'Identification':
+      return 'Identification Barcode';
+    default:
+      return `•••• ${barcode.barcode.slice(-4)}`;
+  }
 }
 
 function formatRelativeTime(dateStr) {

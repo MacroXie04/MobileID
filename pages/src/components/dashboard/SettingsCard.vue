@@ -1,4 +1,3 @@
-<!-- moved from composables/barcodedashboard/SettingsCard.vue -->
 <template>
   <section class="settings-card md-card md-mb-6">
     <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
@@ -16,7 +15,9 @@
 
     <div class="settings-content">
       <transition name="scale-fade">
-        <div v-if="currentBarcodeInfo" class="active-barcode-card md-mb-6">
+
+        <!--current settings barcode display-->
+        <div v-if="currentBarcodeInfo" class="settings-section md-mb-6">
           <div class="active-barcode-header">
             <md-icon class="active-icon pulse">verified</md-icon>
             <span class="md-typescale-label-medium">CURRENTLY ACTIVE</span>
@@ -38,7 +39,8 @@
         </div>
       </transition>
 
-      <div v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification' && selectedBarcode.usage_count > 0" class="usage-stats-card md-mb-6">
+      <!--barcode usage statistics-->
+      <div v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification' && selectedBarcode.usage_count > 0" class="settings-section md-mb-6">
         <div class="stats-header md-mb-4">
           <md-icon>insights</md-icon>
           <h3 class="md-typescale-title-small md-m-0">Usage Statistics</h3>
@@ -82,7 +84,8 @@
         </div>
       </div>
 
-      <div v-if="isDynamicSelected && currentBarcodeHasProfile" class="settings-grid md-flex md-flex-column md-gap-4">
+      <!--dynamic barcode settings-->
+      <div v-if="isDynamicSelected && currentBarcodeHasProfile" class="settings-section md-mb-6">
         <div class="md-typescale-title-small md-muted">Profile & Verification</div>
         <md-list>
           <md-list-item>
@@ -117,7 +120,7 @@
         <div class="info-content">
           <h4 class="md-typescale-label-large md-m-0">Profile Settings Unavailable</h4>
           <p class="md-typescale-body-medium md-m-0 md-mt-1">
-            Profile settings are only available for barcodes with attached profile data. 
+            Profile settings are only available for barcodes with attached profile data.
             Transfer a barcode with profile information to access these settings.
           </p>
         </div>
@@ -168,4 +171,10 @@ const activeIcon = computed(() => {
 });
 </script>
 
-
+<style scoped>
+.settings-section {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+</style>

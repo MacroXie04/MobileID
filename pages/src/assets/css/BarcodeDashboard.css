@@ -16,6 +16,11 @@
     transform: translateX(-50%);
     z-index: 1000;
     max-width: 600px;
+    pointer-events: none; /* allow clicks to pass through to tabs/content */
+}
+
+.message-toast md-icon-button {
+    pointer-events: auto; /* keep close button clickable */
 }
 
 /* Info banner styling */
@@ -118,7 +123,7 @@
 }
 
 /* Active Barcode Card */
-.active-barcode-card {
+.settings-card {
     background: var(--md-sys-color-surface-container);
     border-radius: var(--md-sys-shape-corner-large);
     padding: var(--md-sys-spacing-5);
@@ -171,12 +176,6 @@
     color: var(--md-sys-color-on-surface-variant);
 }
 
-/* Usage Statistics Card */
-.usage-stats-card {
-    background: var(--md-sys-color-surface-container-low);
-    border-radius: var(--md-sys-shape-corner-large);
-    padding: var(--md-sys-spacing-5);
-}
 
 .stats-header {
     display: flex;
@@ -367,6 +366,14 @@
     display: none;
     width: 0;
     height: 0;
+}
+
+/* Make chip wrapper catch the click anywhere */
+.chip-wrapper {
+    display: inline-flex;
+}
+.chip-wrapper md-filter-chip {
+    pointer-events: none;
 }
 
 /* Barcode Items */

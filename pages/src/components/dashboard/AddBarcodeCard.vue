@@ -1,6 +1,5 @@
-<!-- moved from composables/barcodedashboard/AddBarcodeCard.vue -->
 <template>
-  <section v-if="activeTab === 'Add'" ref="addSectionLocal" class="md-card">
+  <section ref="addSectionLocal" class="md-card">
     <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
       <md-icon>add_circle</md-icon>
       <h2 class="md-typescale-headline-small md-m-0">Add New Barcode</h2>
