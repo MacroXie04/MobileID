@@ -152,6 +152,26 @@ export function useApi() {
         });
     }
 
+    async function apiUpdateBarcodeShare(barcodeId, share) {
+        return await apiCallWithAutoRefresh(`${baseURL}/barcode_dashboard/`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                barcode_id: barcodeId,
+                share_with_others: !!share
+            })
+        });
+    }
+
+    async function apiUpdateBarcodeDailyLimit(barcodeId, dailyLimit) {
+        return await apiCallWithAutoRefresh(`${baseURL}/barcode_dashboard/`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                barcode_id: barcodeId,
+                daily_usage_limit: dailyLimit
+            })
+        });
+    }
+
     /**
      * Transfer CatCard API call
      */
@@ -174,6 +194,8 @@ export function useApi() {
         apiUpdateBarcodeSettings,
         apiCreateBarcode,
         apiDeleteBarcode,
-        apiTransferCatCard
+        apiTransferCatCard,
+        apiUpdateBarcodeShare,
+        apiUpdateBarcodeDailyLimit
     };
 } 

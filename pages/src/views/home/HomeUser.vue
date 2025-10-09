@@ -19,9 +19,9 @@
         <!-- User Profile Card -->
         <section class="md-card profile-overview-card">
           <UserProfile
-            :avatar-src="avatarSrc"
-            :profile="profile"
-            class="user-profile-component"
+              :avatar-src="avatarSrc"
+              :profile="profile"
+              class="user-profile-component"
           />
         </section>
 
@@ -32,8 +32,8 @@
             <h2 class="md-typescale-headline-small md-m-0">Digital ID Barcode</h2>
           </div>
           <BarcodeDisplay
-            ref="barcodeDisplayRef"
-            @generate="handleGenerate"
+              ref="barcodeDisplayRef"
+              @generate="handleGenerate"
           />
         </section>
 
@@ -44,8 +44,8 @@
             <h2 class="md-typescale-headline-small md-m-0">Quick Actions</h2>
           </div>
           <UserMenu
-            class="user-menu-component"
-            @logout="handleLogout"
+              class="user-menu-component"
+              @logout="handleLogout"
           />
         </section>
       </div>
@@ -167,7 +167,7 @@ async function handleLogout() {
   .home-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .profile-overview-card {
     grid-column: 1 / -1;
   }
@@ -178,7 +178,7 @@ async function handleLogout() {
   .home-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .profile-overview-card {
     grid-column: auto;
   }

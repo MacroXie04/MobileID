@@ -338,9 +338,15 @@ class SecurityTest(TestCase):
         self.assertIn('SESSION_COOKIE_AGE', dir(settings))
         self.assertIn('SESSION_EXPIRE_AT_BROWSER_CLOSE', dir(settings))
 
-    def test_password_validation_disabled(self):
-        """Test that password validation is disabled as intended"""
-        self.assertEqual(len(settings.AUTH_PASSWORD_VALIDATORS), 0)
+    def test_password_validation_configured(self):
+        """Test that password validation is configured appropriately"""
+        # Expect validators to be configured (not disabled)
+        self.assertGreaterEqual(len(settings.AUTH_PASSWORD_VALIDATORS), 1)
+        # Ensure MinimumLengthValidator is present (min_length configured in settings)
+        has_min_length = any(
+            v.get('NAME', '').endswith('MinimumLengthValidator') for v in settings.AUTH_PASSWORD_VALIDATORS
+        )
+        self.assertTrue(has_min_length)
 
 
 class CacheConfigurationTest(TestCase):
