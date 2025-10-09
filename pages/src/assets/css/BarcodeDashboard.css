@@ -83,10 +83,6 @@
     transition: all 0.2s ease;
 }
 
-.action-card:hover {
-    transform: translateY(-2px);
-}
-
 .action-icon {
     font-size: 48px;
 }
@@ -200,10 +196,6 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.stat-card:hover {
-    background: var(--md-sys-color-surface-container);
-}
-
 .stat-card md-icon {
     color: var(--md-sys-color-primary);
     margin-bottom: var(--md-sys-spacing-2);
@@ -241,10 +233,6 @@
     border-radius: var(--md-sys-shape-corner-small);
     border: 1px solid var(--md-sys-color-outline-variant);
     transition: background 0.2s ease;
-}
-
-.activity-item:hover {
-    background: var(--md-sys-color-surface-container);
 }
 
 .activity-icon {
@@ -300,17 +288,6 @@
     overflow: hidden;
 }
 
-/* sheen overlay removed */
-
-.setting-item:hover {
-    background: var(--md-sys-color-surface-container-high);
-    border-color: var(--md-sys-color-outline-variant);
-}
-
-.setting-item.enhanced:hover::before {
-    opacity: 1;
-}
-
 .setting-header {
     flex: 1;
 }
@@ -326,9 +303,6 @@
     transition: transform 0.2s ease;
 }
 
-.setting-item:hover .setting-icon-wrapper {
-    transform: scale(1.05);
-}
 
 .setting-icon-wrapper md-icon {
     color: var(--md-sys-color-on-primary-container);
@@ -372,6 +346,7 @@
 .chip-wrapper {
     display: inline-flex;
 }
+
 .chip-wrapper md-filter-chip {
     pointer-events: none;
 }
@@ -390,14 +365,6 @@
 
 .barcode-item.is-shared {
     background: var(--md-sys-color-surface-container-low);
-}
-
-.barcode-item:hover {
-    background: var(--md-sys-color-surface-container-high);
-}
-
-.barcode-item.is-active:hover {
-    background: var(--md-sys-color-primary-container);
 }
 
 .barcode-type-icon {

@@ -1,8 +1,3 @@
-/* ========================= */
-/* MERGED STYLES FROM MOBILEID.CSS & HOMESCHOOL.CSS */
-/* ========================= */
-
-/* For iPhone displays */
 @media all and (max-width: 480px) {
     .half {
         float: left !important;
@@ -10,16 +5,9 @@
     }
 }
 
-@font-face {
-    font-family: "OpenSansReg";
-    src: url("../fonts/OpenSans-Regular.ttf") format("truetype");
-}
 
-/* ========================= */
-/* GENERAL STYLES */
-/* ========================= */
 .home-school-container {
-    background-color: #092f44; /* Original navy blue */
+    background-color: #092f44;
     font-family: "OpenSansReg", sans-serif !important;
     margin: 0;
     padding: 0;
@@ -80,11 +68,6 @@
 .home-school-container #header-img {
     border-radius: 8px;
     transition: opacity 0.5s ease-in-out;
-}
-
-.home-school-container #header-img:hover {
-    opacity: 0.9;
-    transform: scale(1.02);
 }
 
 /* ========================= */

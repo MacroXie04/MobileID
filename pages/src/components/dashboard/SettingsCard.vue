@@ -30,9 +30,12 @@
             </div>
             <div class="barcode-details">
               <h3 class="md-typescale-title-medium md-m-0">{{ currentBarcodeInfo }}</h3>
-              <p v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification'" class="md-typescale-body-small md-m-0 md-mt-1">
+              <p v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification'"
+                 class="md-typescale-body-small md-m-0 md-mt-1">
                 {{ selectedBarcode.usage_count || 0 }} total scans
-                <span v-if="selectedBarcode.last_used">• Last used {{ formatRelativeTime(selectedBarcode.last_used) }}</span>
+                <span v-if="selectedBarcode.last_used">• Last used {{
+                    formatRelativeTime(selectedBarcode.last_used)
+                  }}</span>
               </p>
             </div>
           </div>
@@ -40,7 +43,9 @@
       </transition>
 
       <!--barcode usage statistics-->
-      <div v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification' && selectedBarcode.usage_count > 0" class="settings-section md-mb-6">
+      <div
+          v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification' && selectedBarcode.usage_count > 0"
+          class="settings-section md-mb-6">
         <div class="stats-header md-mb-4">
           <md-icon>insights</md-icon>
           <h3 class="md-typescale-title-small md-m-0">Usage Statistics</h3>
@@ -66,7 +71,8 @@
 
         <div class="recent-activity">
           <h4 class="md-typescale-label-large md-mb-3">Recent Activity</h4>
-          <div v-if="selectedBarcode.recent_transactions && selectedBarcode.recent_transactions.length > 0" class="activity-list">
+          <div v-if="selectedBarcode.recent_transactions && selectedBarcode.recent_transactions.length > 0"
+               class="activity-list">
             <div v-for="tx in selectedBarcode.recent_transactions" :key="tx.id" class="activity-item">
               <div class="activity-icon">
                 <md-icon>person</md-icon>
@@ -85,8 +91,14 @@
       </div>
 
       <!--dynamic barcode settings-->
-      <div v-if="isDynamicSelected && currentBarcodeHasProfile" class="settings-section md-mb-6">
-        <div class="md-typescale-title-small md-muted">Profile & Verification</div>
+      <div
+        v-if="isDynamicSelected && currentBarcodeHasProfile"
+        class="settings-section md-mb-6"
+      >
+        <div class="active-barcode-header">
+          <md-icon class="active-icon pulse">qr_code_2</md-icon>
+          <span class="md-typescale-label-medium">Dynamic Barcode Settings</span>
+        </div>
         <md-list>
           <md-list-item>
             <md-icon slot="start">person_pin</md-icon>
@@ -142,19 +154,19 @@
 import {computed} from 'vue';
 
 const props = defineProps({
-  isSaving: { type: Boolean, default: false },
-  currentBarcodeInfo: { type: String, default: '' },
-  selectedBarcode: { type: Object, default: null },
-  barcodeChoices: { type: Array, default: () => [] },
-  settings: { type: Object, default: () => ({}) },
-  isUserGroup: { type: Boolean, default: false },
-  isDynamicSelected: { type: Boolean, default: false },
-  currentBarcodeHasProfile: { type: Boolean, default: false },
-  errors: { type: Object, default: () => ({}) },
-  associateUserProfileWithBarcode: { type: Boolean, default: false },
-  serverVerification: { type: Boolean, default: false },
-  formatRelativeTime: { type: Function, required: true },
-  formatDate: { type: Function, required: true }
+  isSaving: {type: Boolean, default: false},
+  currentBarcodeInfo: {type: String, default: ''},
+  selectedBarcode: {type: Object, default: null},
+  barcodeChoices: {type: Array, default: () => []},
+  settings: {type: Object, default: () => ({})},
+  isUserGroup: {type: Boolean, default: false},
+  isDynamicSelected: {type: Boolean, default: false},
+  currentBarcodeHasProfile: {type: Boolean, default: false},
+  errors: {type: Object, default: () => ({})},
+  associateUserProfileWithBarcode: {type: Boolean, default: false},
+  serverVerification: {type: Boolean, default: false},
+  formatRelativeTime: {type: Function, required: true},
+  formatDate: {type: Function, required: true}
 });
 
 defineEmits(['update-associate', 'update-server']);

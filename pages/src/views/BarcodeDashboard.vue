@@ -502,8 +502,5 @@ onUnmounted(() => {
   if (saveTimeout) {
     clearTimeout(saveTimeout);
   }
-  // Daily limit timeout cleanup handled by useDailyLimit composable
 });
 </script>
-
-<!-- Styles moved to external CSS: see @/assets/css/BarcodeDashboard.css -->
