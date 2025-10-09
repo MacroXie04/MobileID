@@ -1,5 +1,6 @@
 import json
 from unittest.mock import patch, Mock
+from types import SimpleNamespace
 
 from django.contrib.auth.models import User, Group
 from django.test import TestCase
@@ -11,7 +12,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from authn.models import UserProfile
 from authn.services.webauthn import create_user_profile
-from index.models import Barcode, BarcodeUsage, UserBarcodeSettings, BarcodeUserProfile
+from index.models import Barcode, BarcodeUsage, UserBarcodeSettings, BarcodeUserProfile, Transaction
+from index.services.usage_limit import UsageLimitService
 from index.services.barcode import (
     generate_barcode,
     generate_unique_identification_barcode,
@@ -317,7 +319,7 @@ class BarcodeServiceTest(TestCase):
         result = generate_barcode(user_no_group)
         
         self.assertEqual(result['status'], 'error')
-        self.assertEqual(result['message'], 'Invalid user group.')
+        self.assertEqual(result['message'], 'Permission Denied.')
 
     def test_generate_barcode_user_group_new(self):
         """Test barcode generation for User group member without existing barcode"""
@@ -614,6 +616,53 @@ class BarcodeDashboardAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data['status'], 'error')
 
+    def test_dashboard_patch_update_share_and_daily_limit(self):
+        """Test PATCH to update share flag and daily usage limit"""
+        self._authenticate_user(self.school_user)
+        barcode = Barcode.objects.create(
+            user=self.school_user,
+            barcode='patchbar12345678',
+            barcode_type='Others'
+        )
+
+        url = reverse('index:api_barcode_dashboard')
+        # Update share_with_others using string truthy and set daily limit
+        data = {
+            'barcode_id': barcode.id,
+            'share_with_others': 'true',
+            'daily_usage_limit': 5,
+        }
+        response = self.client.patch(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        barcode.refresh_from_db()
+        self.assertTrue(barcode.share_with_others)
+        usage = BarcodeUsage.objects.get(barcode=barcode)
+        self.assertEqual(usage.daily_usage_limit, 5)
+
+    def test_dashboard_patch_invalid_daily_limit(self):
+        """Test PATCH with invalid daily limit values"""
+        self._authenticate_user(self.school_user)
+        barcode = Barcode.objects.create(
+            user=self.school_user,
+            barcode='patchbarinvalid',
+            barcode_type='Others'
+        )
+
+        url = reverse('index:api_barcode_dashboard')
+        # Negative number
+        response = self.client.patch(url, {
+            'barcode_id': barcode.id,
+            'daily_usage_limit': -1
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Non-integer
+        response = self.client.patch(url, {
+            'barcode_id': barcode.id,
+            'daily_usage_limit': 'not-a-number'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_dashboard_delete_identification_barcode_forbidden(self):
         """Test that identification barcodes cannot be deleted"""
         self._authenticate_user(self.school_user)
@@ -631,6 +680,181 @@ class BarcodeDashboardAPITest(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data['status'], 'error')
+
+
+class ActiveProfileAPITest(APITestCase):
+    """Tests for ActiveProfileAPIView"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.school_user = User.objects.create_user(username='schooluser', password='testpass123')
+        self.regular_user = User.objects.create_user(username='regularuser', password='testpass123')
+        school_group = Group.objects.create(name='School')
+        user_group = Group.objects.create(name='User')
+        self.school_user.groups.add(school_group)
+        self.regular_user.groups.add(user_group)
+
+    def _auth(self, user):
+        refresh = RefreshToken.for_user(user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+
+    def test_non_school_user_gets_none(self):
+        self._auth(self.regular_user)
+        url = reverse('index:api_active_profile')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIsNone(resp.data['profile_info'])
+
+    def test_school_user_with_linked_profile(self):
+        self._auth(self.school_user)
+        # Create barcode and link settings and profile
+        bc = Barcode.objects.create(user=self.school_user, barcode='activeprof123456', barcode_type='Others')
+        UserBarcodeSettings.objects.create(
+            user=self.school_user,
+            barcode=bc,
+            associate_user_profile_with_barcode=True
+        )
+        BarcodeUserProfile.objects.create(
+            linked_barcode=bc,
+            name='School User',
+            information_id='SCHOOL123',
+            user_profile_img=None,
+        )
+        url = reverse('index:api_active_profile')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(resp.data['profile_info'])
+        self.assertEqual(resp.data['profile_info']['name'], 'School User')
+        self.assertEqual(resp.data['profile_info']['information_id'], 'SCHOOL123')
+        self.assertFalse(resp.data['profile_info']['has_avatar'])
+
+    def test_school_user_with_avatar_adds_data_uri(self):
+        self._auth(self.school_user)
+        bc = Barcode.objects.create(user=self.school_user, barcode='activeprofavatar', barcode_type='Others')
+        UserBarcodeSettings.objects.create(
+            user=self.school_user,
+            barcode=bc,
+            associate_user_profile_with_barcode=True
+        )
+        # Store raw base64 without data URI; endpoint should prefix data:image/png
+        BarcodeUserProfile.objects.create(
+            linked_barcode=bc,
+            name='Avatar User',
+            information_id='AVT123',
+            user_profile_img='dGVzdA=='
+        )
+        url = reverse('index:api_active_profile')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(resp.data['profile_info']['has_avatar'])
+        self.assertTrue(resp.data['profile_info']['avatar_data'].startswith('data:image'))
+
+
+class TransferCatCardAPITest(APITestCase):
+    """Tests for TransferCatCardAPIView"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username='xferuser', password='testpass123')
+        group = Group.objects.create(name='School')
+        self.user.groups.add(group)
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+
+    def test_missing_cookies_returns_400(self):
+        url = reverse('index:api_catcard_transfer')
+        resp = self.client.post(url, {}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch('index.api.transfer.process_user_cookie')
+    def test_warning_for_missing_required_cookie_returns_400(self, mock_process):
+        mock_process.return_value = SimpleNamespace(header_value='Cookie: a=b', warnings=['Missing required cookie session'])
+        url = reverse('index:api_catcard_transfer')
+        resp = self.client.post(url, {'cookies': 'a=b'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch('index.api.transfer.TransferBarcode')
+    @patch('index.api.transfer.process_user_cookie')
+    def test_success_transfer(self, mock_process, mock_transfer_cls):
+        mock_process.return_value = SimpleNamespace(header_value='Cookie: good', warnings=[])
+        mock_instance = Mock()
+        mock_instance.transfer_barcode.return_value = SimpleNamespace(status='success', response='ok')
+        mock_transfer_cls.return_value = mock_instance
+        url = reverse('index:api_catcard_transfer')
+        resp = self.client.post(url, {'cookies': 'good'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(resp.data['success'])
+
+    @patch('index.api.transfer.TransferBarcode')
+    @patch('index.api.transfer.process_user_cookie')
+    def test_failure_transfer(self, mock_process, mock_transfer_cls):
+        mock_process.return_value = SimpleNamespace(header_value='Cookie: good', warnings=[])
+        mock_instance = Mock()
+        mock_instance.transfer_barcode.return_value = SimpleNamespace(status='error', error='boom')
+        mock_transfer_cls.return_value = mock_instance
+        url = reverse('index:api_catcard_transfer')
+        resp = self.client.post(url, {'cookies': 'good'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertFalse(resp.data['success'])
+
+
+class UsageLimitServiceTest(TestCase):
+    """Unit tests for UsageLimitService"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='limituser', password='testpass123')
+        self.barcode = Barcode.objects.create(user=self.user, barcode='limit-123456', barcode_type='Others')
+
+    def test_check_daily_limit_no_record_or_zero_limit(self):
+        allowed, msg = UsageLimitService.check_daily_limit(self.barcode)
+        self.assertTrue(allowed)
+        self.assertIsNone(msg)
+        # Create usage with zero limit
+        BarcodeUsage.objects.create(barcode=self.barcode, daily_usage_limit=0)
+        allowed, msg = UsageLimitService.check_daily_limit(self.barcode)
+        self.assertTrue(allowed)
+        self.assertIsNone(msg)
+
+    def test_check_daily_limit_enforced(self):
+        usage = BarcodeUsage.objects.create(barcode=self.barcode, daily_usage_limit=2, total_usage=0)
+        # No transactions yet
+        allowed, msg = UsageLimitService.check_daily_limit(self.barcode)
+        self.assertTrue(allowed)
+        # Create two transactions for today
+        Transaction.objects.create(user=self.user, barcode_used=self.barcode)
+        Transaction.objects.create(user=self.user, barcode_used=self.barcode)
+        allowed, msg = UsageLimitService.check_daily_limit(self.barcode)
+        self.assertFalse(allowed)
+        self.assertIn('Daily usage limit of 2', msg)
+
+    def test_check_total_limit(self):
+        # No record allows
+        allowed, msg = UsageLimitService.check_total_limit(self.barcode)
+        self.assertTrue(allowed)
+        # With limit not reached
+        usage = BarcodeUsage.objects.create(barcode=self.barcode, total_usage_limit=3, total_usage=2)
+        allowed, msg = UsageLimitService.check_total_limit(self.barcode)
+        self.assertTrue(allowed)
+        # Reached
+        usage.total_usage = 3
+        usage.save()
+        allowed, msg = UsageLimitService.check_total_limit(self.barcode)
+        self.assertFalse(allowed)
+        self.assertIn('Total usage limit of 3', msg)
+
+    def test_get_usage_stats_defaults_and_values(self):
+        stats = UsageLimitService.get_usage_stats(self.barcode)
+        self.assertEqual(stats['daily_used'], 0)
+        self.assertEqual(stats['daily_limit'], 0)
+        self.assertIsNone(stats['daily_remaining'])
+        # Create usage and transactions
+        BarcodeUsage.objects.create(barcode=self.barcode, daily_usage_limit=5, total_usage_limit=10, total_usage=7)
+        Transaction.objects.create(user=self.user, barcode_used=self.barcode)
+        stats = UsageLimitService.get_usage_stats(self.barcode)
+        self.assertEqual(stats['daily_used'], 1)
+        self.assertEqual(stats['daily_remaining'], 4)
+        self.assertEqual(stats['total_used'], 7)
+        self.assertEqual(stats['total_remaining'], 3)
 
 
 class BarcodeSerializerTest(TestCase):
