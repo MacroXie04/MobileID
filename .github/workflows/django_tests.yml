@@ -34,11 +34,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Django tests
+      - name: Install dev tools (lint, coverage)
+        run: |
+          pip install black ruff flake8 coverage
+
+      - name: Lint (black)
+        run: black --check .
+
+      - name: Lint (ruff)
+        run: ruff .
+
+      - name: Lint (flake8)
+        run: flake8 .
+
+      - name: Run Django tests with coverage
         env:
           # Ensure test-specific settings paths and flags are applied
           TESTING: "True"
           DJANGO_SETTINGS_MODULE: mobileid.settings
         run: |
-          python manage.py test -v 2
+          coverage run manage.py test -v 2
+          coverage xml -o coverage.xml
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-xml
+          path: src/coverage.xml
 

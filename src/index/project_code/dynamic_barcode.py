@@ -103,59 +103,57 @@ class WebDriverManager:
                 logger.warning(f"Error closing driver: {e}")
 
     def _setup_driver(self) -> webdriver.Chrome:
-        """Set up Chrome WebDriver with appropriate options for different platforms."""
+        from selenium.webdriver.chrome.service import Service
+        from selenium.webdriver.chrome.options import Options
+        from webdriver_manager.chrome import ChromeDriverManager
+
         chrome_options = Options()
         chrome_options.set_capability("acceptInsecureCerts", False)
 
         if self.headless:
-            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--headless=new")
 
+        # for linux server and docker
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--disable-plugins")
-        chrome_options.add_argument("--disable-images")
+        chrome_options.add_argument("--blink-settings=imagesEnabled=false")
         chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--disable-software-rasterizer")
+        # avoid DevToolsActivePort
+        chrome_options.add_argument("--remote-debugging-port=9222")
+        chrome_options.add_argument("--user-data-dir=/tmp/chrome-user-data")
+        chrome_options.add_argument("--data-path=/tmp/chrome-data")
+        chrome_options.add_argument("--disk-cache-dir=/tmp/chrome-cache")
+        chrome_options.add_argument("--no-first-run")
+        chrome_options.add_argument("--no-zygote")
+
+        # use google chrome first
+        if os.path.exists("/usr/bin/google-chrome"):
+            chrome_options.binary_location = "/usr/bin/google-chrome"
+            logger.info("Using Google Chrome at /usr/bin/google-chrome")
+        elif os.path.exists("/snap/bin/chromium"):
+            chrome_options.binary_location = "/snap/bin/chromium"
+            logger.info("Using Chromium (snap) at /snap/bin/chromium")
+        elif os.path.exists("/usr/bin/chromium"):
+            chrome_options.binary_location = "/usr/bin/chromium"
+            logger.info("Using Chromium (apt) at /usr/bin/chromium")
+        else:
+            raise FileNotFoundError("No Chrome/Chromium found at /usr/bin or /snap/bin")
 
         try:
-            if platform.system() == "Linux":
-                from selenium.webdriver.chrome.service import Service
-                # Prefer system chromium/chromedriver available in the container
-                chrome_options.binary_location = "/usr/bin/chromium"
-                service_path = "/usr/bin/chromedriver"
-                try:
-                    if os.path.exists(service_path):
-                        service = Service(service_path)
-                    else:
-                        # Fallback to webdriver-manager if system driver not present
-                        from webdriver_manager.chrome import ChromeDriverManager
-                        service = Service(ChromeDriverManager().install())
-                except Exception:
-                    from webdriver_manager.chrome import ChromeDriverManager
-                    service = Service(ChromeDriverManager().install())
-                driver = webdriver.Chrome(service=service, options=chrome_options)
-
-            elif platform.system() == "Darwin":
-                driver = webdriver.Chrome(options=chrome_options)
-
-            elif platform.system() == "Windows":
-                from selenium.webdriver.chrome.service import Service
-                from webdriver_manager.chrome import ChromeDriverManager
-
-                service = Service(ChromeDriverManager().install())
-                driver = webdriver.Chrome(service=service, options=chrome_options)
-
-            else:
-                raise Exception(f"Unsupported operating system: {platform.system()}")
-
-            driver.implicitly_wait(UCMercedConfig.IMPLICIT_WAIT)
-            logger.info(f"WebDriver initialized successfully on {platform.system()}")
-            return driver
-
+            service = Service(ChromeDriverManager().install())
+            logger.info("Using ChromeDriver from webdriver-manager (auto-matched)")
         except Exception as e:
-            logger.error(f"Failed to initialize WebDriver: {e}")
-            raise
+            logger.warning(f"webdriver-manager failed ({e}); falling back to /usr/bin/chromedriver")
+            service = Service("/usr/bin/chromedriver")
+
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.implicitly_wait(UCMercedConfig.IMPLICIT_WAIT)
+        logger.info(f"WebDriver initialized successfully on {platform.system()}")
+        return driver
 
 
 class UCMercedMobileIdClient:
