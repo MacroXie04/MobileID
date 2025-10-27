@@ -5,6 +5,13 @@ from django.core.validators import MaxLengthValidator
 from django.db import models
 
 
+# barcode pull settings
+class BarcodePullSettings(models.Model):
+    # foreign key to user
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    # 
+
 # barcode total usage
 class BarcodeUsage(models.Model):
     # foreign key to barcode

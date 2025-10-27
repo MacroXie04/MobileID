@@ -539,3 +539,4 @@ pages/.output/
 # - SECURITY.md                  (security policy)
 # ===================================================================
 /src/staticfiles/
+/CLAUDE.md

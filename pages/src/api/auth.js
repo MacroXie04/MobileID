@@ -1,4 +1,5 @@
 import {ApiError, apiRequest} from './client';
+import {encryptPassword} from '@/utils/encryption';
 
 export async function login(username, password) {
     // NOTE: This is a change from the original behavior.
@@ -7,9 +8,13 @@ export async function login(username, password) {
     // The `handleSubmit` function in `Login.vue` should be updated to catch this
     // error and display the message from `error.data` or `error.message`.
     // This creates a more consistent and robust error handling pattern.
+    
+    // Encrypt password
+    const encryptedPassword = encryptPassword(password);
+    
     return apiRequest('/authn/token/', {
         method: 'POST',
-        body: {username, password},
+        body: {username, password: encryptedPassword},
     });
 }
 

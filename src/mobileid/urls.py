@@ -20,8 +20,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
+from mobileid.status.views import health_check
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+
+    # Health check endpoint
+    path("health/", health_check, name="health_check"),
 
     # path for index app
     path("", include("index.urls")),

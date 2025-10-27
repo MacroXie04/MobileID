@@ -294,3 +294,4 @@ def verify_authentication(credential: dict, expected_challenge) -> User:
     return stored.user
 
 
+

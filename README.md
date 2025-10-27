@@ -114,8 +114,8 @@ cd src/
 pip install -r ../requirements.txt
 
 # Configure environment variables
-cp .env.example .env
-# Edit .env with your configuration
+cp ../.env.example .env
+# Edit .env with your configuration (see Configuration section below)
 
 # Run database migrations
 python manage.py makemigrations
@@ -124,6 +124,8 @@ python manage.py migrate
 # Create a superuser (optional)
 python manage.py createsuperuser
 ```
+
+**Note**: See the [Environment Variables](#environment-variables) section below for detailed configuration options.
 
 ### 3. Frontend Setup (optional, not containerized here)
 ```bash
@@ -166,27 +168,158 @@ npm run format      # Format code with Prettier
 
 ### Environment Variables
 
-The application uses environment variables for configuration. Key variables include:
+The application uses environment variables for configuration. Create a `.env` file in the `src/` directory with the following variables:
 
-- `SECRET_KEY`: Django secret key for cryptographic operations
-- `DEBUG`: Enable/disable debug mode
-- `ALLOWED_HOSTS`: Comma-separated list of allowed hostnames
-- `CORS_ALLOWED_ORIGINS`: Frontend URLs for CORS configuration
-- `DATABASE_URL`: Database connection string (optional)
-- `SELENIUM_ENABLED`: Enable dynamic barcode generation features
+#### Core Settings
 
-### Database Configuration
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `SECRET_KEY` | Django secret key for cryptographic operations | `dev-secret` | Yes (Production) |
+| `DEBUG` | Enable debug mode (`True`/`False`) | `False` | No |
+| `TESTING` | Enable test mode (`True`/`False`) | `False` | No |
+| `TIME_ZONE` | Application timezone | `America/Los_Angeles` | No |
 
-By default, the application uses SQLite for development. For production, configure PostgreSQL or MySQL via environment variables:
+#### Network & CORS Settings
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `ALLOWED_HOSTS` | Comma-separated list of allowed hostnames | `localhost` | No |
+| `BACKEND_ORIGIN` | Backend URL | `http://localhost:8000` | No |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated list of frontend URLs for CORS | `http://localhost:5173,http://localhost:8080` | No |
+| `CORS_ALLOW_CREDENTIALS` | Allow credentials in CORS requests (`True`/`False`) | `True` | No |
+| `CSRF_TRUSTED_ORIGINS` | Comma-separated list of trusted origins for CSRF | Auto-generated from backend/frontend origins | No |
+
+**Important**: Use `http://localhost` (NOT `127.0.0.1`) for all browser-visible origins to avoid CORS issues.
+
+#### Cookie Settings
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `COOKIE_SAMESITE` | SameSite attribute for session cookies (`Lax`/`Strict`/`None`) | `Lax` | No |
+| `CSRF_COOKIE_SAMESITE` | SameSite attribute for CSRF cookies | `Lax` | No |
+| `COOKIE_SECURE` | Require HTTPS for cookies (`True`/`False`) | `False` | No |
+| `CSRF_COOKIE_HTTPONLY` | Make CSRF cookie HTTP-only (`True`/`False`) | `False` | No |
+| `USE_HTTPS` | Enable HTTPS-specific settings (`True`/`False`) | `False` | No |
+
+#### Database Configuration
+
+**Option 1: Database URL (Recommended)**
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DB_PROFILE` | Database profile to use (`local`/`gcp`) | `local` |
+| `DATABASE_URL_LOCAL` | Database URL for local profile | `mysql://user:pass@127.0.0.1:3306/dbname` |
+| `DATABASE_URL_GCP` | Database URL for GCP profile | `postgres://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE` |
+
+**Option 2: Discrete Variables (Legacy)**
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `DB_ENGINE` | Database engine (`postgresql`/`mysql`/`sqlite3`) | `postgresql` | No |
+| `DB_NAME` | Database name | Empty | Yes (if using discrete vars) |
+| `DB_USER` | Database user | Empty | Yes (if using discrete vars) |
+| `DB_PASSWORD` | Database password | Empty | Yes (if using discrete vars) |
+| `DB_HOST` | Database host (use `host.docker.internal` for Docker) | Empty | Yes (if using discrete vars) |
+| `DB_PORT` | Database port | Empty | No |
+
+**Advanced Database Options**
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `DB_CONN_MAX_AGE` | Persistent connection lifetime (seconds) | `60` | No |
+| `DB_SSL_MODE` | SSL mode for database connections (`require`/`verify-ca`/`verify-full`) | Empty | No |
+| `DB_SSL_DISABLE_VERIFY` | Disable SSL certificate verification (`True`/`False`) | `False` | No |
+| `CLOUDSQL_UNIX_SOCKET` | Unix socket path for Cloud SQL connections | Empty | No |
+
+#### Security Settings
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `MAX_FAILED_LOGIN_ATTEMPTS` | Maximum failed login attempts before lockout | `5` | No |
+| `ACCOUNT_LOCKOUT_DURATION` | Account lockout duration in minutes | `30` | No |
+
+#### Cache & Session Settings
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `CACHE_BACKEND` | Django cache backend class | `django.core.cache.backends.locmem.LocMemCache` | No |
+| `CACHE_LOCATION` | Cache location/identifier | `unique-snowflake` | No |
+| `SESSION_ENGINE` | Session backend | `django.contrib.sessions.backends.db` | No |
+
+### Example .env Files
+
+#### Development (.env)
 
 ```env
-# Database configuration
-DB_ENGINE=
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
-DB_HOST=
-DB_PORT=
+# Core
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+TESTING=False
+
+# Network
+ALLOWED_HOSTS=localhost
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
+BACKEND_ORIGIN=http://localhost:8000
+
+# Database (SQLite - no configuration needed for dev)
+# Or use MySQL/PostgreSQL:
+DB_PROFILE=local
+DATABASE_URL_LOCAL=mysql://root:password@127.0.0.1:3306/mobileid_dev
+```
+
+#### Docker Development (.env.development)
+
+```env
+# Core
+SECRET_KEY=dev-secret-key
+DEBUG=True
+
+# Network (use localhost for browser access)
+ALLOWED_HOSTS=localhost
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
+CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://localhost:5173
+
+# Database (connect to host MySQL from container)
+DB_PROFILE=local
+DB_ENGINE=mysql
+DB_HOST=host.docker.internal
+DB_NAME=mobileid
+DB_USER=root
+DB_PASSWORD=rootpassword
+```
+
+#### Production (.env.production)
+
+```env
+# Core
+SECRET_KEY=your-secure-random-secret-key
+DEBUG=False
+TESTING=False
+
+# Network
+ALLOWED_HOSTS=yourdomain.com
+CORS_ALLOWED_ORIGINS=https://yourdomain.com
+CSRF_TRUSTED_ORIGINS=https://yourdomain.com
+BACKEND_ORIGIN=https://api.yourdomain.com
+
+# Cookies (HTTPS required)
+COOKIE_SAMESITE=None
+CSRF_COOKIE_SAMESITE=None
+COOKIE_SECURE=True
+CSRF_COOKIE_HTTPONLY=True
+USE_HTTPS=True
+
+# Database
+DB_PROFILE=production
+DATABASE_URL_LOCAL=postgres://user:password@db-host:5432/mobileid_prod
+# Or for Cloud SQL:
+# DATABASE_URL_GCP=postgres://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE
+DB_CONN_MAX_AGE=300
+DB_SSL_MODE=require
+
+# Security
+MAX_FAILED_LOGIN_ATTEMPTS=5
+ACCOUNT_LOCKOUT_DURATION=30
 ```
 
 ## API Endpoints

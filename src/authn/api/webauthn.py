@@ -19,6 +19,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.middleware.csrf import get_token
 from authn.services.passkeys import (
     build_registration_options,
@@ -26,6 +27,7 @@ from authn.services.passkeys import (
     build_authentication_options,
     verify_authentication,
 )
+from authn.utils.encryption import decrypt_password, is_encrypted_password
 
 
 def _clean_base64(b64: str) -> str:
@@ -136,9 +138,50 @@ class UserRegisterForm(UserCreationForm):
         return user
 
 
+class EncryptedTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Custom serializer that supports decrypting RSA encrypted passwords
+    """
+    
+    def validate(self, attrs):
+        # Get password
+        password = attrs.get('password')
+        
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Received password, length: {len(password)}, first 50 chars: {password[:50]}")
+        
+        # Check if password is encrypted
+        is_encrypted = is_encrypted_password(password)
+        logger.info(f"Is recognized as encrypted password: {is_encrypted}")
+        
+        if is_encrypted:
+            try:
+                # Decrypt password
+                decrypted_password = decrypt_password(password)
+                logger.info(f"Decryption successful, decrypted password: {decrypted_password}")
+                # Replace with decrypted password
+                attrs['password'] = decrypted_password
+            except ValueError as e:
+                # Decryption failed, log detailed error information
+                logger.error(f"Password decryption failed: {str(e)}, password length: {len(password)}")
+                
+                from rest_framework import serializers
+                raise serializers.ValidationError({
+                    'password': 'Password decryption failed, please try again'
+                })
+        else:
+            # If not encrypted password, log for debugging
+            logger.info(f"Using plaintext password login, password: {password}")
+        
+        # Call parent class validation method
+        return super().validate(attrs)
+
+
 class CookieTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
     throttle_scope = "login"
+    serializer_class = EncryptedTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
