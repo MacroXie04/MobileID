@@ -1,11 +1,11 @@
 import logging
+
+from index.project_code.transfer_barcode import TransferBarcode
+from index.services.cookie import process_user_cookie
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from index.project_code.transfer_barcode import TransferBarcode
-from index.services.cookie import process_user_cookie
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class TransferCatCardAPIView(APIView):
         try:
             # Get cookies from request data
             raw_cookies = request.data.get("cookies", "")
-            
+
             if not raw_cookies:
                 logger.warning("No cookies provided in transfer request")
                 return Response({
@@ -36,7 +36,7 @@ class TransferCatCardAPIView(APIView):
             # Normalize/process the user cookie
             processed = process_user_cookie(raw_cookies)
             normalized_cookie_header = processed.header_value
-            
+
             # Log warnings if any
             if processed.warnings:
                 logger.warning(f"Cookie processing warnings: {processed.warnings}")
@@ -66,7 +66,7 @@ class TransferCatCardAPIView(APIView):
                     'error': result.error or 'Failed to store barcode data',
                     'success': False
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
+
         except Exception as e:
             logger.error(f"Transfer error for user {request.user.username}: {e}")
             return Response({

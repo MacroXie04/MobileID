@@ -10,24 +10,28 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
+from pathlib import Path
+
 import dj_database_url
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Prefer real env vars; then supplement from .env if present (do NOT override)
 load_dotenv(BASE_DIR / ".env", override=False)
 
+
 def env(key, default=None):
     return os.environ.get(key, default)
+
 
 def csv_env(key, default_list=None):
     raw = env(key)
     if not raw:
         return default_list or []
     return [x.strip() for x in raw.split(",") if x.strip()]
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -97,7 +101,7 @@ MIDDLEWARE = [
 BACKEND_ORIGIN = env("BACKEND_ORIGIN", "http://localhost:8000")
 FRONTEND_ORIGINS = csv_env(
     "CORS_ALLOWED_ORIGINS", [
-        "http://localhost:5173", 
+        "http://localhost:5173",
         "http://localhost:8080",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:8080"
@@ -115,10 +119,10 @@ CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
 # Cookies (dev)
 SESSION_COOKIE_SAMESITE = env("COOKIE_SAMESITE", "Lax")
-CSRF_COOKIE_SAMESITE    = env("CSRF_COOKIE_SAMESITE", "Lax")
-SESSION_COOKIE_SECURE   = env("COOKIE_SECURE", "False").lower() == "true"
-CSRF_COOKIE_SECURE      = SESSION_COOKIE_SECURE
-CSRF_COOKIE_HTTPONLY    = env("CSRF_COOKIE_HTTPONLY", "False").lower() == "true"
+CSRF_COOKIE_SAMESITE = env("CSRF_COOKIE_SAMESITE", "Lax")
+SESSION_COOKIE_SECURE = env("COOKIE_SECURE", "False").lower() == "true"
+CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
+CSRF_COOKIE_HTTPONLY = env("CSRF_COOKIE_HTTPONLY", "False").lower() == "true"
 
 # HTTPS settings for development
 # Note: These should be configured differently for production
@@ -198,6 +202,7 @@ DB_CONN_MAX_AGE = int(os.getenv("DB_CONN_MAX_AGE", "60"))  # persistent connecti
 DB_SSL_MODE = os.getenv("DB_SSL_MODE", "").lower()  # "", "require", "verify-full"
 DB_DISABLE_SERVER_CERT_VERIFICATION = os.getenv("DB_SSL_DISABLE_VERIFY", "false").lower() == "true"
 
+
 def _apply_common(db_cfg: dict) -> dict:
     db_cfg.setdefault("CONN_MAX_AGE", DB_CONN_MAX_AGE)
     # SSL (useful for Cloud SQL / managed DBs)
@@ -209,12 +214,14 @@ def _apply_common(db_cfg: dict) -> dict:
             db_cfg["OPTIONS"]["sslmode"] = "require"
     return db_cfg
 
+
 def _from_url(url_env_name: str, default_url: str = "") -> dict:
     url = os.getenv(url_env_name, default_url)
     if not url:
         return {}
     cfg = dj_database_url.parse(url, conn_max_age=DB_CONN_MAX_AGE, ssl_require=(DB_SSL_MODE == "require"))
     return _apply_common(cfg)
+
 
 DATABASES = {}
 
@@ -245,7 +252,7 @@ if not db_cfg:
     port = os.getenv("DB_PORT", "")
     name = os.getenv("DB_NAME", "")
     user = os.getenv("DB_USER", "")
-    pwd  = os.getenv("DB_PASSWORD", "")
+    pwd = os.getenv("DB_PASSWORD", "")
 
     # Cloud SQL Unix socket override (if provided)
     # For Postgres: set CLOUDSQL_UNIX_SOCKET=/cloudsql/PROJECT:REGION:INSTANCE
@@ -337,7 +344,8 @@ CACHES = {
         "LOCATION": CACHE_LOCATION,
     }
 }
-SESSION_ENGINE = os.getenv("SESSION_ENGINE", "django.contrib.sessions.backends.cache" if TESTING else "django.contrib.sessions.backends.db")
+SESSION_ENGINE = os.getenv("SESSION_ENGINE",
+                           "django.contrib.sessions.backends.cache" if TESTING else "django.contrib.sessions.backends.db")
 
 # Logging configuration
 if TESTING:
@@ -363,7 +371,8 @@ if TESTING:
             },
         },
     }
-    
+
     # Also suppress Python warnings (like cbor2 deprecation warnings) during testing
     import warnings
+
     warnings.filterwarnings('ignore', category=UserWarning, module='cbor2')

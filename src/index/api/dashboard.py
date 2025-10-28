@@ -28,7 +28,7 @@ class BarcodeDashboardAPIView(APIView):
     def get(self, request):
         """Get user settings and barcodes"""
         user = request.user
-        
+
         # Check if user is in User group - they shouldn't access this endpoint
         if user.groups.filter(name="User").exists():
             return Response({
@@ -53,7 +53,7 @@ class BarcodeDashboardAPIView(APIView):
 
         # Get barcodes based on user type
         is_school_group = user.groups.filter(name="School").exists()
-        
+
         if is_school_group:
             # School users see:
             # - Dynamic barcodes that are shared by others OR owned by themselves
@@ -62,8 +62,8 @@ class BarcodeDashboardAPIView(APIView):
             barcodes = (
                 Barcode.objects.filter(
                     (
-                        Q(barcode_type='DynamicBarcode') &
-                        (Q(user=user) | Q(share_with_others=True))
+                            Q(barcode_type='DynamicBarcode') &
+                            (Q(user=user) | Q(share_with_others=True))
                     )
                     |
                     Q(user=user, barcode_type__in=['Others', 'Identification'])
@@ -101,7 +101,7 @@ class BarcodeDashboardAPIView(APIView):
     def post(self, request):
         """Update user barcode settings"""
         user = request.user
-        
+
         # Check if user is in User group - they shouldn't access this endpoint
         if user.groups.filter(name="User").exists():
             return Response({
@@ -142,7 +142,7 @@ class BarcodeDashboardAPIView(APIView):
             return Response({
                 'detail': 'User type accounts cannot access barcode dashboard'
             }, status=status.HTTP_403_FORBIDDEN)
-            
+
         serializer = BarcodeCreateSerializer(
             data=request.data,
             context={'request': request}
@@ -218,7 +218,7 @@ class BarcodeDashboardAPIView(APIView):
                         'status': 'error',
                         'message': 'Daily usage limit must be 0 or greater'
                     }, status=status.HTTP_400_BAD_REQUEST)
-                
+
                 # Get or create BarcodeUsage record
                 usage, _ = BarcodeUsage.objects.get_or_create(
                     barcode=barcode,
@@ -245,7 +245,7 @@ class BarcodeDashboardAPIView(APIView):
             return Response({
                 'detail': 'User type accounts cannot access barcode dashboard'
             }, status=status.HTTP_403_FORBIDDEN)
-            
+
         barcode_id = request.data.get('barcode_id')
 
         if not barcode_id:

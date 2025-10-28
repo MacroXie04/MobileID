@@ -4,19 +4,16 @@ Tests for the main MobileID Django project configuration.
 
 import os
 from unittest.mock import patch
-import json
-
-from mobileid.status.OIT import OIT
-from django.test import TestCase, override_settings
-from django.urls import reverse, resolve
-from django.contrib.auth.models import User, Group
-from django.core.exceptions import ImproperlyConfigured
-from django.conf import settings
-from rest_framework.test import APITestCase, APIClient
-from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from authn.services.webauthn import create_user_profile
+from django.conf import settings
+from django.contrib.auth.models import User, Group
+from django.test import TestCase, override_settings
+from django.urls import reverse, resolve
+from mobileid.status.OIT import OIT
+from rest_framework import status
+from rest_framework.test import APITestCase, APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class URLConfigurationTest(TestCase):
@@ -140,7 +137,7 @@ class SettingsConfigurationTest(TestCase):
         """Test that SECRET_KEY is properly configured"""
         self.assertIsNotNone(settings.SECRET_KEY)
         # In tests, SECRET_KEY should be set even if not in environment
-        
+
     def test_installed_apps_configuration(self):
         """Test that all required apps are installed"""
         required_apps = [
@@ -156,7 +153,7 @@ class SettingsConfigurationTest(TestCase):
             'django.contrib.messages',
             'django.contrib.staticfiles',
         ]
-        
+
         for app in required_apps:
             self.assertIn(app, settings.INSTALLED_APPS)
 
@@ -172,7 +169,7 @@ class SettingsConfigurationTest(TestCase):
             'django.contrib.messages.middleware.MessageMiddleware',
             'django.middleware.clickjacking.XFrameOptionsMiddleware',
         ]
-        
+
         for middleware in required_middleware:
             self.assertIn(middleware, settings.MIDDLEWARE)
 
@@ -187,7 +184,7 @@ class SettingsConfigurationTest(TestCase):
         """Test REST framework configuration"""
         self.assertIn('DEFAULT_AUTHENTICATION_CLASSES', settings.REST_FRAMEWORK)
         self.assertIn('DEFAULT_PERMISSION_CLASSES', settings.REST_FRAMEWORK)
-        
+
         # Check authentication classes
         auth_classes = settings.REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES']
         self.assertIn('authn.middleware.authentication.CookieJWTAuthentication', auth_classes)
@@ -198,7 +195,7 @@ class SettingsConfigurationTest(TestCase):
         self.assertIn('ACCESS_TOKEN_LIFETIME', settings.SIMPLE_JWT)
         self.assertIn('REFRESH_TOKEN_LIFETIME', settings.SIMPLE_JWT)
         self.assertIn('ALGORITHM', settings.SIMPLE_JWT)
-        
+
         # Check that tokens have appropriate lifetime
         access_lifetime = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
         if getattr(settings, 'TESTING', False):
@@ -212,15 +209,15 @@ class SettingsConfigurationTest(TestCase):
         """Test CORS configuration"""
         self.assertIsNotNone(settings.CORS_ALLOWED_ORIGINS)
         self.assertTrue(settings.CORS_ALLOW_CREDENTIALS)
-        
+
         # Check that local development origins are allowed
         expected_origins = [
             'http://localhost:8080',
-            'http://127.0.0.1:8080', 
+            'http://127.0.0.1:8080',
             'http://localhost:5173',
             'http://127.0.0.1:5173'
         ]
-        
+
         for origin in expected_origins:
             self.assertIn(origin, settings.CORS_ALLOWED_ORIGINS)
 
@@ -293,21 +290,21 @@ class IntegrationTest(APITestCase):
             'username': 'integrationtest',
             'password': 'testpass123'
         }
-        
+
         response = self.client.post(login_url, login_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+
         # Check cookies are set
         self.assertIn('access_token', response.cookies)
         self.assertIn('refresh_token', response.cookies)
-        
+
         # Test authenticated request using JWT
         refresh = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        
+
         user_info_url = reverse('authn:api_user_info')
         response = self.client.get(user_info_url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['username'], 'integrationtest')
         self.assertEqual(response.data['groups'], ['User'])
@@ -317,11 +314,11 @@ class IntegrationTest(APITestCase):
         # Authenticate user
         refresh = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        
+
         # Generate barcode
         generate_url = reverse('index:api_generate_barcode')
         response = self.client.post(generate_url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['status'], 'success')
         self.assertEqual(response.data['barcode_type'], 'Identification')
@@ -334,7 +331,7 @@ class IntegrationTest(APITestCase):
             reverse('index:api_generate_barcode'),
             reverse('index:api_barcode_dashboard'),
         ]
-        
+
         for url in protected_urls:
             response = self.client.get(url)
             self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -347,7 +344,7 @@ class IntegrationTest(APITestCase):
             HTTP_ACCESS_CONTROL_REQUEST_METHOD='POST',
             HTTP_ACCESS_CONTROL_REQUEST_HEADERS='Content-Type'
         )
-        
+
         # Should not return 405 Method Not Allowed
         self.assertNotEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -365,7 +362,7 @@ class ErrorHandlingTest(TestCase):
         # Create regular user
         user = User.objects.create_user(username='regular', password='test123')
         self.client.force_login(user)
-        
+
         response = self.client.get(reverse('admin:index'))
         # Should redirect to login or show permission denied
         self.assertIn(response.status_code, [302, 403])
@@ -379,7 +376,7 @@ class ErrorHandlingTest(TestCase):
             is_staff=True
         )
         self.client.force_login(staff_user)
-        
+
         response = self.client.get(reverse('admin:index'))
         self.assertEqual(response.status_code, 200)
 
@@ -430,7 +427,7 @@ class CacheConfigurationTest(TestCase):
         self.assertIn('default', settings.CACHES)
         default_cache = settings.CACHES['default']
         self.assertIn('BACKEND', default_cache)
-        
+
         # Should be using local memory cache
         expected_backend = 'django.core.cache.backends.locmem.LocMemCache'
         self.assertEqual(default_cache['BACKEND'], expected_backend)
@@ -451,7 +448,7 @@ class DatabaseConfigurationTest(TestCase):
     def test_sqlite_default_configuration(self):
         """Test default SQLite configuration"""
         default_db = settings.DATABASES['default']
-        
+
         if 'sqlite3' in default_db['ENGINE']:
             self.assertIn('sqlite3', default_db['ENGINE'])
             self.assertIsNotNone(default_db['NAME'])
@@ -481,29 +478,29 @@ class ThrottlingConfigurationTest(APITestCase):
     def test_throttling_rates_configured(self):
         """Test that throttling rates are properly configured"""
         throttle_rates = settings.REST_FRAMEWORK.get('DEFAULT_THROTTLE_RATES', {})
-        
+
         expected_rates = [
             'anon',
-            'user', 
+            'user',
             'login',
             'registration',
             'barcode_generation',
             'barcode_management',
             'user_profile'
         ]
-        
+
         for rate in expected_rates:
             self.assertIn(rate, throttle_rates)
 
     def test_throttling_classes_configured(self):
         """Test that throttling classes are configured"""
         throttle_classes = settings.REST_FRAMEWORK.get('DEFAULT_THROTTLE_CLASSES', [])
-        
+
         expected_classes = [
             'rest_framework.throttling.AnonRateThrottle',
             'rest_framework.throttling.UserRateThrottle'
         ]
-        
+
         for throttle_class in expected_classes:
             self.assertIn(throttle_class, throttle_classes)
 
@@ -526,9 +523,9 @@ class OITStatusTest(TestCase):
         </div>
         '''
         mock_fetch_data.return_value = mock_html
-        
+
         status_info = self.oit.get_status()
-        
+
         self.assertIn('services', status_info)
         self.assertIn('SSO (Single Sign-On)', status_info['services'])
         self.assertEqual(status_info['services']['SSO (Single Sign-On)'], 'Operational')
@@ -544,9 +541,9 @@ class OITStatusTest(TestCase):
         </div>
         '''
         mock_fetch_data.return_value = mock_html
-        
+
         status_info = self.oit.get_status()
-        
+
         self.assertIn('services', status_info)
         self.assertIn('Duo 2FA', status_info['services'])
         self.assertEqual(status_info['services']['Duo 2FA'], 'Operational')
@@ -562,9 +559,9 @@ class OITStatusTest(TestCase):
         </div>
         '''
         mock_fetch_data.return_value = mock_html
-        
+
         status_info = self.oit.get_status()
-        
+
         self.assertIn('services', status_info)
         self.assertIn('CatCard', status_info['services'])
         self.assertEqual(status_info['services']['CatCard'], 'Operational')
@@ -580,9 +577,9 @@ class OITStatusTest(TestCase):
         </div>
         '''
         mock_fetch_data.return_value = mock_html
-        
+
         status_info = self.oit.get_status()
-        
+
         self.assertIn('services', status_info)
         self.assertIn('Dining Payment Systems', status_info['services'])
         self.assertEqual(status_info['services']['Dining Payment Systems'], 'Operational')
@@ -610,17 +607,17 @@ class OITStatusTest(TestCase):
         </div>
         '''
         mock_fetch_data.return_value = mock_html
-        
+
         status_info = self.oit.get_status()
-        
+
         # Verify all required services are present and operational
         required_services = [
             'SSO (Single Sign-On)',
-            'Duo 2FA', 
+            'Duo 2FA',
             'CatCard',
             'Dining Payment Systems'
         ]
-        
+
         for service in required_services:
             self.assertIn(service, status_info['services'])
             self.assertEqual(status_info['services'][service], 'Operational')
@@ -648,9 +645,9 @@ class OITStatusTest(TestCase):
         </div>
         '''
         mock_fetch_data.return_value = mock_html
-        
+
         status_info = self.oit.get_status()
-        
+
         # Verify services are captured with their actual status
         self.assertEqual(status_info['services']['SSO (Single Sign-On)'], 'Operational')
         self.assertEqual(status_info['services']['Duo 2FA'], 'Degraded Performance')
@@ -667,17 +664,16 @@ class OITStatusTest(TestCase):
         </div>
         '''
         mock_fetch_data.return_value = mock_html
-        
+
         status_info = self.oit.get_status()
-        
+
         # Verify response structure
         self.assertIn('time', status_info)
         self.assertIn('services', status_info)
         self.assertIsInstance(status_info['services'], dict)
         self.assertIsInstance(status_info['time'], str)
-        
+
         # Verify time format (should be YYYY-MM-DD HH:MM:SS)
-        import re
         time_pattern = r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
         self.assertRegex(status_info['time'], time_pattern)
 
@@ -687,7 +683,7 @@ class OITStatusTest(TestCase):
         # Mock HTTP error
         mock_response = mock_get.return_value
         mock_response.raise_for_status.side_effect = Exception('HTTP Error')
-        
+
         with self.assertRaises(Exception):
             self.oit.fetch_data()
 
@@ -695,7 +691,7 @@ class OITStatusTest(TestCase):
         """Test that OIT service handles empty HTML gracefully"""
         empty_html = ""
         data = self.oit.parse_status(empty_html)
-        
+
         self.assertEqual(data.time, data.time)  # Time should still be set
         self.assertEqual(len(data.services), 0)  # No services found
 
@@ -703,7 +699,7 @@ class OITStatusTest(TestCase):
         """Test that OIT service handles malformed HTML gracefully"""
         malformed_html = "<div>Some malformed content without proper structure</div>"
         data = self.oit.parse_status(malformed_html)
-        
+
         self.assertEqual(data.time, data.time)  # Time should still be set
         self.assertEqual(len(data.services), 0)  # No services found due to malformed HTML
 
@@ -712,38 +708,38 @@ class OITStatusTest(TestCase):
         try:
             # Fetch real status from UC Merced status page
             status_info = self.oit.get_status()
-            
+
             # Verify response structure
             self.assertIn('time', status_info)
             self.assertIn('services', status_info)
             self.assertIsInstance(status_info['services'], dict)
             self.assertIsInstance(status_info['time'], str)
-            
+
             # Verify that we got some services (the page should have many services)
             self.assertGreater(len(status_info['services']), 0)
-            
+
             # Verify that our required services are present in the real data
             required_services = [
                 'SSO (Single Sign-On)',
-                'Duo 2FA', 
+                'Duo 2FA',
                 'CatCard',
                 'Dining Payment Systems'
             ]
-            
+
             for service in required_services:
-                self.assertIn(service, status_info['services'], 
-                             f"Required service '{service}' not found in real status data")
+                self.assertIn(service, status_info['services'],
+                              f"Required service '{service}' not found in real status data")
                 # Verify the service has a status (could be Operational, Service Disruption, etc.)
                 self.assertIsNotNone(status_info['services'][service])
                 self.assertGreater(len(status_info['services'][service]), 0)
-            
+
             # Print the actual status for debugging/information
             print(f"\nReal UC Merced Status Retrieved:")
             print(f"Time: {status_info['time']}")
             print(f"Total Services: {len(status_info['services'])}")
             for service in required_services:
                 print(f"{service}: {status_info['services'][service]}")
-                
+
         except Exception as e:
             # If the real fetch fails (network issues, etc.), we'll skip this test
             self.skipTest(f"Could not fetch real status from UC Merced: {str(e)}")
@@ -753,38 +749,38 @@ class OITStatusTest(TestCase):
         try:
             # Fetch real status from UC Merced status page
             status_info = self.oit.get_status()
-            
+
             # Check that we have services with 'Operational' status
             operational_services = [
-                service for service, status in status_info['services'].items() 
+                service for service, status in status_info['services'].items()
                 if status == 'Operational'
             ]
-            
+
             # Should have at least some operational services
-            self.assertGreater(len(operational_services), 0, 
-                             "No operational services found in real status data")
-            
+            self.assertGreater(len(operational_services), 0,
+                               "No operational services found in real status data")
+
             # Verify our required services are operational (based on the current status page)
             required_services = [
                 'SSO (Single Sign-On)',
-                'Duo 2FA', 
+                'Duo 2FA',
                 'CatCard',
                 'Dining Payment Systems'
             ]
-            
+
             operational_required = []
             for service in required_services:
                 if service in status_info['services']:
                     if status_info['services'][service] == 'Operational':
                         operational_required.append(service)
-            
+
             # At least some of our required services should be operational
             self.assertGreater(len(operational_required), 0,
-                             f"None of the required services are operational. "
-                             f"Current status: {[(s, status_info['services'].get(s, 'Not Found')) for s in required_services]}")
-            
+                               f"None of the required services are operational. "
+                               f"Current status: {[(s, status_info['services'].get(s, 'Not Found')) for s in required_services]}")
+
             print(f"\nOperational Required Services: {operational_required}")
-            
+
         except Exception as e:
             # If the real fetch fails (network issues, etc.), we'll skip this test
             self.skipTest(f"Could not fetch real status from UC Merced: {str(e)}")

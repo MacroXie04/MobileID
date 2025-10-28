@@ -43,6 +43,7 @@
 
 <script setup>
 import {computed, ref, toRefs} from 'vue';
+import {getInitials} from '@/utils/profileUtils.js';
 
 // Props
 const props = defineProps({
@@ -77,16 +78,6 @@ const showInitials = ref(false);
 const shouldShowAvatar = computed(() => {
   return avatarSrc.value && !showInitials.value;
 });
-
-// Get user initials
-function getInitials(name) {
-  if (!name) return 'U';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-}
 
 // Handle image loading error
 function handleImageError() {

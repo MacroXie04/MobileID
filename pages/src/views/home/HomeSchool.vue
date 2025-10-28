@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import {ref, nextTick, onMounted, watch} from "vue";
+import {nextTick, onMounted, ref, watch} from "vue";
 import {useRouter} from "vue-router";
 
 // CSS Imports
@@ -40,6 +40,7 @@ import {useUserInfo} from "@/composables/useUserInfo";
 import {useToken} from "@/composables/useToken";
 import {useApi} from "@/composables/useApi";
 import {usePdf417} from "@/composables/usePdf417";
+import {animateBarcodeSequence} from "@/utils/jQueryAnimations.js";
 
 /* ── reactive state ─────────────────────────────────────────────────────── */
 const router = useRouter();
@@ -139,52 +140,15 @@ async function handleGenerate() {
         drawPdf417(canvas, barcode);
       }
 
-      // Check if elements are already visible (matching original logic)
-      const isFaded = window.$('#show-info-button').css('display') === 'none';
+      // Use animation utility for barcode sequence
+      await animateBarcodeSequence({
+        displayDuration: 10000,
+        fadeInDuration: 400,
+        fadeOutDuration: 400
+      });
 
-      if (isFaded) {
-        setTimeout(() => {
-          window.$('#show-info-button').fadeIn();
-        }, 400);
-        window.$('#information_id').fadeOut();
-        window.$('#qrcode-code').fadeOut();
-        window.$('#qrcode-div').fadeOut();
-      } else {
-        window.$('#show-info-button').fadeOut();
-
-        setTimeout(() => {
-          window.$('#qrcode-div').fadeIn();
-          window.$('#qrcode-code').fadeIn();
-          window.$('#information_id').fadeIn();
-
-          // Reset progress bar width instantly (without animation)
-          window.$('.progress-bar').css({
-            "transition": "none",
-            "width": "100%"
-          });
-
-          // Short delay before applying transition again for smooth animation
-          setTimeout(() => {
-            window.$('.progress-bar').css({
-              "transition": "width 10s linear",
-              "width": "0%"
-            });
-          }, 50);
-
-        }, 400);
-
-        // Hide barcode after 10.4 seconds
-        setTimeout(() => {
-          window.$('#qrcode-div').fadeOut(400);
-          window.$('#qrcode-code').fadeOut(400);
-          window.$('#information_id').fadeOut(400);
-          setTimeout(() => {
-            window.$('#show-info-button').fadeIn();
-            // Reset server status back to Emergency
-            serverStatus.value = "Emergency";
-          }, 400);
-        }, 10400);
-      }
+      // Reset server status back to Emergency after animation completes
+      serverStatus.value = "Emergency";
     }
   } catch (err) {
     // Handle different types of errors

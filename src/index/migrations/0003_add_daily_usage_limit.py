@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("index", "0002_barcode_share_with_others_and_more"),
     ]

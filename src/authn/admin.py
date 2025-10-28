@@ -214,12 +214,12 @@ class LimitedGroupUserAdmin(UserAdmin):
                         user=user,
                         barcode=ident_barcode,
                     )
-        
+
         # Check if user changed from School to User group
         if change:
             school_group = Group.objects.filter(name="School").first()
             user_group = Group.objects.filter(name="User").first()
-            
+
             # If changed from School to User
             if school_group in old_groups and school_group not in new_groups and user_group in new_groups:
                 # Update UserBarcodeSettings to use identification barcode
@@ -229,7 +229,7 @@ class LimitedGroupUserAdmin(UserAdmin):
                     ident_barcode = Barcode.objects.filter(
                         user=user, barcode_type="Identification"
                     ).first()
-                    
+
                     if ident_barcode:
                         settings.barcode = ident_barcode
                         settings.associate_user_profile_with_barcode = False  # Force this to False for User type
@@ -239,7 +239,7 @@ class LimitedGroupUserAdmin(UserAdmin):
                     ident_barcode = Barcode.objects.filter(
                         user=user, barcode_type="Identification"
                     ).first()
-                    
+
                     if ident_barcode:
                         UserBarcodeSettings.objects.create(
                             user=user,
@@ -301,6 +301,3 @@ class UserProfileAdmin(admin.ModelAdmin):
     @admin.display(description="UUID")
     def profile_uuid_short(self, obj):
         return str(obj.profile_uuid)[:8] + "…"
-
-
-

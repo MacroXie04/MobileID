@@ -121,11 +121,11 @@ class BarcodeSerializer(serializers.ModelSerializer):
             ]
         except Exception:
             return []
-    
+
     def get_usage_stats(self, obj):
         """Get usage statistics including daily and total limits."""
         return UsageLimitService.get_usage_stats(obj)
-    
+
     def get_daily_usage_limit(self, obj):
         """Get the daily usage limit for quick access."""
         try:
@@ -207,14 +207,14 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
             all_dynamic_barcodes = Barcode.objects.filter(
                 barcode_type="DynamicBarcode"
             ).select_related('user').prefetch_related('barcodeuserprofile').order_by("-time_created")
-            
+
             # Add dynamic barcodes (only show others' if they are shared)
             for b in all_dynamic_barcodes:
                 if b.user != user and not b.share_with_others:
                     continue
                 owner_name = b.user.username if b.user != user else "Your"
                 display = f"{owner_name} Dynamic Barcode ending with {b.barcode[-4:]}"
-                
+
                 # Check if barcode has profile
                 has_profile = False
                 try:
@@ -222,7 +222,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                     has_profile = True
                 except:
                     pass
-                    
+
                 choices.append({
                     "id": b.id,
                     "display": display,
@@ -231,19 +231,19 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                     "full_display": f"{b.barcode_type} - {b.barcode} (Owner: {b.user.username})",
                     "has_profile_addon": has_profile,
                 })
-            
+
             # Get user's own identification and other barcodes
             own_other_barcodes = Barcode.objects.filter(
                 user=user,
                 barcode_type__in=["Identification", "Others"]
             ).prefetch_related('barcodeuserprofile').order_by("-time_created")
-            
+
             for b in own_other_barcodes:
                 if b.barcode_type == "Identification":
                     display = f"{user.username}'s identification barcode"
                 else:  # Others type
                     display = f"Your Barcode ending with {b.barcode[-4:]}"
-                
+
                 # Check if barcode has profile
                 has_profile = False
                 try:
@@ -251,7 +251,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                     has_profile = True
                 except:
                     pass
-                    
+
                 choices.append({
                     "id": b.id,
                     "display": display,
@@ -263,7 +263,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
         else:
             # Check if user is in User group - they only get identification barcode
             is_user = user.groups.filter(name="User").exists()
-            
+
             if is_user:
                 # User type only sees identification barcode
                 barcodes = Barcode.objects.filter(
@@ -272,8 +272,9 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                 ).prefetch_related('barcodeuserprofile').order_by("-time_created")
             else:
                 # Other non-School users see all their own barcodes
-                barcodes = Barcode.objects.filter(user=user).prefetch_related('barcodeuserprofile').order_by("-time_created")
-            
+                barcodes = Barcode.objects.filter(user=user).prefetch_related('barcodeuserprofile').order_by(
+                    "-time_created")
+
             for b in barcodes:
                 if b.barcode_type == "Identification":
                     display = f"{user.username}'s identification barcode"

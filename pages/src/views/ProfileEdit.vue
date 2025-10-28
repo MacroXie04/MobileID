@@ -188,19 +188,19 @@
 </template>
 
 <script setup>
-import {nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
+import {onMounted, onUnmounted, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
-import {getUserProfile, updateUserProfile, passkeyRegisterOptions, passkeyRegisterVerify} from '@/api/auth';
+import {getUserProfile, updateUserProfile} from '@/api/auth';
 import {baseURL} from '@/config';
-import Cropper from 'cropperjs';
-import 'cropperjs/dist/cropper.css';
+import {useImageCropper} from '@/composables/useImageCropper.js';
+import {usePasskeyRegistration} from '@/composables/usePasskeyRegistration.js';
+import {useAutoSave} from '@/composables/useAutoSave.js';
+import {validateImageFile, fileToBase64} from '@/utils/imageUtils.js';
 
 const router = useRouter();
 
 // Refs
 const fileInput = ref(null);
-const cropperImage = ref(null);
-const cropperContainer = ref(null);
 const cropperDialog = ref(null);
 
 // State
@@ -212,24 +212,46 @@ const formData = ref({
 const avatarFile = ref(null);
 const avatarPreviewUrl = ref('');
 const errors = ref({});
-const cropper = ref(null);
-const showCropper = ref(false);
-const tempImageUrl = ref('');
 const successMessage = ref('');
-const autoSaving = ref(false);
-const lastSaved = ref(false);
-const autoSaveStatus = ref({
-  show: false,
-  type: 'info', // 'info', 'success', 'error'
-  message: ''
-});
 const hasPasskey = ref(false);
-const passkeyBusy = ref(false);
-
-// Auto-save debounce timer
-const autoSaveTimer = ref(null);
 const originalData = ref({});
-const hasChanges = ref(false);
+
+// Image cropper composable (simple version without advanced controls)
+const {
+  cropperImage,
+  showCropper,
+  cropperLoading,
+  applyingCrop,
+  initializeCropper,
+  resetCrop,
+  applyCrop: applyCropBase,
+  closeCropper
+} = useImageCropper({
+  targetWidth: 256,
+  targetHeight: 256,
+  quality: 0.9,
+  enableAdvancedControls: false
+});
+
+// Passkey registration composable
+const {
+  passkeyBusy,
+  error: passkeyError,
+  registerPasskey: registerPasskeyBase
+} = usePasskeyRegistration();
+
+// Auto-save composable
+const {
+  autoSaving,
+  lastSaved,
+  hasChanges,
+  autoSaveStatus,
+  triggerAutoSave,
+  getStatusText: getAutoSaveStatusText,
+  hideToast
+} = useAutoSave(autoSaveChanges, {
+  debounceMs: 1500
+});
 
 // Methods
 const getAvatarSrc = () => {
@@ -240,7 +262,6 @@ const selectImage = () => {
   fileInput.value?.click();
 };
 
-// Clear specific error
 const clearError = (field) => {
   delete errors.value[field];
   if (field !== 'general') {
@@ -252,16 +273,14 @@ const handleFileSelect = async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  // Validate file type
-  if (!/^image\/(jpe?g|png)$/i.test(file.type)) {
-    errors.value.user_profile_img = 'Please select a JPG or PNG image';
-    fileInput.value.value = '';
-    return;
-  }
+  // Validate file
+  const validation = validateImageFile(file, {
+    allowedTypes: /^image\/(jpe?g|png)$/i,
+    maxSizeMB: 5
+  });
 
-  // Validate file size
-  if (file.size > 5 * 1024 * 1024) {
-    errors.value.user_profile_img = 'Image size must be less than 5MB';
+  if (!validation.success) {
+    errors.value.user_profile_img = validation.error;
     fileInput.value.value = '';
     return;
   }
@@ -269,239 +288,91 @@ const handleFileSelect = async (event) => {
   // Clear previous errors
   delete errors.value.user_profile_img;
 
-  // Create temporary URL for cropper
-  if (tempImageUrl.value) {
-    URL.revokeObjectURL(tempImageUrl.value);
-  }
-  tempImageUrl.value = URL.createObjectURL(file);
-
-  // Initialize cropper
-  await initializeCropper();
+  // Create temporary URL and initialize cropper
+  const tempUrl = URL.createObjectURL(file);
+  await initializeCropper(tempUrl);
 };
 
-const initializeCropper = async () => {
-  showCropper.value = true;
+const applyCrop = async () => {
+  try {
+    const result = await applyCropBase();
 
-  await nextTick();
+    if (result) {
+      avatarFile.value = result.file;
 
-  if (!cropperImage.value || !tempImageUrl.value) return;
-
-  // Destroy previous cropper instance
-  if (cropper.value) {
-    cropper.value.destroy();
-    cropper.value = null;
-  }
-
-  // Load image and initialize cropper
-  cropperImage.value.onload = () => {
-    cropper.value = new Cropper(cropperImage.value, {
-      aspectRatio: 1,
-      viewMode: 2,
-      dragMode: 'move',
-      autoCropArea: 0.9,
-      restore: false,
-      guides: true,
-      center: true,
-      highlight: false,
-      cropBoxMovable: true,
-      cropBoxResizable: true,
-      toggleDragModeOnDblclick: true,
-      minContainerWidth: 300,
-      minContainerHeight: 300,
-      minCropBoxWidth: 100,
-      minCropBoxHeight: 100,
-    });
-  };
-
-  cropperImage.value.src = tempImageUrl.value;
-};
-
-const resetCrop = () => {
-  if (cropper.value) {
-    cropper.value.reset();
-    cropper.value.setDragMode('move');
-  }
-};
-
-const applyCrop = () => {
-  if (!cropper.value) return;
-
-  const canvas = cropper.value.getCroppedCanvas({
-    width: 256,
-    height: 256,
-    imageSmoothingEnabled: true,
-    imageSmoothingQuality: 'high'
-  });
-
-  canvas.toBlob((blob) => {
-    if (blob) {
-      // Create file from blob
-      avatarFile.value = new File([blob], 'avatar.png', {type: 'image/png'});
-
-      // Update preview
+      // Update preview URL
       if (avatarPreviewUrl.value) {
         URL.revokeObjectURL(avatarPreviewUrl.value);
       }
-      avatarPreviewUrl.value = URL.createObjectURL(blob);
+      avatarPreviewUrl.value = result.previewUrl;
+
+      // Trigger auto-save for avatar change
+      triggerAutoSave();
     }
+
     closeCropper();
-  }, 'image/png', 0.9);
+    fileInput.value.value = '';
+  } catch (error) {
+    console.error('Failed to apply crop:', error);
+    errors.value.user_profile_img = 'Failed to process image. Please try again.';
+  }
 };
 
 const cancelCrop = () => {
   closeCropper();
-};
-
-const closeCropper = () => {
-  showCropper.value = false;
   fileInput.value.value = '';
-
-  if (cropper.value) {
-    cropper.value.destroy();
-    cropper.value = null;
-  }
-
-  if (tempImageUrl.value) {
-    URL.revokeObjectURL(tempImageUrl.value);
-    tempImageUrl.value = '';
-  }
 };
 
 const handleDialogClose = () => {
-  // Dialog closed without action
   closeCropper();
+  fileInput.value.value = '';
 };
 
 const handleFieldChange = (field) => {
-  // Clear error for the field
   clearError(field);
-  
-  // Mark that we have changes
-  hasChanges.value = true;
-  lastSaved.value = false;
-  
-  // Clear previous auto-save timer
-  if (autoSaveTimer.value) {
-    clearTimeout(autoSaveTimer.value);
-  }
-  
-  // Set new auto-save timer (1.5 seconds delay)
-  autoSaveTimer.value = setTimeout(() => {
-    autoSaveChanges();
-  }, 1500);
+  triggerAutoSave();
 };
 
-const getAutoSaveStatusText = () => {
-  if (autoSaving.value) {
-    return 'Auto-saving...';
-  } else if (lastSaved.value) {
-    return 'Last saved: ' + new Date().toLocaleTimeString();
-  } else if (hasChanges.value) {
-    return 'Changes detected - auto-saving soon...';
-  } else {
-    return 'Auto-save enabled';
-  }
-};
+// Auto-save changes function
+async function autoSaveChanges() {
+  // Prepare data for auto-save
+  const profileData = {
+    name: formData.value.name,
+    information_id: formData.value.information_id
+  };
 
-const autoSaveChanges = async () => {
-  if (!hasChanges.value || autoSaving.value) return;
-  
-  autoSaving.value = true;
-  
-  try {
-    // Prepare data for auto-save
-    const profileData = {
+  // Check if text fields have changed
+  const textFieldsChanged = JSON.stringify(profileData) !== JSON.stringify(originalData.value);
+
+  // Add base64 avatar if there's a new one
+  if (avatarFile.value) {
+    profileData.user_profile_img_base64 = await fileToBase64(avatarFile.value);
+  }
+
+  // Only auto-save if data has actually changed
+  if (!textFieldsChanged && !avatarFile.value) {
+    return {success: false};
+  }
+
+  const response = await updateUserProfile(profileData);
+
+  if (response.success) {
+    // Update original data to match current data
+    originalData.value = {
       name: formData.value.name,
       information_id: formData.value.information_id
     };
-    
-    // Check if text fields have changed
-    const textFieldsChanged = JSON.stringify(profileData) !== JSON.stringify(originalData.value);
-    
-    // Add base64 avatar if there's a new one
-    if (avatarFile.value) {
-      const reader = new FileReader();
-      const base64Promise = new Promise((resolve) => {
-        reader.onloadend = () => {
-          const base64String = reader.result.split(',')[1]; // Remove data:image prefix
-          resolve(base64String);
-        };
-        reader.readAsDataURL(avatarFile.value);
-      });
 
-      profileData.user_profile_img_base64 = await base64Promise;
+    // Clear avatar file after successful save
+    if (avatarFile.value) {
+      avatarFile.value = null;
     }
-    
-    // Only auto-save if data has actually changed
-    if (!textFieldsChanged && !avatarFile.value) {
-      hasChanges.value = false;
-      autoSaving.value = false;
-      return;
-    }
-    
-    const response = await updateUserProfile(profileData);
-    if (response.success) {
-      // Update original data to match current data
-      originalData.value = {
-        name: formData.value.name,
-        information_id: formData.value.information_id
-      };
-      
-      // Clear avatar file after successful save
-      if (avatarFile.value) {
-        avatarFile.value = null;
-      }
-      
-      hasChanges.value = false;
-      lastSaved.value = true;
-      
-      // Show success toast
-      autoSaveStatus.value = {
-        show: true,
-        type: 'success',
-        message: 'Profile auto-saved successfully'
-      };
-      
-      // Hide toast after 3 seconds
-      setTimeout(() => {
-        autoSaveStatus.value.show = false;
-      }, 3000);
-      
-      // Hide last saved indicator after 5 seconds
-      setTimeout(() => {
-        lastSaved.value = false;
-      }, 5000);
-    } else {
-      // Show error toast
-      autoSaveStatus.value = {
-        show: true,
-        type: 'error',
-        message: 'Auto-save failed: ' + (response.message || 'Unknown error')
-      };
-      
-      // Hide error toast after 5 seconds
-      setTimeout(() => {
-        autoSaveStatus.value.show = false;
-      }, 5000);
-    }
-  } catch (error) {
-    console.error('Auto-save error:', error);
-    
-    // Show error toast
-    autoSaveStatus.value = {
-      show: true,
-      type: 'error',
-      message: 'Auto-save failed: Network error'
-    };
-    
-    // Hide error toast after 5 seconds
-    setTimeout(() => {
-      autoSaveStatus.value.show = false;
-    }, 5000);
-  } finally {
-    autoSaving.value = false;
+
+    return {success: true, message: 'Profile auto-saved successfully'};
+  } else {
+    return {success: false, message: response.message || 'Auto-save failed'};
   }
-};
+}
 
 const handleSubmit = async () => {
   if (loading.value) return;
@@ -515,16 +386,7 @@ const handleSubmit = async () => {
 
     // Add base64 avatar if there's a new one
     if (avatarFile.value) {
-      const reader = new FileReader();
-      const base64Promise = new Promise((resolve) => {
-        reader.onloadend = () => {
-          const base64String = reader.result.split(',')[1]; // Remove data:image prefix
-          resolve(base64String);
-        };
-        reader.readAsDataURL(avatarFile.value);
-      });
-
-      profileData.user_profile_img_base64 = await base64Promise;
+      profileData.user_profile_img_base64 = await fileToBase64(avatarFile.value);
     }
 
     // Update profile with avatar data included
@@ -546,18 +408,13 @@ const handleSubmit = async () => {
 
     // Success - show message then redirect
     successMessage.value = 'Profile updated successfully!';
-    lastSaved.value = true;
-    hasChanges.value = false;
-    
+
     // Update original data to match current data
     originalData.value = {
       name: formData.value.name,
       information_id: formData.value.information_id
     };
-    
-    setTimeout(() => {
-      lastSaved.value = false;
-    }, 3000); // Hide last saved message after 3 seconds
+
     setTimeout(() => {
       router.push('/');
     }, 1500);
@@ -566,7 +423,6 @@ const handleSubmit = async () => {
     errors.value.general = 'Network error. Please try again.';
   } finally {
     loading.value = false;
-    autoSaving.value = false;
   }
 };
 
@@ -604,133 +460,24 @@ const loadProfile = async () => {
   }
 };
 
-// WebAuthn helpers
-function b64urlToArrayBuffer(value) {
-  // If already ArrayBuffer/Uint8Array/array of numbers, convert appropriately
-  if (value instanceof ArrayBuffer) return value;
-  if (value instanceof Uint8Array) return value.buffer;
-  if (Array.isArray(value)) return new Uint8Array(value).buffer;
-  if (typeof value !== 'string') return new TextEncoder().encode(String(value)).buffer;
-  try {
-    const padding = '='.repeat((4 - (value.length % 4)) % 4);
-    const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const raw = atob(base64);
-    const buffer = new ArrayBuffer(raw.length);
-    const view = new Uint8Array(buffer);
-    for (let i = 0; i < raw.length; ++i) view[i] = raw.charCodeAt(i);
-    return buffer;
-  } catch (e) {
-    // Fallback: treat as UTF-8 text
-    return new TextEncoder().encode(value).buffer;
-  }
-}
-
-function arrayBufferToB64url(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-  const base64 = btoa(binary).replace(/=+$/g, '');
-  return base64.replace(/\+/g, '-').replace(/\//g, '_');
-}
-
+// Passkey registration wrapper
 async function registerPasskey() {
-  if (passkeyBusy.value) return;
-  passkeyBusy.value = true;
-  try {
-    const {success, publicKey, message} = await passkeyRegisterOptions();
-    if (!success) throw new Error(message || 'Failed to start passkey registration');
-
-    const publicKeyOptions = {...publicKey};
-    publicKeyOptions.challenge = b64urlToArrayBuffer(publicKey.challenge);
-    if (publicKey.user && publicKey.user.id != null) {
-      publicKeyOptions.user = {...publicKey.user, id: new Uint8Array(b64urlToArrayBuffer(publicKey.user.id))};
-    }
-    // Ensure required user.displayName exists (browser requires it)
-    if (publicKeyOptions.user && !publicKeyOptions.user.displayName) {
-      publicKeyOptions.user.displayName = publicKeyOptions.user.name || 'User';
-    }
-    // Clean up problematic/experimental fields that browsers reject
-    const cleanFields = ['hints', 'extensions'];
-    cleanFields.forEach(field => {
-      if (publicKeyOptions[field] !== undefined) {
-        delete publicKeyOptions[field];
-      }
-    });
-    if (Array.isArray(publicKey.excludeCredentials)) {
-      publicKeyOptions.excludeCredentials = publicKey.excludeCredentials.map(c => ({
-        ...c,
-        id: b64urlToArrayBuffer(c.id)
-      }));
-    }
-
-    const cred = await navigator.credentials.create({publicKey: publicKeyOptions});
-    if (!cred) throw new Error('User aborted');
-
-    const attestation = {
-      id: cred.id,
-      type: cred.type,
-      rawId: arrayBufferToB64url(cred.rawId),
-      response: {
-        clientDataJSON: arrayBufferToB64url(cred.response.clientDataJSON),
-        attestationObject: arrayBufferToB64url(cred.response.attestationObject),
-      },
-    };
-
-    const verifyRes = await passkeyRegisterVerify(attestation);
-    if (!verifyRes.success) throw new Error(verifyRes.message || 'Passkey registration failed');
-
+  const success = await registerPasskeyBase();
+  if (success) {
     hasPasskey.value = true;
     successMessage.value = 'Passkey registered successfully!';
     setTimeout(() => successMessage.value = '', 3000);
-  } catch (e) {
-    console.error('Passkey registration error:', e);
-    errors.value.general = e.message || 'Passkey registration failed';
-  } finally {
-    passkeyBusy.value = false;
+  } else if (passkeyError.value) {
+    errors.value.general = passkeyError.value;
   }
 }
 
 // Cleanup
 onUnmounted(() => {
-  // Clear auto-save timer
-  if (autoSaveTimer.value) {
-    clearTimeout(autoSaveTimer.value);
-  }
-  
   if (avatarPreviewUrl.value) {
     URL.revokeObjectURL(avatarPreviewUrl.value);
   }
-  if (tempImageUrl.value) {
-    URL.revokeObjectURL(tempImageUrl.value);
-  }
-  if (cropper.value) {
-    cropper.value.destroy();
-  }
-});
-
-// Watch for dialog open state changes
-watch(showCropper, (newVal) => {
-  if (!newVal) {
-    closeCropper();
-  }
-});
-
-// Watch for avatar changes to trigger auto-save
-watch(avatarFile, (newVal) => {
-  if (newVal) {
-    hasChanges.value = true;
-    lastSaved.value = false;
-    
-    // Clear previous auto-save timer
-    if (autoSaveTimer.value) {
-      clearTimeout(autoSaveTimer.value);
-    }
-    
-    // Set new auto-save timer for avatar (longer delay for image processing)
-    autoSaveTimer.value = setTimeout(() => {
-      autoSaveChanges();
-    }, 2000);
-  }
+  // Auto-save and cropper cleanup is handled by composables
 });
 
 // Lifecycle

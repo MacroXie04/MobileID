@@ -87,17 +87,23 @@
 
 <script setup>
 import {onMounted, reactive, ref} from 'vue';
-import {login, passkeyAuthOptions, passkeyAuthVerify} from '@/api/auth.js';
+import {login} from '@/api/auth.js';
 import {useRouter} from 'vue-router';
+import {useLoginValidation} from '@/composables/useLoginValidation.js';
+import {usePasskeyAuth} from '@/composables/usePasskeyAuth.js';
 
 const router = useRouter();
 const formData = reactive({username: '', password: ''});
-const errors = reactive({});
 const loading = ref(false);
 const showPassword = ref(false);
 const iconBtn = ref(null);
 const submitBtn = ref(null);
-const passkeyBusy = ref(false);
+
+// Use validation composable
+const {errors, clearError, validateField: validateSingleField, validateForm, setGeneralError} = useLoginValidation();
+
+// Use passkey authentication composable
+const {passkeyBusy, error: passkeyError, signInWithPasskey: passkeySignIn} = usePasskeyAuth();
 
 onMounted(() => {
   if (iconBtn.value) {
@@ -113,33 +119,13 @@ onMounted(() => {
   }
 });
 
-function clearError(field) {
-  delete errors[field];
-  if (field === 'username' || field === 'password') delete errors.general;
-}
-
+// Wrapper function to pass formData to validation
 function validateField(field) {
-  clearError(field);
-  if (field === 'username') {
-    if (!formData.username.trim()) errors.username = 'Username is required';
-    else if (formData.username.length < 3) errors.username = 'Username must be at least 3 characters';
-  }
-  if (field === 'password') {
-    if (!formData.password) errors.password = 'Password is required';
-  }
-}
-
-function validateForm() {
-  let isValid = true;
-  Object.keys(errors).forEach(key => delete errors[key]);
-  validateField('username');
-  validateField('password');
-  if (errors.username || errors.password) isValid = false;
-  return isValid;
+  validateSingleField(field, formData);
 }
 
 async function handleSubmit() {
-  if (!validateForm()) return;
+  if (!validateForm(formData)) return;
   loading.value = true;
   try {
     const res = await login(formData.username, formData.password);
@@ -147,88 +133,24 @@ async function handleSubmit() {
       // Prefer SPA navigation to preserve app state
       await router.push('/');
     } else {
-      errors.general = 'Invalid credentials. Please check your username and password.';
+      setGeneralError('Invalid credentials. Please check your username and password.');
     }
   } catch (err) {
     console.error('Login error:', err);
-    errors.general = 'Network error. Please check your connection and try again.';
+    setGeneralError('Network error. Please check your connection and try again.');
   } finally {
     loading.value = false;
   }
 }
 
-function b64urlToArrayBuffer(value) {
-  if (value instanceof ArrayBuffer) return value;
-  if (value instanceof Uint8Array) return value.buffer;
-  if (Array.isArray(value)) return new Uint8Array(value).buffer;
-  if (typeof value !== 'string') return new TextEncoder().encode(String(value)).buffer;
-  try {
-    const padding = '='.repeat((4 - (value.length % 4)) % 4);
-    const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const raw = atob(base64);
-    const buffer = new ArrayBuffer(raw.length);
-    const view = new Uint8Array(buffer);
-    for (let i = 0; i < raw.length; ++i) view[i] = raw.charCodeAt(i);
-    return buffer;
-  } catch (e) {
-    return new TextEncoder().encode(value).buffer;
-  }
-}
-
-function arrayBufferToB64url(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-  const base64 = btoa(binary).replace(/=+$/g, '');
-  return base64.replace(/\+/g, '-').replace(/\//g, '_');
-}
-
 async function signInWithPasskey() {
-  if (passkeyBusy.value) return;
-  passkeyBusy.value = true;
-  try {
-    const {success, publicKey, message} = await passkeyAuthOptions(formData.username || undefined);
-    if (!success) throw new Error(message || 'Failed to start passkey auth');
-
-    const requestOptions = {...publicKey};
-    requestOptions.challenge = b64urlToArrayBuffer(publicKey.challenge);
-    if (Array.isArray(publicKey.allowCredentials)) {
-      requestOptions.allowCredentials = publicKey.allowCredentials.map(c => ({
-        ...c,
-        id: b64urlToArrayBuffer(c.id)
-      }));
-    }
-
-    const assertion = await navigator.credentials.get({publicKey: requestOptions});
-    if (!assertion) throw new Error('User aborted');
-
-    const credential = {
-      id: assertion.id,
-      type: assertion.type,
-      rawId: arrayBufferToB64url(assertion.rawId),
-      response: {
-        clientDataJSON: arrayBufferToB64url(assertion.response.clientDataJSON),
-        authenticatorData: arrayBufferToB64url(assertion.response.authenticatorData),
-        signature: arrayBufferToB64url(assertion.response.signature),
-        userHandle: assertion.response.userHandle ? arrayBufferToB64url(assertion.response.userHandle) : null,
-      },
-    };
-
-    const verifyRes = await passkeyAuthVerify(credential);
-    if (verifyRes.success) {
-      await router.push('/');
-    } else {
-      errors.general = verifyRes.message || 'Passkey sign-in failed';
-    }
-  } catch (e) {
-    console.error('Passkey sign-in error:', e);
-    errors.general = e.message || 'Passkey sign-in failed';
-  } finally {
-    passkeyBusy.value = false;
+  const success = await passkeySignIn(formData.username);
+  if (success) {
+    await router.push('/');
+  } else if (passkeyError.value) {
+    setGeneralError(passkeyError.value);
   }
 }
-
-
 </script>
 
 <style scoped>

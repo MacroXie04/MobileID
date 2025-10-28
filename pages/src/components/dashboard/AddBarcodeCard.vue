@@ -117,8 +117,9 @@
 </template>
 
 <script setup>
-import {nextTick, ref, watch, onUnmounted} from 'vue';
+import {ref} from 'vue';
 import {useApi} from '@/composables/useApi';
+import {useBarcodeScanner} from '@/composables/useBarcodeScanner.js';
 
 const emit = defineEmits(['added', 'message']);
 
@@ -128,18 +129,29 @@ const props = defineProps({
 
 const { apiCreateBarcode, apiTransferCatCard } = useApi();
 
+// Barcode state
 const addSectionLocal = ref(null);
 const newBarcode = ref('');
 const errors = ref({});
 
-const showScanner = ref(false);
-const scanning = ref(false);
-const scannerStatus = ref('Position the barcode within the camera view');
-const videoRef = ref(null);
-let codeReader = null;
-const cameras = ref([]);
-const selectedCameraId = ref(null);
-const hasCameraPermission = ref(false);
+// Scanner composable
+const {
+  showScanner,
+  scanning,
+  scannerStatus,
+  videoRef,
+  cameras,
+  selectedCameraId,
+  toggleScanner
+} = useBarcodeScanner({
+  onScan: (code) => {
+    newBarcode.value = code;
+    emit('message', 'Barcode scanned successfully!', 'success');
+  },
+  onError: (error) => {
+    emit('message', error.message || 'Scanner error occurred', 'danger');
+  }
+});
 
 // Transfer state
 const transferCookie = ref('');
@@ -224,119 +236,7 @@ async function requestTransferCode() {
   }
 }
 
-async function toggleScanner() {
-  if (showScanner.value) {
-    stopScanner();
-    showScanner.value = false;
-  } else {
-    showScanner.value = true;
-    await nextTick();
-    const granted = await ensureCameraPermission();
-    if (!granted) {
-      scanning.value = false;
-      scannerStatus.value = 'Camera permission is required to use the scanner.';
-      emit('message', 'Camera permission is required to use the scanner.', 'danger');
-      return;
-    }
-    await startScanner();
-  }
-}
-
-async function startScanner() {
-  try {
-    scanning.value = true;
-    scannerStatus.value = 'Initializing scanner...';
-    const {BrowserMultiFormatReader} = await import('@zxing/library');
-    codeReader = new BrowserMultiFormatReader();
-
-    if (!hasCameraPermission.value) {
-      const granted = await ensureCameraPermission();
-      if (!granted) {
-        scannerStatus.value = 'Camera permission denied.';
-        scanning.value = false;
-        return;
-      }
-    }
-
-    if (cameras.value.length === 0) {
-      const videoInputDevices = await codeReader.listVideoInputDevices();
-      cameras.value = videoInputDevices;
-      if (videoInputDevices.length > 0) {
-        if (!selectedCameraId.value) {
-          selectedCameraId.value = videoInputDevices[0].deviceId;
-        }
-      } else {
-        scannerStatus.value = 'No cameras found.';
-        scanning.value = false;
-        return;
-      }
-    }
-
-    if (!selectedCameraId.value) {
-      scannerStatus.value = 'No camera selected.';
-      scanning.value = false;
-      return;
-    }
-
-    scannerStatus.value = 'Position the barcode within the camera view';
-
-    codeReader.decodeFromVideoDevice(
-      selectedCameraId.value,
-      videoRef.value,
-      (result, error) => {
-        if (result) {
-          newBarcode.value = result.getText();
-          emit('message', 'Barcode scanned successfully!', 'success');
-          stopScanner();
-        }
-      }
-    );
-  } catch (error) {
-    scannerStatus.value = `Failed to start scanner: ${error.message}`;
-    scanning.value = false;
-  }
-}
-
-function stopScanner() {
-  if (codeReader) {
-    codeReader.reset();
-    codeReader = null;
-  }
-  showScanner.value = false;
-  scanning.value = false;
-  scannerStatus.value = 'Position the barcode within the camera view';
-  cameras.value = [];
-}
-
-async function ensureCameraPermission() {
-  try {
-    if (!navigator?.mediaDevices?.getUserMedia) {
-      scannerStatus.value = 'Camera is not supported in this browser.';
-      return false;
-    }
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    stream.getTracks().forEach(t => t.stop());
-    hasCameraPermission.value = true;
-    return true;
-  } catch (err) {
-    hasCameraPermission.value = false;
-    return false;
-  }
-}
-
-onUnmounted(() => {
-  stopScanner();
-});
-
-watch(selectedCameraId, async (newId, oldId) => {
-  if (showScanner.value && newId && oldId && newId !== oldId) {
-    if (codeReader) {
-      codeReader.reset();
-    }
-    await nextTick();
-    await startScanner();
-  }
-});
+// Scanner toggle is handled by composable
 </script>
 
 

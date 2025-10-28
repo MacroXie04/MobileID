@@ -3,9 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, time
 from typing import Optional, Tuple
 
-from django.db.models import Count, Q
 from django.utils import timezone
-
 from index.models import Barcode, BarcodeUsage, Transaction
 
 
@@ -44,26 +42,26 @@ class UsageLimitService:
         """
         try:
             usage = BarcodeUsage.objects.get(barcode=barcode)
-            
+
             # If no daily limit is set (0), allow usage
             if usage.daily_usage_limit == 0:
                 return True, None
-            
+
             # Count only transactions within the local-day window
             start_of_day, end_of_day = UsageLimitService._today_window()
-            
+
             # Count today's transactions for this barcode
             today_count = Transaction.objects.filter(
                 barcode_used=barcode,
                 time_created__gte=start_of_day,
                 time_created__lt=end_of_day,
             ).count()
-            
+
             if today_count >= usage.daily_usage_limit:
                 return False, f"Daily usage limit of {usage.daily_usage_limit} scans has been reached"
-            
+
             return True, None
-            
+
         except BarcodeUsage.DoesNotExist:
             # If no usage record exists, allow usage (will be created on first use)
             return True, None
@@ -78,16 +76,16 @@ class UsageLimitService:
         """
         try:
             usage = BarcodeUsage.objects.get(barcode=barcode)
-            
+
             # If no total limit is set (0), allow usage
             if usage.total_usage_limit == 0:
                 return True, None
-            
+
             if usage.total_usage >= usage.total_usage_limit:
                 return False, f"Total usage limit of {usage.total_usage_limit} scans has been reached"
-            
+
             return True, None
-            
+
         except BarcodeUsage.DoesNotExist:
             # If no usage record exists, allow usage
             return True, None
@@ -104,7 +102,7 @@ class UsageLimitService:
         allowed, error = UsageLimitService.check_daily_limit(barcode)
         if not allowed:
             return allowed, error
-        
+
         # Then check total limit
         return UsageLimitService.check_total_limit(barcode)
 
@@ -123,7 +121,7 @@ class UsageLimitService:
         """
         try:
             usage = BarcodeUsage.objects.get(barcode=barcode)
-            
+
             # Count today's usage in local-day window
             start_of_day, end_of_day = UsageLimitService._today_window()
             daily_used = Transaction.objects.filter(
@@ -131,14 +129,16 @@ class UsageLimitService:
                 time_created__gte=start_of_day,
                 time_created__lt=end_of_day,
             ).count()
-            
+
             return {
                 'daily_used': daily_used,
                 'daily_limit': usage.daily_usage_limit,
                 'total_used': usage.total_usage,
                 'total_limit': usage.total_usage_limit,
-                'daily_remaining': None if usage.daily_usage_limit == 0 else max(0, usage.daily_usage_limit - daily_used),
-                'total_remaining': None if usage.total_usage_limit == 0 else max(0, usage.total_usage_limit - usage.total_usage),
+                'daily_remaining': None if usage.daily_usage_limit == 0 else max(0,
+                                                                                 usage.daily_usage_limit - daily_used),
+                'total_remaining': None if usage.total_usage_limit == 0 else max(0,
+                                                                                 usage.total_usage_limit - usage.total_usage),
             }
         except BarcodeUsage.DoesNotExist:
             return {

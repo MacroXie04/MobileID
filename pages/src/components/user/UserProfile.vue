@@ -31,6 +31,7 @@
 <script setup>
 import {computed, ref, watch} from 'vue';
 import defaultAvatar from '@/assets/images/avatar_placeholder.png';
+import {getInitials, handleAvatarError} from '@/utils/profileUtils.js';
 
 // State
 const showInitials = ref(false);
@@ -49,11 +50,9 @@ const props = defineProps({
 
 // Computed
 const avatarUrl = computed(() => {
-  // Use avatarSrc if provided, otherwise check if we should show initials
   if (props.avatarSrc) {
     return props.avatarSrc;
   }
-  // If no avatarSrc and we have a name, we'll show initials
   return null;
 });
 
@@ -64,25 +63,13 @@ watch(() => props.avatarSrc, (newVal) => {
   }
 });
 
-// Get user initials
-function getInitials(name) {
-  if (!name) return 'U';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-}
-
 // Handle image loading error
 function handleImageError(event) {
-  // If we have a name, show initials instead
-  if (props.profile?.name) {
-    showInitials.value = true;
-  } else {
-    // Otherwise use placeholder
-    event.target.src = defaultAvatar;
-  }
+  handleAvatarError(event, {
+    profileName: props.profile?.name,
+    placeholderSrc: defaultAvatar,
+    onShowInitials: () => { showInitials.value = true; }
+  });
 }
 </script>
 

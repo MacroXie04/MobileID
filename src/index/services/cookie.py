@@ -9,7 +9,7 @@ Fill in the TODOs where indicated to implement your project-specific logic.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 
 @dataclass
@@ -86,7 +86,7 @@ def process_user_cookie(raw_cookie: str) -> ProcessedCookie:
         k: v for k, v in kv.items()
         if not any(k.startswith(prefix) for prefix in blacklist_prefixes)
     }
-    
+
     # Additional validation: check if we have at least one session-related cookie
     session_keys = [k for k in filtered_kv.keys() if "session" in k.lower()]
     if not session_keys:
@@ -96,5 +96,3 @@ def process_user_cookie(raw_cookie: str) -> ProcessedCookie:
     header_value = "; ".join(f"{k}={v}" for k, v in filtered_kv.items()) if filtered_kv else ""
 
     return ProcessedCookie(header_value=header_value, kv=filtered_kv, warnings=tuple(warnings))
-
-

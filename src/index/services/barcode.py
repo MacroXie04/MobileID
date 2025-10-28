@@ -70,7 +70,7 @@ def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
     update the `BarcodeUsage` counters but we do NOT create a `Transaction`.
     """
     now = timezone.now()
-    
+
     # Skip BarcodeUsage tracking for Identification barcodes since they regenerate each time
     # But still log transactions for audit purposes
     if barcode.barcode_type != BARCODE_IDENTIFICATION:
@@ -95,7 +95,6 @@ def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
             time_created=now,
             save=True,
         )
-
 
 
 def _timestamp() -> str:
@@ -148,11 +147,11 @@ def generate_barcode(user) -> dict:
             ident_barcode = Barcode.objects.filter(
                 user=user, barcode_type=BARCODE_IDENTIFICATION
             ).first()
-            
+
             if not ident_barcode:
                 # Create one if it doesn't exist
                 ident_barcode = _create_identification_barcode(user)
-            
+
             # Force the selection to identification barcode
             selected = ident_barcode
             settings.barcode = ident_barcode

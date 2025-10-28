@@ -47,34 +47,36 @@
 </template>
 
 <script setup>
-import {computed, ref} from "vue";
-
-// Material Web Components
 import '@material/web/button/elevated-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/progress/circular-progress.js';
 import '@material/web/progress/linear-progress.js';
 import '@material/web/ripple/ripple.js';
 
-// State
-const isProcessing = ref(false);
-const successMessage = ref('');
-const errorMessage = ref('');
-const barcodeDisplayed = ref(false);
-const buttonMessage = ref('PAY / Check-in');
-const progressValue = ref(100);
-const showProgressBar = ref(false);
-
-// Computed
-const buttonIcon = computed(() => {
-  if (successMessage.value) return 'check_circle';
-  if (errorMessage.value) return 'error';
-  if (isProcessing.value) return 'hourglass_empty';
-  return 'contactless';
-});
+import {useBarcodeDisplay} from '@/composables/useBarcodeDisplay.js';
+import {usePdf417} from '@/composables/usePdf417.js';
 
 // Emits
 const emit = defineEmits(['generate']);
+
+// Use composables
+const {
+  isProcessing,
+  successMessage,
+  errorMessage,
+  barcodeDisplayed,
+  buttonMessage,
+  progressValue,
+  showProgressBar,
+  buttonIcon,
+  clearBarcodeContainer,
+  resetUI,
+  startProcessing,
+  showSuccess,
+  showError
+} = useBarcodeDisplay();
+
+const {drawPdf417ToContainer} = usePdf417();
 
 // Handle generate button click
 function handleGenerate() {
@@ -82,133 +84,12 @@ function handleGenerate() {
   emit('generate');
 }
 
-// UI State Management Functions
-function clearBarcodeContainer() {
-  const barcodeContainer = document.getElementById('barcode-container');
-  if (barcodeContainer) {
-    barcodeContainer.innerHTML = '';
-  }
-}
-
-function resetUI() {
-  isProcessing.value = false;
-  barcodeDisplayed.value = false;
-  successMessage.value = '';
-  errorMessage.value = '';
-  buttonMessage.value = 'PAY / Check-in';
-  progressValue.value = 100;
-  showProgressBar.value = false;
-}
-
-function startProcessing() {
-  resetUI();
-  isProcessing.value = true;
-  buttonMessage.value = 'Processing...';
-}
-
-function showSuccess(message) {
-  isProcessing.value = false;
-  successMessage.value = message || 'Success';
-  buttonMessage.value = message || 'Success';
-  barcodeDisplayed.value = true;
-  progressValue.value = 100;
-  showProgressBar.value = true;
-
-  // Start countdown
-  const duration = 10000; // 10 seconds
-  const interval = 100; // Update every 100ms
-  const decrement = (interval / duration) * 100;
-  
-  const progressInterval = setInterval(() => {
-    progressValue.value -= decrement;
-    
-    if (progressValue.value <= 0) {
-      clearInterval(progressInterval);
-      if (barcodeDisplayed.value) {
-        resetUI();
-      }
-    }
-  }, interval);
-}
-
-function showError(message) {
-  isProcessing.value = false;
-  errorMessage.value = message || 'Error';
-  buttonMessage.value = message || 'Error';
-
-  setTimeout(() => {
-    if (errorMessage.value) {
-      resetUI();
-    }
-  }, 4000);
-}
-
+// Draw PDF417 barcode
 function drawPDF417(data) {
-  console.log('drawPDF417 called with data:', data);
-  
-  if (!window.PDF417) {
-    console.error('PDF417 library not loaded');
-    return;
-  }
-
-  try {
-    window.PDF417.init(data);
-    const barcodeArray = window.PDF417.getBarcodeArray();
-    
-    console.log('Barcode array:', barcodeArray);
-    
-    if (!barcodeArray || !barcodeArray['num_cols'] || !barcodeArray['num_rows'] || !barcodeArray['bcode']) {
-      console.error('Invalid barcode array generated');
-      return;
-    }
-
-    // Match the dimensions used in working implementation
-    const moduleWidth = 2.5;
-    const moduleHeight = 1;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = moduleWidth * barcodeArray['num_cols'];
-    canvas.height = moduleHeight * barcodeArray['num_rows'];
-    canvas.className = 'pdf417-canvas';
-    
-    // Remove style width/height to prevent scaling issues
-    canvas.style.width = '';
-    canvas.style.height = '';
-    
-    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
-
-    const barcodeContainer = document.getElementById('barcode-container');
-    if (barcodeContainer) {
-      barcodeContainer.innerHTML = '';
-      barcodeContainer.appendChild(canvas);
-
-      const ctx = canvas.getContext('2d');
-      
-      // Clear canvas with white background
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw barcode with proper positioning
-      ctx.fillStyle = '#000000';
-      let y = 0;
-      for (let r = 0; r < barcodeArray['num_rows']; r++) {
-        let x = 0;
-        for (let c = 0; c < barcodeArray['num_cols']; c++) {
-          if (barcodeArray['bcode'][r][c] == 1) {
-            ctx.fillRect(x, y, moduleWidth, moduleHeight);
-          }
-          x += moduleWidth;
-        }
-        y += moduleHeight;
-      }
-      
-      console.log('Barcode drawn successfully');
-    } else {
-      console.error('Barcode container not found');
-    }
-  } catch (error) {
-    console.error('Error drawing PDF417:', error);
-  }
+  drawPdf417ToContainer('barcode-container', data, {
+    moduleWidth: 2.5,
+    moduleHeight: 1
+  });
 }
 
 // Expose to parent

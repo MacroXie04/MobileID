@@ -4,11 +4,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterable, Optional, Sequence, Tuple, Dict, Any
 
-from django.db import transaction as db_transaction
 from django.db.models import Count, QuerySet
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.utils import timezone
-
 from index.models import (
     Transaction,
     User,
@@ -38,11 +36,11 @@ class TransactionService:
     # database transaction decorator (disable for development)
     # @db_transaction.atomic
     def create_transaction(
-        *,
-        user: User,
-        barcode: Optional[Barcode] = None,
-        time_created: Optional[datetime] = None,
-        save: bool = True,
+            *,
+            user: User,
+            barcode: Optional[Barcode] = None,
+            time_created: Optional[datetime] = None,
+            save: bool = True,
     ) -> Transaction:
         """
         Create and (optionally) persist a Transaction.
@@ -88,10 +86,10 @@ class TransactionService:
     # database transaction decorator (disable for development)
     # @db_transaction.atomic
     def bulk_ingest(
-        rows: Iterable[Dict[str, Any]],
-        *,
-        batch_size: int = 500,
-        default_time: Optional[datetime] = None,
+            rows: Iterable[Dict[str, Any]],
+            *,
+            batch_size: int = 500,
+            default_time: Optional[datetime] = None,
     ) -> Sequence[CreatedTransaction]:
         """
         Bulk create Transactions from iterable of dict rows.
@@ -151,11 +149,11 @@ class TransactionService:
     # -----------------------------
     @staticmethod
     def for_user(
-        user: User,
-        *,
-        since: Optional[datetime] = None,
-        until: Optional[datetime] = None,
-        select_related: bool = True,
+            user: User,
+            *,
+            since: Optional[datetime] = None,
+            until: Optional[datetime] = None,
+            select_related: bool = True,
     ) -> QuerySet[Transaction]:
         qs = Transaction.objects.filter(user=user)
         if since:
@@ -168,10 +166,10 @@ class TransactionService:
 
     @staticmethod
     def top_barcodes(
-        *,
-        limit: int = 10,
-        since: Optional[datetime] = None,
-        until: Optional[datetime] = None,
+            *,
+            limit: int = 10,
+            since: Optional[datetime] = None,
+            until: Optional[datetime] = None,
     ) -> Sequence[Tuple[Optional[int], int]]:
         """
         Return [(barcode_id, count), ...] ordered by count desc.
@@ -191,10 +189,10 @@ class TransactionService:
 
     @staticmethod
     def usage_over_time(
-        *,
-        granularity: str = "day",
-        since: Optional[datetime] = None,
-        until: Optional[datetime] = None,
+            *,
+            granularity: str = "day",
+            since: Optional[datetime] = None,
+            until: Optional[datetime] = None,
     ) -> Sequence[Tuple[datetime, int]]:
         """
         Group usage counts by time bucket.
@@ -228,10 +226,10 @@ class TransactionService:
     # -----------------------------
     @staticmethod
     def barcode_usage_stats(
-        *,
-        since: Optional[datetime] = None,
-        until: Optional[datetime] = None,
-        only_valid_barcodes: bool = False,
+            *,
+            since: Optional[datetime] = None,
+            until: Optional[datetime] = None,
+            only_valid_barcodes: bool = False,
     ) -> Dict[str, Any]:
         """
         Static-style summary of barcode usage across the dataset.
@@ -276,10 +274,10 @@ class TransactionService:
 
     @staticmethod
     def for_barcode(
-        barcode: Barcode,
-        *,
-        since: Optional[datetime] = None,
-        until: Optional[datetime] = None,
+            barcode: Barcode,
+            *,
+            since: Optional[datetime] = None,
+            until: Optional[datetime] = None,
     ) -> QuerySet[Transaction]:
         qs = Transaction.objects.filter(barcode_used=barcode)
         if since:

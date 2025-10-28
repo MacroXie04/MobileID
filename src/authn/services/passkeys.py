@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import json
 from typing import List, Optional
 from urllib.parse import urlparse
-import json
 
-from django.contrib.auth.models import User
+from authn.models import PasskeyCredential
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
-
 from webauthn import (
     generate_registration_options,
     verify_registration_response,
@@ -21,8 +21,6 @@ from webauthn.helpers.structs import (
     AuthenticationCredential,
     AuthenticatorSelectionCriteria,
 )
-
-from authn.models import PasskeyCredential
 
 
 def _rp_id() -> str:
@@ -105,7 +103,7 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
 
     # Store the raw challenge BEFORE serialization for later comparison
     raw_challenge = getattr(options, 'challenge', None)
-    
+
     # Serialize to plain JSON dict with WebAuthn camelCase keys when supported
     result = None
     if hasattr(options, "model_dump_json"):
@@ -125,14 +123,14 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
     else:
         # Fallback: best-effort
         result = json.loads(json.dumps(options, default=lambda o: getattr(o, "__dict__", str(o))))
-    
+
     # Ensure pubKeyCredParams is present (required by WebAuthn spec)
     if 'pubKeyCredParams' not in result:
         result['pubKeyCredParams'] = [
-            {'type': 'public-key', 'alg': -7},   # ES256
+            {'type': 'public-key', 'alg': -7},  # ES256
             {'type': 'public-key', 'alg': -257}  # RS256
         ]
-    
+
     # Ensure challenge is properly formatted - use raw challenge if available
     if raw_challenge is not None:
         if isinstance(raw_challenge, bytes):
@@ -142,7 +140,7 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
             result['challenge'] = raw_challenge
     elif 'challenge' in result and isinstance(result['challenge'], (bytes, bytearray)):
         result['challenge'] = bytes_to_base64url(result['challenge'])
-    
+
     # Ensure other required fields have proper structure
     if 'user' in result and isinstance(result['user'], dict):
         # Ensure user.id is base64url encoded string
@@ -151,8 +149,9 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
         # Ensure required displayName is present
         if not result['user'].get('displayName'):
             # Fall back to name if displayName missing
-            result['user']['displayName'] = result['user'].get('name') or getattr(getattr(user, "userprofile", None), "name", user.username)
-    
+            result['user']['displayName'] = result['user'].get('name') or getattr(getattr(user, "userprofile", None),
+                                                                                  "name", user.username)
+
     return result
 
 
@@ -168,9 +167,10 @@ def verify_and_create_passkey(user: User, credential: dict, expected_challenge) 
             print(f"Challenge decode error: {e}, challenge: {expected_challenge}")
             # If it's not valid base64url, treat as raw string and encode
             expected_bytes = expected_challenge.encode('utf-8')
-    
-    print(f"Registration verification - expected challenge bytes length: {len(expected_bytes) if expected_bytes else 'None'}")
-    
+
+    print(
+        f"Registration verification - expected challenge bytes length: {len(expected_bytes) if expected_bytes else 'None'}")
+
     verification = verify_registration_response(
         credential=_pydantic_load(RegistrationCredential, credential),
         expected_challenge=expected_bytes,
@@ -210,10 +210,10 @@ def build_authentication_options(user: Optional[User] = None) -> dict:
         user_verification="required",
         allow_credentials=allow_credentials,
     )
-    
+
     # Store the raw challenge BEFORE serialization for later comparison
     raw_challenge = getattr(options, 'challenge', None)
-    
+
     # Serialize to plain JSON dict with WebAuthn camelCase keys when supported
     result = None
     if hasattr(options, "model_dump_json"):
@@ -233,7 +233,7 @@ def build_authentication_options(user: Optional[User] = None) -> dict:
     else:
         # Fallback: best-effort
         result = json.loads(json.dumps(options, default=lambda o: getattr(o, "__dict__", str(o))))
-    
+
     # Ensure challenge is properly formatted - use raw challenge if available
     if raw_challenge is not None:
         if isinstance(raw_challenge, bytes):
@@ -243,13 +243,13 @@ def build_authentication_options(user: Optional[User] = None) -> dict:
             result['challenge'] = raw_challenge
     elif 'challenge' in result and isinstance(result['challenge'], (bytes, bytearray)):
         result['challenge'] = bytes_to_base64url(result['challenge'])
-    
+
     # Ensure allowCredentials is properly formatted if present
     if 'allowCredentials' in result and isinstance(result['allowCredentials'], list):
         for cred in result['allowCredentials']:
             if 'id' in cred and isinstance(cred['id'], (bytes, bytearray)):
                 cred['id'] = bytes_to_base64url(cred['id'])
-    
+
     return result
 
 
@@ -274,9 +274,10 @@ def verify_authentication(credential: dict, expected_challenge) -> User:
             print(f"Auth challenge decode error: {e}, challenge: {expected_challenge}")
             # If it's not valid base64url, treat as raw string and encode
             expected_bytes = expected_challenge.encode('utf-8')
-    
-    print(f"Authentication verification - expected challenge bytes length: {len(expected_bytes) if expected_bytes else 'None'}")
-    
+
+    print(
+        f"Authentication verification - expected challenge bytes length: {len(expected_bytes) if expected_bytes else 'None'}")
+
     result = verify_authentication_response(
         credential=_pydantic_load(AuthenticationCredential, credential),
         expected_challenge=expected_bytes,
@@ -292,6 +293,3 @@ def verify_authentication(credential: dict, expected_challenge) -> User:
     stored.save(update_fields=["sign_count", "updated_at"])
 
     return stored.user
-
-
-

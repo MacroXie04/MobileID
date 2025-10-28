@@ -1,33 +1,32 @@
 # authn/views.py
 import base64
 import os
-from binascii import Error as BinasciiError
 from io import BytesIO
 
 from PIL import Image
-from django.conf import settings
-from authn.services.webauthn import create_user_profile
-from django import forms
-from django.contrib.auth import login
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
-from django.core.validators import MaxLengthValidator
-from django.http import HttpResponse
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.middleware.csrf import get_token
 from authn.services.passkeys import (
     build_registration_options,
     verify_and_create_passkey,
     build_authentication_options,
     verify_authentication,
 )
+from authn.services.webauthn import create_user_profile
 from authn.utils.encryption import decrypt_password, is_encrypted_password
+from django import forms
+from django.conf import settings
+from django.contrib.auth import login
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator
+from django.http import HttpResponse
+from django.middleware.csrf import get_token
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 def _clean_base64(b64: str) -> str:
@@ -142,19 +141,19 @@ class EncryptedTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
     Custom serializer that supports decrypting RSA encrypted passwords
     """
-    
+
     def validate(self, attrs):
         # Get password
         password = attrs.get('password')
-        
+
         import logging
         logger = logging.getLogger(__name__)
         logger.info(f"Received password, length: {len(password)}, first 50 chars: {password[:50]}")
-        
+
         # Check if password is encrypted
         is_encrypted = is_encrypted_password(password)
         logger.info(f"Is recognized as encrypted password: {is_encrypted}")
-        
+
         if is_encrypted:
             try:
                 # Decrypt password
@@ -165,7 +164,7 @@ class EncryptedTokenObtainPairSerializer(TokenObtainPairSerializer):
             except ValueError as e:
                 # Decryption failed, log detailed error information
                 logger.error(f"Password decryption failed: {str(e)}, password length: {len(password)}")
-                
+
                 from rest_framework import serializers
                 raise serializers.ValidationError({
                     'password': 'Password decryption failed, please try again'
@@ -173,7 +172,7 @@ class EncryptedTokenObtainPairSerializer(TokenObtainPairSerializer):
         else:
             # If not encrypted password, log for debugging
             logger.info(f"Using plaintext password login, password: {password}")
-        
+
         # Call parent class validation method
         return super().validate(attrs)
 
@@ -286,7 +285,7 @@ def user_img(request):
     # Validate and detect MIME using Pillow (imghdr removed in Python 3.13)
     try:
         with Image.open(BytesIO(img_bytes)) as img:
-            fmt = img.format  # e.g. 'PNG', 'JPEG'
+            fmt = img.format
             mime = Image.MIME.get(fmt)
     except Exception:
         return HttpResponse(status=400)
@@ -395,7 +394,7 @@ def api_register(request):
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
                 samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
                 secure=(os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()) or (
-                            os.getenv("COOKIE_SECURE", "False").lower() == "true"),
+                        os.getenv("COOKIE_SECURE", "False").lower() == "true"),
                 max_age=access_max_age,
             )
             response.set_cookie(
@@ -404,7 +403,7 @@ def api_register(request):
                 httponly=os.getenv("COOKIE_HTTPONLY", "True").lower() == "true",
                 samesite=os.getenv("COOKIE_SAMESITE", "Lax"),
                 secure=(os.getenv("USE_HTTPS", "False").lower() == "true" or request.is_secure()) or (
-                            os.getenv("COOKIE_SECURE", "False").lower() == "true"),
+                        os.getenv("COOKIE_SECURE", "False").lower() == "true"),
                 path="/authn/",
                 max_age=refresh_max_age,
             )

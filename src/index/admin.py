@@ -22,6 +22,8 @@ class BarcodeUsageInline(admin.TabularInline):
     readonly_fields = ('total_usage', 'last_used')
     can_delete = False
     show_change_link = True
+
+
 class BarcodeUserProfileInline(admin.TabularInline):
     """Inline admin for BarcodeUserProfile linked to a Barcode"""
     model = BarcodeUserProfile
@@ -40,7 +42,6 @@ class BarcodeUserProfileInline(admin.TabularInline):
                 obj.user_profile_img
             )
         return '-'
-
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -331,4 +332,3 @@ class TransactionAdmin(admin.ModelAdmin):
         if b.barcode_type == "DynamicBarcode":
             return f"Dynamic Barcode ending with {b.barcode[-4:]}"
         return f"Barcode ending with {b.barcode[-4:]}"
-

@@ -8,11 +8,11 @@ def main():
     """Run administrative tasks."""
     # Set default settings module - use main settings for all operations including tests
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mobileid.settings")
-    
+
     # Set testing flag when running tests
     if len(sys.argv) > 1 and sys.argv[1] == 'test':
         os.environ.setdefault("TESTING", "True")
-    
+
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

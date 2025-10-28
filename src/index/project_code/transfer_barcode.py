@@ -1,19 +1,21 @@
-from .dynamic_barcode import UCMercedMobileIdClient
-from django.contrib.auth.models import User
-from django.db import transaction
-import random
 import base64
 import io
+from dataclasses import dataclass
 from typing import Optional
+
+from PIL import Image
+from django.contrib.auth.models import User
+from django.db import transaction
 from index.models import (
     Barcode,
     BarcodeUserProfile,
     UserBarcodeSettings,
 )
 from index.project_code.dynamic_barcode import ApiResponse
-from dataclasses import dataclass
-from PIL import Image
 from index.services.transactions import TransactionService
+
+from .dynamic_barcode import UCMercedMobileIdClient
+
 
 @dataclass
 class BarcodeData:
@@ -32,6 +34,7 @@ class BarcodeData:
             'user_cookies': self.user_cookies,
         }
 
+
 class TransferBarcode(UCMercedMobileIdClient):
     def __init__(self, user_cookies: str, user: Optional[User] = None, headless: bool = True):
         super().__init__(headless=headless)
@@ -41,11 +44,11 @@ class TransferBarcode(UCMercedMobileIdClient):
     def process_barcode_data(self) -> BarcodeData:
         mobile_data = self.get_mobile_id_data(self.user_cookies)
         converted_png_b64 = self._convert_profile_image_to_png_128(mobile_data.profile_img_base64 or "")
-        
+
         # Validate that we have meaningful data before proceeding
         if not self._has_meaningful_data(mobile_data):
             raise ValueError("No meaningful mobile ID data found. Please check your credentials and try again.")
-        
+
         return BarcodeData(
             barcode=mobile_data.barcode or "",
             user_profile_img=converted_png_b64,
@@ -53,7 +56,7 @@ class TransferBarcode(UCMercedMobileIdClient):
             information_id=mobile_data.student_id or "",
             user_cookies=self.user_cookies,
         )
-    
+
     def store_barcode_data(self, barcode_data: BarcodeData) -> None:
         # store the barcode data in the database
         if not self.barcode_user:
@@ -158,27 +161,27 @@ class TransferBarcode(UCMercedMobileIdClient):
         has_barcode = bool(mobile_data.barcode and mobile_data.barcode.strip())
         has_student_id = bool(mobile_data.student_id and mobile_data.student_id.strip())
         has_mobile_codes = bool(mobile_data.mobile_id_rand_array and len(mobile_data.mobile_id_rand_array) > 0)
-        
+
         # Username validation - check if it's not just generic text
         has_meaningful_username = False
         if mobile_data.username and mobile_data.username.strip():
             username = mobile_data.username.strip()
             # Check if username is not just generic institutional text
             generic_texts = [
-                "university of california", "uc merced", "merced", 
+                "university of california", "uc merced", "merced",
                 "university", "college", "institution", "campus"
             ]
             username_lower = username.lower()
             has_meaningful_username = not any(generic in username_lower for generic in generic_texts)
-        
+
         # We need at least 2 out of 4 meaningful pieces of data
         meaningful_count = sum([
             has_barcode,
-            has_student_id, 
+            has_student_id,
             has_mobile_codes,
             has_meaningful_username
         ])
-        
+
         return meaningful_count >= 2
 
     def _convert_profile_image_to_png_128(self, possibly_data_uri_b64: str) -> str:

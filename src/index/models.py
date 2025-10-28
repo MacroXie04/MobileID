@@ -12,6 +12,7 @@ class BarcodePullSettings(models.Model):
 
     # 
 
+
 # barcode total usage
 class BarcodeUsage(models.Model):
     # foreign key to barcode
