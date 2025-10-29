@@ -153,6 +153,9 @@
 <script setup>
 import {computed} from 'vue';
 
+// CSS
+import '@/assets/css/dashboard-merged.css';
+
 const props = defineProps({
   isSaving: {type: Boolean, default: false},
   currentBarcodeInfo: {type: String, default: ''},
@@ -182,11 +185,3 @@ const activeIcon = computed(() => {
   return 'barcode';
 });
 </script>
-
-<style scoped>
-.settings-section {
-  padding: 1rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--md-sys-color-outline-variant);
-}
-</style>

@@ -517,6 +517,7 @@ config.json
 
 # Django static and media files (should be generated on server)
 src/staticfiles/
+/src/staticfiles/
 src/media/
 src/static_root/
 
@@ -538,5 +539,8 @@ pages/.output/
 # - README.md                    (project documentation)
 # - SECURITY.md                  (security policy)
 # ===================================================================
-/src/staticfiles/
+
+# ===================================================================
+#  Claude Integration
+# ===================================================================
 /CLAUDE.md

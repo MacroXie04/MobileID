@@ -67,6 +67,9 @@ import {useApi} from "@/composables/useApi";
 import {useUserInfo} from "@/composables/useUserInfo";
 import {baseURL} from "@/config";
 
+// CSS
+import '@/assets/css/home-merged.css';
+
 /* ── reactive state ─────────────────────────────────────────────────────── */
 const router = useRouter();
 const profile = ref(null);
@@ -143,60 +146,3 @@ async function handleLogout() {
   }
 }
 </script>
-
-<style scoped>
-/* Page-specific styles for HomeUser.vue - minimal overrides only */
-
-/* Header icon color */
-.card-header md-icon {
-  color: var(--md-sys-color-primary);
-}
-
-/* Profile card gradient background */
-.profile-overview-card {
-  background: var(--md-sys-color-surface-container-low);
-}
-
-/* Grid responsive adjustments */
-.home-grid {
-  grid-template-columns: 1fr;
-}
-
-/* Medium screens - 2 columns */
-@media (min-width: 905px) {
-  .home-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .profile-overview-card {
-    grid-column: 1 / -1;
-  }
-}
-
-/* Large screens - 3 columns */
-@media (min-width: 1240px) {
-  .home-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .profile-overview-card {
-    grid-column: auto;
-  }
-}
-
-/* Component padding adjustments */
-.user-profile-component {
-  padding: var(--md-sys-spacing-2) 0;
-}
-
-.user-menu-component {
-  padding: 0;
-}
-
-/* Responsive header text */
-@media (max-width: 599px) {
-  .header-title h1 {
-    font-size: var(--md-sys-typescale-headline-medium-size);
-  }
-}
-</style>

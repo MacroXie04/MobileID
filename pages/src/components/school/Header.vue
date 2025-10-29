@@ -27,39 +27,7 @@
 <script setup>
 import ucmLogo from "@/assets/images/ucm3.png";
 import mobileIdLogo from "@/assets/images/mobileid_logo.png";
+
+// CSS
+import '@/assets/css/school-merged.css';
 </script>
-
-<style scoped>
-.header-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 40px;
-  position: relative;
-}
-
-.header-left, .header-right {
-  flex: 1;
-}
-
-.header-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
-
-.header-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.logo-image {
-  height: 60px;
-}
-
-.header-border {
-  border-top: 1px solid white;
-  margin: 0 20px;
-}
-</style> 

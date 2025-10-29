@@ -45,6 +45,9 @@
 import {computed, ref, toRefs} from 'vue';
 import {getInitials} from '@/utils/profileUtils.js';
 
+// CSS
+import '@/assets/css/school-merged.css';
+
 // Props
 const props = defineProps({
   profile: {
@@ -90,49 +93,3 @@ function handleGenerate() {
 }
 </script>
 
-<style scoped>
-.profile-section {
-  text-align: center;
-  margin-top: 2em;
-}
-
-.profile-avatar {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 50%;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4);
-  transition: transform 0.3s ease-in-out;
-}
-
-.profile-initials {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-size: 36px;
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.profile-name {
-  margin-top: 0.5em;
-  color: white !important;
-}
-
-.profile-info-id {
-  color: white !important;
-  display: none;
-}
-
-.profile-button-container {
-  margin-top: 1em;
-}
-
-/* buttom */
-#show-info-button:hover {
-  transform: translateY(-2px);
-  transition: transform 0.3s ease-in-out;
-}
-</style> 

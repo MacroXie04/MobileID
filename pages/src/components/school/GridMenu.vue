@@ -49,6 +49,9 @@ import {useRouter} from 'vue-router';
 import {logout} from '@/api/auth';
 import {clearAuthCookies, clearAuthStorage} from '@/utils/cookie';
 
+// CSS
+import '@/assets/css/school-merged.css';
+
 const router = useRouter();
 
 // Props
@@ -100,59 +103,3 @@ async function handleLogout() {
 }
 </script>
 
-<style scoped>
-/* Container that centers the whole grid */
-.grid-wrapper {
-  margin: auto;
-  max-width: 320px;
-}
-
-/* 3 × 3 grid */
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 16px;
-
-  /* keep borders/padding inside the 320 px box */
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-/* Grid buttons */
-.btn-grid {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  height: 100%;
-  padding: 20px 10px;
-  min-height: 80px;
-
-  text-decoration: none;
-  color: inherit;
-
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  transition: all 0.3s ease;
-
-  /* keep borders/padding inside their grid cell */
-  box-sizing: border-box;
-}
-
-/* Icon colour */
-.btn-grid i {
-  margin-bottom: 8px;
-  color: #bf9c44;
-}
-
-/* Label text */
-.btn-grid p {
-  margin: 0;
-  font-size: 12px;
-  text-align: center;
-  color: #bf9c44;
-}
-</style>

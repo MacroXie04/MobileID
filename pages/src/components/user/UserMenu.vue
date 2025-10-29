@@ -30,6 +30,9 @@ import '@material/web/list/list.js';
 import '@material/web/list/list-item.js';
 import '@material/web/divider/divider.js';
 
+// CSS
+import '@/assets/css/user-merged.css';
+
 const router = useRouter();
 const emit = defineEmits(['logout']);
 
@@ -39,50 +42,3 @@ function handleEditProfile() {
 
 function handleLogout() {
   emit('logout');
-}
-</script>
-
-<style scoped>
-.menu-container {
-  padding: 0;
-  width: 100%;
-}
-
-.user-menu-list {
-  --md-list-container-color: transparent;
-  padding: 0;
-}
-
-.menu-item {
-  --md-list-item-label-text-size: 1rem;
-  --md-list-item-label-text-weight: 500;
-  --md-list-item-hover-state-layer-color: var(--md-sys-color-primary);
-  --md-list-item-focus-state-layer-color: var(--md-sys-color-primary);
-  --md-list-item-pressed-state-layer-color: var(--md-sys-color-primary);
-  border-radius: var(--md-sys-shape-corner-large);
-  margin-bottom: 8px;
-}
-
-.menu-item:last-child {
-  margin-bottom: 0;
-}
-
-.menu-item md-icon {
-  color: var(--md-sys-color-primary);
-}
-
-.menu-item-logout {
-  --md-list-item-label-text-color: var(--md-sys-color-error);
-  --md-list-item-hover-state-layer-color: var(--md-sys-color-error);
-  --md-list-item-focus-state-layer-color: var(--md-sys-color-error);
-  --md-list-item-pressed-state-layer-color: var(--md-sys-color-error);
-}
-
-.menu-item-logout md-icon {
-  color: var(--md-sys-color-error);
-}
-
-md-divider {
-  margin: 8px 0;
-}
-</style> 
