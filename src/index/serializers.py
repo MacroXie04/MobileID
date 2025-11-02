@@ -1,6 +1,6 @@
-from index.models import Barcode, UserBarcodeSettings, BarcodeUsage, BarcodeUserProfile, Transaction
-from index.services.transactions import TransactionService
-from index.services.usage_limit import UsageLimitService
+from src.index.models import Barcode, UserBarcodeSettings, BarcodeUsage, BarcodeUserProfile, Transaction
+from src.index.services.transactions import TransactionService
+from src.index.services.usage_limit import UsageLimitService
 from rest_framework import serializers
 
 

@@ -1,13 +1,13 @@
 from types import SimpleNamespace
 from unittest.mock import patch, Mock
 
-from authn.models import UserProfile
-from authn.services.webauthn import create_user_profile
+from src.authn.models import UserProfile
+from src.authn.services.webauthn import create_user_profile
 from django.contrib.auth.models import User, Group
 from django.test import TestCase
 from django.urls import reverse
-from index.models import Barcode, BarcodeUsage, UserBarcodeSettings, BarcodeUserProfile, Transaction
-from index.services.barcode import (
+from src.index.models import Barcode, BarcodeUsage, UserBarcodeSettings, BarcodeUserProfile, Transaction
+from src.index.services.barcode import (
     generate_barcode,
     generate_unique_identification_barcode,
     _create_identification_barcode,

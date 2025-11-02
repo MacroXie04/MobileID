@@ -3,6 +3,7 @@ Password encryption and decryption utilities
 """
 import base64
 import logging
+import os
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding

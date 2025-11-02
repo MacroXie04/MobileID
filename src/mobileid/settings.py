@@ -46,19 +46,24 @@ DEBUG = env("DEBUG", "False").lower() == "true"
 ALLOWED_HOSTS = csv_env("ALLOWED_HOSTS", ["localhost"])
 
 INSTALLED_APPS = [
+
     # index app
     "index.apps.IndexConfig",
+
     # user authentication
     "authn.apps.AuthnConfig",
+
     # Django REST framework
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "rest_framework.authtoken",
     "corsheaders",
+
     # modules
     "widget_tweaks",
     "django_extensions",
+
     # Default Django apps
     "django.contrib.admin",
     "django.contrib.auth",

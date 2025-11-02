@@ -1,5 +1,5 @@
-from index.models import Barcode, UserBarcodeSettings, BarcodeUsage
-from index.serializers import (
+from src.index.models import Barcode, UserBarcodeSettings, BarcodeUsage
+from src.index.serializers import (
     BarcodeSerializer,
     BarcodeCreateSerializer,
     UserBarcodeSettingsSerializer

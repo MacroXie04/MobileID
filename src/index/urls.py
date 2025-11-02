@@ -2,9 +2,9 @@
 
 from django.urls import path
 
-from index.api.barcode import GenerateBarcodeAPIView, ActiveProfileAPIView
-from index.api.dashboard import BarcodeDashboardAPIView
-from index.api.transfer import TransferCatCardAPIView
+from src.index.api.barcode import GenerateBarcodeAPIView, ActiveProfileAPIView
+from src.index.api.dashboard import BarcodeDashboardAPIView
+from src.index.api.transfer import TransferCatCardAPIView
 
 app_name = "index"
 
@@ -18,6 +18,6 @@ urlpatterns = [
     # barcode dashboard
     path("barcode_dashboard/", BarcodeDashboardAPIView.as_view(), name="api_barcode_dashboard"),
 
-    # transfer catcard endpoint
+    # transfer card endpoint
     path("transfer/", TransferCatCardAPIView.as_view(), name="api_catcard_transfer"),
 ]

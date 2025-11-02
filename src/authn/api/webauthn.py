@@ -1,17 +1,16 @@
-# authn/views.py
 import base64
 import os
 from io import BytesIO
 
 from PIL import Image
-from authn.services.passkeys import (
+from src.authn.services.passkeys import (
     build_registration_options,
     verify_and_create_passkey,
     build_authentication_options,
     verify_authentication,
 )
-from authn.services.webauthn import create_user_profile
-from authn.utils.encryption import decrypt_password, is_encrypted_password
+from src.authn.services.webauthn import create_user_profile
+from src.authn.utils.encryption import decrypt_password, is_encrypted_password
 from django import forms
 from django.conf import settings
 from django.contrib.auth import login

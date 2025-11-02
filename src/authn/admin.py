@@ -2,15 +2,15 @@ import json
 import textwrap
 import uuid
 
-from authn.models import UserProfile
+from src.authn.models import UserProfile
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User, Group
 from django.utils.html import format_html
-from index.models import UserBarcodeSettings, Barcode
-from index.services.transactions import TransactionService
+from src.index.models import UserBarcodeSettings, Barcode
+from src.index.services.transactions import TransactionService
 
 
 # ──────────────────────────────────────────────────────────────
