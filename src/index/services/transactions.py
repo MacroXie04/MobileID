@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterable, Optional, Sequence, Tuple, Dict, Any
 
+from django.contrib.auth.models import User
 from django.db.models import Count, QuerySet
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.utils import timezone
 from index.models import (
     Transaction,
-    User,
     Barcode,
 )
 

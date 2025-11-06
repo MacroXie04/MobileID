@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils import timezone
 from django.utils.html import format_html
-from src.index.models import (
+from .models import (
     Barcode,
     UserBarcodeSettings,
     BarcodeUsage,

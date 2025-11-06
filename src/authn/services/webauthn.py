@@ -1,9 +1,9 @@
 import random
 
-from src.authn.models import UserProfile
+from authn.models import UserProfile
 from django.contrib.auth.models import Group
-from src.index.models import UserBarcodeSettings, Barcode
-from src.index.services.transactions import TransactionService
+from index.models import UserBarcodeSettings, Barcode
+from index.services.transactions import TransactionService
 
 
 def generate_unique_identification_barcode():

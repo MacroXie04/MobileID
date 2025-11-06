@@ -1,7 +1,7 @@
 import logging
 
-from src.index.project_code.transfer_barcode import TransferBarcode
-from src.index.services.cookie import process_user_cookie
+from index.project_code.transfer_barcode import TransferBarcode
+from index.services.cookie import process_user_cookie
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response

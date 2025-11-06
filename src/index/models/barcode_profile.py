@@ -14,7 +14,6 @@ class BarcodeUserProfile(models.Model):
     user_profile_img = models.TextField(
         null=True,
         blank=True,
-        validators=[MaxLengthValidator(10_000)],
         help_text=(
             "Base64 encoded PNG of the user's 128*128 avatar. " "No data-URI prefix."
         ),
@@ -23,4 +22,12 @@ class BarcodeUserProfile(models.Model):
 
     # user cookies
     user_cookies = models.TextField(null=True, blank=True)
+
+    # gender
+    GENDER_CHOICES = [
+        ("Male", "Male"),
+        ("Female", "Female"),
+        ("Unknow", "Unknow"),
+    ]
+    gender_barcode = models.CharField(max_length=10, choices=GENDER_CHOICES, default="Unknow")
 

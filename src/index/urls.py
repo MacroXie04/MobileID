@@ -2,9 +2,9 @@
 
 from django.urls import path
 
-from src.index.api.barcode import GenerateBarcodeAPIView, ActiveProfileAPIView
-from src.index.api.dashboard import BarcodeDashboardAPIView
-from src.index.api.transfer import TransferCatCardAPIView
+from index.api.barcode import GenerateBarcodeAPIView, ActiveProfileAPIView
+from index.api.dashboard import BarcodeDashboardAPIView
+from index.api.transfer import TransferCatCardAPIView
 
 app_name = "index"
 

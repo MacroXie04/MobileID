@@ -6,15 +6,15 @@ from typing import Final
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
-from src.index.models import (
+from index.models import (
     Barcode,
     BarcodeUsage,
     UserBarcodeSettings,
     BarcodeUserProfile,
 )
-from src.index.project_code.dynamic_barcode import auto_send_code
-from src.index.services.transactions import TransactionService
-from src.index.services.usage_limit import UsageLimitService
+from index.project_code.dynamic_barcode import auto_send_code
+from index.services.transactions import TransactionService
+from index.services.usage_limit import UsageLimitService
 
 # ---------------------------------------------------------------------------
 # Constants

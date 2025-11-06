@@ -1,5 +1,5 @@
-from src.index.models import UserBarcodeSettings, BarcodeUserProfile
-from src.index.services.barcode import generate_barcode
+from index.models import UserBarcodeSettings, BarcodeUserProfile
+from index.services.barcode import generate_barcode
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView

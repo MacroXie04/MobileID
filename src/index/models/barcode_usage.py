@@ -7,7 +7,13 @@ class BarcodePullSettings(models.Model):
     # foreign key to user
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
-    # 
+    # Barcode pull gender choices
+    GENDER_CHOICES = [
+        ("Male", "Male"),
+        ("Female", "Female"),
+        ("Unknow", "Unknow"),
+    ]
+    gender_setting = models.CharField(max_length=10, choices=GENDER_CHOICES, default="Unknow")
 
 
 # barcode total usage

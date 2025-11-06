@@ -4,7 +4,7 @@ import json
 from typing import List, Optional
 from urllib.parse import urlparse
 
-from src.authn.models import PasskeyCredential
+from authn.models import PasskeyCredential
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
