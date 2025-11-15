@@ -138,6 +138,60 @@
         </div>
       </div>
 
+      <!-- Pull Settings Section -->
+      <div class="settings-section md-mb-6">
+        <div class="active-barcode-header">
+          <md-icon class="active-icon">sync</md-icon>
+          <span class="md-typescale-label-medium">Barcode Pull Settings</span>
+        </div>
+        <md-list>
+          <md-list-item>
+            <md-icon slot="start">autorenew</md-icon>
+            <div slot="headline">Enable Automatic Pull</div>
+            <div slot="supporting-text">When enabled, barcode selection will be automatically managed. Manual barcode selection is disabled.</div>
+            <md-switch
+              slot="end"
+              :selected="pullSettings.pull_setting === 'Enable'"
+              @change="(e) => $emit('update-pull-setting', e.target.selected ? 'Enable' : 'Disable')"
+            ></md-switch>
+          </md-list-item>
+
+          <md-divider inset></md-divider>
+
+          <md-list-item>
+            <md-icon slot="start">person</md-icon>
+            <div slot="headline">Gender Setting</div>
+            <div slot="supporting-text">Select gender preference for automatic barcode pulling</div>
+            <md-outlined-select
+              slot="end"
+              :value="pullSettings.gender_setting"
+              @change="(e) => $emit('update-gender-setting', e.target.value)"
+              :disabled="pullSettings.pull_setting !== 'Enable'"
+            >
+              <md-select-option value="Male">
+                <div slot="headline">Male</div>
+              </md-select-option>
+              <md-select-option value="Female">
+                <div slot="headline">Female</div>
+              </md-select-option>
+              <md-select-option value="Unknow">
+                <div slot="headline">Unknown</div>
+              </md-select-option>
+            </md-outlined-select>
+          </md-list-item>
+        </md-list>
+      </div>
+
+      <div v-if="pullSettings.pull_setting === 'Enable'" class="info-banner md-mt-4">
+        <md-icon>info</md-icon>
+        <div class="info-content">
+          <h4 class="md-typescale-label-large md-m-0">Pull Setting Enabled</h4>
+          <p class="md-typescale-body-medium md-m-0 md-mt-1">
+            Barcode selection is disabled when pull setting is enabled. The system will automatically manage barcode selection based on your pull settings.
+          </p>
+        </div>
+      </div>
+
       <div v-if="hasErrors" class="md-banner md-banner-error md-mt-4">
         <md-icon>error</md-icon>
         <div class="error-messages">
@@ -162,6 +216,7 @@ const props = defineProps({
   selectedBarcode: {type: Object, default: null},
   barcodeChoices: {type: Array, default: () => []},
   settings: {type: Object, default: () => ({})},
+  pullSettings: {type: Object, default: () => ({pull_setting: 'Disable', gender_setting: 'Unknow'})},
   isUserGroup: {type: Boolean, default: false},
   isDynamicSelected: {type: Boolean, default: false},
   currentBarcodeHasProfile: {type: Boolean, default: false},
@@ -172,7 +227,7 @@ const props = defineProps({
   formatDate: {type: Function, required: true}
 });
 
-defineEmits(['update-associate', 'update-server']);
+defineEmits(['update-associate', 'update-server', 'update-pull-setting', 'update-gender-setting']);
 
 const hasErrors = computed(() => Object.keys(props.errors || {}).length > 0);
 

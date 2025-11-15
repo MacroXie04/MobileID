@@ -1,4 +1,4 @@
-from index.models import Barcode, UserBarcodeSettings, BarcodeUsage, BarcodeUserProfile, Transaction
+from index.models import Barcode, UserBarcodeSettings, UserBarcodePullSettings, BarcodeUsage, BarcodeUserProfile, Transaction
 from index.services.transactions import TransactionService
 from index.services.usage_limit import UsageLimitService
 from rest_framework import serializers
@@ -171,6 +171,17 @@ class BarcodeCreateSerializer(serializers.ModelSerializer):
         return barcode_obj
 
 
+class UserBarcodePullSettingsSerializer(serializers.ModelSerializer):
+    """Serializer for user barcode pull settings"""
+
+    class Meta:
+        model = UserBarcodePullSettings
+        fields = [
+            "pull_setting",
+            "gender_setting",
+        ]
+
+
 class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
     """Serializer for user barcode settings"""
 
@@ -307,15 +318,31 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
         is_user_group = user.groups.filter(name="User").exists()
 
+        # Check if pull setting is enabled
+        pull_settings_enabled = False
+        try:
+            pull_settings = UserBarcodePullSettings.objects.get(user=user)
+            pull_settings_enabled = pull_settings.pull_setting == "Enable"
+        except UserBarcodePullSettings.DoesNotExist:
+            pass
+
         return {
             "associate_user_profile_disabled": is_user_group,  # Disabled for User group only
-            "barcode_disabled": False,  # Barcode selection is always enabled
+            "barcode_disabled": pull_settings_enabled,  # Disabled when pull setting is enabled
         }
 
     def validate(self, data):
-        """Simple validation based on user group only"""
+        """Simple validation based on user group and pull settings"""
         user = self.context["request"].user
         is_user_group = user.groups.filter(name="User").exists()
+
+        # Check if pull setting is enabled
+        pull_settings_enabled = False
+        try:
+            pull_settings = UserBarcodePullSettings.objects.get(user=user)
+            pull_settings_enabled = pull_settings.pull_setting == "Enable"
+        except UserBarcodePullSettings.DoesNotExist:
+            pass
 
         # Standard users cannot enable profile association
         if is_user_group and data.get("associate_user_profile_with_barcode", False):
@@ -323,10 +350,16 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                 {"associate_user_profile_with_barcode": "Standard users cannot enable profile association."}
             )
 
+        # If pull setting is enabled, barcode selection is not allowed
+        barcode = data.get("barcode")
+        if pull_settings_enabled and barcode is not None:
+            raise serializers.ValidationError({
+                "barcode": "Barcode selection is disabled when pull setting is enabled."
+            })
+
         # For School users, when selecting a dynamic barcode owned by someone else,
         # it must be shared_with_others
-        barcode = data.get("barcode")
-        if barcode is not None:
+        if barcode is not None and not pull_settings_enabled:
             try:
                 # barcode can be an id or instance depending on partial update; ensure instance
                 b = barcode if isinstance(barcode, Barcode) else Barcode.objects.get(pk=barcode)

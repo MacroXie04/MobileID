@@ -2,7 +2,7 @@
 from .barcode import Barcode
 from .barcode_usage import BarcodeUsage, BarcodePullSettings
 from .barcode_profile import BarcodeUserProfile
-from .user_settings import UserBarcodeSettings
+from .user_settings import UserBarcodeSettings, UserBarcodePullSettings
 from .transaction import Transaction
 
 __all__ = [
@@ -11,6 +11,7 @@ __all__ = [
     "BarcodePullSettings",
     "BarcodeUserProfile",
     "UserBarcodeSettings",
+    "UserBarcodePullSettings",
     "Transaction",
 ]
 

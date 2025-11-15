@@ -1,8 +1,9 @@
-from index.models import Barcode, UserBarcodeSettings, BarcodeUsage
+from index.models import Barcode, UserBarcodeSettings, UserBarcodePullSettings, BarcodeUsage
 from index.serializers import (
     BarcodeSerializer,
     BarcodeCreateSerializer,
-    UserBarcodeSettingsSerializer
+    UserBarcodeSettingsSerializer,
+    UserBarcodePullSettingsSerializer
 )
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -84,22 +85,33 @@ class BarcodeDashboardAPIView(APIView):
                 .order_by('-time_created')
             )
 
+        # Get or create pull settings
+        pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(
+            user=user,
+            defaults={
+                'pull_setting': 'Disable',
+                'gender_setting': 'Unknow'
+            }
+        )
+
         # Serialize data
         settings_serializer = UserBarcodeSettingsSerializer(
             settings,
             context={'request': request}
         )
+        pull_settings_serializer = UserBarcodePullSettingsSerializer(pull_settings)
         barcodes_serializer = BarcodeSerializer(barcodes, many=True, context={'request': request})
 
         return Response({
             'settings': settings_serializer.data,
+            'pull_settings': pull_settings_serializer.data,
             'barcodes': barcodes_serializer.data,
             'is_user_group': is_user_group,
             'is_school_group': user.groups.filter(name="School").exists()
         })
 
     def post(self, request):
-        """Update user barcode settings"""
+        """Update user barcode settings and/or pull settings"""
         user = request.user
 
         # Check if user is in User group - they shouldn't access this endpoint
@@ -112,8 +124,26 @@ class BarcodeDashboardAPIView(APIView):
         # Create a copy of request data to potentially modify
         data = request.data.copy()
 
+        # Handle pull_settings if provided
+        pull_settings_data = data.pop('pull_settings', None)
+        if pull_settings_data:
+            pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(user=user)
+            pull_serializer = UserBarcodePullSettingsSerializer(
+                pull_settings,
+                data=pull_settings_data,
+                partial=True
+            )
+            if pull_serializer.is_valid():
+                pull_serializer.save()
+            else:
+                return Response({
+                    'status': 'error',
+                    'errors': {'pull_settings': pull_serializer.errors}
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         # Let the serializer handle automatic setting of associate_user_profile_with_barcode
         # based on barcode type. No manual intervention needed here.
+        # The serializer will also validate that barcode selection is disabled when pull_setting is enabled.
 
         serializer = UserBarcodeSettingsSerializer(
             settings,
@@ -124,10 +154,16 @@ class BarcodeDashboardAPIView(APIView):
 
         if serializer.is_valid():
             serializer.save()
+
+            # Get updated pull settings for response
+            pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(user=user)
+            pull_settings_serializer = UserBarcodePullSettingsSerializer(pull_settings)
+
             return Response({
                 'status': 'success',
                 'message': 'Barcode settings updated successfully',
-                'settings': serializer.data
+                'settings': serializer.data,
+                'pull_settings': pull_settings_serializer.data
             })
 
         return Response({

@@ -6,7 +6,7 @@ from authn.services.webauthn import create_user_profile
 from django.contrib.auth.models import User, Group
 from django.test import TestCase
 from django.urls import reverse
-from index.models import Barcode, BarcodeUsage, UserBarcodeSettings, BarcodeUserProfile, Transaction
+from index.models import Barcode, BarcodeUsage, UserBarcodeSettings, UserBarcodePullSettings, BarcodeUserProfile, Transaction
 from index.services.barcode import (
     generate_barcode,
     generate_unique_identification_barcode,
@@ -677,6 +677,141 @@ class BarcodeDashboardAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data['status'], 'error')
+
+    def test_dashboard_get_includes_pull_settings(self):
+        """Test that GET dashboard includes pull_settings in response"""
+        self._authenticate_user(self.school_user)
+
+        url = reverse('index:api_barcode_dashboard')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('pull_settings', response.data)
+        self.assertEqual(response.data['pull_settings']['pull_setting'], 'Disable')
+        self.assertEqual(response.data['pull_settings']['gender_setting'], 'Unknow')
+
+    def test_dashboard_post_update_pull_settings(self):
+        """Test updating pull settings via POST"""
+        self._authenticate_user(self.school_user)
+
+        url = reverse('index:api_barcode_dashboard')
+        data = {
+            'pull_settings': {
+                'pull_setting': 'Enable',
+                'gender_setting': 'Male'
+            }
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'success')
+        self.assertIn('pull_settings', response.data)
+        self.assertEqual(response.data['pull_settings']['pull_setting'], 'Enable')
+        self.assertEqual(response.data['pull_settings']['gender_setting'], 'Male')
+
+        # Check settings were updated in database
+        pull_settings = UserBarcodePullSettings.objects.get(user=self.school_user)
+        self.assertEqual(pull_settings.pull_setting, 'Enable')
+        self.assertEqual(pull_settings.gender_setting, 'Male')
+
+    def test_dashboard_post_barcode_selection_disabled_when_pull_enabled(self):
+        """Test that barcode selection is rejected when pull_setting is enabled"""
+        self._authenticate_user(self.school_user)
+
+        # Enable pull setting
+        UserBarcodePullSettings.objects.create(
+            user=self.school_user,
+            pull_setting='Enable',
+            gender_setting='Male'
+        )
+
+        barcode = Barcode.objects.create(
+            user=self.school_user,
+            barcode='12345678901234',
+            barcode_type='DynamicBarcode'
+        )
+
+        url = reverse('index:api_barcode_dashboard')
+        data = {
+            'barcode': barcode.id
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['status'], 'error')
+        self.assertIn('barcode', response.data['errors'])
+        self.assertIn('disabled when pull setting is enabled', response.data['errors']['barcode'][0])
+
+    def test_dashboard_get_field_states_barcode_disabled_when_pull_enabled(self):
+        """Test that field_states shows barcode_disabled when pull_setting is enabled"""
+        self._authenticate_user(self.school_user)
+
+        # Enable pull setting
+        UserBarcodePullSettings.objects.create(
+            user=self.school_user,
+            pull_setting='Enable',
+            gender_setting='Female'
+        )
+
+        url = reverse('index:api_barcode_dashboard')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        field_states = response.data['settings']['field_states']
+        self.assertTrue(field_states['barcode_disabled'])
+
+    def test_dashboard_get_field_states_barcode_enabled_when_pull_disabled(self):
+        """Test that field_states shows barcode_disabled=False when pull_setting is disabled"""
+        self._authenticate_user(self.school_user)
+
+        # Ensure pull setting is disabled
+        UserBarcodePullSettings.objects.create(
+            user=self.school_user,
+            pull_setting='Disable',
+            gender_setting='Unknow'
+        )
+
+        url = reverse('index:api_barcode_dashboard')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        field_states = response.data['settings']['field_states']
+        self.assertFalse(field_states['barcode_disabled'])
+
+    def test_dashboard_post_can_update_barcode_when_pull_disabled(self):
+        """Test that barcode can be updated when pull_setting is disabled"""
+        self._authenticate_user(self.school_user)
+
+        # Ensure pull setting is disabled
+        UserBarcodePullSettings.objects.create(
+            user=self.school_user,
+            pull_setting='Disable',
+            gender_setting='Unknow'
+        )
+
+        barcode = Barcode.objects.create(
+            user=self.school_user,
+            barcode='12345678901234',
+            barcode_type='DynamicBarcode'
+        )
+
+        url = reverse('index:api_barcode_dashboard')
+        data = {
+            'barcode': barcode.id,
+            'server_verification': True
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'success')
+
+        # Check settings were updated
+        settings = UserBarcodeSettings.objects.get(user=self.school_user)
+        self.assertEqual(settings.barcode, barcode)
+        self.assertTrue(settings.server_verification)
 
 
 class ActiveProfileAPITest(APITestCase):
