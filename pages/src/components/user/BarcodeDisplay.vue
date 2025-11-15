@@ -102,3 +102,5 @@ defineExpose({
   showError,
   drawPDF417,
   resetUI
+});
+</script>

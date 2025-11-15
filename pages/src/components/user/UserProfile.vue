@@ -73,3 +73,5 @@ function handleImageError(event) {
     placeholderSrc: defaultAvatar,
     onShowInitials: () => { showInitials.value = true; }
   });
+}
+</script>

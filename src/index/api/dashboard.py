@@ -126,6 +126,7 @@ class BarcodeDashboardAPIView(APIView):
 
         # Handle pull_settings if provided
         pull_settings_data = data.pop('pull_settings', None)
+        pull_settings_enabled = False
         if pull_settings_data:
             pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(user=user)
             pull_serializer = UserBarcodePullSettingsSerializer(
@@ -135,15 +136,31 @@ class BarcodeDashboardAPIView(APIView):
             )
             if pull_serializer.is_valid():
                 pull_serializer.save()
+                # Check if pull_setting is now enabled
+                pull_settings.refresh_from_db()
+                pull_settings_enabled = pull_settings.pull_setting == "Enable"
             else:
                 return Response({
                     'status': 'error',
                     'errors': {'pull_settings': pull_serializer.errors}
                 }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Check existing pull settings to see if they're enabled
+            try:
+                existing_pull_settings = UserBarcodePullSettings.objects.get(user=user)
+                pull_settings_enabled = existing_pull_settings.pull_setting == "Enable"
+            except UserBarcodePullSettings.DoesNotExist:
+                pass
+
+        # If pull_setting is enabled, auto-clear barcode selection
+        if pull_settings_enabled:
+            data.pop('barcode', None)  # Remove from incoming data
+            if settings.barcode is not None:
+                settings.barcode = None
+                settings.save()
 
         # Let the serializer handle automatic setting of associate_user_profile_with_barcode
         # based on barcode type. No manual intervention needed here.
-        # The serializer will also validate that barcode selection is disabled when pull_setting is enabled.
 
         serializer = UserBarcodeSettingsSerializer(
             settings,

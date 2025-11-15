@@ -813,6 +813,51 @@ class BarcodeDashboardAPITest(APITestCase):
         self.assertEqual(settings.barcode, barcode)
         self.assertTrue(settings.server_verification)
 
+    def test_dashboard_post_auto_clear_barcode_when_pull_enabled(self):
+        """Test that barcode is automatically cleared when pull_setting is enabled"""
+        self._authenticate_user(self.school_user)
+
+        # Create a barcode and set it in settings
+        barcode = Barcode.objects.create(
+            user=self.school_user,
+            barcode='12345678901234',
+            barcode_type='DynamicBarcode'
+        )
+        settings = UserBarcodeSettings.objects.create(
+            user=self.school_user,
+            barcode=barcode,
+            server_verification=True
+        )
+
+        url = reverse('index:api_barcode_dashboard')
+        # Enable pull setting and include barcode in the same request
+        data = {
+            'pull_settings': {
+                'pull_setting': 'Enable',
+                'gender_setting': 'Male'
+            },
+            'barcode': barcode.id,
+            'server_verification': True
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        # Should succeed (200) instead of failing (400)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'success')
+
+        # Check that barcode was cleared in settings
+        settings.refresh_from_db()
+        self.assertIsNone(settings.barcode)
+
+        # Check that pull settings were updated
+        pull_settings = UserBarcodePullSettings.objects.get(user=self.school_user)
+        self.assertEqual(pull_settings.pull_setting, 'Enable')
+        self.assertEqual(pull_settings.gender_setting, 'Male')
+
+        # Check response shows barcode as None
+        self.assertIsNone(response.data['settings']['barcode'])
+
 
 class ActiveProfileAPITest(APITestCase):
     """Tests for ActiveProfileAPIView"""

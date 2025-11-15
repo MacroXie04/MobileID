@@ -33,7 +33,7 @@ class BarcodeUserProfileInline(admin.TabularInline):
     readonly_fields = ('avatar_preview',)
     can_delete = True
     show_change_link = True
-    fields = ('name', 'information_id', 'user_profile_img', 'avatar_preview')
+    fields = ('name', 'information_id', 'gender_barcode', 'user_profile_img', 'avatar_preview')
 
     @admin.display(description='Avatar')
     def avatar_preview(self, obj):
@@ -256,7 +256,8 @@ class UserBarcodePullSettingsAdmin(admin.ModelAdmin):
 @admin.register(BarcodeUserProfile)
 class BarcodeUserProfileAdmin(admin.ModelAdmin):
     """Admin configuration for BarcodeUserProfile model"""
-    list_display = ('linked_barcode_display', 'name', 'information_id', 'avatar_preview')
+    list_display = ('linked_barcode_display', 'name', 'information_id', 'gender_barcode', 'avatar_preview')
+    list_filter = ('gender_barcode',)
     search_fields = ('name', 'information_id', 'linked_barcode__barcode', 'linked_barcode__user__username')
     readonly_fields = ('avatar_preview',)
     ordering = ('name',)
@@ -265,7 +266,7 @@ class BarcodeUserProfileAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Profile', {
-            'fields': ('linked_barcode', 'name', 'information_id')
+            'fields': ('linked_barcode', 'name', 'information_id', 'gender_barcode')
         }),
         ('Avatar (PNG base64 128x128)', {
             'fields': ('user_profile_img', 'avatar_preview')
