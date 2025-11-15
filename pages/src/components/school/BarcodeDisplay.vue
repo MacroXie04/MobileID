@@ -33,3 +33,4 @@ const barcodeCanvas = ref(null);
 defineExpose({
   barcodeCanvas
 });
+</script>

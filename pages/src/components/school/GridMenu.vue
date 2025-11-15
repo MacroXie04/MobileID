@@ -47,7 +47,7 @@
 import {toRefs} from 'vue';
 import {useRouter} from 'vue-router';
 import {logout} from '@/api/auth';
-import {clearAuthCookies, clearAuthStorage} from '@/utils/cookie';
+import {clearAuthCookies, clearAuthStorage} from '@/utils/auth/cookie';
 
 // CSS
 import '@/assets/css/school-merged.css';
@@ -85,7 +85,7 @@ async function handleLogout() {
 
     // Clear user profile cache
     try {
-      const {clearUserProfile} = await import('@/composables/useUserInfo');
+      const {clearUserProfile} = await import('@/composables/user/useUserInfo');
       clearUserProfile();
     } catch (error) {
       console.warn("Could not clear user profile cache:", error);

@@ -158,6 +158,7 @@ REST_FRAMEWORK = {
         "anon": "100/day",
         "user": "1000/day",
         "login": "5/minute",
+        "login_username": "5/15min",
         "registration": "5/day",
         "barcode_generation": "100/hour",
         "barcode_management": "50/hour",

@@ -118,8 +118,8 @@
 
 <script setup>
 import {ref} from 'vue';
-import {useApi} from '@/composables/useApi';
-import {useBarcodeScanner} from '@/composables/useBarcodeScanner.js';
+import {useApi} from '@/composables/common/useApi';
+import {useBarcodeScanner} from '@/composables/barcode/useBarcodeScanner.js';
 
 const emit = defineEmits(['added', 'message']);
 

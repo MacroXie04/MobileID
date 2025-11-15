@@ -31,7 +31,7 @@
 <script setup>
 import {computed, ref, watch} from 'vue';
 import defaultAvatar from '@/assets/images/avatar_placeholder.png';
-import {getInitials, handleAvatarError} from '@/utils/profileUtils.js';
+import {getInitials, handleAvatarError} from '@/utils/user/profileUtils.js';
 
 // CSS
 import '@/assets/css/user-merged.css';
@@ -73,3 +73,5 @@ function handleImageError(event) {
     placeholderSrc: defaultAvatar,
     onShowInitials: () => { showInitials.value = true; }
   });
+}
+</script>

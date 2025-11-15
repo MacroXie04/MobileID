@@ -21,3 +21,26 @@ class UserBarcodeSettings(models.Model):
     def __str__(self):
         return f"{self.user.username}'s Barcode Settings"
 
+
+class UserBarcodePullSettings(models.Model):
+    # foreign key to user
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    # barcode pull settings
+    PULL_CHOICES = [
+        ("Enable", "Enable"),
+        ("Disable", "Disable"),
+    ]
+    pull_setting = models.CharField(max_length=10, choices=PULL_CHOICES, default="Disable")
+
+    # Barcode pull gender choices
+    GENDER_CHOICES = [
+        ("Male", "Male"),
+        ("Female", "Female"),
+        ("Unknow", "Unknow"),
+    ]
+
+    gender_setting = models.CharField(max_length=10, choices=GENDER_CHOICES, default="Unknow")
+
+    def __str__(self):
+        return f"{self.user.username}'s Barcode Pull Settings"

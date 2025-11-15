@@ -43,3 +43,4 @@ class Barcode(models.Model):
             return f"{self.user.username}'s identification Barcode"
         return f"Barcode ending with {self.barcode[-4:]}"
 
+

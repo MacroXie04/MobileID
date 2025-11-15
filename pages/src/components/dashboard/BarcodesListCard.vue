@@ -84,7 +84,14 @@
           </div>
         </div>
         <div class="barcode-actions md-flex md-items-center md-gap-2">
-          <md-filled-tonal-button v-if="Number(settings.barcode) !== Number(barcode.id)" @click="$emit('set-active', barcode)"><md-icon slot="icon">check_circle</md-icon>Set Active</md-filled-tonal-button>
+          <md-filled-tonal-button 
+            v-if="Number(settings.barcode) !== Number(barcode.id)" 
+            :disabled="pullSettings.pull_setting === 'Enable'"
+            @click="$emit('set-active', barcode)"
+            :title="pullSettings.pull_setting === 'Enable' ? 'Barcode selection is disabled when pull setting is enabled' : 'Set this barcode as active'"
+          >
+            <md-icon slot="icon">check_circle</md-icon>Set Active
+          </md-filled-tonal-button>
           <md-assist-chip v-if="barcode.is_owned_by_current_user && barcode.barcode_type !== 'Identification'" :selected="!!barcode.share_with_others" @click="$emit('toggle-share', barcode)" aria-label="Share with others" data-aria-label="Share with others" has-icon>
             <md-icon slot="icon" aria-hidden="true">{{ barcode.share_with_others ? 'share' : 'lock' }}</md-icon>
             {{ barcode.share_with_others ? 'Shared' : 'Private' }}
@@ -109,6 +116,7 @@ defineEmits(['update-filter','toggle-owned','set-active','toggle-share','delete'
 const props = defineProps({
   activeTab: { type: String, default: 'Barcodes' },
   settings: { type: Object, required: true },
+  pullSettings: { type: Object, default: () => ({pull_setting: 'Disable', gender_setting: 'Unknow'}) },
   filteredBarcodes: { type: Array, default: () => [] },
   hasActiveFilters: { type: Boolean, default: false },
   filterType: { type: String, default: 'All' },

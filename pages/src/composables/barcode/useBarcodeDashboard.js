@@ -1,6 +1,6 @@
 // Composable for BarcodeDashboard state and logic
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { useApi } from '@/composables/useApi';
+import { useApi } from '@/composables/common/useApi';
 
 export default function useBarcodeDashboard() {
   // API

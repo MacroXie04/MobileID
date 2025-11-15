@@ -1,8 +1,11 @@
 import base64
+import logging
 import os
+from datetime import timedelta
 from io import BytesIO
 
 from PIL import Image
+from authn.models import FailedLoginAttempt, LoginAuditLog
 from authn.services.passkeys import (
     build_registration_options,
     verify_and_create_passkey,
@@ -11,6 +14,7 @@ from authn.services.passkeys import (
 )
 from authn.services.webauthn import create_user_profile
 from authn.utils.encryption import decrypt_password, is_encrypted_password
+from authn.throttling import UsernameRateThrottle
 from django import forms
 from django.conf import settings
 from django.contrib.auth import login
@@ -20,12 +24,22 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator
 from django.http import HttpResponse
 from django.middleware.csrf import get_token
+from django.utils import timezone
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
+from rest_framework.settings import api_settings
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+
+logger = logging.getLogger(__name__)
+
+PASSKEY_CHALLENGE_TTL_SECONDS = getattr(settings, "PASSKEY_CHALLENGE_TTL_SECONDS", 300)
 
 
 def _clean_base64(b64: str) -> str:
@@ -51,6 +65,30 @@ def _b64_any_to_bytes(data: str) -> bytes:
     if pad:
         s += "=" * pad
     return base64.b64decode(s)
+
+
+def _store_challenge(request, key: str, challenge: str):
+    request.session[key] = challenge
+    expires_at = timezone.now() + timedelta(seconds=PASSKEY_CHALLENGE_TTL_SECONDS)
+    request.session[f"{key}_expires_at"] = expires_at.timestamp()
+    request.session.modified = True
+
+
+def _get_valid_challenge(request, key: str):
+    challenge = request.session.get(key)
+    expires_at = request.session.get(f"{key}_expires_at")
+    if not challenge or expires_at is None:
+        return None
+    if timezone.now().timestamp() > expires_at:
+        _clear_challenge(request, key)
+        return None
+    return challenge
+
+
+def _clear_challenge(request, key: str):
+    request.session.pop(key, None)
+    request.session.pop(f"{key}_expires_at", None)
+    request.session.modified = True
 
 
 class UserRegisterForm(UserCreationForm):
@@ -141,45 +179,160 @@ class EncryptedTokenObtainPairSerializer(TokenObtainPairSerializer):
     Custom serializer that supports decrypting RSA encrypted passwords
     """
 
+    generic_error_message = "Invalid username or password."
+
     def validate(self, attrs):
         # Get password
         password = attrs.get('password')
+        username = attrs.get(self.username_field) or attrs.get("username")
+        client_ip = self._get_client_ip()
 
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"Received password, length: {len(password)}, first 50 chars: {password[:50]}")
+        logger.debug("Login payload received for username: %s", username)
+
+        attempt_record = self._get_or_create_attempt(username, client_ip)
+        self._enforce_account_lock(attempt_record, client_ip)
 
         # Check if password is encrypted
         is_encrypted = is_encrypted_password(password)
-        logger.info(f"Is recognized as encrypted password: {is_encrypted}")
+        logger.debug("Password identified as encrypted: %s", is_encrypted)
 
         if is_encrypted:
             try:
                 # Decrypt password
                 decrypted_password = decrypt_password(password)
-                logger.info(f"Decryption successful, decrypted password: {decrypted_password}")
                 # Replace with decrypted password
                 attrs['password'] = decrypted_password
             except ValueError as e:
                 # Decryption failed, log detailed error information
-                logger.error(f"Password decryption failed: {str(e)}, password length: {len(password)}")
+                logger.error("Password decryption failed: %s", str(e))
+                self._log_auth_event(username, client_ip, "failure", reason="decrypt_failed")
 
-                from rest_framework import serializers
-                raise serializers.ValidationError({
-                    'password': 'Password decryption failed, please try again'
-                })
-        else:
-            # If not encrypted password, log for debugging
-            logger.info(f"Using plaintext password login, password: {password}")
+                raise serializers.ValidationError({"detail": self.generic_error_message})
 
         # Call parent class validation method
-        return super().validate(attrs)
+        try:
+            data = super().validate(attrs)
+        except AuthenticationFailed as exc:
+            self._record_failed_attempt(attempt_record, client_ip)
+            self._log_auth_event(username, client_ip, "failure", reason="invalid_credentials")
+            raise AuthenticationFailed(detail=self.generic_error_message) from exc
+        except TokenError as exc:
+            self._record_failed_attempt(attempt_record, client_ip)
+            self._log_auth_event(username, client_ip, "failure", reason="token_error")
+            raise AuthenticationFailed(detail=self.generic_error_message) from exc
+
+        self._reset_failed_attempts(attempt_record, client_ip)
+        self._log_auth_event(username, client_ip, "success")
+        return data
+
+    def _get_client_ip(self):
+        request = self.context.get("request") if hasattr(self, "context") else None
+        if not request:
+            return None
+        forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        return request.META.get("REMOTE_ADDR")
+
+    def _get_or_create_attempt(self, username, client_ip):
+        if not username:
+            return None
+        attempt, _ = FailedLoginAttempt.objects.get_or_create(
+            username=username,
+            defaults={"ip_address": client_ip},
+        )
+        return attempt
+
+    def _enforce_account_lock(self, attempt, client_ip):
+        if not attempt or not attempt.locked_until:
+            return
+
+        if attempt.locked_until <= timezone.now():
+            attempt.locked_until = None
+            attempt.attempt_count = 0
+            attempt.save()
+            return
+
+        logger.warning("Login attempt blocked due to lock", extra={"username": attempt.username})
+        self._log_auth_event(attempt.username, client_ip or attempt.ip_address, "blocked", reason="locked")
+        raise serializers.ValidationError({"detail": self.generic_error_message})
+
+    def _record_failed_attempt(self, attempt, client_ip):
+        if not attempt:
+            return
+
+        attempt.attempt_count = min(
+            self._max_failed_attempts(),
+            attempt.attempt_count + 1,
+        )
+        if client_ip:
+            attempt.ip_address = client_ip
+
+        if attempt.attempt_count >= self._max_failed_attempts():
+            attempt.locked_until = timezone.now() + self._lockout_duration()
+            logger.warning("Account locked due to repeated failures", extra={"username": attempt.username})
+            self._log_auth_event(attempt.username, client_ip or attempt.ip_address, "blocked", reason="locked")
+
+        attempt.save()
+
+    def _reset_failed_attempts(self, attempt, client_ip):
+        if not attempt:
+            return
+
+        updated = False
+        if attempt.attempt_count or attempt.locked_until:
+            attempt.attempt_count = 0
+            attempt.locked_until = None
+            updated = True
+
+        if client_ip and attempt.ip_address != client_ip:
+            attempt.ip_address = client_ip
+            updated = True
+
+        if updated:
+            attempt.save()
+
+    def _max_failed_attempts(self):
+        return getattr(settings, "MAX_FAILED_LOGIN_ATTEMPTS", 5)
+
+    def _lockout_duration(self):
+        minutes = getattr(settings, "ACCOUNT_LOCKOUT_DURATION", 30)
+        return timedelta(minutes=minutes)
+
+    def _log_auth_event(self, username, client_ip, result, reason=None):
+        user_agent = self._get_user_agent()
+        logger.info(
+            "Login attempt",
+            extra={
+                "username": username,
+                "ip": client_ip,
+                "result": result,
+                "reason": reason,
+            },
+        )
+        try:
+            LoginAuditLog.objects.create(
+                username=username or "",
+                ip_address=client_ip,
+                user_agent=user_agent or "",
+                result=result,
+                reason=reason or "",
+            )
+        except Exception:
+            logger.exception("Failed to persist login audit log")
+
+    def _get_user_agent(self):
+        request = self.context.get("request") if hasattr(self, "context") else None
+        if not request:
+            return None
+        return request.META.get("HTTP_USER_AGENT")
 
 
 class CookieTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
     throttle_scope = "login"
     serializer_class = EncryptedTokenObtainPairSerializer
+    throttle_classes = (UsernameRateThrottle,) + tuple(api_settings.DEFAULT_THROTTLE_CLASSES)
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -563,7 +716,7 @@ def api_avatar_upload(request):
 def passkey_register_options(request):
     options = build_registration_options(request.user)
     # Store the challenge as base64url string (JSON serializable)
-    request.session["webauthn_reg_chal"] = options["challenge"]
+    _store_challenge(request, "webauthn_reg_chal", options["challenge"])
     get_token(request)
     return Response({"success": True, "publicKey": options})
 
@@ -571,12 +724,12 @@ def passkey_register_options(request):
 @api_view(["POST"])  # Finish registration
 @permission_classes([IsAuthenticated])
 def passkey_register_verify(request):
-    expected = request.session.get("webauthn_reg_chal")
+    expected = _get_valid_challenge(request, "webauthn_reg_chal")
     if not expected:
         return Response({"success": False, "message": "Missing or expired challenge"}, status=400)
     try:
         verify_and_create_passkey(request.user, request.data, expected)
-        request.session.pop("webauthn_reg_chal", None)
+        _clear_challenge(request, "webauthn_reg_chal")
         return Response({"success": True})
     except Exception as exc:
         return Response({"success": False, "message": str(exc)}, status=400)
@@ -596,7 +749,7 @@ def passkey_auth_options(request):
     user = User.objects.filter(username=username).first() if username else None
     options = build_authentication_options(user)
     # Store the challenge as base64url string (JSON serializable)
-    request.session["webauthn_auth_chal"] = options["challenge"]
+    _store_challenge(request, "webauthn_auth_chal", options["challenge"])
     get_token(request)
     return Response({"success": True, "publicKey": options})
 
@@ -604,7 +757,7 @@ def passkey_auth_options(request):
 @api_view(["POST"])  # Finish authentication and set JWT cookies
 @permission_classes([AllowAny])
 def passkey_auth_verify(request):
-    expected = request.session.get("webauthn_auth_chal")
+    expected = _get_valid_challenge(request, "webauthn_auth_chal")
     if not expected:
         return Response({"success": False, "message": "Missing or expired challenge"}, status=400)
     try:
@@ -643,5 +796,5 @@ def passkey_auth_verify(request):
         path="/authn/",
         max_age=refresh_max_age,
     )
-    request.session.pop("webauthn_auth_chal", None)
+    _clear_challenge(request, "webauthn_auth_chal")
     return response

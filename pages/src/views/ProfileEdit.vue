@@ -192,10 +192,10 @@ import {onMounted, onUnmounted, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import {getUserProfile, updateUserProfile} from '@/api/auth';
 import {baseURL} from '@/config';
-import {useImageCropper} from '@/composables/useImageCropper.js';
-import {usePasskeyRegistration} from '@/composables/usePasskeyRegistration.js';
-import {useAutoSave} from '@/composables/useAutoSave.js';
-import {validateImageFile, fileToBase64} from '@/utils/imageUtils.js';
+import {useImageCropper} from '@/composables/user/useImageCropper.js';
+import {usePasskeyRegistration} from '@/composables/auth/usePasskeyRegistration.js';
+import {useAutoSave} from '@/composables/common/useAutoSave.js';
+import {validateImageFile, fileToBase64} from '@/utils/user/imageUtils.js';
 import '@/assets/css/auth-merged.css';
 
 const router = useRouter();
