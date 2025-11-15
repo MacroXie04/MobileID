@@ -53,8 +53,8 @@ import '@material/web/progress/circular-progress.js';
 import '@material/web/progress/linear-progress.js';
 import '@material/web/ripple/ripple.js';
 
-import {useBarcodeDisplay} from '@/composables/useBarcodeDisplay.js';
-import {usePdf417} from '@/composables/usePdf417.js';
+import {useBarcodeDisplay} from '@/composables/barcode/useBarcodeDisplay.js';
+import {usePdf417} from '@/composables/barcode/usePdf417.js';
 
 // CSS
 import '@/assets/css/user-merged.css';

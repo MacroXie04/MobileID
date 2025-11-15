@@ -1,5 +1,5 @@
-import {getCookie} from '@/utils/cookie';
-import {useToken} from './useToken';
+import {getCookie} from '@/utils/auth/cookie';
+import {useToken} from '@/composables/auth/useToken';
 import {baseURL} from '@/config'
 
 export function useApi() {

@@ -90,8 +90,8 @@ import {onMounted, reactive, ref} from 'vue';
 import {login} from '@/api/auth.js';
 import {ApiError} from '@/api/client.js';
 import {useRouter} from 'vue-router';
-import {useLoginValidation} from '@/composables/useLoginValidation.js';
-import {usePasskeyAuth} from '@/composables/usePasskeyAuth.js';
+import {useLoginValidation} from '@/composables/auth/useLoginValidation.js';
+import {usePasskeyAuth} from '@/composables/auth/usePasskeyAuth.js';
 import '@/assets/css/auth-merged.css';
 
 const router = useRouter();

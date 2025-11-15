@@ -1,8 +1,8 @@
 import {computed, ref} from 'vue';
 import {userInfo} from '@/api/auth';
-import {useApi} from './useApi';
-import {hasAuthTokens} from '@/utils/cookie';
-import {useToken} from './useToken';
+import {useApi} from '@/composables/common/useApi';
+import {hasAuthTokens} from '@/utils/auth/cookie';
+import {useToken} from '@/composables/auth/useToken';
 import {baseURL} from '@/config'
 
 // Global state to prevent multiple instances and API calls

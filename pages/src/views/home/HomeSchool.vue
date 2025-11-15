@@ -36,11 +36,11 @@ import BarcodeDisplay from "@/components/school/BarcodeDisplay.vue";
 import GridMenu from "@/components/school/GridMenu.vue";
 
 // Composables
-import {useUserInfo} from "@/composables/useUserInfo";
-import {useToken} from "@/composables/useToken";
-import {useApi} from "@/composables/useApi";
-import {usePdf417} from "@/composables/usePdf417";
-import {animateBarcodeSequence} from "@/utils/jQueryAnimations.js";
+import {useUserInfo} from "@/composables/user/useUserInfo";
+import {useToken} from "@/composables/auth/useToken";
+import {useApi} from "@/composables/common/useApi";
+import {usePdf417} from "@/composables/barcode/usePdf417";
+import {animateBarcodeSequence} from "@/utils/common/jQueryAnimations.js";
 
 /* ── reactive state ─────────────────────────────────────────────────────── */
 const router = useRouter();

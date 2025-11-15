@@ -125,9 +125,9 @@
 <script setup>
 import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
 import {useRouter, useRoute} from 'vue-router';
-import {useApi} from '@/composables/useApi';
-import {useDailyLimit} from '@/composables/useDailyLimit';
-import {formatRelativeTime, formatDate, normalize} from '@/utils/dateUtils';
+import {useApi} from '@/composables/common/useApi';
+import {useDailyLimit} from '@/composables/barcode/useDailyLimit';
+import {formatRelativeTime, formatDate, normalize} from '@/utils/common/dateUtils';
 import {
   getBarcodeDisplayTitle,
   getBarcodeDisplayId,
@@ -135,7 +135,7 @@ import {
   getProfileLabel,
   getProfileTooltip,
   getAssociationStatusText
-} from '@/utils/barcodeUtils';
+} from '@/utils/barcode/barcodeUtils';
 import SettingsCard from '@/components/dashboard/SettingsCard.vue';
 import BarcodesListCard from '@/components/dashboard/BarcodesListCard.vue';
 import AddBarcodeCard from '@/components/dashboard/AddBarcodeCard.vue';

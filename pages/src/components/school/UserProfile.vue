@@ -43,7 +43,7 @@
 
 <script setup>
 import {computed, ref, toRefs} from 'vue';
-import {getInitials} from '@/utils/profileUtils.js';
+import {getInitials} from '@/utils/user/profileUtils.js';
 
 // CSS
 import '@/assets/css/school-merged.css';

@@ -1,6 +1,6 @@
 import {ref} from 'vue';
 import {passkeyRegisterOptions, passkeyRegisterVerify} from '@/api/auth.js';
-import {b64urlToArrayBuffer, arrayBufferToB64url} from '@/utils/passkey.js';
+import {b64urlToArrayBuffer, arrayBufferToB64url} from '@/utils/auth/passkey.js';
 
 /**
  * Composable for handling passkey registration

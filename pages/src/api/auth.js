@@ -1,5 +1,5 @@
 import {ApiError, apiRequest} from './client';
-import {encryptPassword} from '@/utils/encryption';
+import {encryptPassword} from '@/utils/auth/encryption';
 
 export async function login(username, password) {
     // NOTE: This is a change from the original behavior.

@@ -1,6 +1,6 @@
 import {ref} from 'vue';
 import {useRouter} from 'vue-router';
-import {clearAuthCookies, clearAuthStorage, getCookie} from '@/utils/cookie';
+import {clearAuthCookies, clearAuthStorage, getCookie} from '@/utils/auth/cookie';
 import {baseURL} from '@/config'
 
 const isRefreshingToken = ref(false);
@@ -135,7 +135,7 @@ export function useToken() {
 
         // Clear user profile cache to force reload on next login
         try {
-            const {clearUserProfile} = await import('@/composables/useUserInfo');
+            const {clearUserProfile} = await import('@/composables/user/useUserInfo');
             clearUserProfile();
         } catch (error) {
             console.warn("Could not clear user profile cache:", error);

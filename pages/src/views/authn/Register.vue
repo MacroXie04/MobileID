@@ -218,9 +218,9 @@
 import {nextTick, onUnmounted, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import {register} from '@/api/auth.js';
-import {useRegisterValidation} from '@/composables/useRegisterValidation.js';
-import {useImageCropper} from '@/composables/useImageCropper.js';
-import {validateImageFile, createImageObjectURL} from '@/utils/imageUtils.js';
+import {useRegisterValidation} from '@/composables/auth/useRegisterValidation.js';
+import {useImageCropper} from '@/composables/user/useImageCropper.js';
+import {validateImageFile, createImageObjectURL} from '@/utils/user/imageUtils.js';
 import '@/assets/css/auth-merged.css';
 
 const router = useRouter();
