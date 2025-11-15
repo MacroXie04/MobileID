@@ -12,10 +12,19 @@ export async function login(username, password) {
     // Encrypt password
     const encryptedPassword = encryptPassword(password);
     
-    return apiRequest('/authn/token/', {
-        method: 'POST',
-        body: {username, password: encryptedPassword},
-    });
+    try {
+        return await apiRequest('/authn/token/', {
+            method: 'POST',
+            body: {username, password: encryptedPassword},
+        });
+    } catch (error) {
+        if (error instanceof ApiError) {
+            const detail = error.data?.detail || 'Invalid username or password.';
+            const existingData = error.data && typeof error.data === 'object' ? error.data : {};
+            throw new ApiError(detail, error.status, {...existingData, detail});
+        }
+        throw error;
+    }
 }
 
 export async function userInfo() {

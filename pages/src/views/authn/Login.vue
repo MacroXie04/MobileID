@@ -88,6 +88,7 @@
 <script setup>
 import {onMounted, reactive, ref} from 'vue';
 import {login} from '@/api/auth.js';
+import {ApiError} from '@/api/client.js';
 import {useRouter} from 'vue-router';
 import {useLoginValidation} from '@/composables/useLoginValidation.js';
 import {usePasskeyAuth} from '@/composables/usePasskeyAuth.js';
@@ -134,11 +135,15 @@ async function handleSubmit() {
       // Prefer SPA navigation to preserve app state
       await router.push('/');
     } else {
-      setGeneralError('Invalid credentials. Please check your username and password.');
+      setGeneralError('Unable to sign in. Please try again.');
     }
   } catch (err) {
     console.error('Login error:', err);
-    setGeneralError('Network error. Please check your connection and try again.');
+    if (err instanceof ApiError) {
+      setGeneralError(err.data?.detail || 'Invalid username or password.');
+    } else {
+      setGeneralError('Network error. Please check your connection and try again.');
+    }
   } finally {
     loading.value = false;
   }
