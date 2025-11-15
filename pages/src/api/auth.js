@@ -1,5 +1,5 @@
 import {ApiError, apiRequest} from './client';
-import {encryptPassword} from '@/utils/auth/encryption';
+import {encryptPassword, clearPublicKeyCache} from '@/utils/auth/encryption';
 
 export async function login(username, password) {
     // NOTE: This is a change from the original behavior.
@@ -9,15 +9,21 @@ export async function login(username, password) {
     // error and display the message from `error.data` or `error.message`.
     // This creates a more consistent and robust error handling pattern.
     
-    // Encrypt password
-    const encryptedPassword = encryptPassword(password);
-    
     try {
-        return await apiRequest('/authn/token/', {
+        // Encrypt password (now async, uses dynamic public key with nonce)
+        const encryptedPassword = await encryptPassword(password);
+        
+        // Use the new encrypted-only login endpoint
+        return await apiRequest('/authn/login/', {
             method: 'POST',
             body: {username, password: encryptedPassword},
         });
     } catch (error) {
+        // If we get a 401/410, the key might have rotated - clear cache
+        if (error instanceof ApiError && (error.status === 401 || error.status === 410)) {
+            clearPublicKeyCache();
+        }
+        
         if (error instanceof ApiError) {
             const detail = error.data?.detail || 'Invalid username or password.';
             const existingData = error.data && typeof error.data === 'object' ? error.data : {};
