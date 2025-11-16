@@ -1,5 +1,6 @@
 from io import BytesIO
 
+import logging
 from PIL import Image
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
@@ -69,8 +70,9 @@ def api_avatar_upload(request):
 
         return Response({"success": True, "message": "Avatar uploaded successfully"})
     except Exception as exc:
+        logging.exception("Error processing avatar image upload")
         return Response(
-            {"success": False, "message": f"Failed to process image: {str(exc)}"},
+            {"success": False, "message": "Failed to process image."},
             status=500,
         )
 
