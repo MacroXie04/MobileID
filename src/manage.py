@@ -2,6 +2,11 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import warnings
+
+# Suppress cbor2 deprecation warning (comes from third-party dependency)
+# Must be done before Django imports to catch early warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='cbor2')
 
 
 def main():

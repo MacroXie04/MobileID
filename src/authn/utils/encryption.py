@@ -154,9 +154,9 @@ def decrypt_password(encrypted_password):
         try:
             decrypted_bytes = decrypt_rsa_ciphertext(encrypted_password)
             return decrypted_bytes.decode('utf-8')
-        except Exception as e:
-            logger.error(f"Password decryption failed: {str(e)}")
-            raise ValueError("Password decryption failed")
+    except Exception as e:
+        logger.error(f"Password decryption failed: {str(e)}")
+        raise ValueError("Password decryption failed")
 
 
 def is_encrypted_password(password):

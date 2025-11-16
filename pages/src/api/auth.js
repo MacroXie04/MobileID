@@ -12,7 +12,7 @@ export async function login(username, password) {
     try {
         // Encrypt password (now async, uses dynamic public key with nonce)
         const encryptedPassword = await encryptPassword(password);
-        
+    
         // Use the new encrypted-only login endpoint
         return await apiRequest('/authn/login/', {
             method: 'POST',

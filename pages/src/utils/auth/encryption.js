@@ -116,11 +116,11 @@ export async function encryptPassword(password) {
         const encrypt = new JSEncrypt();
         encrypt.setPublicKey(publicKey);
         const encrypted = encrypt.encrypt(payload);
-
+        
         if (!encrypted) {
             throw new Error('RSA encryption failed - public key may be invalid');
         }
-
+        
         return encrypted;
     } catch (error) {
         console.error('Password encryption error:', error);

@@ -4,7 +4,6 @@ API endpoints for RSA public key distribution
 import logging
 
 from django.core.cache import cache
-from django.http import Http404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -44,7 +43,12 @@ def get_public_key(request):
         key_pair = get_active_rsa_keypair()
     except RSAKeyPair.DoesNotExist:
         logger.error("No active RSA key pair available")
-        raise Http404("No active RSA key pair available. Please contact administrator.")
+        return Response(
+            {
+                "detail": "No active RSA key pair available. Please run: python manage.py generate_rsa_keypair"
+            },
+            status=503,  # Service Unavailable
+        )
 
     response_data = {
         "kid": str(key_pair.kid),

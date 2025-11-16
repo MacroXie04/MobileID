@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import warnings
 from datetime import timedelta
 from pathlib import Path
 
@@ -20,6 +21,9 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Prefer real env vars; then supplement from .env if present (do NOT override)
 load_dotenv(BASE_DIR / ".env", override=False)
+
+# Suppress cbor2 deprecation warning (comes from third-party dependency)
+warnings.filterwarnings('ignore', category=UserWarning, module='cbor2')
 
 
 def env(key, default=None):
@@ -377,8 +381,3 @@ if TESTING:
             },
         },
     }
-
-    # Also suppress Python warnings (like cbor2 deprecation warnings) during testing
-    import warnings
-
-    warnings.filterwarnings('ignore', category=UserWarning, module='cbor2')

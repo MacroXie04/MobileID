@@ -8,6 +8,11 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
 """
 
 import os
+import warnings
+
+# Suppress cbor2 deprecation warning (comes from third-party dependency)
+# Must be done before Django imports to catch early warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='cbor2')
 
 from django.core.wsgi import get_wsgi_application
 
