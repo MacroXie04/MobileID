@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-
+import logging
 from authn.api.utils import set_auth_cookies
 from authn.services.passkeys import (
     build_authentication_options,
@@ -63,7 +63,8 @@ def passkey_auth_verify(request):
     try:
         user = verify_authentication(request.data, expected)
     except Exception as exc:
-        return Response({"success": False, "message": str(exc)}, status=400)
+        logging.exception("Failed to verify passkey authentication")
+        return Response({"success": False, "message": "Authentication failed"}, status=400)
 
     refresh = RefreshToken.for_user(user)
     access_token = str(refresh.access_token)
