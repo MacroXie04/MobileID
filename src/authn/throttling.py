@@ -1,5 +1,13 @@
 from django.utils.encoding import force_str
-from rest_framework.throttling import SimpleRateThrottle
+from rest_framework.throttling import ScopedRateThrottle, SimpleRateThrottle
+
+
+class LoginRateThrottle(ScopedRateThrottle):
+    """
+    Scoped throttle for overall login attempts per client/IP.
+    """
+
+    scope = "login"
 
 
 class UsernameRateThrottle(SimpleRateThrottle):

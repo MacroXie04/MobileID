@@ -45,8 +45,10 @@ SECRET_KEY = env("SECRET_KEY", "dev-secret")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG", "False").lower() == "true"
+ENVIRONMENT = env("ENVIRONMENT", "development").lower()
+IS_PRODUCTION = ENVIRONMENT in {"prod", "production"} or not DEBUG
 
-# Hosts (localhost ONLY)
+# Hosts (localhost ONLY by default; use env var in production)
 ALLOWED_HOSTS = csv_env("ALLOWED_HOSTS", ["localhost"])
 
 INSTALLED_APPS = [
@@ -99,6 +101,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     # Default Django middleware
     "django.middleware.security.SecurityMiddleware",
+    "mobileid.middleware.ContentSecurityPolicyMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -108,38 +111,54 @@ MIDDLEWARE = [
 ]
 
 BACKEND_ORIGIN = env("BACKEND_ORIGIN", "http://localhost:8000")
-FRONTEND_ORIGINS = csv_env(
-    "CORS_ALLOWED_ORIGINS", [
+
+FRONTEND_ORIGINS_DEV = csv_env(
+    "CORS_ALLOWED_ORIGINS_DEV",
+    [
         "http://localhost:5173",
         "http://localhost:8080",
         "http://127.0.0.1:5173",
-        "http://127.0.0.1:8080"
-    ]
+        "http://127.0.0.1:8080",
+    ],
+)
+FRONTEND_ORIGINS_PROD = csv_env(
+    "CORS_ALLOWED_ORIGINS_PROD",
+    csv_env("CORS_ALLOWED_ORIGINS", []),
 )
 
+if DEBUG:
+    FRONTEND_ORIGINS = FRONTEND_ORIGINS_DEV
+else:
+    FRONTEND_ORIGINS = FRONTEND_ORIGINS_PROD or FRONTEND_ORIGINS_DEV
+
 # Django 5 requires scheme://host[:port]
-CSRF_TRUSTED_ORIGINS = csv_env(
-    "CSRF_TRUSTED_ORIGINS", [BACKEND_ORIGIN, *FRONTEND_ORIGINS]
-)
+CSRF_TRUSTED_ORIGINS = csv_env("CSRF_TRUSTED_ORIGINS", [BACKEND_ORIGIN, *FRONTEND_ORIGINS])
 
 # If using django-cors-headers:
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
 CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
-# Cookies (dev)
-SESSION_COOKIE_SAMESITE = env("COOKIE_SAMESITE", "Lax")
-CSRF_COOKIE_SAMESITE = env("CSRF_COOKIE_SAMESITE", "Lax")
-SESSION_COOKIE_SECURE = env("COOKIE_SECURE", "False").lower() == "true"
-CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
-CSRF_COOKIE_HTTPONLY = env("CSRF_COOKIE_HTTPONLY", "False").lower() == "true"
+# Cookies
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = env("SESSION_COOKIE_SECURE", "True" if IS_PRODUCTION else "False").lower() == "true"
+CSRF_COOKIE_SECURE = env("CSRF_COOKIE_SECURE", "True" if IS_PRODUCTION else "False").lower() == "true"
+CSRF_COOKIE_HTTPONLY = False
 
-# HTTPS settings for development
-# Note: These should be configured differently for production
-if os.getenv("USE_HTTPS", "False").lower() == "true":
-    SECURE_SSL_REDIRECT = False  # Don't redirect in development
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = env("SECURE_SSL_REDIRECT", "True" if IS_PRODUCTION else "False").lower() == "true"
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_HSTS_SECONDS = int(env("SECURE_HSTS_SECONDS", "63072000"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+X_FRAME_OPTIONS = "SAMEORIGIN"
+CSP_DEFAULT_POLICY = env(
+    "CSP_DEFAULT_POLICY",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:",
+)
+LOGIN_CHALLENGE_TTL_SECONDS = int(env("LOGIN_CHALLENGE_TTL_SECONDS", "120"))
+LOGIN_CHALLENGE_NONCE_BYTES = int(env("LOGIN_CHALLENGE_NONCE_BYTES", "16"))
 
 # Session settings - Set to 10 years (effectively unlimited)
 SESSION_COOKIE_AGE = 315360000  # 10 years in seconds
@@ -175,8 +194,8 @@ TESTING = os.getenv("TESTING", "False").lower() == "true"
 
 SIMPLE_JWT = {
     # Tests: keep tokens long to avoid flakiness; Prod: short-lived access, moderate refresh
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1) if TESTING else timedelta(minutes=15),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1) if TESTING else timedelta(days=14),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1) if TESTING else timedelta(minutes=10),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1) if TESTING else timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",

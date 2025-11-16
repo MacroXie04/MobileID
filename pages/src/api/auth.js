@@ -1,6 +1,10 @@
 import {ApiError, apiRequest} from './client';
 import {encryptPassword, clearPublicKeyCache} from '@/utils/auth/encryption';
 
+export async function fetchLoginChallenge() {
+    return apiRequest('/authn/login-challenge/');
+}
+
 export async function login(username, password) {
     // NOTE: This is a change from the original behavior.
     // The original `login` function did not throw an error on a non-2xx response
@@ -10,8 +14,8 @@ export async function login(username, password) {
     // This creates a more consistent and robust error handling pattern.
     
     try {
-        // Encrypt password (now async, uses dynamic public key with nonce)
-        const encryptedPassword = await encryptPassword(password);
+        const challenge = await fetchLoginChallenge();
+        const encryptedPassword = await encryptPassword(password, challenge);
     
         // Use the new encrypted-only login endpoint
         return await apiRequest('/authn/login/', {

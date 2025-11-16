@@ -1,4 +1,7 @@
 import {baseURL} from '@/config';
+import {getCookie} from '@/utils/auth/cookie';
+
+const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export class ApiError extends Error {
     constructor(message, status, data) {
@@ -10,13 +13,21 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest(endpoint, options = {}) {
+    const method = (options.method || 'GET').toUpperCase();
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+    };
+
+    if (UNSAFE_METHODS.has(method)) {
+        headers['X-CSRFToken'] = getCookie('csrftoken');
+    }
+
     const config = {
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-            ...options.headers,
-        },
         ...options,
+        method,
+        credentials: 'include',
+        headers,
     };
 
     if (config.body && typeof config.body !== 'string') {
