@@ -32,15 +32,26 @@ def api_register(request):
         )
 
     try:
-        required_fields = ["username", "password1", "password2", "name", "information_id"]
-        missing_fields = [field for field in required_fields if not request.data.get(field)]
+        required_fields = [
+            "username",
+            "password1",
+            "password2",
+            "name",
+            "information_id",
+        ]
+        missing_fields = [
+            field for field in required_fields if not request.data.get(field)
+        ]
 
         if missing_fields:
             return Response(
                 {
                     "success": False,
                     "message": "Missing required fields",
-                    "errors": {field: ["This field cannot be empty"] for field in missing_fields},
+                    "errors": {
+                        field: ["This field cannot be empty"]
+                        for field in missing_fields
+                    },
                 },
                 status=400,
             )
@@ -96,5 +107,10 @@ def api_register(request):
 
     except Exception as exc:
         logging.exception("Error occurred during user registration")
-        return Response({"success": False, "message": "Registration failed due to an internal error."}, status=500)
-
+        return Response(
+            {
+                "success": False,
+                "message": "Registration failed due to an internal error.",
+            },
+            status=500,
+        )

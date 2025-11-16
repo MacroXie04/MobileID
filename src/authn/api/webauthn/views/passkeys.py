@@ -68,7 +68,9 @@ def passkey_auth_verify(request):
         user = verify_authentication(request.data, expected)
     except Exception as exc:
         logging.exception("Failed to verify passkey authentication")
-        return Response({"success": False, "message": "Authentication failed"}, status=400)
+        return Response(
+            {"success": False, "message": "Authentication failed"}, status=400
+        )
 
     refresh = RefreshToken.for_user(user)
     access_token = str(refresh.access_token)

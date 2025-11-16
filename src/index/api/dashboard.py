@@ -130,10 +130,17 @@ class BarcodeDashboardAPIView(APIView):
 
         # Create a copy of request data to potentially modify
         data = request.data.copy()
+        barcode_requested = "barcode" in data
+
+        # Track pull setting state changes
+        existing_pull_settings = UserBarcodePullSettings.objects.filter(user=user).first()
+        pull_settings_enabled_before = (
+            existing_pull_settings.pull_setting == "Enable" if existing_pull_settings else False
+        )
+        pull_settings_enabled_after = pull_settings_enabled_before
 
         # Handle pull_settings if provided
         pull_settings_data = data.pop("pull_settings", None)
-        pull_settings_enabled = False
         if pull_settings_data:
             pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(user=user)
             pull_serializer = UserBarcodePullSettingsSerializer(
@@ -141,9 +148,8 @@ class BarcodeDashboardAPIView(APIView):
             )
             if pull_serializer.is_valid():
                 pull_serializer.save()
-                # Check if pull_setting is now enabled
                 pull_settings.refresh_from_db()
-                pull_settings_enabled = pull_settings.pull_setting == "Enable"
+                pull_settings_enabled_after = pull_settings.pull_setting == "Enable"
             else:
                 return Response(
                     {
@@ -153,15 +159,33 @@ class BarcodeDashboardAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
-            # Check existing pull settings to see if they're enabled
-            try:
-                existing_pull_settings = UserBarcodePullSettings.objects.get(user=user)
-                pull_settings_enabled = existing_pull_settings.pull_setting == "Enable"
-            except UserBarcodePullSettings.DoesNotExist:
-                pass
+            pull_settings = existing_pull_settings
+
+        pull_setting_enabled_now = (
+            pull_settings_data is not None
+            and pull_settings_enabled_after
+            and not pull_settings_enabled_before
+        )
+
+        if (
+            barcode_requested
+            and pull_settings_enabled_after
+            and not pull_setting_enabled_now
+        ):
+            return Response(
+                {
+                    "status": "error",
+                    "errors": {
+                        "barcode": [
+                            "Barcode selection is disabled when pull setting is enabled."
+                        ]
+                    },
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # If pull_setting is enabled, auto-clear barcode selection
-        if pull_settings_enabled:
+        if pull_settings_enabled_after:
             data.pop("barcode", None)  # Remove from incoming data
             if settings.barcode is not None:
                 settings.barcode = None
