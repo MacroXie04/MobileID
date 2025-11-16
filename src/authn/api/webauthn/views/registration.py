@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 
+import logging
 from authn.api.utils import set_auth_cookies
 
 from ..forms import UserRegisterForm
@@ -94,5 +95,6 @@ def api_register(request):
         )
 
     except Exception as exc:
-        return Response({"success": False, "message": f"Registration failed: {str(exc)}"}, status=500)
+        logging.exception("Error occurred during user registration")
+        return Response({"success": False, "message": "Registration failed due to an internal error."}, status=500)
 
