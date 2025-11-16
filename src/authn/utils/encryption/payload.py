@@ -65,4 +65,3 @@ def decrypt_password(encrypted_password):
     except Exception as exc:
         logger.error("Password decryption failed: %s", str(exc))
         raise ValueError("Password decryption failed")
-

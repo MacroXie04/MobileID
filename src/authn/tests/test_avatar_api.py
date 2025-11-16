@@ -17,7 +17,9 @@ class AvatarUploadAPITest(APITestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
+        self.user = User.objects.create_user(
+            username="testuser", password="testpass123"
+        )
         create_user_profile(self.user, "Test User", "TEST123", None)
 
         refresh = RefreshToken.for_user(self.user)
@@ -34,7 +36,9 @@ class AvatarUploadAPITest(APITestCase):
         url = reverse("authn:api_avatar_upload")
 
         image_content = self._create_test_image().getvalue()
-        image_file = SimpleUploadedFile("test.png", image_content, content_type="image/png")
+        image_file = SimpleUploadedFile(
+            "test.png", image_content, content_type="image/png"
+        )
 
         response = self.client.post(url, {"avatar": image_file}, format="multipart")
 
@@ -52,7 +56,9 @@ class AvatarUploadAPITest(APITestCase):
 
     def test_avatar_upload_invalid_file_type(self):
         url = reverse("authn:api_avatar_upload")
-        text_file = SimpleUploadedFile("test.txt", b"not an image", content_type="text/plain")
+        text_file = SimpleUploadedFile(
+            "test.txt", b"not an image", content_type="text/plain"
+        )
 
         response = self.client.post(url, {"avatar": text_file}, format="multipart")
 
@@ -62,11 +68,12 @@ class AvatarUploadAPITest(APITestCase):
     def test_avatar_upload_oversized_file(self):
         url = reverse("authn:api_avatar_upload")
 
-        with patch("django.core.files.uploadedfile.InMemoryUploadedFile.size", 6 * 1024 * 1024):
+        with patch(
+            "django.core.files.uploadedfile.InMemoryUploadedFile.size", 6 * 1024 * 1024
+        ):
             image_file = self._create_test_image()
 
             response = self.client.post(url, {"avatar": image_file}, format="multipart")
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
             self.assertFalse(response.data["success"])
-

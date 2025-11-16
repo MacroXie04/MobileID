@@ -18,4 +18,3 @@ class ContentSecurityPolicyMiddleware:
         if self.policy and not response.has_header("Content-Security-Policy"):
             response["Content-Security-Policy"] = self.policy
         return response
-

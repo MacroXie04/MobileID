@@ -42,21 +42,33 @@ class _BaseLoginSerializer(TokenObtainPairSerializer):
             attempt.save()
             return
 
-        logger.warning("Login attempt blocked due to lock", extra={"username": attempt.username})
-        self._log_auth_event(attempt.username, client_ip or attempt.ip_address, "blocked", reason="locked")
+        logger.warning(
+            "Login attempt blocked due to lock", extra={"username": attempt.username}
+        )
+        self._log_auth_event(
+            attempt.username,
+            client_ip or attempt.ip_address,
+            "blocked",
+            reason="locked",
+        )
         raise serializers.ValidationError({"detail": self.generic_error_message})
 
     def _record_failed_attempt(self, attempt, client_ip):
         if not attempt:
             return
 
-        attempt.attempt_count = min(self._max_failed_attempts(), attempt.attempt_count + 1)
+        attempt.attempt_count = min(
+            self._max_failed_attempts(), attempt.attempt_count + 1
+        )
         if client_ip:
             attempt.ip_address = client_ip
 
         if attempt.attempt_count >= self._max_failed_attempts():
             attempt.locked_until = timezone.now() + self._lockout_duration()
-            logger.warning("Account locked due to repeated failures", extra={"username": attempt.username})
+            logger.warning(
+                "Account locked due to repeated failures",
+                extra={"username": attempt.username},
+            )
             self._log_auth_event(
                 username=attempt.username,
                 client_ip=client_ip or attempt.ip_address,
@@ -121,4 +133,3 @@ class _BaseLoginSerializer(TokenObtainPairSerializer):
         if not request:
             return None
         return request.META.get("HTTP_USER_AGENT")
-

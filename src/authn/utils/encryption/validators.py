@@ -39,4 +39,3 @@ def validate_encrypted_password_format(encrypted_password):
         raise ValueError(f"Invalid RSA ciphertext length: {len(decoded)} bytes")
 
     return True
-

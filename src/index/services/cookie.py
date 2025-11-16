@@ -81,9 +81,19 @@ def process_user_cookie(raw_cookie: str) -> ProcessedCookie:
 
     # Remove known tracking/analytics keys that are unnecessary
     # and may bloat headers or cause issues.
-    blacklist_prefixes = ["_ga", "_fbp", "_tt", "_pk_", "_scid", "_uetvid", "nmstat", "_mkto"]
+    blacklist_prefixes = [
+        "_ga",
+        "_fbp",
+        "_tt",
+        "_pk_",
+        "_scid",
+        "_uetvid",
+        "nmstat",
+        "_mkto",
+    ]
     filtered_kv = {
-        k: v for k, v in kv.items()
+        k: v
+        for k, v in kv.items()
         if not any(k.startswith(prefix) for prefix in blacklist_prefixes)
     }
 
@@ -93,6 +103,10 @@ def process_user_cookie(raw_cookie: str) -> ProcessedCookie:
         warnings.append("No session cookies found - authentication may fail")
 
     # Rebuild the header_value from filtered cookies
-    header_value = "; ".join(f"{k}={v}" for k, v in filtered_kv.items()) if filtered_kv else ""
+    header_value = (
+        "; ".join(f"{k}={v}" for k, v in filtered_kv.items()) if filtered_kv else ""
+    )
 
-    return ProcessedCookie(header_value=header_value, kv=filtered_kv, warnings=tuple(warnings))
+    return ProcessedCookie(
+        header_value=header_value, kv=filtered_kv, warnings=tuple(warnings)
+    )

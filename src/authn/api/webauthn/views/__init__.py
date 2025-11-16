@@ -8,7 +8,12 @@ from .passkeys import (
 )
 from .profile import api_profile, user_info
 from .registration import api_register
-from .tokens import CookieTokenObtainPairView, CookieTokenRefreshView, RSALoginView, api_logout
+from .tokens import (
+    CookieTokenObtainPairView,
+    CookieTokenRefreshView,
+    RSALoginView,
+    api_logout,
+)
 
 __all__ = [
     "api_avatar_upload",
@@ -26,4 +31,3 @@ __all__ = [
     "user_img",
     "user_info",
 ]
-

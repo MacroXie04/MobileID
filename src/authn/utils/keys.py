@@ -1,6 +1,7 @@
 """
 RSA key pair utilities for fetching active keys
 """
+
 import logging
 from functools import lru_cache
 
@@ -42,14 +43,20 @@ def get_active_rsa_keypair():
         cache.set(CACHE_KEY_ACTIVE_RSA_KEY, key_pair.pk, CACHE_TIMEOUT)
         return key_pair
     except RSAKeyPair.DoesNotExist:
-        logger.error("No active RSA key pair found. Run: python manage.py generate_rsa_keypair")
+        logger.error(
+            "No active RSA key pair found. Run: python manage.py generate_rsa_keypair"
+        )
         raise
     except RSAKeyPair.MultipleObjectsReturned:
         logger.error("Multiple active RSA key pairs found. This should not happen!")
         # Get the most recently created one
-        key_pair = RSAKeyPair.objects.filter(is_active=True).order_by("-created_at").first()
+        key_pair = (
+            RSAKeyPair.objects.filter(is_active=True).order_by("-created_at").first()
+        )
         # Deactivate others
-        RSAKeyPair.objects.filter(is_active=True).exclude(pk=key_pair.pk).update(is_active=False)
+        RSAKeyPair.objects.filter(is_active=True).exclude(pk=key_pair.pk).update(
+            is_active=False
+        )
         cache.set(CACHE_KEY_ACTIVE_RSA_KEY, key_pair.pk, CACHE_TIMEOUT)
         return key_pair
 
@@ -57,4 +64,3 @@ def get_active_rsa_keypair():
 def clear_rsa_keypair_cache():
     """Clear the cached active RSA key pair"""
     cache.delete(CACHE_KEY_ACTIVE_RSA_KEY)
-

@@ -92,4 +92,3 @@ class UserRegistrationAPITest(APITestCase):
 
         response1 = self.client.post(url, self.registration_data, format="json")
         self.assertIn(response1.status_code, [200, 429])
-

@@ -94,4 +94,3 @@ class UserRegisterForm(UserCreationForm):
 
         create_user_profile(user, name, info_id, avatar_b64_or_none)
         return user
-

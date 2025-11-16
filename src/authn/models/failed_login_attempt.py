@@ -22,4 +22,3 @@ class FailedLoginAttempt(models.Model):
         from django.utils import timezone
 
         return bool(self.locked_until and self.locked_until > timezone.now())
-

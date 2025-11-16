@@ -20,9 +20,10 @@ def login_challenge(request):
     except Exception:
         logger.exception("Failed to issue login challenge")
         return Response(
-            {"detail": "No active RSA key pair available. Please run the key generation command."},
+            {
+                "detail": "No active RSA key pair available. Please run the key generation command."
+            },
             status=503,
         )
     get_token(request)
     return Response(payload)
-

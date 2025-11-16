@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env", override=False)
 
 # Suppress cbor2 deprecation warning (comes from third-party dependency)
-warnings.filterwarnings('ignore', category=UserWarning, module='cbor2')
+warnings.filterwarnings("ignore", category=UserWarning, module="cbor2")
 
 
 def env(key, default=None):
@@ -52,24 +52,19 @@ IS_PRODUCTION = ENVIRONMENT in {"prod", "production"} or not DEBUG
 ALLOWED_HOSTS = csv_env("ALLOWED_HOSTS", ["localhost"])
 
 INSTALLED_APPS = [
-
     # index app
     "index.apps.IndexConfig",
-
     # user authentication
     "authn.apps.AuthnConfig",
-
     # Django REST framework
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "rest_framework.authtoken",
     "corsheaders",
-
     # modules
     "widget_tweaks",
     "django_extensions",
-
     # Default Django apps
     "django.contrib.admin",
     "django.contrib.auth",
@@ -92,8 +87,8 @@ STATICFILES_DIRS = [
 
 # Static files finders
 STATICFILES_FINDERS = [
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
 MIDDLEWARE = [
@@ -132,7 +127,9 @@ else:
     FRONTEND_ORIGINS = FRONTEND_ORIGINS_PROD or FRONTEND_ORIGINS_DEV
 
 # Django 5 requires scheme://host[:port]
-CSRF_TRUSTED_ORIGINS = csv_env("CSRF_TRUSTED_ORIGINS", [BACKEND_ORIGIN, *FRONTEND_ORIGINS])
+CSRF_TRUSTED_ORIGINS = csv_env(
+    "CSRF_TRUSTED_ORIGINS", [BACKEND_ORIGIN, *FRONTEND_ORIGINS]
+)
 
 # If using django-cors-headers:
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
@@ -141,11 +138,17 @@ CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 # Cookies
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SECURE = env("SESSION_COOKIE_SECURE", "True" if IS_PRODUCTION else "False").lower() == "true"
-CSRF_COOKIE_SECURE = env("CSRF_COOKIE_SECURE", "True" if IS_PRODUCTION else "False").lower() == "true"
+SESSION_COOKIE_SECURE = (
+    env("SESSION_COOKIE_SECURE", "True" if IS_PRODUCTION else "False").lower() == "true"
+)
+CSRF_COOKIE_SECURE = (
+    env("CSRF_COOKIE_SECURE", "True" if IS_PRODUCTION else "False").lower() == "true"
+)
 CSRF_COOKIE_HTTPONLY = False
 
-SECURE_SSL_REDIRECT = env("SECURE_SSL_REDIRECT", "True" if IS_PRODUCTION else "False").lower() == "true"
+SECURE_SSL_REDIRECT = (
+    env("SECURE_SSL_REDIRECT", "True" if IS_PRODUCTION else "False").lower() == "true"
+)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = int(env("SECURE_HSTS_SECONDS", "63072000"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -229,7 +232,9 @@ DB_PROFILE = os.getenv("DB_PROFILE", "local").lower()
 # Common options
 DB_CONN_MAX_AGE = int(os.getenv("DB_CONN_MAX_AGE", "60"))  # persistent connections
 DB_SSL_MODE = os.getenv("DB_SSL_MODE", "").lower()  # "", "require", "verify-full"
-DB_DISABLE_SERVER_CERT_VERIFICATION = os.getenv("DB_SSL_DISABLE_VERIFY", "false").lower() == "true"
+DB_DISABLE_SERVER_CERT_VERIFICATION = (
+    os.getenv("DB_SSL_DISABLE_VERIFY", "false").lower() == "true"
+)
 
 
 def _apply_common(db_cfg: dict) -> dict:
@@ -248,7 +253,9 @@ def _from_url(url_env_name: str, default_url: str = "") -> dict:
     url = os.getenv(url_env_name, default_url)
     if not url:
         return {}
-    cfg = dj_database_url.parse(url, conn_max_age=DB_CONN_MAX_AGE, ssl_require=(DB_SSL_MODE == "require"))
+    cfg = dj_database_url.parse(
+        url, conn_max_age=DB_CONN_MAX_AGE, ssl_require=(DB_SSL_MODE == "require")
+    )
     return _apply_common(cfg)
 
 
@@ -326,8 +333,13 @@ else:
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 10}},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 10},
+    },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
@@ -373,30 +385,36 @@ CACHES = {
         "LOCATION": CACHE_LOCATION,
     }
 }
-SESSION_ENGINE = os.getenv("SESSION_ENGINE",
-                           "django.contrib.sessions.backends.cache" if TESTING else "django.contrib.sessions.backends.db")
+SESSION_ENGINE = os.getenv(
+    "SESSION_ENGINE",
+    (
+        "django.contrib.sessions.backends.cache"
+        if TESTING
+        else "django.contrib.sessions.backends.db"
+    ),
+)
 
 # Logging configuration
 if TESTING:
     # Suppress warnings during testing to avoid noise from expected 4xx responses and dependencies
     LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'null': {
-                'class': 'logging.NullHandler',
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "null": {
+                "class": "logging.NullHandler",
             },
         },
-        'loggers': {
-            'django.request': {
-                'handlers': ['null'],
-                'level': 'ERROR',  # Only show actual errors, not warnings
-                'propagate': False,
+        "loggers": {
+            "django.request": {
+                "handlers": ["null"],
+                "level": "ERROR",  # Only show actual errors, not warnings
+                "propagate": False,
             },
-            'py.warnings': {
-                'handlers': ['null'],
-                'level': 'ERROR',
-                'propagate': False,
+            "py.warnings": {
+                "handlers": ["null"],
+                "level": "ERROR",
+                "propagate": False,
             },
         },
     }

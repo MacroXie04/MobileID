@@ -10,4 +10,3 @@ __all__ = [
     "is_encrypted_password",
     "validate_encrypted_password_format",
 ]
-

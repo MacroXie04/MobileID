@@ -8,7 +8,9 @@ class UserProfileModelTest(TestCase):
     """Test UserProfile model functionality"""
 
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
+        self.user = User.objects.create_user(
+            username="testuser", password="testpass123"
+        )
 
     def test_user_profile_creation(self):
         """Test creating a UserProfile"""
@@ -40,8 +42,12 @@ class UserProfileModelTest(TestCase):
         """Test that each UserProfile gets a unique UUID"""
         user2 = User.objects.create_user(username="testuser2", password="testpass123")
 
-        profile1 = UserProfile.objects.create(user=self.user, name="User 1", information_id="ID1")
-        profile2 = UserProfile.objects.create(user=user2, name="User 2", information_id="ID2")
+        profile1 = UserProfile.objects.create(
+            user=self.user, name="User 1", information_id="ID1"
+        )
+        profile2 = UserProfile.objects.create(
+            user=user2, name="User 2", information_id="ID2"
+        )
 
         self.assertNotEqual(profile1.profile_uuid, profile2.profile_uuid)
 
@@ -58,4 +64,3 @@ class UserProfileModelTest(TestCase):
 
         profile.save()
         self.assertEqual(len(profile.user_profile_img), 15000)
-

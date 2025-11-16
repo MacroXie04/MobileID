@@ -12,7 +12,9 @@ class AuthenticationAPITest(APITestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
+        self.user = User.objects.create_user(
+            username="testuser", password="testpass123"
+        )
         create_user_profile(self.user, "Test User", "TEST123", None)
 
     def test_login_success(self):
@@ -95,4 +97,3 @@ class AuthenticationAPITest(APITestCase):
         url = reverse("authn:api_user_image")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-

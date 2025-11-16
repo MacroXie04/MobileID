@@ -11,10 +11,7 @@ from typing import Dict, List, Optional
 from urllib.parse import quote
 
 from selenium import webdriver
-from selenium.common.exceptions import (
-    TimeoutException,
-    WebDriverException
-)
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -22,10 +19,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -33,6 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MobileIdData:
     """Data class for mobile ID information."""
+
     mobile_id_rand_array: Optional[List[str]]
     student_id: Optional[str]
     barcode: Optional[str]
@@ -43,6 +39,7 @@ class MobileIdData:
 @dataclass
 class ApiResponse:
     """Data class for API response information."""
+
     status: str
     code: Optional[str] = None
     response: Optional[str] = None
@@ -146,7 +143,9 @@ class WebDriverManager:
             service = Service(ChromeDriverManager().install())
             logger.info("Using ChromeDriver from webdriver-manager (auto-matched)")
         except Exception as e:
-            logger.warning(f"webdriver-manager failed ({e}); falling back to /usr/bin/chromedriver")
+            logger.warning(
+                f"webdriver-manager failed ({e}); falling back to /usr/bin/chromedriver"
+            )
             service = Service("/usr/bin/chromedriver")
 
         driver = webdriver.Chrome(service=service, options=chrome_options)
@@ -162,7 +161,9 @@ class UCMercedMobileIdClient:
         self.headless = headless
         self.config = UCMercedConfig()
 
-    def send_otc(self, mobile_id_rand: str, student_id: str, barcode: str, user_cookies: str) -> ApiResponse:
+    def send_otc(
+        self, mobile_id_rand: str, student_id: str, barcode: str, user_cookies: str
+    ) -> ApiResponse:
         """
         Send OTC (One-Time Code) using provided parameters.
 
@@ -219,7 +220,9 @@ class UCMercedMobileIdClient:
                     # Non-fatal if UA override fails
                     pass
 
-                driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": ajax_headers})
+                driver.execute_cdp_cmd(
+                    "Network.setExtraHTTPHeaders", {"headers": ajax_headers}
+                )
 
                 # Navigate to the same-origin page first to avoid CORS issues
                 logger.info(f"Navigating to: {self.config.MOBILE_ID_URL}")
@@ -227,7 +230,8 @@ class UCMercedMobileIdClient:
 
                 # Wait for page to be ready
                 WebDriverWait(driver, self.config.EXPLICIT_WAIT).until(
-                    lambda d: d.execute_script("return document.readyState") == "complete"
+                    lambda d: d.execute_script("return document.readyState")
+                    == "complete"
                 )
 
                 # Prepare the JavaScript payload using fetch()
@@ -276,7 +280,9 @@ class UCMercedMobileIdClient:
             logger.error(error_msg)
             return ApiResponse(status="error", error=error_msg)
 
-    def _build_js_payload(self, mobile_id_rand: str, student_id: str, barcode: str) -> str:
+    def _build_js_payload(
+        self, mobile_id_rand: str, student_id: str, barcode: str
+    ) -> str:
         """Build JavaScript fetch payload for AJAX request, mirroring the provided cURL.
 
         Ensures student ID is prefixed with 'S'.
@@ -317,7 +323,9 @@ class UCMercedMobileIdClient:
     def _is_success_response(self, response_text: str) -> bool:
         """Check if response indicates success."""
         success_indicators = ["added", "success", "complete"]
-        return any(indicator in response_text.lower() for indicator in success_indicators)
+        return any(
+            indicator in response_text.lower() for indicator in success_indicators
+        )
 
     def auto_send_code(self, user_cookies: str) -> ApiResponse:
         """
@@ -347,17 +355,21 @@ class UCMercedMobileIdClient:
             logger.info(f"Trying {len(mobile_data.mobile_id_rand_array)} codes")
 
             for i, mobile_id_rand in enumerate(mobile_data.mobile_id_rand_array, 1):
-                logger.info(f"Attempting code {i}/{len(mobile_data.mobile_id_rand_array)}: {mobile_id_rand}")
+                logger.info(
+                    f"Attempting code {i}/{len(mobile_data.mobile_id_rand_array)}: {mobile_id_rand}"
+                )
 
                 response = self.send_otc(
                     mobile_id_rand,
                     mobile_data.student_id,
                     mobile_data.barcode,
-                    user_cookies
+                    user_cookies,
                 )
 
                 if response.status == "success":
-                    logger.info(f"Successfully authenticated with code: {mobile_id_rand}")
+                    logger.info(
+                        f"Successfully authenticated with code: {mobile_id_rand}"
+                    )
                     return response
 
                 # Brief delay between attempts
@@ -450,17 +462,23 @@ class UCMercedMobileIdClient:
 
         # Mobile ID Codes
         if mobile_data.mobile_id_rand_array:
-            print(f"[OK]   {'Mobile ID Codes':<{LABEL_W}} : {len(mobile_data.mobile_id_rand_array)} found")
+            print(
+                f"[OK]   {'Mobile ID Codes':<{LABEL_W}} : {len(mobile_data.mobile_id_rand_array)} found"
+            )
             line("Sample Codes", mobile_data.mobile_id_rand_array[:3])
         else:
             print(f"[MISS] {'Mobile ID Codes':<{LABEL_W}} : None found")
 
         # Profile Image (formatted exactly as requested)
         if mobile_data.profile_img_base64:
-            img_info = self._analyze_profile_image(mobile_data.profile_img_base64)  # e.g., "PNG 128x128"
+            img_info = self._analyze_profile_image(
+                mobile_data.profile_img_base64
+            )  # e.g., "PNG 128x128"
             print(f"[OK]   {'Profile Image':<{LABEL_W}} : Found ({img_info})")
             line("Data Length", f"{len(mobile_data.profile_img_base64)} chars")
-            preview = shorten(mobile_data.profile_img_base64, width=60, placeholder="...")
+            preview = shorten(
+                mobile_data.profile_img_base64, width=60, placeholder="..."
+            )
             line("Preview", preview)
 
             # Attempt inline rendering for iTerm2
@@ -477,16 +495,22 @@ class UCMercedMobileIdClient:
     def _analyze_profile_image(self, img_base64: str) -> str:
         """Analyze profile image to get format and approximate size."""
         try:
-            if img_base64.startswith('data:image/'):
+            if img_base64.startswith("data:image/"):
                 # Extract format
-                format_match = re.search(r'data:image/([^;]+)', img_base64)
-                img_format = format_match.group(1).upper() if format_match else "Unknown"
+                format_match = re.search(r"data:image/([^;]+)", img_base64)
+                img_format = (
+                    format_match.group(1).upper() if format_match else "Unknown"
+                )
 
                 # Extract base64 data
-                base64_data = img_base64.split(',')[1] if ',' in img_base64 else img_base64
+                base64_data = (
+                    img_base64.split(",")[1] if "," in img_base64 else img_base64
+                )
 
                 # Calculate approximate size in KB
-                size_bytes = len(base64_data) * 3 / 4  # Base64 is ~33% larger than binary
+                size_bytes = (
+                    len(base64_data) * 3 / 4
+                )  # Base64 is ~33% larger than binary
                 size_kb = size_bytes / 1024
 
                 return f"{img_format} format, ~{size_kb:.1f}KB"
@@ -506,7 +530,9 @@ class UCMercedMobileIdClient:
                 headers = self.config.DEFAULT_HEADERS.copy()
                 headers["Cookie"] = user_cookie
 
-                driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": headers})
+                driver.execute_cdp_cmd(
+                    "Network.setExtraHTTPHeaders", {"headers": headers}
+                )
 
                 # Navigate to the page
                 logger.info(f"Navigating to: {self.config.MOBILE_ID_URL}")
@@ -514,7 +540,8 @@ class UCMercedMobileIdClient:
 
                 # Wait for page to load
                 WebDriverWait(driver, self.config.EXPLICIT_WAIT).until(
-                    lambda d: d.execute_script("return document.readyState") == "complete"
+                    lambda d: d.execute_script("return document.readyState")
+                    == "complete"
                 )
 
                 time.sleep(self.config.SLEEP_DURATION)
@@ -542,27 +569,27 @@ class UCMercedMobileIdClient:
         try:
             # Updated regex patterns for data extraction
             patterns = {
-                'array': r"var\s+mobileid_rand_array\s*=\s*(\[[^\]]*\])",
-                'student_id': r"studentid:\s*[\"'](.*?)[\"']",
-                'barcode': r"barcode:\s*[\"'](.*?)[\"']",
-                'profile_img_js': r"var\s+profile_img_base64\s*=\s*[\"'](data:image\/[a-zA-Z]+;base64,[^\"']*)[\"']",
-                'profile_img_tag': r"<img[^>]*src=[\"'](data:image\/[^;]+;base64,[A-Za-z0-9+\/=]+)[\"'][^>]*>",
+                "array": r"var\s+mobileid_rand_array\s*=\s*(\[[^\]]*\])",
+                "student_id": r"studentid:\s*[\"'](.*?)[\"']",
+                "barcode": r"barcode:\s*[\"'](.*?)[\"']",
+                "profile_img_js": r"var\s+profile_img_base64\s*=\s*[\"'](data:image\/[a-zA-Z]+;base64,[^\"']*)[\"']",
+                "profile_img_tag": r"<img[^>]*src=[\"'](data:image\/[^;]+;base64,[A-Za-z0-9+\/=]+)[\"'][^>]*>",
                 # Enhanced username patterns based on your updated HTML structure
-                'username_h4_primary': r'<h4[^>]*class="white-w4"[^>]*style="[^"]*color:\s*white[^"]*"[^>]*>([^<]+)</h4>',
+                "username_h4_primary": r'<h4[^>]*class="white-w4"[^>]*style="[^"]*color:\s*white[^"]*"[^>]*>([^<]+)</h4>',
                 # Exact match for your structure
-                'username_h4_flexible': r'<h4[^>]*class=["\']?[^"\']*white-w4[^"\']*["\']?[^>]*>([^<]+)</h4>',
+                "username_h4_flexible": r'<h4[^>]*class=["\']?[^"\']*white-w4[^"\']*["\']?[^>]*>([^<]+)</h4>',
                 # More flexible class matching
-                'username_h4_style': r'<h4[^>]*style="[^"]*color:\s*white[^"]*"[^>]*>([^<]+)</h4>',
+                "username_h4_style": r'<h4[^>]*style="[^"]*color:\s*white[^"]*"[^>]*>([^<]+)</h4>',
                 # Style-based matching
-                'username_h4_any': r'<h4[^>]*>([A-Za-z\s]+(?:Xie|[A-Z][a-z]+))</h4>',  # Any h4 with name-like content
-                'username_js': r"(?:username|name|fullname):\s*[\"'](.*?)[\"']",  # JavaScript variables
-                'display_name': r"<.*?class=[\"'][^\"']*(?:name|username|user-name)[^\"']*[\"'][^>]*>([^<]+)<",
+                "username_h4_any": r"<h4[^>]*>([A-Za-z\s]+(?:Xie|[A-Z][a-z]+))</h4>",  # Any h4 with name-like content
+                "username_js": r"(?:username|name|fullname):\s*[\"'](.*?)[\"']",  # JavaScript variables
+                "display_name": r"<.*?class=[\"'][^\"']*(?:name|username|user-name)[^\"']*[\"'][^>]*>([^<]+)<",
                 # Generic name classes
             }
 
             # Extract mobile_id_rand_array
             mobile_id_rand_array = None
-            array_match = re.search(patterns['array'], html_content)
+            array_match = re.search(patterns["array"], html_content)
             if array_match:
                 try:
                     array_str = array_match.group(1)
@@ -573,13 +600,15 @@ class UCMercedMobileIdClient:
 
             # Extract student_id
             student_id = None
-            student_id_match = re.search(patterns['student_id'], html_content)
+            student_id_match = re.search(patterns["student_id"], html_content)
             if student_id_match:
                 raw_student_id = student_id_match.group(1)
                 # Clean student ID - keep only digits
-                student_id = re.sub(r'[^0-9]', '', raw_student_id)
+                student_id = re.sub(r"[^0-9]", "", raw_student_id)
                 if student_id:
-                    logger.info(f"Found student ID: {student_id} (cleaned from: {raw_student_id})")
+                    logger.info(
+                        f"Found student ID: {student_id} (cleaned from: {raw_student_id})"
+                    )
                 else:
                     logger.warning(f"Student ID contained no digits: {raw_student_id}")
                     student_id = None
@@ -588,50 +617,70 @@ class UCMercedMobileIdClient:
             username = None
 
             # Try primary exact match pattern first (most specific for your HTML structure)
-            username_primary_match = re.search(patterns['username_h4_primary'], html_content, re.IGNORECASE)
+            username_primary_match = re.search(
+                patterns["username_h4_primary"], html_content, re.IGNORECASE
+            )
             if username_primary_match:
                 username = username_primary_match.group(1).strip()
                 logger.info(f"Found username with primary pattern: {username}")
             else:
                 # Try flexible class-based pattern
-                username_flexible_match = re.search(patterns['username_h4_flexible'], html_content, re.IGNORECASE)
+                username_flexible_match = re.search(
+                    patterns["username_h4_flexible"], html_content, re.IGNORECASE
+                )
                 if username_flexible_match:
                     username = username_flexible_match.group(1).strip()
                     logger.info(f"Found username with flexible pattern: {username}")
                 else:
                     # Try style-based pattern
-                    username_style_match = re.search(patterns['username_h4_style'], html_content, re.IGNORECASE)
+                    username_style_match = re.search(
+                        patterns["username_h4_style"], html_content, re.IGNORECASE
+                    )
                     if username_style_match:
                         username = username_style_match.group(1).strip()
                         logger.info(f"Found username with style pattern: {username}")
                     else:
                         # Try any h4 with name-like content
-                        username_any_match = re.search(patterns['username_h4_any'], html_content, re.IGNORECASE)
+                        username_any_match = re.search(
+                            patterns["username_h4_any"], html_content, re.IGNORECASE
+                        )
                         if username_any_match:
                             username = username_any_match.group(1).strip()
-                            logger.info(f"Found username with any h4 pattern: {username}")
+                            logger.info(
+                                f"Found username with any h4 pattern: {username}"
+                            )
                         else:
                             # Try JavaScript variable pattern
-                            username_js_match = re.search(patterns['username_js'], html_content, re.IGNORECASE)
+                            username_js_match = re.search(
+                                patterns["username_js"], html_content, re.IGNORECASE
+                            )
                             if username_js_match:
                                 username = username_js_match.group(1).strip()
-                                logger.info(f"Found username in JS variable: {username}")
+                                logger.info(
+                                    f"Found username in JS variable: {username}"
+                                )
                             else:
                                 # Try generic name class pattern
-                                display_name_match = re.search(patterns['display_name'], html_content, re.IGNORECASE)
+                                display_name_match = re.search(
+                                    patterns["display_name"],
+                                    html_content,
+                                    re.IGNORECASE,
+                                )
                                 if display_name_match:
                                     username = display_name_match.group(1).strip()
-                                    logger.info(f"Found username in name class: {username}")
+                                    logger.info(
+                                        f"Found username in name class: {username}"
+                                    )
                                 else:
                                     logger.warning("No username pattern matched")
 
             # Clean up username if found
             if username:
                 # Remove any HTML entities and extra whitespace
-                username = re.sub(r'&[a-zA-Z]+;', '', username)  # Remove HTML entities
-                username = re.sub(r'\s+', ' ', username).strip()  # Normalize whitespace
+                username = re.sub(r"&[a-zA-Z]+;", "", username)  # Remove HTML entities
+                username = re.sub(r"\s+", " ", username).strip()  # Normalize whitespace
                 # Remove any remaining HTML tags
-                username = re.sub(r'<[^>]+>', '', username)
+                username = re.sub(r"<[^>]+>", "", username)
                 if username:
                     logger.info(f"Cleaned username: {username}")
                 else:
@@ -639,20 +688,20 @@ class UCMercedMobileIdClient:
 
             # Extract barcode
             barcode = None
-            barcode_match = re.search(patterns['barcode'], html_content)
+            barcode_match = re.search(patterns["barcode"], html_content)
             if barcode_match:
                 barcode = barcode_match.group(1)
                 logger.info("Found barcode information")
 
             # Extract profile image
             profile_img_base64 = None
-            profile_img_match = re.search(patterns['profile_img_js'], html_content)
+            profile_img_match = re.search(patterns["profile_img_js"], html_content)
             if profile_img_match:
                 profile_img_base64 = profile_img_match.group(1)
                 logger.info("Found profile image in JavaScript variable")
             else:
                 # Try img tag as fallback
-                img_src_match = re.search(patterns['profile_img_tag'], html_content)
+                img_src_match = re.search(patterns["profile_img_tag"], html_content)
                 if img_src_match:
                     profile_img_base64 = img_src_match.group(1)
                     logger.info("Found profile image in img tag")
@@ -662,7 +711,7 @@ class UCMercedMobileIdClient:
                 student_id=student_id,
                 barcode=barcode,
                 profile_img_base64=profile_img_base64,
-                username=username
+                username=username,
             )
 
         except Exception as e:
@@ -673,7 +722,9 @@ class UCMercedMobileIdClient:
 # ---------------------------------------------------------------------------
 # Module-level convenience wrappers
 # ---------------------------------------------------------------------------
-def auto_send_code(user_cookies: str, headless: bool = True) -> Optional[Dict[str, str]]:
+def auto_send_code(
+    user_cookies: str, headless: bool = True
+) -> Optional[Dict[str, str]]:
     """Send OTC codes automatically using a headless browser session.
 
     Returns a dict like {"code": str, "response": str} on success, otherwise None.

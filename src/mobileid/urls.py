@@ -24,16 +24,12 @@ from mobileid.status.views import health_check
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
     # Health check endpoint
     path("health/", health_check, name="health_check"),
-
     # path for index app
     path("", include("index.urls")),
-
     # path for auth app
     path("authn/", include("authn.urls")),
-
 ]
 
 # Serve static files during development

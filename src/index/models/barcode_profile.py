@@ -29,6 +29,6 @@ class BarcodeUserProfile(models.Model):
         ("Female", "Female"),
         ("Unknow", "Unknow"),
     ]
-    gender_barcode = models.CharField(max_length=10, choices=GENDER_CHOICES, default="Unknow")
-
-
+    gender_barcode = models.CharField(
+        max_length=10, choices=GENDER_CHOICES, default="Unknow"
+    )

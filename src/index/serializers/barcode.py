@@ -40,7 +40,7 @@ class BarcodeSerializer(serializers.ModelSerializer):
 
     def get_usage_count(self, obj):
         """Get total usage count for the barcode
-        
+
         Note: Identification barcodes will always return 0 since we don't track
         their usage (they regenerate each time). The data is still returned
         for consistency and potential admin/debugging purposes.
@@ -72,7 +72,7 @@ class BarcodeSerializer(serializers.ModelSerializer):
 
     def get_is_owned_by_current_user(self, obj):
         """Check if the barcode is owned by the current user"""
-        request = self.context.get('request')
+        request = self.context.get("request")
         if request and request.user:
             return obj.user == request.user
         return False
@@ -93,9 +93,9 @@ class BarcodeSerializer(serializers.ModelSerializer):
         try:
             profile = obj.barcodeuserprofile
             return {
-                'name': profile.name,
-                'information_id': profile.information_id,
-                'has_avatar': bool(profile.user_profile_img),
+                "name": profile.name,
+                "information_id": profile.information_id,
+                "has_avatar": bool(profile.user_profile_img),
             }
         except BarcodeUserProfile.DoesNotExist:
             return None
@@ -107,14 +107,14 @@ class BarcodeSerializer(serializers.ModelSerializer):
         try:
             qs = (
                 Transaction.objects.filter(barcode_used=obj)
-                .select_related('user')
-                .order_by('-time_created')[:3]
+                .select_related("user")
+                .order_by("-time_created")[:3]
             )
             return [
                 {
-                    'id': t.id,
-                    'user': t.user.username if t.user_id else None,
-                    'time_created': t.time_created,
+                    "id": t.id,
+                    "user": t.user.username if t.user_id else None,
+                    "time_created": t.time_created,
                 }
                 for t in qs
             ]
@@ -168,4 +168,3 @@ class BarcodeCreateSerializer(serializers.ModelSerializer):
 
         # Transaction creation is handled in the view/service layer
         return barcode_obj
-

@@ -15,9 +15,10 @@ class TransferCatCardAPIView(APIView):
     """
     API endpoint for transferring CatCard data:
     - POST: Process user's CatCard cookies and store barcode data
-    
+
     Requires authentication and expects cookies in request data.
     """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -28,10 +29,10 @@ class TransferCatCardAPIView(APIView):
 
             if not raw_cookies:
                 logger.warning("No cookies provided in transfer request")
-                return Response({
-                    'error': 'No cookie provided',
-                    'success': False
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "No cookie provided", "success": False},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             # Normalize/process the user cookie
             processed = process_user_cookie(raw_cookies)
@@ -42,13 +43,19 @@ class TransferCatCardAPIView(APIView):
                 logger.warning(f"Cookie processing warnings: {processed.warnings}")
                 # If there are critical warnings about missing session cookies, return error
                 if any("Missing required cookie" in w for w in processed.warnings):
-                    return Response({
-                        'error': 'Invalid cookies: ' + '; '.join(processed.warnings),
-                        'success': False
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                    return Response(
+                        {
+                            "error": "Invalid cookies: "
+                            + "; ".join(processed.warnings),
+                            "success": False,
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
             # Create transfer service with current authenticated user
-            service = TransferBarcode(user_cookies=normalized_cookie_header, user=request.user)
+            service = TransferBarcode(
+                user_cookies=normalized_cookie_header, user=request.user
+            )
             result = service.transfer_barcode()
 
             logger.info(
@@ -56,20 +63,27 @@ class TransferCatCardAPIView(APIView):
                 f"{result.response if result.status == 'success' else result.error}"
             )
 
-            if result.status == 'success':
-                return Response({
-                    'message': result.response or 'Barcode data stored successfully',
-                    'success': True
-                }, status=status.HTTP_200_OK)
+            if result.status == "success":
+                return Response(
+                    {
+                        "message": result.response
+                        or "Barcode data stored successfully",
+                        "success": True,
+                    },
+                    status=status.HTTP_200_OK,
+                )
             else:
-                return Response({
-                    'error': result.error or 'Failed to store barcode data',
-                    'success': False
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response(
+                    {
+                        "error": result.error or "Failed to store barcode data",
+                        "success": False,
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
         except Exception as e:
             logger.error(f"Transfer error for user {request.user.username}: {e}")
-            return Response({
-                'error': 'Internal server error',
-                'success': False
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": "Internal server error", "success": False},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

@@ -24,7 +24,9 @@ class LoginSecurityTests(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user_password = "testpass123"
-        cls.user = User.objects.create_user(username="secureuser", password=cls.user_password)
+        cls.user = User.objects.create_user(
+            username="secureuser", password=cls.user_password
+        )
         create_user_profile(cls.user, "Secure User", "SECURE123", None)
 
     @staticmethod
@@ -41,7 +43,12 @@ class LoginSecurityTests(APITestCase):
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         ).decode("utf-8")
-        RSAKeyPair.objects.create(public_key=public_pem, private_key=private_pem, key_size=2048, is_active=True)
+        RSAKeyPair.objects.create(
+            public_key=public_pem,
+            private_key=private_pem,
+            key_size=2048,
+            is_active=True,
+        )
 
     def setUp(self):
         super().setUp()
@@ -56,11 +63,19 @@ class LoginSecurityTests(APITestCase):
         return response
 
     def _encrypt_with_challenge(self, challenge, password):
-        payload = json.dumps({"nonce": challenge["nonce"], "password": password}).encode("utf-8")
-        public_key = serialization.load_pem_public_key(challenge["public_key"].encode("utf-8"))
+        payload = json.dumps(
+            {"nonce": challenge["nonce"], "password": password}
+        ).encode("utf-8")
+        public_key = serialization.load_pem_public_key(
+            challenge["public_key"].encode("utf-8")
+        )
         ciphertext = public_key.encrypt(
             payload,
-            padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
         )
         return base64.b64encode(ciphertext).decode("utf-8")
 
@@ -123,10 +138,14 @@ class LoginSecurityTests(APITestCase):
         challenge = challenge_response.data
         encrypted = self._encrypt_with_challenge(challenge, self.user_password)
         url = reverse("authn:api_rsa_login")
-        first = self.client.post(url, {"username": self.user.username, "password": encrypted}, format="json")
+        first = self.client.post(
+            url, {"username": self.user.username, "password": encrypted}, format="json"
+        )
         self.assertEqual(first.status_code, status.HTTP_200_OK)
 
-        second = self.client.post(url, {"username": self.user.username, "password": encrypted}, format="json")
+        second = self.client.post(
+            url, {"username": self.user.username, "password": encrypted}, format="json"
+        )
         self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("Invalid username or password.", str(second.data["detail"]))
 
@@ -170,4 +189,3 @@ class LoginSecurityTests(APITestCase):
         django_request.META["HTTP_X_CSRFTOKEN"] = csrf_token_value
         authed_user, _ = authenticator.authenticate(Request(django_request))
         self.assertEqual(authed_user, self.user)
-

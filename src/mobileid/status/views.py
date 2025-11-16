@@ -15,10 +15,7 @@ def health_check(request):
     Returns:
         JsonResponse: A JSON response with status and database connectivity info.
     """
-    response_data = {
-        "status": "healthy",
-        "service": "MobileID"
-    }
+    response_data = {"status": "healthy", "service": "MobileID"}
 
     # Check database connectivity
     try:

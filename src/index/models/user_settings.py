@@ -31,7 +31,9 @@ class UserBarcodePullSettings(models.Model):
         ("Enable", "Enable"),
         ("Disable", "Disable"),
     ]
-    pull_setting = models.CharField(max_length=10, choices=PULL_CHOICES, default="Disable")
+    pull_setting = models.CharField(
+        max_length=10, choices=PULL_CHOICES, default="Disable"
+    )
 
     # Barcode pull gender choices
     GENDER_CHOICES = [
@@ -40,7 +42,9 @@ class UserBarcodePullSettings(models.Model):
         ("Unknow", "Unknow"),
     ]
 
-    gender_setting = models.CharField(max_length=10, choices=GENDER_CHOICES, default="Unknow")
+    gender_setting = models.CharField(
+        max_length=10, choices=GENDER_CHOICES, default="Unknow"
+    )
 
     def __str__(self):
         return f"{self.user.username}'s Barcode Pull Settings"

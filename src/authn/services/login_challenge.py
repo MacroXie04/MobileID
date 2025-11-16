@@ -53,4 +53,3 @@ def consume_login_challenge(nonce: str) -> Dict[str, str]:
 
     cache.delete(cache_key)
     return payload
-

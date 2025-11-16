@@ -6,6 +6,7 @@ Usage:
     python manage.py generate_rsa_keypair --key-size 4096
     python manage.py generate_rsa_keypair --keep-active  # Don't deactivate existing keys
 """
+
 import logging
 
 from cryptography.hazmat.primitives import serialization
@@ -65,9 +66,9 @@ class Command(BaseCommand):
             with transaction.atomic():
                 # Deactivate existing active keys unless --keep-active
                 if not keep_active:
-                    deactivated_count = RSAKeyPair.objects.filter(is_active=True).update(
-                        is_active=False
-                    )
+                    deactivated_count = RSAKeyPair.objects.filter(
+                        is_active=True
+                    ).update(is_active=False)
                     if deactivated_count > 0:
                         self.stdout.write(
                             self.style.WARNING(
@@ -97,4 +98,3 @@ class Command(BaseCommand):
         except Exception as e:
             logger.exception("Failed to generate RSA key pair")
             raise CommandError(f"Failed to generate RSA key pair: {str(e)}")
-

@@ -8,7 +8,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from authn.api.utils import clear_auth_cookies, set_auth_cookies
 from authn.throttling import LoginRateThrottle, UsernameRateThrottle
 
-from ..serializers import EncryptedTokenObtainPairSerializer, RSAEncryptedLoginSerializer
+from ..serializers import (
+    EncryptedTokenObtainPairSerializer,
+    RSAEncryptedLoginSerializer,
+)
 
 LOGIN_VIEW_THROTTLES = (LoginRateThrottle, UsernameRateThrottle)
 
@@ -17,7 +20,9 @@ class CookieTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
     throttle_scope = "login"
     serializer_class = EncryptedTokenObtainPairSerializer
-    throttle_classes = LOGIN_VIEW_THROTTLES + tuple(api_settings.DEFAULT_THROTTLE_CLASSES)
+    throttle_classes = LOGIN_VIEW_THROTTLES + tuple(
+        api_settings.DEFAULT_THROTTLE_CLASSES
+    )
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -68,7 +73,9 @@ class RSALoginView(TokenObtainPairView):
     permission_classes = [AllowAny]
     throttle_scope = "login"
     serializer_class = RSAEncryptedLoginSerializer
-    throttle_classes = LOGIN_VIEW_THROTTLES + tuple(api_settings.DEFAULT_THROTTLE_CLASSES)
+    throttle_classes = LOGIN_VIEW_THROTTLES + tuple(
+        api_settings.DEFAULT_THROTTLE_CLASSES
+    )
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -79,4 +86,3 @@ class RSALoginView(TokenObtainPairView):
                 set_auth_cookies(response, access, refresh, request=request)
                 response.data = {"message": "Login successful"}
         return response
-

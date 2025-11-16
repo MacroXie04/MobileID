@@ -20,7 +20,9 @@ def user_info(request):
         }
     except Exception:
         profile_data = None
-    return Response({"username": request.user.username, "groups": groups, "profile": profile_data})
+    return Response(
+        {"username": request.user.username, "groups": groups, "profile": profile_data}
+    )
 
 
 @api_view(["GET", "PUT"])
@@ -81,4 +83,3 @@ def api_profile(request):
 
     profile.save()
     return Response({"success": True, "message": "Profile updated successfully"})
-

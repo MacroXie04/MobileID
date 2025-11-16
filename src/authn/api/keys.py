@@ -1,6 +1,7 @@
 """
 API endpoints for RSA public key distribution
 """
+
 import logging
 
 from django.core.cache import cache
@@ -63,4 +64,3 @@ def get_public_key(request):
     response = Response(response_data)
     response["Cache-Control"] = "public, max-age=3600"
     return response
-

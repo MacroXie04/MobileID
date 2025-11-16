@@ -184,7 +184,7 @@ class LimitedGroupUserAdmin(UserAdmin):
                     UserProfile.objects.create(
                         user=user,
                         name=f"{user.first_name} {user.last_name}".strip()
-                             or user.username,
+                        or user.username,
                         information_id=user.username,  # Default to username, can be updated later
                         user_profile_img="",  # Empty profile image
                     )
@@ -202,7 +202,7 @@ class LimitedGroupUserAdmin(UserAdmin):
 
                 # Create an identification barcode for the user if it doesn't exist
                 if not Barcode.objects.filter(
-                        user=user, barcode_type="Identification"
+                    user=user, barcode_type="Identification"
                 ).exists():
                     # Generate a unique identification barcode
                     barcode_value = f"{user.username}_{uuid.uuid4().hex[:8]}"
@@ -221,7 +221,11 @@ class LimitedGroupUserAdmin(UserAdmin):
             user_group = Group.objects.filter(name="User").first()
 
             # If changed from School to User
-            if school_group in old_groups and school_group not in new_groups and user_group in new_groups:
+            if (
+                school_group in old_groups
+                and school_group not in new_groups
+                and user_group in new_groups
+            ):
                 # Update UserBarcodeSettings to use identification barcode
                 try:
                     settings = UserBarcodeSettings.objects.get(user=user)
@@ -232,7 +236,9 @@ class LimitedGroupUserAdmin(UserAdmin):
 
                     if ident_barcode:
                         settings.barcode = ident_barcode
-                        settings.associate_user_profile_with_barcode = False  # Force this to False for User type
+                        settings.associate_user_profile_with_barcode = (
+                            False  # Force this to False for User type
+                        )
                         settings.save()
                 except UserBarcodeSettings.DoesNotExist:
                     # Create settings with identification barcode
@@ -270,7 +276,13 @@ admin.site.register(User, LimitedGroupUserAdmin)
 # ──────────────────────────────────────────────────────────────
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "name", "information_id", "avatar_preview", "profile_uuid_short")
+    list_display = (
+        "user",
+        "name",
+        "information_id",
+        "avatar_preview",
+        "profile_uuid_short",
+    )
     search_fields = ("user__username", "name", "information_id", "profile_uuid")
     readonly_fields = ("profile_uuid", "avatar_display")
     list_select_related = ("user",)
@@ -307,7 +319,14 @@ class UserProfileAdmin(admin.ModelAdmin):
 class RSAKeyPairAdmin(admin.ModelAdmin):
     list_display = ("kid_short", "key_size", "is_active", "created_at", "rotated_at")
     list_filter = ("is_active", "key_size", "created_at")
-    readonly_fields = ("kid", "created_at", "updated_at", "rotated_at", "public_key_preview", "private_key_preview")
+    readonly_fields = (
+        "kid",
+        "created_at",
+        "updated_at",
+        "rotated_at",
+        "public_key_preview",
+        "private_key_preview",
+    )
     search_fields = ("kid",)
     fieldsets = (
         (None, {"fields": ("kid", "key_size", "is_active")}),
@@ -346,7 +365,9 @@ class RSAKeyPairAdmin(admin.ModelAdmin):
                 key[:50],
                 key[-50:],
             )
-        return format_html('<code style="word-break: break-all; color: #d32f2f;">{}</code>', key)
+        return format_html(
+            '<code style="word-break: break-all; color: #d32f2f;">{}</code>', key
+        )
 
     def has_delete_permission(self, request, obj=None):
         # Prevent deletion of active keys

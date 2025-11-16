@@ -58,4 +58,3 @@ def _clear_challenge(request, key: str):
     request.session.pop(key, None)
     request.session.pop(f"{key}_expires_at", None)
     request.session.modified = True
-

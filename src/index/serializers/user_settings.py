@@ -1,4 +1,9 @@
-from index.models import Barcode, UserBarcodeSettings, UserBarcodePullSettings, BarcodeUserProfile
+from index.models import (
+    Barcode,
+    UserBarcodeSettings,
+    UserBarcodePullSettings,
+    BarcodeUserProfile,
+)
 from rest_framework import serializers
 
 
@@ -31,12 +36,12 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
 
     def get_barcode_choices(self, obj):
         """Get available barcode choices for the user
-        
+
         For School type users:
         - All dynamic barcodes (regardless of owner)
         - Their own identification barcodes
         - Their own other type barcodes
-        
+
         For other users:
         - Only their own barcodes
         """
@@ -46,9 +51,12 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
 
         if is_school:
             # For School users: dynamic barcodes that are shared by others or owned by self
-            all_dynamic_barcodes = Barcode.objects.filter(
-                barcode_type="DynamicBarcode"
-            ).select_related('user').prefetch_related('barcodeuserprofile').order_by("-time_created")
+            all_dynamic_barcodes = (
+                Barcode.objects.filter(barcode_type="DynamicBarcode")
+                .select_related("user")
+                .prefetch_related("barcodeuserprofile")
+                .order_by("-time_created")
+            )
 
             # Add dynamic barcodes (only show others' if they are shared)
             for b in all_dynamic_barcodes:
@@ -65,20 +73,25 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                 except:
                     pass
 
-                choices.append({
-                    "id": b.id,
-                    "display": display,
-                    "barcode": b.barcode,
-                    "barcode_type": b.barcode_type,
-                    "full_display": f"{b.barcode_type} - {b.barcode} (Owner: {b.user.username})",
-                    "has_profile_addon": has_profile,
-                })
+                choices.append(
+                    {
+                        "id": b.id,
+                        "display": display,
+                        "barcode": b.barcode,
+                        "barcode_type": b.barcode_type,
+                        "full_display": f"{b.barcode_type} - {b.barcode} (Owner: {b.user.username})",
+                        "has_profile_addon": has_profile,
+                    }
+                )
 
             # Get user's own identification and other barcodes
-            own_other_barcodes = Barcode.objects.filter(
-                user=user,
-                barcode_type__in=["Identification", "Others"]
-            ).prefetch_related('barcodeuserprofile').order_by("-time_created")
+            own_other_barcodes = (
+                Barcode.objects.filter(
+                    user=user, barcode_type__in=["Identification", "Others"]
+                )
+                .prefetch_related("barcodeuserprofile")
+                .order_by("-time_created")
+            )
 
             for b in own_other_barcodes:
                 if b.barcode_type == "Identification":
@@ -94,28 +107,34 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                 except:
                     pass
 
-                choices.append({
-                    "id": b.id,
-                    "display": display,
-                    "barcode": b.barcode,
-                    "barcode_type": b.barcode_type,
-                    "full_display": f"{b.barcode_type} - {b.barcode}",
-                    "has_profile_addon": has_profile,
-                })
+                choices.append(
+                    {
+                        "id": b.id,
+                        "display": display,
+                        "barcode": b.barcode,
+                        "barcode_type": b.barcode_type,
+                        "full_display": f"{b.barcode_type} - {b.barcode}",
+                        "has_profile_addon": has_profile,
+                    }
+                )
         else:
             # Check if user is in User group - they only get identification barcode
             is_user = user.groups.filter(name="User").exists()
 
             if is_user:
                 # User type only sees identification barcode
-                barcodes = Barcode.objects.filter(
-                    user=user,
-                    barcode_type="Identification"
-                ).prefetch_related('barcodeuserprofile').order_by("-time_created")
+                barcodes = (
+                    Barcode.objects.filter(user=user, barcode_type="Identification")
+                    .prefetch_related("barcodeuserprofile")
+                    .order_by("-time_created")
+                )
             else:
                 # Other non-School users see all their own barcodes
-                barcodes = Barcode.objects.filter(user=user).prefetch_related('barcodeuserprofile').order_by(
-                    "-time_created")
+                barcodes = (
+                    Barcode.objects.filter(user=user)
+                    .prefetch_related("barcodeuserprofile")
+                    .order_by("-time_created")
+                )
 
             for b in barcodes:
                 if b.barcode_type == "Identification":
@@ -133,14 +152,16 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                 except:
                     pass
 
-                choices.append({
-                    "id": b.id,
-                    "display": display,
-                    "barcode": b.barcode,
-                    "barcode_type": b.barcode_type,
-                    "full_display": f"{b.barcode_type} - {b.barcode}",
-                    "has_profile_addon": has_profile,
-                })
+                choices.append(
+                    {
+                        "id": b.id,
+                        "display": display,
+                        "barcode": b.barcode,
+                        "barcode_type": b.barcode_type,
+                        "full_display": f"{b.barcode_type} - {b.barcode}",
+                        "has_profile_addon": has_profile,
+                    }
+                )
 
         return choices
 
@@ -178,28 +199,41 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
         # Standard users cannot enable profile association
         if is_user_group and data.get("associate_user_profile_with_barcode", False):
             raise serializers.ValidationError(
-                {"associate_user_profile_with_barcode": "Standard users cannot enable profile association."}
+                {
+                    "associate_user_profile_with_barcode": "Standard users cannot enable profile association."
+                }
             )
 
         # If pull setting is enabled, barcode selection is not allowed
         barcode = data.get("barcode")
         if pull_settings_enabled and barcode is not None:
-            raise serializers.ValidationError({
-                "barcode": "Barcode selection is disabled when pull setting is enabled."
-            })
+            raise serializers.ValidationError(
+                {
+                    "barcode": "Barcode selection is disabled when pull setting is enabled."
+                }
+            )
 
         # For School users, when selecting a dynamic barcode owned by someone else,
         # it must be shared_with_others
         if barcode is not None and not pull_settings_enabled:
             try:
                 # barcode can be an id or instance depending on partial update; ensure instance
-                b = barcode if isinstance(barcode, Barcode) else Barcode.objects.get(pk=barcode)
-                if b.barcode_type == "DynamicBarcode" and b.user != user and not b.share_with_others:
-                    raise serializers.ValidationError({
-                        "barcode": "Selected barcode is not shared by its owner."
-                    })
+                b = (
+                    barcode
+                    if isinstance(barcode, Barcode)
+                    else Barcode.objects.get(pk=barcode)
+                )
+                if (
+                    b.barcode_type == "DynamicBarcode"
+                    and b.user != user
+                    and not b.share_with_others
+                ):
+                    raise serializers.ValidationError(
+                        {"barcode": "Selected barcode is not shared by its owner."}
+                    )
             except Barcode.DoesNotExist:
-                raise serializers.ValidationError({"barcode": "Selected barcode does not exist."})
+                raise serializers.ValidationError(
+                    {"barcode": "Selected barcode does not exist."}
+                )
 
         return data
-

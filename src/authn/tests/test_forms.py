@@ -77,4 +77,3 @@ class UserFormTest(TestCase):
         self.assertEqual(user.username, "testuser")
         self.assertTrue(hasattr(user, "userprofile"))
         self.assertIsNotNone(user.userprofile.user_profile_img)
-

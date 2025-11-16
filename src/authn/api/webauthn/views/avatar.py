@@ -50,7 +50,9 @@ def api_avatar_upload(request):
         return Response({"success": False, "message": "Profile not found"}, status=404)
 
     if "avatar" not in request.FILES:
-        return Response({"success": False, "message": "No avatar file provided"}, status=400)
+        return Response(
+            {"success": False, "message": "No avatar file provided"}, status=400
+        )
 
     avatar_file = request.FILES["avatar"]
 
@@ -58,7 +60,9 @@ def api_avatar_upload(request):
         return Response({"success": False, "message": "Invalid file type"}, status=400)
 
     if avatar_file.size > 5 * 1024 * 1024:
-        return Response({"success": False, "message": "File size must be less than 5MB"}, status=400)
+        return Response(
+            {"success": False, "message": "File size must be less than 5MB"}, status=400
+        )
 
     try:
         form = UserRegisterForm()
@@ -75,4 +79,3 @@ def api_avatar_upload(request):
             {"success": False, "message": "Failed to process image."},
             status=500,
         )
-

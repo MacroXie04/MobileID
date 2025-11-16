@@ -42,4 +42,3 @@ class UsernameRateThrottle(SimpleRateThrottle):
     def _extract_username(request):
         data = getattr(request, "data", {}) or {}
         return data.get("username") or data.get("email")
-

@@ -41,14 +41,20 @@ class EncryptedTokenObtainPairSerializer(_BaseLoginSerializer):
                 attrs["password"] = decrypted_password
             except ValueError as exc:
                 logger.error("Password decryption failed: %s", str(exc))
-                self._log_auth_event(username, client_ip, "failure", reason="decrypt_failed")
-                raise serializers.ValidationError({"detail": self.generic_error_message})
+                self._log_auth_event(
+                    username, client_ip, "failure", reason="decrypt_failed"
+                )
+                raise serializers.ValidationError(
+                    {"detail": self.generic_error_message}
+                )
 
         try:
             data = super().validate(attrs)
         except AuthenticationFailed as exc:
             self._record_failed_attempt(attempt_record, client_ip)
-            self._log_auth_event(username, client_ip, "failure", reason="invalid_credentials")
+            self._log_auth_event(
+                username, client_ip, "failure", reason="invalid_credentials"
+            )
             raise AuthenticationFailed(detail=self.generic_error_message) from exc
         except TokenError as exc:  # pragma: no cover
             self._record_failed_attempt(attempt_record, client_ip)
@@ -78,29 +84,41 @@ class RSAEncryptedLoginSerializer(_BaseLoginSerializer):
 
         if not password:
             logger.warning("Login attempt with missing password")
-            self._log_auth_event(username, client_ip, "failure", reason="missing_password")
+            self._log_auth_event(
+                username, client_ip, "failure", reason="missing_password"
+            )
             raise serializers.ValidationError({"detail": self.generic_error_message})
 
         try:
             validate_encrypted_password_format(password)
         except ValueError as exc:
-            logger.warning("Login attempt with invalid encrypted password format: %s", str(exc))
-            self._log_auth_event(username, client_ip, "failure", reason="invalid_encryption_format")
+            logger.warning(
+                "Login attempt with invalid encrypted password format: %s", str(exc)
+            )
+            self._log_auth_event(
+                username, client_ip, "failure", reason="invalid_encryption_format"
+            )
             raise serializers.ValidationError({"detail": self.generic_error_message})
 
         try:
             decrypted_password, nonce = decrypt_password_with_nonce(password)
-            logger.debug("Password decrypted successfully, nonce length: %d", len(nonce))
+            logger.debug(
+                "Password decrypted successfully, nonce length: %d", len(nonce)
+            )
             attrs["password"] = decrypted_password
         except ValueError as exc:
             logger.error("Password decryption failed: %s", str(exc))
-            self._log_auth_event(username, client_ip, "failure", reason="decrypt_failed")
+            self._log_auth_event(
+                username, client_ip, "failure", reason="decrypt_failed"
+            )
             raise serializers.ValidationError({"detail": self.generic_error_message})
 
         try:
             consume_login_challenge(nonce)
         except ValueError:
-            logger.warning("Login attempt with invalid or expired nonce for %s", username)
+            logger.warning(
+                "Login attempt with invalid or expired nonce for %s", username
+            )
             self._log_auth_event(username, client_ip, "failure", reason="invalid_nonce")
             raise serializers.ValidationError({"detail": self.generic_error_message})
 
@@ -108,7 +126,9 @@ class RSAEncryptedLoginSerializer(_BaseLoginSerializer):
             data = super().validate(attrs)
         except AuthenticationFailed as exc:
             self._record_failed_attempt(attempt_record, client_ip)
-            self._log_auth_event(username, client_ip, "failure", reason="invalid_credentials")
+            self._log_auth_event(
+                username, client_ip, "failure", reason="invalid_credentials"
+            )
             raise AuthenticationFailed(detail=self.generic_error_message) from exc
         except TokenError as exc:  # pragma: no cover
             self._record_failed_attempt(attempt_record, client_ip)
@@ -118,4 +138,3 @@ class RSAEncryptedLoginSerializer(_BaseLoginSerializer):
         self._reset_failed_attempts(attempt_record, client_ip)
         self._log_auth_event(username, client_ip, "success")
         return data
-

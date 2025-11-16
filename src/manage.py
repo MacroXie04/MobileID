@@ -6,7 +6,7 @@ import warnings
 
 # Suppress cbor2 deprecation warning (comes from third-party dependency)
 # Must be done before Django imports to catch early warnings
-warnings.filterwarnings('ignore', category=UserWarning, module='cbor2')
+warnings.filterwarnings("ignore", category=UserWarning, module="cbor2")
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mobileid.settings")
 
     # Set testing flag when running tests
-    if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    if len(sys.argv) > 1 and sys.argv[1] == "test":
         os.environ.setdefault("TESTING", "True")
 
     try:

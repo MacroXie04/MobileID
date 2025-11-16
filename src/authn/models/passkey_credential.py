@@ -7,6 +7,7 @@ class PasskeyCredential(models.Model):
     WebAuthn/FIDO2 passkey bound to a single user.
     A user can have at most one passkey in this app.
     """
+
     # foreign key to user
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="passkey")
 
@@ -28,4 +29,3 @@ class PasskeyCredential(models.Model):
 
     def __str__(self):
         return f"Passkey for {self.user.username} ({self.credential_id[:8]}...)"
-

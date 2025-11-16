@@ -28,4 +28,3 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.name} - ID: **{self.information_id[-4:]}"
-

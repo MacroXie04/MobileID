@@ -33,4 +33,3 @@ __all__ = [
     "user_img",
     "user_info",
 ]
-

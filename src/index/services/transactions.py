@@ -17,6 +17,7 @@ from index.models import (
 @dataclass(frozen=True)
 class CreatedTransaction:
     """Lightweight return type for bulk_create summaries."""
+
     id: int
     user_id: int
     barcode_id: Optional[int]
@@ -36,11 +37,11 @@ class TransactionService:
     # database transaction decorator (disable for development)
     # @db_transaction.atomic
     def create_transaction(
-            *,
-            user: User,
-            barcode: Optional[Barcode] = None,
-            time_created: Optional[datetime] = None,
-            save: bool = True,
+        *,
+        user: User,
+        barcode: Optional[Barcode] = None,
+        time_created: Optional[datetime] = None,
+        save: bool = True,
     ) -> Transaction:
         """
         Create and (optionally) persist a Transaction.
@@ -86,10 +87,10 @@ class TransactionService:
     # database transaction decorator (disable for development)
     # @db_transaction.atomic
     def bulk_ingest(
-            rows: Iterable[Dict[str, Any]],
-            *,
-            batch_size: int = 500,
-            default_time: Optional[datetime] = None,
+        rows: Iterable[Dict[str, Any]],
+        *,
+        batch_size: int = 500,
+        default_time: Optional[datetime] = None,
     ) -> Sequence[CreatedTransaction]:
         """
         Bulk create Transactions from iterable of dict rows.
@@ -117,7 +118,9 @@ class TransactionService:
 
             barcode = r.get("barcode")
             if barcode is not None and not isinstance(barcode, Barcode):
-                raise ValueError(f"Row {i}: `barcode` must be a Barcode instance or None.")
+                raise ValueError(
+                    f"Row {i}: `barcode` must be a Barcode instance or None."
+                )
             if barcode is None:
                 raise ValueError(f"Row {i}: provide `barcode`.")
             # Ownership is not required; allow recording transactions where the
@@ -149,11 +152,11 @@ class TransactionService:
     # -----------------------------
     @staticmethod
     def for_user(
-            user: User,
-            *,
-            since: Optional[datetime] = None,
-            until: Optional[datetime] = None,
-            select_related: bool = True,
+        user: User,
+        *,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+        select_related: bool = True,
     ) -> QuerySet[Transaction]:
         qs = Transaction.objects.filter(user=user)
         if since:
@@ -166,10 +169,10 @@ class TransactionService:
 
     @staticmethod
     def top_barcodes(
-            *,
-            limit: int = 10,
-            since: Optional[datetime] = None,
-            until: Optional[datetime] = None,
+        *,
+        limit: int = 10,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
     ) -> Sequence[Tuple[Optional[int], int]]:
         """
         Return [(barcode_id, count), ...] ordered by count desc.
@@ -181,18 +184,16 @@ class TransactionService:
             qs = qs.filter(time_created__lt=until)
 
         agg = (
-            qs.values("barcode_used_id")
-            .annotate(c=Count("id"))
-            .order_by("-c")[:limit]
+            qs.values("barcode_used_id").annotate(c=Count("id")).order_by("-c")[:limit]
         )
         return [(row["barcode_used_id"], row["c"]) for row in agg]
 
     @staticmethod
     def usage_over_time(
-            *,
-            granularity: str = "day",
-            since: Optional[datetime] = None,
-            until: Optional[datetime] = None,
+        *,
+        granularity: str = "day",
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
     ) -> Sequence[Tuple[datetime, int]]:
         """
         Group usage counts by time bucket.
@@ -226,10 +227,10 @@ class TransactionService:
     # -----------------------------
     @staticmethod
     def barcode_usage_stats(
-            *,
-            since: Optional[datetime] = None,
-            until: Optional[datetime] = None,
-            only_valid_barcodes: bool = False,
+        *,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+        only_valid_barcodes: bool = False,
     ) -> Dict[str, Any]:
         """
         Static-style summary of barcode usage across the dataset.
@@ -274,10 +275,10 @@ class TransactionService:
 
     @staticmethod
     def for_barcode(
-            barcode: Barcode,
-            *,
-            since: Optional[datetime] = None,
-            until: Optional[datetime] = None,
+        barcode: Barcode,
+        *,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
     ) -> QuerySet[Transaction]:
         qs = Transaction.objects.filter(barcode_used=barcode)
         if since:

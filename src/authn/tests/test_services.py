@@ -9,7 +9,9 @@ class UserProfileServiceTest(TestCase):
     """Test user profile service functions"""
 
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
+        self.user = User.objects.create_user(
+            username="testuser", password="testpass123"
+        )
 
     def test_create_user_profile_success(self):
         """Test successful user profile creation"""
@@ -47,4 +49,3 @@ class UserProfileServiceTest(TestCase):
 
         user_group = Group.objects.get(name="User")
         self.assertTrue(self.user.groups.filter(name="User").exists())
-

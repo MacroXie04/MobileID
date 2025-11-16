@@ -1,6 +1,7 @@
 """
 RSA Key Pair model for password encryption
 """
+
 import uuid
 
 from django.db import models
@@ -69,4 +70,3 @@ class RSAKeyPair(models.Model):
         self.is_active = False
         self.rotated_at = timezone.now()
         self.save(update_fields=["is_active", "rotated_at"])
-

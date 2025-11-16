@@ -54,4 +54,3 @@ def clear_auth_cookies(response):
     response.delete_cookie(ACCESS_COOKIE_NAME)
     response.delete_cookie(REFRESH_COOKIE_NAME, path=REFRESH_COOKIE_PATH)
     return response
-
