@@ -15,13 +15,25 @@ class URLConfigurationTest(TestCase):
         resolver_match = resolve(url)
         self.assertEqual(resolver_match.url_name, "index")
 
-    @override_settings(ADMIN_URL_PATH="custom-admin")
     def test_admin_url_uses_custom_path(self):
         """Test that admin URL uses custom path from settings"""
         from django.conf import settings
+        from django.urls import clear_url_caches
+        from importlib import reload
+        import core.urls
 
-        url = reverse("admin:index")
-        self.assertTrue(url.startswith(f"/{settings.ADMIN_URL_PATH}/"))
+        # We need to force a reload of the URLconf to pick up the new setting
+        # because the URLconf module is evaluated at startup
+        with override_settings(ADMIN_URL_PATH="custom-admin"):
+            reload(core.urls)
+            clear_url_caches()
+            
+            url = reverse("admin:index")
+            self.assertTrue(url.startswith("/custom-admin/"))
+            
+        # Restore original state
+        reload(core.urls)
+        clear_url_caches()
 
     def test_health_check_url_resolves(self):
         """Test that health check URL resolves correctly"""

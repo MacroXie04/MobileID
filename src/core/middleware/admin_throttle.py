@@ -6,7 +6,7 @@ Applies rate limiting to Django admin login POST requests to prevent brute force
 
 from django.conf import settings
 from django.core.cache import cache
-from django.http import HttpResponseTooManyRequests
+from django.http import HttpResponse
 
 
 class AdminLoginThrottleMiddleware:
@@ -30,8 +30,8 @@ class AdminLoginThrottleMiddleware:
         # Only check POST requests to admin login
         if request.method == "POST" and request.path == self.admin_login_path:
             if self._is_throttled(request):
-                return HttpResponseTooManyRequests(
-                    "Too many login attempts. Please try again later."
+                return HttpResponse(
+                    "Too many login attempts. Please try again later.", status=429
                 )
 
         return self.get_response(request)
