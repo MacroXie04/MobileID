@@ -29,6 +29,7 @@ class LoginAuditLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        app_label = "authn"
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["username"]),

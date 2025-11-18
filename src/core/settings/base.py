@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     "index.apps.IndexConfig",
     # user authentication
     "authn.apps.AuthnConfig",
+    # core app (must be before admin for admin registration)
+    "core.apps.CoreConfig",
     # Django REST framework
     "rest_framework",
     "rest_framework_simplejwt",
@@ -84,11 +86,15 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     # Default Django middleware
     "django.middleware.security.SecurityMiddleware",
-    "core.middleware.ContentSecurityPolicyMiddleware",
+    "core.middleware.admin_ip_whitelist.AdminIPWhitelistMiddleware",
+    "core.middleware.admin_throttle.AdminLoginThrottleMiddleware",
+    "core.middleware.csp.ContentSecurityPolicyMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "core.middleware.admin_session.AdminSessionExpiryMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.admin_audit.AdminAuditMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -310,6 +316,7 @@ REST_FRAMEWORK = {
         "barcode_generation": "100/hour",
         "barcode_management": "50/hour",
         "user_profile": "20/hour",
+        "admin_login": "5/15min",
     },
 }
 
@@ -325,6 +332,11 @@ SIMPLE_JWT = {
 
 LOGIN_CHALLENGE_TTL_SECONDS = int(env("LOGIN_CHALLENGE_TTL_SECONDS", "120"))
 LOGIN_CHALLENGE_NONCE_BYTES = int(env("LOGIN_CHALLENGE_NONCE_BYTES", "16"))
+
+# Admin security settings
+ADMIN_URL_PATH = env("ADMIN_URL_PATH", "admin")
+ADMIN_ALLOWED_IPS = csv_env("ADMIN_ALLOWED_IPS", [])
+ADMIN_SESSION_COOKIE_AGE = int(env("ADMIN_SESSION_COOKIE_AGE", "7200"))  # 2 hours
 
 # Logging configuration
 if TESTING:

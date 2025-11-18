@@ -23,7 +23,7 @@ from django.urls import path, include
 from index.status.views import health_check
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path(f"{settings.ADMIN_URL_PATH}/", admin.site.urls),
     # Health check endpoint
     path("health/", health_check, name="health_check"),
     # path for index app

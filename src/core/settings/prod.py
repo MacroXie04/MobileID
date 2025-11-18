@@ -68,6 +68,21 @@ CSP_DEFAULT_POLICY = env(
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:",
 )
 
+# Admin security - Production: MUST be configured
+ADMIN_URL_PATH = env("ADMIN_URL_PATH")
+if not ADMIN_URL_PATH or ADMIN_URL_PATH == "admin":
+    raise ValueError(
+        "ADMIN_URL_PATH must be set to a non-default value in production environment. "
+        "This setting is required for security."
+    )
+
+ADMIN_ALLOWED_IPS = csv_env("ADMIN_ALLOWED_IPS")
+if not ADMIN_ALLOWED_IPS:
+    raise ValueError(
+        "ADMIN_ALLOWED_IPS must be set in production environment. "
+        "This setting is required for security."
+    )
+
 # Production logging - structured logging
 LOGGING = {
     "version": 1,

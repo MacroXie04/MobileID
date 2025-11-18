@@ -38,6 +38,9 @@ class Barcode(models.Model):
     # barcode information
     barcode = models.CharField(max_length=120, unique=True)
 
+    class Meta:
+        app_label = "index"
+
     def __str__(self):
         if self.barcode_type == "DynamicBarcode":
             return f"Dynamic barcode ending with {self.barcode[-4:]}"

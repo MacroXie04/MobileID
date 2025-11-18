@@ -26,5 +26,8 @@ class UserProfile(models.Model):
         verbose_name="avatar (Base64)",
     )
 
+    class Meta:
+        app_label = "authn"
+
     def __str__(self):
         return f"{self.name} - ID: **{self.information_id[-4:]}"

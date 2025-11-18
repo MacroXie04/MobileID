@@ -18,6 +18,9 @@ class UserBarcodeSettings(models.Model):
     # associate user profile with barcode
     associate_user_profile_with_barcode = models.BooleanField(default=False)
 
+    class Meta:
+        app_label = "index"
+
     def __str__(self):
         return f"{self.user.username}'s Barcode Settings"
 
@@ -45,6 +48,9 @@ class UserBarcodePullSettings(models.Model):
     gender_setting = models.CharField(
         max_length=10, choices=GENDER_CHOICES, default="Unknow"
     )
+
+    class Meta:
+        app_label = "index"
 
     def __str__(self):
         return f"{self.user.username}'s Barcode Pull Settings"

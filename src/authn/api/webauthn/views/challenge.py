@@ -16,8 +16,12 @@ logger = logging.getLogger(__name__)
 def login_challenge(request):
     try:
         payload = issue_login_challenge()
-    except Exception:
-        logger.exception("Failed to issue login challenge")
+    except Exception as e:
+        # Log error without full traceback for expected configuration issues
+        logger.error(
+            "Failed to issue login challenge: %s. Run: python manage.py generate_rsa_keypair",
+            str(e),
+        )
         return Response(
             {
                 "detail": "No active RSA key pair available. Please run the key generation command."

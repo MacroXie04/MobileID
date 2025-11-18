@@ -27,5 +27,8 @@ class PasskeyCredential(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        app_label = "authn"
+
     def __str__(self):
         return f"Passkey for {self.user.username} ({self.credential_id[:8]}...)"

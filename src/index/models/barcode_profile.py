@@ -31,3 +31,6 @@ class BarcodeUserProfile(models.Model):
     gender_barcode = models.CharField(
         max_length=10, choices=GENDER_CHOICES, default="Unknow"
     )
+
+    class Meta:
+        app_label = "index"

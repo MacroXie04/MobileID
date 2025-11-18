@@ -9,6 +9,7 @@ class FailedLoginAttempt(models.Model):
     last_attempt = models.DateTimeField(auto_now=True)
 
     class Meta:
+        app_label = "authn"
         ordering = ["-last_attempt"]
         verbose_name = "Failed Login Attempt"
         verbose_name_plural = "Failed Login Attempts"

@@ -56,6 +56,7 @@ class RSAKeyPair(models.Model):
     )
 
     class Meta:
+        app_label = "authn"
         db_table = "authn_rsa_keypair"
         verbose_name = "RSA Key Pair"
         verbose_name_plural = "RSA Key Pairs"

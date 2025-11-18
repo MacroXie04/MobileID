@@ -13,3 +13,6 @@ class Transaction(models.Model):
     time_created = models.DateTimeField(
         auto_now_add=True, null=True, verbose_name="time used"
     )
+
+    class Meta:
+        app_label = "index"
