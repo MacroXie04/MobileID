@@ -23,7 +23,7 @@ jobs:
       
       - name: Install dependencies
         working-directory: ./pages
-        run: npm ci
+        run: npm install
       
       - name: Build frontend
         working-directory: ./pages

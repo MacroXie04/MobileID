@@ -14,7 +14,7 @@ import warnings
 # Must be done before Django imports to catch early warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="cbor2")
 
-from django.core.asgi import get_asgi_application
+from django.core.asgi import get_asgi_application  # noqa: E402
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings.prod")
 
