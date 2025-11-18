@@ -28,11 +28,11 @@
               </div>
             </div>
             <input
-              ref="fileInput"
-              accept="image/jpeg,image/jpg,image/png"
-              class="hidden-input"
-              type="file"
-              @change="handleFileSelect"
+                ref="fileInput"
+                accept="image/jpeg,image/jpg,image/png"
+                class="hidden-input"
+                type="file"
+                @change="handleFileSelect"
             >
             <transition name="slide-up">
               <div v-if="errors.user_profile_img" class="md-banner md-banner-error md-mt-2">
@@ -45,50 +45,50 @@
           <!-- Form Fields -->
           <div class="form-fields">
             <md-outlined-text-field
-              v-model="formData.username"
-              :error="!!errors.username"
-              :error-text="errors.username"
-              label="Username"
-              @blur="validateField('username')"
-              @input="clearError('username')"
-              @keyup.enter="!loading && handleSubmit()"
+                v-model="formData.username"
+                :error="!!errors.username"
+                :error-text="errors.username"
+                label="Username"
+                @blur="validateField('username')"
+                @input="clearError('username')"
+                @keyup.enter="!loading && handleSubmit()"
             >
               <md-icon slot="leading-icon">person</md-icon>
             </md-outlined-text-field>
 
             <md-outlined-text-field
-              v-model="formData.name"
-              :error="!!errors.name"
-              :error-text="errors.name"
-              label="Full Name"
-              @blur="validateField('name')"
-              @input="clearError('name')"
-              @keyup.enter="!loading && handleSubmit()"
+                v-model="formData.name"
+                :error="!!errors.name"
+                :error-text="errors.name"
+                label="Full Name"
+                @blur="validateField('name')"
+                @input="clearError('name')"
+                @keyup.enter="!loading && handleSubmit()"
             >
               <md-icon slot="leading-icon">badge</md-icon>
             </md-outlined-text-field>
 
             <md-outlined-text-field
-              v-model="formData.information_id"
-              :error="!!errors.information_id"
-              :error-text="errors.information_id"
-              label="Information ID"
-              @blur="validateField('information_id')"
-              @input="clearError('information_id')"
-              @keyup.enter="!loading && handleSubmit()"
+                v-model="formData.information_id"
+                :error="!!errors.information_id"
+                :error-text="errors.information_id"
+                label="Information ID"
+                @blur="validateField('information_id')"
+                @input="clearError('information_id')"
+                @keyup.enter="!loading && handleSubmit()"
             >
               <md-icon slot="leading-icon">fingerprint</md-icon>
             </md-outlined-text-field>
 
             <md-outlined-text-field
-              v-model="formData.password1"
-              :error="!!errors.password1"
-              :error-text="errors.password1"
-              :type="showPassword1 ? 'text' : 'password'"
-              label="Password"
-              @blur="validateField('password1')"
-              @input="clearError('password1')"
-              @keyup.enter="!loading && handleSubmit()"
+                v-model="formData.password1"
+                :error="!!errors.password1"
+                :error-text="errors.password1"
+                :type="showPassword1 ? 'text' : 'password'"
+                label="Password"
+                @blur="validateField('password1')"
+                @input="clearError('password1')"
+                @keyup.enter="!loading && handleSubmit()"
             >
               <md-icon slot="leading-icon">lock</md-icon>
               <md-icon-button slot="trailing-icon" type="button" @click="showPassword1 = !showPassword1">
@@ -97,14 +97,14 @@
             </md-outlined-text-field>
 
             <md-outlined-text-field
-              v-model="formData.password2"
-              :error="!!errors.password2"
-              :error-text="errors.password2"
-              :type="showPassword2 ? 'text' : 'password'"
-              label="Confirm Password"
-              @blur="validateField('password2')"
-              @input="clearError('password2')"
-              @keyup.enter="!loading && handleSubmit()"
+                v-model="formData.password2"
+                :error="!!errors.password2"
+                :error-text="errors.password2"
+                :type="showPassword2 ? 'text' : 'password'"
+                label="Confirm Password"
+                @blur="validateField('password2')"
+                @input="clearError('password2')"
+                @keyup.enter="!loading && handleSubmit()"
             >
               <md-icon slot="leading-icon">lock</md-icon>
               <md-icon-button slot="trailing-icon" type="button" @click="showPassword2 = !showPassword2">
@@ -215,12 +215,12 @@
 </template>
 
 <script setup>
-import {nextTick, onUnmounted, ref, watch} from 'vue';
+import {onUnmounted, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {register} from '@/api/auth.js';
 import {useRegisterValidation} from '@/composables/auth/useRegisterValidation.js';
 import {useImageCropper} from '@/composables/user/useImageCropper.js';
-import {validateImageFile, createImageObjectURL} from '@/utils/user/imageUtils.js';
+import {validateImageFile} from '@/utils/user/imageUtils.js';
 import '@/assets/css/auth-merged.css';
 
 const router = useRouter();
@@ -245,7 +245,14 @@ const showPassword1 = ref(false);
 const showPassword2 = ref(false);
 
 // Validation composable
-const {errors, clearError, validateField: validateSingleField, validateForm, setServerErrors, setGeneralError} = useRegisterValidation();
+const {
+  errors,
+  clearError,
+  validateField: validateSingleField,
+  validateForm,
+  setServerErrors,
+  setGeneralError
+} = useRegisterValidation();
 
 // Image cropper composable with advanced controls
 const {

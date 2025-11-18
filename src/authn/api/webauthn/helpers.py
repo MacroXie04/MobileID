@@ -7,7 +7,6 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-
 PASSKEY_CHALLENGE_TTL_SECONDS = getattr(settings, "PASSKEY_CHALLENGE_TTL_SECONDS", 300)
 
 

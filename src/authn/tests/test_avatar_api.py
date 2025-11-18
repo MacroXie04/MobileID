@@ -2,14 +2,13 @@ from io import BytesIO
 from unittest.mock import patch
 
 from PIL import Image
+from authn.services.webauthn import create_user_profile
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
-
-from authn.services.webauthn import create_user_profile
 
 
 class AvatarUploadAPITest(APITestCase):
@@ -69,7 +68,7 @@ class AvatarUploadAPITest(APITestCase):
         url = reverse("authn:api_avatar_upload")
 
         with patch(
-            "django.core.files.uploadedfile.InMemoryUploadedFile.size", 6 * 1024 * 1024
+                "django.core.files.uploadedfile.InMemoryUploadedFile.size", 6 * 1024 * 1024
         ):
             image_file = self._create_test_image()
 

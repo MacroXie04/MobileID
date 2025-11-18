@@ -1,8 +1,7 @@
-from django.contrib.auth.models import Group, User
-from django.test import TestCase
-
 from authn.models import UserProfile
 from authn.services.webauthn import create_user_profile
+from django.contrib.auth.models import Group, User
+from django.test import TestCase
 
 
 class UserProfileServiceTest(TestCase):

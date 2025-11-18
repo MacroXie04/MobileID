@@ -2,7 +2,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("authn", "0003_alter_userprofile_user_profile_img"),
     ]
@@ -82,4 +81,3 @@ class Migration(migrations.Migration):
             index=models.Index(fields=["created_at"], name="authn_logi_created_1cad83_idx"),
         ),
     ]
-

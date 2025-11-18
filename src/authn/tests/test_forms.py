@@ -1,6 +1,5 @@
-from django.test import TestCase
-
 from authn.api.webauthn import UserRegisterForm
+from django.test import TestCase
 
 
 class UserFormTest(TestCase):
@@ -52,7 +51,7 @@ class UserFormTest(TestCase):
             "name": "Test User",
             "information_id": "TEST123",
             "user_profile_img_base64": "data:image/png;base64,"
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
+                                       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
         }
 
         form = UserRegisterForm(data=form_data)

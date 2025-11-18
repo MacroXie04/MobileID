@@ -1,10 +1,9 @@
 import secrets
 from typing import Dict
 
+from authn.utils.keys import get_active_rsa_keypair
 from django.conf import settings
 from django.core.cache import cache
-
-from authn.utils.keys import get_active_rsa_keypair
 
 CHALLENGE_CACHE_PREFIX = "authn:login_challenge:"
 CHALLENGE_TTL = getattr(settings, "LOGIN_CHALLENGE_TTL_SECONDS", 120)

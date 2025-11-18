@@ -1,6 +1,6 @@
+import logging
 from io import BytesIO
 
-import logging
 from PIL import Image
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes

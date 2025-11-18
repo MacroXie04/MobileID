@@ -2,10 +2,9 @@ import base64
 import logging
 import os
 
+from authn.utils.keys import get_active_rsa_keypair
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
-
-from authn.utils.keys import get_active_rsa_keypair
 
 logger = logging.getLogger(__name__)
 

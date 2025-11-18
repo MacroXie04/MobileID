@@ -20,12 +20,12 @@
 
       <div class="settings-content md-flex md-flex-column md-gap-4">
         <md-outlined-text-field
-          v-model="transferCookie"
-          :error="!!transferErrors.cookie"
-          :error-text="transferErrors.cookie"
-          label="Barcode Cookie"
-          placeholder="Paste your Barcode cookies here"
-          @input="clearTransferError('cookie')"
+            v-model="transferCookie"
+            :error="!!transferErrors.cookie"
+            :error-text="transferErrors.cookie"
+            label="Barcode Cookie"
+            placeholder="Paste your Barcode cookies here"
+            @input="clearTransferError('cookie')"
         >
           <md-icon slot="leading-icon">cookie</md-icon>
         </md-outlined-text-field>
@@ -37,7 +37,7 @@
         </div>
 
         <div class="form-actions md-flex md-gap-3 md-flex-wrap">
-          <md-filled-button @click="requestTransferCode" :disabled="transferLoading || !transferCookie.trim()">
+          <md-filled-button :disabled="transferLoading || !transferCookie.trim()" @click="requestTransferCode">
             <md-icon slot="icon">sync_alt</md-icon>
             Request Transfer
           </md-filled-button>
@@ -64,12 +64,12 @@
     <form class="md-form" @submit.prevent="addBarcode">
       <div class="form-content md-flex md-flex-column md-gap-4">
         <md-outlined-text-field
-          v-model="newBarcode"
-          :error="!!errors.newBarcode"
-          :error-text="errors.newBarcode"
-          label="Barcode Number"
-          placeholder="Enter or scan barcode"
-          @input="clearError('newBarcode')"
+            v-model="newBarcode"
+            :error="!!errors.newBarcode"
+            :error-text="errors.newBarcode"
+            label="Barcode Number"
+            placeholder="Enter or scan barcode"
+            @input="clearError('newBarcode')"
         >
           <md-icon slot="leading-icon">pin</md-icon>
         </md-outlined-text-field>
@@ -80,7 +80,7 @@
             {{ showScanner ? 'Close Scanner' : 'Scan with Camera' }}
           </md-outlined-button>
 
-          <md-filled-button type="submit" :disabled="!newBarcode.trim()">
+          <md-filled-button :disabled="!newBarcode.trim()" type="submit">
             <md-icon slot="icon">add</md-icon>
             Add Barcode
           </md-filled-button>
@@ -124,10 +124,10 @@ import {useBarcodeScanner} from '@/composables/barcode/useBarcodeScanner.js';
 const emit = defineEmits(['added', 'message']);
 
 const props = defineProps({
-  activeTab: { type: String, default: 'Add' }
+  activeTab: {type: String, default: 'Add'}
 });
 
-const { apiCreateBarcode, apiTransferCatCard } = useApi();
+const {apiCreateBarcode, apiTransferCatCard} = useApi();
 
 // Barcode state
 const addSectionLocal = ref(null);

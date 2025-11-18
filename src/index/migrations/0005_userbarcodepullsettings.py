@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("index", "0004_barcodeuserprofile_gender_barcode_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

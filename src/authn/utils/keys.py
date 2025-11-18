@@ -3,12 +3,9 @@ RSA key pair utilities for fetching active keys
 """
 
 import logging
-from functools import lru_cache
-
-from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
 
 from authn.models import RSAKeyPair
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,5 @@
-from django.contrib.auth.models import User
-from django.middleware.csrf import get_token
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
 import logging
+
 from authn.api.utils import set_auth_cookies
 from authn.services.passkeys import (
     build_authentication_options,
@@ -12,6 +7,12 @@ from authn.services.passkeys import (
     verify_and_create_passkey,
     verify_authentication,
 )
+from django.contrib.auth.models import User
+from django.middleware.csrf import get_token
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from ..helpers import _clear_challenge, _get_valid_challenge, _store_challenge
 

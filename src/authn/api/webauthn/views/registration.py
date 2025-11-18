@@ -1,12 +1,12 @@
+import logging
+
+from authn.api.utils import set_auth_cookies
 from django.contrib.auth import login
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
-
-import logging
-from authn.api.utils import set_auth_cookies
 
 from ..forms import UserRegisterForm
 

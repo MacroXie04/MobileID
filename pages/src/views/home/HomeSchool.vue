@@ -5,10 +5,10 @@
 
     <!-- User Profile Component -->
     <UserProfile
-        :profile="profile"
         :avatar-src="avatarSrc"
-        :loading="loading || userInfoLoading"
         :is-refreshing-token="isRefreshingToken"
+        :loading="loading || userInfoLoading"
+        :profile="profile"
         @generate="handleGenerate"
     />
 

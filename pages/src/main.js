@@ -13,9 +13,6 @@ import 'cropperjs/dist/cropper.css';
 
 // Local jQuery (for legacy jQuery animations used in HomeSchool)
 import $ from 'jquery';
-window.$ = $;
-window.jQuery = $;
-
 // Material Web - Import all components and the typescale styles
 import '@material/web/all.js';
 import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
@@ -29,6 +26,9 @@ import '@fontsource/open-sans/600.css';
 import '@fontsource/roboto-mono/400.css';
 // Optional: Material Symbols Outlined as local font (if <md-icon> uses glyphs)
 import '@fontsource/material-symbols-outlined/400.css';
+
+window.$ = $;
+window.jQuery = $;
 
 const app = createApp(App);
 

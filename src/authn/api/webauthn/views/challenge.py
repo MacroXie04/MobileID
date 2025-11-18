@@ -1,12 +1,11 @@
 import logging
 
+from authn.services.login_challenge import issue_login_challenge
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-
-from authn.services.login_challenge import issue_login_challenge
 
 logger = logging.getLogger(__name__)
 

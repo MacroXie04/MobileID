@@ -1,7 +1,6 @@
+from authn.models import UserProfile
 from django.contrib.auth.models import User
 from django.test import TestCase
-
-from authn.models import UserProfile
 
 
 class UserProfileModelTest(TestCase):

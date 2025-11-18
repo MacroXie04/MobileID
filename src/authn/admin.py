@@ -184,7 +184,7 @@ class LimitedGroupUserAdmin(UserAdmin):
                     UserProfile.objects.create(
                         user=user,
                         name=f"{user.first_name} {user.last_name}".strip()
-                        or user.username,
+                             or user.username,
                         information_id=user.username,  # Default to username, can be updated later
                         user_profile_img="",  # Empty profile image
                     )
@@ -202,7 +202,7 @@ class LimitedGroupUserAdmin(UserAdmin):
 
                 # Create an identification barcode for the user if it doesn't exist
                 if not Barcode.objects.filter(
-                    user=user, barcode_type="Identification"
+                        user=user, barcode_type="Identification"
                 ).exists():
                     # Generate a unique identification barcode
                     barcode_value = f"{user.username}_{uuid.uuid4().hex[:8]}"
@@ -222,9 +222,9 @@ class LimitedGroupUserAdmin(UserAdmin):
 
             # If changed from School to User
             if (
-                school_group in old_groups
-                and school_group not in new_groups
-                and user_group in new_groups
+                    school_group in old_groups
+                    and school_group not in new_groups
+                    and user_group in new_groups
             ):
                 # Update UserBarcodeSettings to use identification barcode
                 try:

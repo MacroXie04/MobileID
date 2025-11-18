@@ -1,12 +1,11 @@
-from rest_framework.decorators import api_view, permission_classes
+from authn.api.utils import clear_auth_cookies, set_auth_cookies
+from authn.throttling import LoginRateThrottle, UsernameRateThrottle
+from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
-from authn.api.utils import clear_auth_cookies, set_auth_cookies
-from authn.throttling import LoginRateThrottle, UsernameRateThrottle
 
 from ..serializers import (
     EncryptedTokenObtainPairSerializer,

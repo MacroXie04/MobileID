@@ -6,11 +6,11 @@
         <div class="barcode-card">
           <div id="barcode-container" class="barcode-canvas"></div>
           <div class="barcode-hint">{{ successMessage || 'Scan barcode at terminal' }}</div>
-          
+
           <!-- Progress Bar -->
           <transition name="fade">
             <div v-if="showProgressBar" class="progress-wrapper">
-              <md-linear-progress :value="progressValue / 100" />
+              <md-linear-progress :value="progressValue / 100"/>
               <div class="progress-time">{{ Math.ceil(progressValue / 10) }}s</div>
             </div>
           </transition>

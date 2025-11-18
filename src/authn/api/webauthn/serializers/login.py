@@ -1,9 +1,5 @@
 import logging
 
-from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.exceptions import TokenError
-
 from authn.services.login_challenge import consume_login_challenge
 from authn.utils.encryption import (
     decrypt_password,
@@ -11,6 +7,9 @@ from authn.utils.encryption import (
     is_encrypted_password,
     validate_encrypted_password_format,
 )
+from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.exceptions import TokenError
 
 from .base import _BaseLoginSerializer
 

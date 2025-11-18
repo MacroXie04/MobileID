@@ -1,5 +1,5 @@
 import {ApiError, apiRequest} from './client';
-import {encryptPassword, clearPublicKeyCache} from '@/utils/auth/encryption';
+import {clearPublicKeyCache, encryptPassword} from '@/utils/auth/encryption';
 
 export async function fetchLoginChallenge() {
     return apiRequest('/authn/login-challenge/');
@@ -12,11 +12,11 @@ export async function login(username, password) {
     // The `handleSubmit` function in `Login.vue` should be updated to catch this
     // error and display the message from `error.data` or `error.message`.
     // This creates a more consistent and robust error handling pattern.
-    
+
     try {
         const challenge = await fetchLoginChallenge();
         const encryptedPassword = await encryptPassword(password, challenge);
-    
+
         // Use the new encrypted-only login endpoint
         return await apiRequest('/authn/login/', {
             method: 'POST',
@@ -27,7 +27,7 @@ export async function login(username, password) {
         if (error instanceof ApiError && (error.status === 401 || error.status === 410)) {
             clearPublicKeyCache();
         }
-        
+
         if (error instanceof ApiError) {
             const detail = error.data?.detail || 'Invalid username or password.';
             const existingData = error.data && typeof error.data === 'object' ? error.data : {};

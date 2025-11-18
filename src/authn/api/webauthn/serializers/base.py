@@ -1,12 +1,11 @@
 import logging
 from datetime import timedelta
 
+from authn.models import FailedLoginAttempt, LoginAuditLog
 from django.conf import settings
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
-from authn.models import FailedLoginAttempt, LoginAuditLog
 
 logger = logging.getLogger(__name__)
 

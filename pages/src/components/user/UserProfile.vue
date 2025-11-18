@@ -71,7 +71,9 @@ function handleImageError(event) {
   handleAvatarError(event, {
     profileName: props.profile?.name,
     placeholderSrc: defaultAvatar,
-    onShowInitials: () => { showInitials.value = true; }
+    onShowInitials: () => {
+      showInitials.value = true;
+    }
   });
 }
 </script>

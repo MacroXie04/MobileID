@@ -49,20 +49,20 @@
       <!-- Barcode Settings -->
       <SettingsCard
           v-show="activeTab === 'Overview'"
-          :is-saving="isSaving"
-          :current-barcode-info="currentBarcodeInfo"
-          :selected-barcode="selectedBarcode"
-          :barcode-choices="barcodeChoices"
-          :settings="settings"
-          :pull-settings="pullSettings"
-          :is-user-group="isUserGroup"
-          :is-dynamic-selected="isDynamicSelected"
-          :current-barcode-has-profile="currentBarcodeHasProfile"
-          :errors="errors"
           :associate-user-profile-with-barcode="Boolean(settings.associate_user_profile_with_barcode)"
-          :server-verification="Boolean(settings.server_verification)"
-          :format-relative-time="formatRelativeTime"
+          :barcode-choices="barcodeChoices"
+          :current-barcode-has-profile="currentBarcodeHasProfile"
+          :current-barcode-info="currentBarcodeInfo"
+          :errors="errors"
           :format-date="formatDate"
+          :format-relative-time="formatRelativeTime"
+          :is-dynamic-selected="isDynamicSelected"
+          :is-saving="isSaving"
+          :is-user-group="isUserGroup"
+          :pull-settings="pullSettings"
+          :selected-barcode="selectedBarcode"
+          :server-verification="Boolean(settings.server_verification)"
+          :settings="settings"
           @update-associate="(val) => { settings.associate_user_profile_with_barcode = val; onSettingChange(); }"
           @update-server="(val) => { settings.server_verification = val; onSettingChange(); }"
           @update-pull-setting="(val) => { pullSettings.pull_setting = val; onSettingChange(); }"
@@ -73,18 +73,18 @@
       <BarcodesListCard
           v-show="activeTab === 'Barcodes'"
           :active-tab="activeTab"
-          :settings="settings"
-          :pull-settings="pullSettings"
+          :filter-type="filterType"
           :filtered-barcodes="filteredBarcodes"
           :has-active-filters="hasActiveFilters"
-          :filter-type="filterType"
           :owned-only="ownedOnly"
+          :pull-settings="pullSettings"
+          :settings="settings"
           :updating-limit="updatingLimit"
+          @delete="deleteBarcode"
           @update-filter="(val) => { filterType = val; onFilterChange(); }"
           @toggle-owned="() => { ownedOnly = !ownedOnly; onFilterChange(); }"
           @set-active="setActiveBarcode"
           @toggle-share="toggleShare"
-          @delete="deleteBarcode"
           @update-limit="updateDailyLimit"
           @increment-limit="incrementDailyLimit"
           @decrement-limit="decrementDailyLimit"
@@ -124,18 +124,10 @@
 
 <script setup>
 import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
-import {useRouter, useRoute} from 'vue-router';
+import {useRoute, useRouter} from 'vue-router';
 import {useApi} from '@/composables/common/useApi';
 import {useDailyLimit} from '@/composables/barcode/useDailyLimit';
-import {formatRelativeTime, formatDate, normalize} from '@/utils/common/dateUtils';
-import {
-  getBarcodeDisplayTitle,
-  getBarcodeDisplayId,
-  getBarcodeTypeLabel,
-  getProfileLabel,
-  getProfileTooltip,
-  getAssociationStatusText
-} from '@/utils/barcode/barcodeUtils';
+import {formatDate, formatRelativeTime} from '@/utils/common/dateUtils';
 import SettingsCard from '@/components/dashboard/SettingsCard.vue';
 import BarcodesListCard from '@/components/dashboard/BarcodesListCard.vue';
 import AddBarcodeCard from '@/components/dashboard/AddBarcodeCard.vue';
@@ -518,7 +510,7 @@ const currentBarcodeInfo = computed(() => {
 onMounted(() => {
   // Initialize tab from URL (?tab=Overview|Barcodes|Add)
   const initialTab = (route.query.tab || 'Overview');
-  if (['Overview','Barcodes','Add'].includes(initialTab)) {
+  if (['Overview', 'Barcodes', 'Add'].includes(initialTab)) {
     activeTab.value = initialTab;
   }
   loadDashboard();
@@ -527,7 +519,8 @@ onMounted(() => {
 // Keep URL in sync with tab
 watch(activeTab, (tab) => {
   const q = {...route.query, tab};
-  router.replace({ query: q }).catch(() => {});
+  router.replace({query: q}).catch(() => {
+  });
 });
 
 onUnmounted(() => {

@@ -224,9 +224,9 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                     else Barcode.objects.get(pk=barcode)
                 )
                 if (
-                    b.barcode_type == "DynamicBarcode"
-                    and b.user != user
-                    and not b.share_with_others
+                        b.barcode_type == "DynamicBarcode"
+                        and b.user != user
+                        and not b.share_with_others
                 ):
                     raise serializers.ValidationError(
                         {"barcode": "Selected barcode is not shared by its owner."}

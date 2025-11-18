@@ -2,13 +2,12 @@ import base64
 from io import BytesIO
 
 from PIL import Image
+from authn.services.webauthn import create_user_profile
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator
-
-from authn.services.webauthn import create_user_profile
 
 from .helpers import _clean_base64
 

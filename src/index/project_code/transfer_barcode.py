@@ -37,7 +37,7 @@ class BarcodeData:
 
 class TransferBarcode(UCMercedMobileIdClient):
     def __init__(
-        self, user_cookies: str, user: Optional[User] = None, headless: bool = True
+            self, user_cookies: str, user: Optional[User] = None, headless: bool = True
     ):
         super().__init__(headless=headless)
         self.barcode_user: Optional[User] = user
@@ -204,7 +204,7 @@ class TransferBarcode(UCMercedMobileIdClient):
 
             # Strip data URI prefix if present
             if "," in possibly_data_uri_b64 and possibly_data_uri_b64.startswith(
-                "data:image"
+                    "data:image"
             ):
                 _, b64_data = possibly_data_uri_b64.split(",", 1)
             else:

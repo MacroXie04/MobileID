@@ -22,4 +22,3 @@ elif settings_module.endswith(".dev") or settings_module.endswith(".development"
 else:
     # Default to development settings
     from .dev import *  # noqa: F403, F401
-

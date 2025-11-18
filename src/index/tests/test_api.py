@@ -4,7 +4,6 @@ from unittest.mock import patch, Mock
 from authn.models import UserProfile
 from authn.services.webauthn import create_user_profile
 from django.contrib.auth.models import User, Group
-from django.test import TestCase
 from django.urls import reverse
 from index.models import (
     Barcode,

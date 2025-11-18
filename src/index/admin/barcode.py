@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from ..models import Barcode
+
 from .inlines import BarcodeUsageInline, BarcodeUserProfileInline
+from ..models import Barcode
 
 
 @admin.register(Barcode)

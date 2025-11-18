@@ -1,6 +1,9 @@
 import base64
 import json
 
+from authn.middleware.authentication import CookieJWTAuthentication
+from authn.models import LoginAuditLog, RSAKeyPair
+from authn.services.webauthn import create_user_profile
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from django.conf import settings
@@ -12,10 +15,6 @@ from rest_framework import exceptions, status
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory, APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
-
-from authn.middleware.authentication import CookieJWTAuthentication
-from authn.models import LoginAuditLog, RSAKeyPair
-from authn.services.webauthn import create_user_profile
 
 
 class LoginSecurityTests(APITestCase):

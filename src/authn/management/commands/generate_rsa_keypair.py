@@ -9,12 +9,11 @@ Usage:
 
 import logging
 
+from authn.models import RSAKeyPair
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-
-from authn.models import RSAKeyPair
 
 logger = logging.getLogger(__name__)
 
