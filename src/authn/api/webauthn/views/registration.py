@@ -105,7 +105,7 @@ def api_register(request):
             status=400,
         )
 
-    except Exception as exc:
+    except Exception:
         logging.exception("Error occurred during user registration")
         return Response(
             {

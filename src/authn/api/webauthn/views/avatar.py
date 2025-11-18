@@ -73,7 +73,7 @@ def api_avatar_upload(request):
         profile.save()
 
         return Response({"success": True, "message": "Avatar uploaded successfully"})
-    except Exception as exc:
+    except Exception:
         logging.exception("Error processing avatar image upload")
         return Response(
             {"success": False, "message": "Failed to process image."},

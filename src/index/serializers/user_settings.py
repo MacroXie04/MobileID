@@ -2,7 +2,6 @@ from index.models import (
     Barcode,
     UserBarcodeSettings,
     UserBarcodePullSettings,
-    BarcodeUserProfile,
 )
 from rest_framework import serializers
 
@@ -70,7 +69,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                 try:
                     _ = b.barcodeuserprofile
                     has_profile = True
-                except:
+                except Exception:
                     pass
 
                 choices.append(
@@ -104,7 +103,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                 try:
                     _ = b.barcodeuserprofile
                     has_profile = True
-                except:
+                except Exception:
                     pass
 
                 choices.append(
@@ -149,7 +148,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                 try:
                     _ = b.barcodeuserprofile
                     has_profile = True
-                except:
+                except Exception:
                     pass
 
                 choices.append(

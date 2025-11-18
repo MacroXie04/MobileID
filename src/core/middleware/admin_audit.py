@@ -5,7 +5,6 @@ Logs all admin access and actions for security auditing.
 """
 
 from django.conf import settings
-from django.contrib.admin.models import LogEntry
 from django.db import transaction
 
 from core.models.admin_audit import AdminAuditLog

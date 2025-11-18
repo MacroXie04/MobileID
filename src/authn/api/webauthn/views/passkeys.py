@@ -67,7 +67,7 @@ def passkey_auth_verify(request):
         )
     try:
         user = verify_authentication(request.data, expected)
-    except Exception as exc:
+    except Exception:
         logging.exception("Failed to verify passkey authentication")
         return Response(
             {"success": False, "message": "Authentication failed"}, status=400

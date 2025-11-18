@@ -53,7 +53,7 @@ class BarcodeModelTest(TestCase):
 
     def test_barcode_unique_constraint(self):
         """Test that barcode values must be unique"""
-        barcode1 = Barcode.objects.create(
+        _ = Barcode.objects.create(
             user=self.user, barcode="uniquebarcode123", barcode_type="Others"
         )
 

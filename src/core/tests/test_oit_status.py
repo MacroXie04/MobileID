@@ -248,7 +248,7 @@ class OITStatusTest(TestCase):
                 self.assertGreater(len(status_info["services"][service]), 0)
 
             # Print the actual status for debugging/information
-            print(f"\nReal UC Merced Status Retrieved:")
+            print("\nReal UC Merced Status Retrieved:")
             print(f"Time: {status_info['time']}")
             print(f"Total Services: {len(status_info['services'])}")
             for service in required_services:

@@ -91,12 +91,12 @@ class BarcodeDashboardAPITest(APITestCase):
         self._authenticate_user(self.school_user)
 
         # Create some barcodes
-        dynamic_barcode = Barcode.objects.create(
+        _ = Barcode.objects.create(
             user=self.school_user,
             barcode="12345678901234",
             barcode_type="DynamicBarcode",
         )
-        other_barcode = Barcode.objects.create(
+        _ = Barcode.objects.create(
             user=self.school_user, barcode="static123456789", barcode_type="Others"
         )
 

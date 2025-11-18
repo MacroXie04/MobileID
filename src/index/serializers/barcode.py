@@ -47,14 +47,14 @@ class BarcodeSerializer(serializers.ModelSerializer):
         """
         try:
             return obj.barcodeusage_set.first().total_usage
-        except:
+        except Exception:
             return 0
 
     def get_last_used(self, obj):
         """Get last used timestamp for the barcode"""
         try:
             return obj.barcodeusage_set.first().last_used
-        except:
+        except Exception:
             return None
 
     def get_display_name(self, obj):
@@ -130,7 +130,7 @@ class BarcodeSerializer(serializers.ModelSerializer):
         try:
             usage = obj.barcodeusage_set.first()
             return usage.daily_usage_limit if usage else 0
-        except:
+        except Exception:
             return 0
 
 

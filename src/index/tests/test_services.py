@@ -240,7 +240,7 @@ class UsageLimitServiceTest(TestCase):
         self.assertIsNone(msg)
 
     def test_check_daily_limit_enforced(self):
-        usage = BarcodeUsage.objects.create(
+        _ = BarcodeUsage.objects.create(
             barcode=self.barcode, daily_usage_limit=2, total_usage=0
         )
         # No transactions yet

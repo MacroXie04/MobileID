@@ -46,5 +46,4 @@ class UserProfileServiceTest(TestCase):
 
         create_user_profile(self.user, "Test", "ID123", None)
 
-        user_group = Group.objects.get(name="User")
         self.assertTrue(self.user.groups.filter(name="User").exists())

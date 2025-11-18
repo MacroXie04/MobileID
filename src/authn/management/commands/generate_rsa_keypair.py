@@ -89,7 +89,7 @@ class Command(BaseCommand):
                     )
                 )
                 self.stdout.write(f"Key ID: {key_pair.kid}")
-                self.stdout.write(f"Status: ACTIVE")
+                self.stdout.write("Status: ACTIVE")
                 self.stdout.write(
                     f"Public key (first 50 chars): {public_key_pem[:50]}..."
                 )
