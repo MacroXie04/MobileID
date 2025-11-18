@@ -44,3 +44,4 @@ class Barcode(models.Model):
         elif self.barcode_type == "Identification":
             return f"{self.user.username}'s identification Barcode"
         return f"Barcode ending with {self.barcode[-4:]}"
+

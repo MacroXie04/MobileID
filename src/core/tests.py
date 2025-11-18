@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.test import TestCase, override_settings
 from django.urls import reverse, resolve
-from mobileid.status.OIT import OIT
+from core.status.OIT import OIT
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -526,7 +526,7 @@ class OITStatusTest(TestCase):
         """Set up test fixtures"""
         self.oit = OIT()
 
-    @patch("mobileid.status.OIT.OIT.fetch_data")
+    @patch("core.status.OIT.OIT.fetch_data")
     def test_oit_returns_operational_status_for_sso(self, mock_fetch_data):
         """Test that OIT service returns 'Operational' status for SSO (Single Sign-On)"""
         # Mock HTML response with SSO service operational
@@ -544,7 +544,7 @@ class OITStatusTest(TestCase):
         self.assertIn("SSO (Single Sign-On)", status_info["services"])
         self.assertEqual(status_info["services"]["SSO (Single Sign-On)"], "Operational")
 
-    @patch("mobileid.status.OIT.OIT.fetch_data")
+    @patch("core.status.OIT.OIT.fetch_data")
     def test_oit_returns_operational_status_for_duo_2fa(self, mock_fetch_data):
         """Test that OIT service returns 'Operational' status for Duo 2FA"""
         # Mock HTML response with Duo 2FA service operational
@@ -562,7 +562,7 @@ class OITStatusTest(TestCase):
         self.assertIn("Duo 2FA", status_info["services"])
         self.assertEqual(status_info["services"]["Duo 2FA"], "Operational")
 
-    @patch("mobileid.status.OIT.OIT.fetch_data")
+    @patch("core.status.OIT.OIT.fetch_data")
     def test_oit_returns_operational_status_for_catcard(self, mock_fetch_data):
         """Test that OIT service returns 'Operational' status for CatCard"""
         # Mock HTML response with CatCard service operational
@@ -580,7 +580,7 @@ class OITStatusTest(TestCase):
         self.assertIn("CatCard", status_info["services"])
         self.assertEqual(status_info["services"]["CatCard"], "Operational")
 
-    @patch("mobileid.status.OIT.OIT.fetch_data")
+    @patch("core.status.OIT.OIT.fetch_data")
     def test_oit_returns_operational_status_for_dining_payment_systems(
         self, mock_fetch_data
     ):
@@ -602,7 +602,7 @@ class OITStatusTest(TestCase):
             status_info["services"]["Dining Payment Systems"], "Operational"
         )
 
-    @patch("mobileid.status.OIT.OIT.fetch_data")
+    @patch("core.status.OIT.OIT.fetch_data")
     def test_oit_returns_multiple_services_status(self, mock_fetch_data):
         """Test that OIT service returns status for multiple services including the required ones"""
         # Mock HTML response with multiple services
@@ -640,7 +640,7 @@ class OITStatusTest(TestCase):
             self.assertIn(service, status_info["services"])
             self.assertEqual(status_info["services"][service], "Operational")
 
-    @patch("mobileid.status.OIT.OIT.fetch_data")
+    @patch("core.status.OIT.OIT.fetch_data")
     def test_oit_handles_service_outage_status(self, mock_fetch_data):
         """Test that OIT service can handle non-operational status for services"""
         # Mock HTML response with some services having issues
@@ -674,7 +674,7 @@ class OITStatusTest(TestCase):
             status_info["services"]["Dining Payment Systems"], "Service Disruption"
         )
 
-    @patch("mobileid.status.OIT.OIT.fetch_data")
+    @patch("core.status.OIT.OIT.fetch_data")
     def test_oit_response_structure(self, mock_fetch_data):
         """Test that OIT service returns properly structured response"""
         mock_html = """

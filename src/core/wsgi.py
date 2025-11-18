@@ -1,5 +1,5 @@
 """
-WSGI config for mobileid project.
+WSGI config for core project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -16,6 +16,6 @@ warnings.filterwarnings("ignore", category=UserWarning, module="cbor2")
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mobileid.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings.prod")
 
 application = get_wsgi_application()

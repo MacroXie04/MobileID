@@ -11,8 +11,9 @@ warnings.filterwarnings("ignore", category=UserWarning, module="cbor2")
 
 def main():
     """Run administrative tasks."""
-    # Set default settings module - use main settings for all operations including tests
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mobileid.settings")
+    # Set default settings module - use dev settings for development
+    # Override with DJANGO_SETTINGS_MODULE env var for production
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings.dev")
 
     # Set testing flag when running tests
     if len(sys.argv) > 1 and sys.argv[1] == "test":

@@ -1,5 +1,5 @@
 """
-Views for the mobileid project.
+Views for the core project.
 """
 
 from django.db import connection
