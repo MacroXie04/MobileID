@@ -66,4 +66,3 @@ class AdminAuditLog(models.Model):
     def __str__(self):
         username = self.user.username if self.user else "anonymous"
         return f"{username} - {self.action} - {self.resource or 'N/A'} at {self.timestamp.isoformat()}"
-

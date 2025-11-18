@@ -71,8 +71,8 @@ class BarcodeDashboardAPIView(APIView):
             barcodes = (
                 Barcode.objects.filter(
                     (
-                            Q(barcode_type="DynamicBarcode")
-                            & (Q(user=user) | Q(share_with_others=True))
+                        Q(barcode_type="DynamicBarcode")
+                        & (Q(user=user) | Q(share_with_others=True))
                     )
                     | Q(user=user, barcode_type__in=["Others", "Identification"])
                 )
@@ -133,9 +133,13 @@ class BarcodeDashboardAPIView(APIView):
         barcode_requested = "barcode" in data
 
         # Track pull setting state changes
-        existing_pull_settings = UserBarcodePullSettings.objects.filter(user=user).first()
+        existing_pull_settings = UserBarcodePullSettings.objects.filter(
+            user=user
+        ).first()
         pull_settings_enabled_before = (
-            existing_pull_settings.pull_setting == "Enable" if existing_pull_settings else False
+            existing_pull_settings.pull_setting == "Enable"
+            if existing_pull_settings
+            else False
         )
         pull_settings_enabled_after = pull_settings_enabled_before
 
@@ -162,15 +166,15 @@ class BarcodeDashboardAPIView(APIView):
             pull_settings = existing_pull_settings
 
         pull_setting_enabled_now = (
-                pull_settings_data is not None
-                and pull_settings_enabled_after
-                and not pull_settings_enabled_before
+            pull_settings_data is not None
+            and pull_settings_enabled_after
+            and not pull_settings_enabled_before
         )
 
         if (
-                barcode_requested
-                and pull_settings_enabled_after
-                and not pull_setting_enabled_now
+            barcode_requested
+            and pull_settings_enabled_after
+            and not pull_setting_enabled_now
         ):
             return Response(
                 {

@@ -20,16 +20,15 @@ class AdminLoginThrottleMiddleware:
         self.get_response = get_response
         self.admin_url_path = getattr(settings, "ADMIN_URL_PATH", "admin")
         self.admin_login_path = f"/{self.admin_url_path}/login/"
-        self.rate = getattr(settings, "REST_FRAMEWORK", {}).get(
-            "DEFAULT_THROTTLE_RATES", {}
-        ).get("admin_login", "5/15min")
+        self.rate = (
+            getattr(settings, "REST_FRAMEWORK", {})
+            .get("DEFAULT_THROTTLE_RATES", {})
+            .get("admin_login", "5/15min")
+        )
 
     def __call__(self, request):
         # Only check POST requests to admin login
-        if (
-            request.method == "POST"
-            and request.path == self.admin_login_path
-        ):
+        if request.method == "POST" and request.path == self.admin_login_path:
             if self._is_throttled(request):
                 return HttpResponseTooManyRequests(
                     "Too many login attempts. Please try again later."
@@ -106,4 +105,3 @@ class AdminLoginThrottleMiddleware:
         if forwarded:
             return forwarded.split(",")[0].strip()
         return request.META.get("REMOTE_ADDR", "")
-

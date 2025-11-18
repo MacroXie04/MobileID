@@ -68,7 +68,7 @@ class AvatarUploadAPITest(APITestCase):
         url = reverse("authn:api_avatar_upload")
 
         with patch(
-                "django.core.files.uploadedfile.InMemoryUploadedFile.size", 6 * 1024 * 1024
+            "django.core.files.uploadedfile.InMemoryUploadedFile.size", 6 * 1024 * 1024
         ):
             image_file = self._create_test_image()
 

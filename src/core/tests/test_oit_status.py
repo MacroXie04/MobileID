@@ -71,7 +71,7 @@ class OITStatusTest(TestCase):
 
     @patch("index.status.OIT.OIT.fetch_data")
     def test_oit_returns_operational_status_for_dining_payment_systems(
-            self, mock_fetch_data
+        self, mock_fetch_data
     ):
         """Test that OIT service returns 'Operational' status for Dining Payment Systems"""
         # Mock HTML response with Dining Payment Systems service operational

@@ -157,7 +157,7 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
     if "user" in result and isinstance(result["user"], dict):
         # Ensure user.id is base64url encoded string
         if "id" in result["user"] and isinstance(
-                result["user"]["id"], (bytes, bytearray)
+            result["user"]["id"], (bytes, bytearray)
         ):
             result["user"]["id"] = bytes_to_base64url(result["user"]["id"])
         # Ensure required displayName is present
@@ -171,7 +171,7 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
 
 
 def verify_and_create_passkey(
-        user: User, credential: dict, expected_challenge
+    user: User, credential: dict, expected_challenge
 ) -> PasskeyCredential:
     # Convert challenge from base64url string (stored in session) to bytes for verification
     # The webauthn library expects the challenge as bytes

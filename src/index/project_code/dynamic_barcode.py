@@ -162,7 +162,7 @@ class UCMercedMobileIdClient:
         self.config = UCMercedConfig()
 
     def send_otc(
-            self, mobile_id_rand: str, student_id: str, barcode: str, user_cookies: str
+        self, mobile_id_rand: str, student_id: str, barcode: str, user_cookies: str
     ) -> ApiResponse:
         """
         Send OTC (One-Time Code) using provided parameters.
@@ -231,7 +231,7 @@ class UCMercedMobileIdClient:
                 # Wait for page to be ready
                 WebDriverWait(driver, self.config.EXPLICIT_WAIT).until(
                     lambda d: d.execute_script("return document.readyState")
-                              == "complete"
+                    == "complete"
                 )
 
                 # Prepare the JavaScript payload using fetch()
@@ -281,7 +281,7 @@ class UCMercedMobileIdClient:
             return ApiResponse(status="error", error=error_msg)
 
     def _build_js_payload(
-            self, mobile_id_rand: str, student_id: str, barcode: str
+        self, mobile_id_rand: str, student_id: str, barcode: str
     ) -> str:
         """Build JavaScript fetch payload for AJAX request, mirroring the provided cURL.
 
@@ -509,7 +509,7 @@ class UCMercedMobileIdClient:
 
                 # Calculate approximate size in KB
                 size_bytes = (
-                        len(base64_data) * 3 / 4
+                    len(base64_data) * 3 / 4
                 )  # Base64 is ~33% larger than binary
                 size_kb = size_bytes / 1024
 
@@ -541,7 +541,7 @@ class UCMercedMobileIdClient:
                 # Wait for page to load
                 WebDriverWait(driver, self.config.EXPLICIT_WAIT).until(
                     lambda d: d.execute_script("return document.readyState")
-                              == "complete"
+                    == "complete"
                 )
 
                 time.sleep(self.config.SLEEP_DURATION)
@@ -723,7 +723,7 @@ class UCMercedMobileIdClient:
 # Module-level convenience wrappers
 # ---------------------------------------------------------------------------
 def auto_send_code(
-        user_cookies: str, headless: bool = True
+    user_cookies: str, headless: bool = True
 ) -> Optional[Dict[str, str]]:
     """Send OTC codes automatically using a headless browser session.
 

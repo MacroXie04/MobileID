@@ -46,7 +46,7 @@ class TransferCatCardAPIView(APIView):
                     return Response(
                         {
                             "error": "Invalid cookies: "
-                                     + "; ".join(processed.warnings),
+                            + "; ".join(processed.warnings),
                             "success": False,
                         },
                         status=status.HTTP_400_BAD_REQUEST,
@@ -67,7 +67,7 @@ class TransferCatCardAPIView(APIView):
                 return Response(
                     {
                         "message": result.response
-                                   or "Barcode data stored successfully",
+                        or "Barcode data stored successfully",
                         "success": True,
                     },
                     status=status.HTTP_200_OK,

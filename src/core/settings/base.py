@@ -129,7 +129,7 @@ DB_PROFILE = os.getenv("DB_PROFILE", "local").lower()
 DB_CONN_MAX_AGE = int(os.getenv("DB_CONN_MAX_AGE", "60"))  # persistent connections
 DB_SSL_MODE = os.getenv("DB_SSL_MODE", "").lower()  # "", "require", "verify-full"
 DB_DISABLE_SERVER_CERT_VERIFICATION = (
-        os.getenv("DB_SSL_DISABLE_VERIFY", "false").lower() == "true"
+    os.getenv("DB_SSL_DISABLE_VERIFY", "false").lower() == "true"
 )
 
 

@@ -19,4 +19,3 @@ class CoreConfig(AppConfig):
 
         # Import signals to connect admin login/logout logging
         import core.signals  # noqa: F401
-

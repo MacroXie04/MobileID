@@ -44,4 +44,3 @@ class AdminIPWhitelistMiddleware:
             # X-Forwarded-For can contain multiple IPs, take the first one
             return forwarded.split(",")[0].strip()
         return request.META.get("REMOTE_ADDR", "")
-

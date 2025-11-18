@@ -59,7 +59,7 @@ class AdminAuditMiddleware:
 
         # Determine action type based on path
         resource = self._extract_resource(request.path)
-        
+
         # Determine action from path patterns
         if "/add/" in request.path:
             action = AdminAuditLog.ADD
@@ -165,4 +165,3 @@ def _get_client_ip_from_request(request):
     if forwarded:
         return forwarded.split(",")[0].strip()
     return request.META.get("REMOTE_ADDR", "")
-

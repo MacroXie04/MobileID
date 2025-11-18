@@ -30,4 +30,3 @@ class AdminSessionExpiryMiddleware:
 
         response = self.get_response(request)
         return response
-

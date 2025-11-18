@@ -19,6 +19,7 @@ class URLConfigurationTest(TestCase):
     def test_admin_url_uses_custom_path(self):
         """Test that admin URL uses custom path from settings"""
         from django.conf import settings
+
         url = reverse("admin:index")
         self.assertTrue(url.startswith(f"/{settings.ADMIN_URL_PATH}/"))
 

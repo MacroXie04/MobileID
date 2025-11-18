@@ -124,9 +124,7 @@ class SecurityTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
     @override_settings(
-        REST_FRAMEWORK={
-            "DEFAULT_THROTTLE_RATES": {"admin_login": "3/15min"}
-        }
+        REST_FRAMEWORK={"DEFAULT_THROTTLE_RATES": {"admin_login": "3/15min"}}
     )
     def test_admin_login_throttle_blocks_excessive_attempts(self):
         """Test that admin login throttling blocks excessive login attempts"""
@@ -156,9 +154,7 @@ class SecurityTest(TestCase):
         self.assertIn("Too many login attempts", response.content.decode())
 
     @override_settings(
-        REST_FRAMEWORK={
-            "DEFAULT_THROTTLE_RATES": {"admin_login": "5/15min"}
-        }
+        REST_FRAMEWORK={"DEFAULT_THROTTLE_RATES": {"admin_login": "5/15min"}}
     )
     def test_admin_login_throttle_allows_normal_usage(self):
         """Test that admin login throttling allows normal usage"""
@@ -221,10 +217,8 @@ class SecurityTest(TestCase):
 
         # Perform a POST action (like changing a user)
         # First create a test user to modify
-        test_user = User.objects.create_user(
-            username="testuser", password="test123"
-        )
-        
+        test_user = User.objects.create_user(username="testuser", password="test123")
+
         # POST to change the user (this should create an audit log)
         change_url = reverse("admin:auth_user_change", args=[test_user.id])
         response = client.post(
@@ -240,7 +234,9 @@ class SecurityTest(TestCase):
         self.assertIn(response.status_code, [200, 302])
 
         # Check that audit log was created for the POST action
-        logs = AdminAuditLog.objects.filter(user=staff_user, action=AdminAuditLog.CHANGE)
+        logs = AdminAuditLog.objects.filter(
+            user=staff_user, action=AdminAuditLog.CHANGE
+        )
         self.assertGreaterEqual(logs.count(), 1)
 
     def test_admin_audit_log_includes_ip_and_user_agent(self):
@@ -260,9 +256,7 @@ class SecurityTest(TestCase):
         client.force_login(staff_user)
 
         # Perform a POST action to trigger audit logging
-        test_user = User.objects.create_user(
-            username="testuser2", password="test123"
-        )
+        test_user = User.objects.create_user(username="testuser2", password="test123")
         change_url = reverse("admin:auth_user_change", args=[test_user.id])
         client.post(
             change_url,

@@ -74,10 +74,14 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="loginauditlog",
-            index=models.Index(fields=["username"], name="authn_logi_usernam_5bd831_idx"),
+            index=models.Index(
+                fields=["username"], name="authn_logi_usernam_5bd831_idx"
+            ),
         ),
         migrations.AddIndex(
             model_name="loginauditlog",
-            index=models.Index(fields=["created_at"], name="authn_logi_created_1cad83_idx"),
+            index=models.Index(
+                fields=["created_at"], name="authn_logi_created_1cad83_idx"
+            ),
         ),
     ]

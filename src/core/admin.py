@@ -70,4 +70,3 @@ class AdminAuditLogAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         """Allow deletion only for superusers"""
         return request.user.is_superuser
-

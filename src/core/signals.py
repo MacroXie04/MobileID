@@ -20,6 +20,7 @@ def log_admin_login_signal(sender, request, user, **kwargs):
         # Check if request path indicates admin login
         if request and hasattr(request, "path"):
             from django.conf import settings
+
             admin_path = f"/{settings.ADMIN_URL_PATH}/"
             if request.path.startswith(admin_path):
                 log_admin_login(request, user, success=True)
@@ -34,7 +35,7 @@ def log_admin_logout_signal(sender, request, user, **kwargs):
     if user and user.is_staff:
         if request and hasattr(request, "path"):
             from django.conf import settings
+
             admin_path = f"/{settings.ADMIN_URL_PATH}/"
             if request.path.startswith(admin_path):
                 log_admin_logout(request, user)
-
