@@ -10,6 +10,7 @@ Usage:
 import logging
 
 from authn.models import RSAKeyPair
+from authn.utils.keys import clear_rsa_keypair_cache
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from django.core.management.base import BaseCommand, CommandError
@@ -93,6 +94,10 @@ class Command(BaseCommand):
                 self.stdout.write(
                     f"Public key (first 50 chars): {public_key_pem[:50]}..."
                 )
+
+            # Clear cache to ensure new key is picked up immediately
+            clear_rsa_keypair_cache()
+            self.stdout.write(self.style.SUCCESS("Cleared RSA key pair cache"))
 
         except Exception as e:
             logger.exception("Failed to generate RSA key pair")
