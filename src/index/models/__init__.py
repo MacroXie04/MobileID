@@ -1,4 +1,4 @@
-# 导入所有模型以保持向后兼容性
+# import all models to maintain backward compatibility
 from .barcode import Barcode
 from .barcode_profile import BarcodeUserProfile
 from .barcode_usage import BarcodeUsage, BarcodePullSettings
