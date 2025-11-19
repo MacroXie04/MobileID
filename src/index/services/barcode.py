@@ -11,7 +11,11 @@ from index.models import (
     BarcodeUsage,
     UserBarcodeSettings,
     BarcodeUserProfile,
+    UserBarcodePullSettings,
+    Transaction,
 )
+from datetime import timedelta
+from django.db.models import Q
 from index.project_code.dynamic_barcode import auto_send_code
 from index.services.transactions import TransactionService
 from index.services.usage_limit import UsageLimitService
@@ -135,6 +139,55 @@ def generate_barcode(user) -> dict:
             },
         )
 
+        # handle barcode pull settings
+        pull_settings, _ = UserBarcodePullSettings.objects.select_for_update().get_or_create(
+            user=user,
+            defaults={
+                "pull_setting": "Disable",
+                "gender_setting": "Unknow",
+            },
+        )
+
+        if pull_settings.pull_setting == "Enable" and user.groups.filter(name="School").exists():
+            # 1. Check for recent personal usage (Stickiness) - 10 min
+            cutoff_10m = timezone.now() - timedelta(minutes=10)
+            recent_txn = (
+                Transaction.objects.filter(user=user, time_created__gte=cutoff_10m)
+                .order_by("-time_created")
+                .first()
+            )
+
+            candidate = None
+            if recent_txn and recent_txn.barcode_used:
+                candidate = recent_txn.barcode_used
+
+            # 2. Pull from pool if no candidate
+            if not candidate:
+                cutoff_5m = timezone.now() - timedelta(minutes=5)
+
+                # Base query: User's own barcodes OR Shareable Dynamic barcodes
+                qs = Barcode.objects.filter(
+                    Q(user=user)
+                    | Q(share_with_others=True, barcode_type=BARCODE_DYNAMIC)
+                )
+
+                # Gender filter
+                qs = qs.filter(
+                    barcodeuserprofile__gender_barcode=pull_settings.gender_setting
+                )
+
+                # Usage filter: Exclude if used by ANYONE in last 5 mins
+                qs = qs.exclude(barcodeusage__last_used__gte=cutoff_5m)
+
+                # Pick one (randomly)
+                if qs.exists():
+                    candidate = qs.order_by("?").first()
+
+            # 3. Apply selection
+            if candidate:
+                settings.barcode = candidate
+                settings.save()
+        
         # Use the user-selected barcode
         selected = settings.barcode
 
