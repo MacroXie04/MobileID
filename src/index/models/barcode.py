@@ -10,7 +10,9 @@ class Barcode(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     # timestamp of creation
-    time_created = models.DateTimeField(auto_now_add=True, null=True, verbose_name="time created")
+    time_created = models.DateTimeField(
+        auto_now_add=True, null=True, verbose_name="time created"
+    )
 
     # unique identifier for the barcode
     barcode_uuid = models.UUIDField(
@@ -36,10 +38,12 @@ class Barcode(models.Model):
     # barcode information
     barcode = models.CharField(max_length=120, unique=True)
 
+    class Meta:
+        app_label = "index"
+
     def __str__(self):
         if self.barcode_type == "DynamicBarcode":
             return f"Dynamic barcode ending with {self.barcode[-4:]}"
         elif self.barcode_type == "Identification":
             return f"{self.user.username}'s identification Barcode"
         return f"Barcode ending with {self.barcode[-4:]}"
-

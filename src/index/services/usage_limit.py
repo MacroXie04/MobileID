@@ -34,7 +34,7 @@ class UsageLimitService:
     def check_daily_limit(barcode: Barcode) -> Tuple[bool, Optional[str]]:
         """
         Check if barcode has exceeded its daily usage limit.
-        
+
         Returns:
             (is_allowed, error_message)
             - is_allowed: True if usage is allowed, False if limit exceeded
@@ -58,7 +58,10 @@ class UsageLimitService:
             ).count()
 
             if today_count >= usage.daily_usage_limit:
-                return False, f"Daily usage limit of {usage.daily_usage_limit} scans has been reached"
+                return (
+                    False,
+                    f"Daily usage limit of {usage.daily_usage_limit} scans has been reached",
+                )
 
             return True, None
 
@@ -70,7 +73,7 @@ class UsageLimitService:
     def check_total_limit(barcode: Barcode) -> Tuple[bool, Optional[str]]:
         """
         Check if barcode has exceeded its total usage limit.
-        
+
         Returns:
             (is_allowed, error_message)
         """
@@ -82,7 +85,10 @@ class UsageLimitService:
                 return True, None
 
             if usage.total_usage >= usage.total_usage_limit:
-                return False, f"Total usage limit of {usage.total_usage_limit} scans has been reached"
+                return (
+                    False,
+                    f"Total usage limit of {usage.total_usage_limit} scans has been reached",
+                )
 
             return True, None
 
@@ -94,7 +100,7 @@ class UsageLimitService:
     def check_all_limits(barcode: Barcode) -> Tuple[bool, Optional[str]]:
         """
         Check both daily and total usage limits.
-        
+
         Returns:
             (is_allowed, error_message)
         """
@@ -110,7 +116,7 @@ class UsageLimitService:
     def get_usage_stats(barcode: Barcode) -> dict:
         """
         Get current usage statistics for a barcode.
-        
+
         Returns dict with:
             - daily_used: Number of uses today
             - daily_limit: Daily limit (0 means no limit)
@@ -131,21 +137,27 @@ class UsageLimitService:
             ).count()
 
             return {
-                'daily_used': daily_used,
-                'daily_limit': usage.daily_usage_limit,
-                'total_used': usage.total_usage,
-                'total_limit': usage.total_usage_limit,
-                'daily_remaining': None if usage.daily_usage_limit == 0 else max(0,
-                                                                                 usage.daily_usage_limit - daily_used),
-                'total_remaining': None if usage.total_usage_limit == 0 else max(0,
-                                                                                 usage.total_usage_limit - usage.total_usage),
+                "daily_used": daily_used,
+                "daily_limit": usage.daily_usage_limit,
+                "total_used": usage.total_usage,
+                "total_limit": usage.total_usage_limit,
+                "daily_remaining": (
+                    None
+                    if usage.daily_usage_limit == 0
+                    else max(0, usage.daily_usage_limit - daily_used)
+                ),
+                "total_remaining": (
+                    None
+                    if usage.total_usage_limit == 0
+                    else max(0, usage.total_usage_limit - usage.total_usage)
+                ),
             }
         except BarcodeUsage.DoesNotExist:
             return {
-                'daily_used': 0,
-                'daily_limit': 0,
-                'total_used': 0,
-                'total_limit': 0,
-                'daily_remaining': None,
-                'total_remaining': None,
+                "daily_used": 0,
+                "daily_limit": 0,
+                "total_used": 0,
+                "total_limit": 0,
+                "daily_remaining": None,
+                "total_remaining": None,
             }

@@ -1,0 +1,35 @@
+from .forms import UserRegisterForm
+from .views import (
+    CookieTokenObtainPairView,
+    CookieTokenRefreshView,
+    RSALoginView,
+    api_avatar_upload,
+    api_logout,
+    api_profile,
+    api_register,
+    login_challenge,
+    passkey_auth_options,
+    passkey_auth_verify,
+    passkey_register_options,
+    passkey_register_verify,
+    user_img,
+    user_info,
+)
+
+__all__ = [
+    "CookieTokenObtainPairView",
+    "CookieTokenRefreshView",
+    "RSALoginView",
+    "api_avatar_upload",
+    "api_logout",
+    "api_profile",
+    "api_register",
+    "login_challenge",
+    "passkey_auth_options",
+    "passkey_auth_verify",
+    "passkey_register_options",
+    "passkey_register_verify",
+    "UserRegisterForm",
+    "user_img",
+    "user_info",
+]

@@ -4,7 +4,8 @@ A secure, dual-stack web application for mobile identification and barcode manag
 
 ## Overview
 
-MobileID provides a comprehensive platform for generating, managing, and authenticating PDF417 barcodes with role-based access control. 
+MobileID provides a comprehensive platform for generating, managing, and authenticating PDF417 barcodes with role-based
+access control.
 
 ## Features
 
@@ -19,12 +20,14 @@ MobileID provides a comprehensive platform for generating, managing, and authent
 ## Architecture
 
 ### Backend (Django REST API)
+
 - **Framework**: Django 5.2+ with Django REST Framework
 - **Authentication**: JWT tokens with cookie-based storage
 - **Database**: SQLite (development) with PostgreSQL/MySQL support
 - **Security**: WebAuthn integration, CORS configuration, CSRF protection
 
 ### Frontend (Vue.js SPA)
+
 - **Framework**: Vue 3 with Composition API
 - **Build Tool**: Vite
 - **UI Library**: Material Web Components
@@ -39,11 +42,13 @@ MobileID provides a comprehensive platform for generating, managing, and authent
 
 ## Docker (Local Development)
 
-This repo runs the Django API in a single `api` service with Docker. Environment is loaded via `.env.development` by default; production overrides use `docker-compose.prod.yml`.
+This repo runs the Django API in a single `api` service with Docker. Environment is loaded via `.env.development` by
+default; production overrides use `docker-compose.prod.yml`.
 
 ### Environment
 
-Create or edit `.env.development` at the repository root. Use ONLY localhost origins and connect to your macOS host MySQL via `host.docker.internal`:
+Create or edit `.env.development` at the repository root. Use ONLY localhost origins and connect to your macOS host
+MySQL via `host.docker.internal`:
 
 ```env
 ALLOWED_HOSTS=localhost
@@ -61,6 +66,7 @@ DB_PASSWORD=rootpassword
 ```
 
 Important:
+
 - All browser-visible origins must use `http://localhost` (NOT `127.0.0.1`).
 - The API listens on `http://localhost:8000`.
 
@@ -73,6 +79,7 @@ docker compose up --build
 Then visit `http://localhost:8000`.
 
 Common commands:
+
 ```bash
 # Tail logs
 docker compose logs -f api
@@ -94,21 +101,25 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 
 ## Settings behavior (env precedence)
 
-`src/mobileid/settings.py` prefers real environment variables first, then supplements from `.env` without overriding. Comma-separated lists are parsed for `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS`.
+`src/mobileid/settings.py` prefers real environment variables first, then supplements from `.env` without overriding.
+Comma-separated lists are parsed for `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS`.
 
 Database defaults to MySQL with:
+
 - `DB_HOST=host.docker.internal` to reach host MySQL from the container
 - Optional `DB_INIT_COMMAND` to set strict SQL modes only when you have privileges
 
 ## Installation
 
 ### 1. Clone the Repository
+
 ```bash
 git clone <repository-url>
 cd MobileID
 ```
 
 ### 2. Backend Setup
+
 ```bash
 cd src/
 pip install -r ../requirements.txt
@@ -128,6 +139,7 @@ python manage.py createsuperuser
 **Note**: See the [Environment Variables](#environment-variables) section below for detailed configuration options.
 
 ### 3. Frontend Setup (optional, not containerized here)
+
 ```bash
 cd ../pages/
 npm install
@@ -140,24 +152,29 @@ yarn install
 ### Starting the Development Servers
 
 #### Backend Server
+
 ```bash
 cd src/
 python manage.py runserver
 ```
+
 The Django API will be available at `http://localhost:8000` (use localhost, not 127.0.0.1)
 
 #### Frontend Server
+
 ```bash
 cd pages/
 npm run dev
 # or
 yarn dev
 ```
+
 The Vue.js application will be available at `http://localhost:5173`
 
 ### Code Quality
 
 #### Frontend Linting and Formatting
+
 ```bash
 cd pages/
 npm run lint        # Check for linting errors
@@ -168,83 +185,84 @@ npm run format      # Format code with Prettier
 
 ### Environment Variables
 
-The application uses environment variables for configuration. Create a `.env` file in the `src/` directory with the following variables:
+The application uses environment variables for configuration. Create a `.env` file in the `src/` directory with the
+following variables:
 
 #### Core Settings
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `SECRET_KEY` | Django secret key for cryptographic operations | `dev-secret` | Yes (Production) |
-| `DEBUG` | Enable debug mode (`True`/`False`) | `False` | No |
-| `TESTING` | Enable test mode (`True`/`False`) | `False` | No |
-| `TIME_ZONE` | Application timezone | `America/Los_Angeles` | No |
+| Variable     | Description                                    | Default               | Required         |
+|--------------|------------------------------------------------|-----------------------|------------------|
+| `SECRET_KEY` | Django secret key for cryptographic operations | `dev-secret`          | Yes (Production) |
+| `DEBUG`      | Enable debug mode (`True`/`False`)             | `False`               | No               |
+| `TESTING`    | Enable test mode (`True`/`False`)              | `False`               | No               |
+| `TIME_ZONE`  | Application timezone                           | `America/Los_Angeles` | No               |
 
 #### Network & CORS Settings
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `ALLOWED_HOSTS` | Comma-separated list of allowed hostnames | `localhost` | No |
-| `BACKEND_ORIGIN` | Backend URL | `http://localhost:8000` | No |
-| `CORS_ALLOWED_ORIGINS` | Comma-separated list of frontend URLs for CORS | `http://localhost:5173,http://localhost:8080` | No |
-| `CORS_ALLOW_CREDENTIALS` | Allow credentials in CORS requests (`True`/`False`) | `True` | No |
-| `CSRF_TRUSTED_ORIGINS` | Comma-separated list of trusted origins for CSRF | Auto-generated from backend/frontend origins | No |
+| Variable                 | Description                                         | Default                                       | Required |
+|--------------------------|-----------------------------------------------------|-----------------------------------------------|----------|
+| `ALLOWED_HOSTS`          | Comma-separated list of allowed hostnames           | `localhost`                                   | No       |
+| `BACKEND_ORIGIN`         | Backend URL                                         | `http://localhost:8000`                       | No       |
+| `CORS_ALLOWED_ORIGINS`   | Comma-separated list of frontend URLs for CORS      | `http://localhost:5173,http://localhost:8080` | No       |
+| `CORS_ALLOW_CREDENTIALS` | Allow credentials in CORS requests (`True`/`False`) | `True`                                        | No       |
+| `CSRF_TRUSTED_ORIGINS`   | Comma-separated list of trusted origins for CSRF    | Auto-generated from backend/frontend origins  | No       |
 
 **Important**: Use `http://localhost` (NOT `127.0.0.1`) for all browser-visible origins to avoid CORS issues.
 
 #### Cookie Settings
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `COOKIE_SAMESITE` | SameSite attribute for session cookies (`Lax`/`Strict`/`None`) | `Lax` | No |
-| `CSRF_COOKIE_SAMESITE` | SameSite attribute for CSRF cookies | `Lax` | No |
-| `COOKIE_SECURE` | Require HTTPS for cookies (`True`/`False`) | `False` | No |
-| `CSRF_COOKIE_HTTPONLY` | Make CSRF cookie HTTP-only (`True`/`False`) | `False` | No |
-| `USE_HTTPS` | Enable HTTPS-specific settings (`True`/`False`) | `False` | No |
+| Variable               | Description                                                    | Default | Required |
+|------------------------|----------------------------------------------------------------|---------|----------|
+| `COOKIE_SAMESITE`      | SameSite attribute for session cookies (`Lax`/`Strict`/`None`) | `Lax`   | No       |
+| `CSRF_COOKIE_SAMESITE` | SameSite attribute for CSRF cookies                            | `Lax`   | No       |
+| `COOKIE_SECURE`        | Require HTTPS for cookies (`True`/`False`)                     | `False` | No       |
+| `CSRF_COOKIE_HTTPONLY` | Make CSRF cookie HTTP-only (`True`/`False`)                    | `False` | No       |
+| `USE_HTTPS`            | Enable HTTPS-specific settings (`True`/`False`)                | `False` | No       |
 
 #### Database Configuration
 
 **Option 1: Database URL (Recommended)**
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DB_PROFILE` | Database profile to use (`local`/`gcp`) | `local` |
-| `DATABASE_URL_LOCAL` | Database URL for local profile | `mysql://user:pass@127.0.0.1:3306/dbname` |
-| `DATABASE_URL_GCP` | Database URL for GCP profile | `postgres://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE` |
+| Variable             | Description                             | Example                                                               |
+|----------------------|-----------------------------------------|-----------------------------------------------------------------------|
+| `DB_PROFILE`         | Database profile to use (`local`/`gcp`) | `local`                                                               |
+| `DATABASE_URL_LOCAL` | Database URL for local profile          | `mysql://user:pass@127.0.0.1:3306/dbname`                             |
+| `DATABASE_URL_GCP`   | Database URL for GCP profile            | `postgres://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE` |
 
 **Option 2: Discrete Variables (Legacy)**
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `DB_ENGINE` | Database engine (`postgresql`/`mysql`/`sqlite3`) | `postgresql` | No |
-| `DB_NAME` | Database name | Empty | Yes (if using discrete vars) |
-| `DB_USER` | Database user | Empty | Yes (if using discrete vars) |
-| `DB_PASSWORD` | Database password | Empty | Yes (if using discrete vars) |
-| `DB_HOST` | Database host (use `host.docker.internal` for Docker) | Empty | Yes (if using discrete vars) |
-| `DB_PORT` | Database port | Empty | No |
+| Variable      | Description                                           | Default      | Required                     |
+|---------------|-------------------------------------------------------|--------------|------------------------------|
+| `DB_ENGINE`   | Database engine (`postgresql`/`mysql`/`sqlite3`)      | `postgresql` | No                           |
+| `DB_NAME`     | Database name                                         | Empty        | Yes (if using discrete vars) |
+| `DB_USER`     | Database user                                         | Empty        | Yes (if using discrete vars) |
+| `DB_PASSWORD` | Database password                                     | Empty        | Yes (if using discrete vars) |
+| `DB_HOST`     | Database host (use `host.docker.internal` for Docker) | Empty        | Yes (if using discrete vars) |
+| `DB_PORT`     | Database port                                         | Empty        | No                           |
 
 **Advanced Database Options**
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `DB_CONN_MAX_AGE` | Persistent connection lifetime (seconds) | `60` | No |
-| `DB_SSL_MODE` | SSL mode for database connections (`require`/`verify-ca`/`verify-full`) | Empty | No |
-| `DB_SSL_DISABLE_VERIFY` | Disable SSL certificate verification (`True`/`False`) | `False` | No |
-| `CLOUDSQL_UNIX_SOCKET` | Unix socket path for Cloud SQL connections | Empty | No |
+| Variable                | Description                                                             | Default | Required |
+|-------------------------|-------------------------------------------------------------------------|---------|----------|
+| `DB_CONN_MAX_AGE`       | Persistent connection lifetime (seconds)                                | `60`    | No       |
+| `DB_SSL_MODE`           | SSL mode for database connections (`require`/`verify-ca`/`verify-full`) | Empty   | No       |
+| `DB_SSL_DISABLE_VERIFY` | Disable SSL certificate verification (`True`/`False`)                   | `False` | No       |
+| `CLOUDSQL_UNIX_SOCKET`  | Unix socket path for Cloud SQL connections                              | Empty   | No       |
 
 #### Security Settings
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `MAX_FAILED_LOGIN_ATTEMPTS` | Maximum failed login attempts before lockout | `5` | No |
-| `ACCOUNT_LOCKOUT_DURATION` | Account lockout duration in minutes | `30` | No |
+| Variable                    | Description                                  | Default | Required |
+|-----------------------------|----------------------------------------------|---------|----------|
+| `MAX_FAILED_LOGIN_ATTEMPTS` | Maximum failed login attempts before lockout | `5`     | No       |
+| `ACCOUNT_LOCKOUT_DURATION`  | Account lockout duration in minutes          | `30`    | No       |
 
 #### Cache & Session Settings
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `CACHE_BACKEND` | Django cache backend class | `django.core.cache.backends.locmem.LocMemCache` | No |
-| `CACHE_LOCATION` | Cache location/identifier | `unique-snowflake` | No |
-| `SESSION_ENGINE` | Session backend | `django.contrib.sessions.backends.db` | No |
+| Variable         | Description                | Default                                         | Required |
+|------------------|----------------------------|-------------------------------------------------|----------|
+| `CACHE_BACKEND`  | Django cache backend class | `django.core.cache.backends.locmem.LocMemCache` | No       |
+| `CACHE_LOCATION` | Cache location/identifier  | `unique-snowflake`                              | No       |
+| `SESSION_ENGINE` | Session backend            | `django.contrib.sessions.backends.db`           | No       |
 
 ### Example .env Files
 
@@ -325,29 +343,34 @@ ACCOUNT_LOCKOUT_DURATION=30
 ## API Endpoints
 
 ### Authentication
+
 - `POST /authn/login/` - User login
 - `POST /authn/register/` - User registration
 - `POST /authn/logout/` - User logout
 - `GET /authn/user-info/` - Get current user information
 
 ### Barcode Management
+
 - `GET /api/barcodes/` - List user barcodes
 - `POST /api/barcodes/` - Create new barcode
 - `GET /api/barcodes/{id}/` - Get barcode details
 - `DELETE /api/barcodes/{id}/` - Delete barcode
 
 ### Dashboard (School Role)
+
 - `GET /api/dashboard/` - Get dashboard statistics
 - `GET /api/dashboard/barcodes/` - List all barcodes (admin view)
 
 ## User Roles
 
 ### User Role
+
 - Create and manage personal barcodes
 - Access basic profile features
 - View personal barcode usage statistics
 
 ### School Role
+
 - Access administrative dashboard
 - View system-wide barcode analytics
 - Manage multiple user barcodes
@@ -376,6 +399,7 @@ ACCOUNT_LOCKOUT_DURATION=30
 ### Static Files
 
 For production deployment:
+
 ```bash
 cd src/
 python manage.py collectstatic

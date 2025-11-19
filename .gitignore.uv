@@ -1,8 +1,0 @@
-
-# UV Package Manager
-.venv/
-uv.lock
-.python-version
-
-# Note: Do commit uv.lock for reproducible builds!
-# Only ignore .venv/ and keep uv.lock tracked

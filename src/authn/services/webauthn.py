@@ -14,7 +14,7 @@ def generate_unique_identification_barcode():
 
 
 def create_user_profile(
-        user, name: str, information_id: str, user_profile_img: str | None
+    user, name: str, information_id: str, user_profile_img: str | None
 ):
     # Profile
     UserProfile.objects.create(

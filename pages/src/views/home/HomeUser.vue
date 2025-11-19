@@ -63,8 +63,8 @@ import BarcodeDisplay from "@/components/user/BarcodeDisplay.vue";
 import UserMenu from "@/components/user/UserMenu.vue";
 
 // Composables
-import {useApi} from "@/composables/useApi";
-import {useUserInfo} from "@/composables/useUserInfo";
+import {useApi} from "@/composables/common/useApi";
+import {useUserInfo} from "@/composables/user/useUserInfo";
 import {baseURL} from "@/config";
 
 // CSS

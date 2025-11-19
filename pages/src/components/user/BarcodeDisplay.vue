@@ -6,11 +6,11 @@
         <div class="barcode-card">
           <div id="barcode-container" class="barcode-canvas"></div>
           <div class="barcode-hint">{{ successMessage || 'Scan barcode at terminal' }}</div>
-          
+
           <!-- Progress Bar -->
           <transition name="fade">
             <div v-if="showProgressBar" class="progress-wrapper">
-              <md-linear-progress :value="progressValue / 100" />
+              <md-linear-progress :value="progressValue / 100"/>
               <div class="progress-time">{{ Math.ceil(progressValue / 10) }}s</div>
             </div>
           </transition>
@@ -53,8 +53,8 @@ import '@material/web/progress/circular-progress.js';
 import '@material/web/progress/linear-progress.js';
 import '@material/web/ripple/ripple.js';
 
-import {useBarcodeDisplay} from '@/composables/useBarcodeDisplay.js';
-import {usePdf417} from '@/composables/usePdf417.js';
+import {useBarcodeDisplay} from '@/composables/barcode/useBarcodeDisplay.js';
+import {usePdf417} from '@/composables/barcode/usePdf417.js';
 
 // CSS
 import '@/assets/css/user-merged.css';
@@ -102,3 +102,5 @@ defineExpose({
   showError,
   drawPDF417,
   resetUI
+});
+</script>

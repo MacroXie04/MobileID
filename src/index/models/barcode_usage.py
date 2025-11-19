@@ -13,7 +13,12 @@ class BarcodePullSettings(models.Model):
         ("Female", "Female"),
         ("Unknow", "Unknow"),
     ]
-    gender_setting = models.CharField(max_length=10, choices=GENDER_CHOICES, default="Unknow")
+    gender_setting = models.CharField(
+        max_length=10, choices=GENDER_CHOICES, default="Unknow"
+    )
+
+    class Meta:
+        app_label = "index"
 
 
 # barcode total usage
@@ -33,6 +38,8 @@ class BarcodeUsage(models.Model):
     # last used timestamp
     last_used = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        app_label = "index"
+
     def __str__(self):
         return f"Barcode ending with {self.barcode.barcode[-4:]} - Total Usage: {self.total_usage} - Last Used: {self.last_used}"
-

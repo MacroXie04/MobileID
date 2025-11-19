@@ -1,4 +1,3 @@
-from django.core.validators import MaxLengthValidator
 from django.db import models
 
 
@@ -29,5 +28,9 @@ class BarcodeUserProfile(models.Model):
         ("Female", "Female"),
         ("Unknow", "Unknow"),
     ]
-    gender_barcode = models.CharField(max_length=10, choices=GENDER_CHOICES, default="Unknow")
+    gender_barcode = models.CharField(
+        max_length=10, choices=GENDER_CHOICES, default="Unknow"
+    )
 
+    class Meta:
+        app_label = "index"

@@ -76,17 +76,12 @@ def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
     if barcode.barcode_type != BARCODE_IDENTIFICATION:
         # Try to update existing record first
         updated = BarcodeUsage.objects.filter(barcode=barcode).update(
-            total_usage=F("total_usage") + 1,
-            last_used=now
+            total_usage=F("total_usage") + 1, last_used=now
         )
 
         # If no rows were updated, create a new record
         if not updated:
-            BarcodeUsage.objects.create(
-                barcode=barcode,
-                total_usage=1,
-                last_used=now
-            )
+            BarcodeUsage.objects.create(barcode=barcode, total_usage=1, last_used=now)
 
     if request_user is not None:
         TransactionService.create_transaction(
@@ -116,7 +111,9 @@ def generate_barcode(user) -> dict:
 
     # STAFF — not allowed
     if is_staff:
-        result.update(status="error", message="Staff accounts cannot generate barcodes.")
+        result.update(
+            status="error", message="Staff accounts cannot generate barcodes."
+        )
         return result
 
     # Unknown or missing group
@@ -211,7 +208,9 @@ def generate_barcode(user) -> dict:
             # Optional server verification
             server_note = ""
             if settings.server_verification:
-                profile = BarcodeUserProfile.objects.filter(linked_barcode=selected).first()
+                profile = BarcodeUserProfile.objects.filter(
+                    linked_barcode=selected
+                ).first()
                 cookies = profile.user_cookies if profile else None
                 srv = auto_send_code(cookies) if cookies else None
                 server_note = f" Server: {srv['code']}" if srv else ""

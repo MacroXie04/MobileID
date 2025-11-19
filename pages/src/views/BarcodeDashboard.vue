@@ -49,38 +49,42 @@
       <!-- Barcode Settings -->
       <SettingsCard
           v-show="activeTab === 'Overview'"
-          :is-saving="isSaving"
-          :current-barcode-info="currentBarcodeInfo"
-          :selected-barcode="selectedBarcode"
-          :barcode-choices="barcodeChoices"
-          :settings="settings"
-          :is-user-group="isUserGroup"
-          :is-dynamic-selected="isDynamicSelected"
-          :current-barcode-has-profile="currentBarcodeHasProfile"
-          :errors="errors"
           :associate-user-profile-with-barcode="Boolean(settings.associate_user_profile_with_barcode)"
-          :server-verification="Boolean(settings.server_verification)"
-          :format-relative-time="formatRelativeTime"
+          :barcode-choices="barcodeChoices"
+          :current-barcode-has-profile="currentBarcodeHasProfile"
+          :current-barcode-info="currentBarcodeInfo"
+          :errors="errors"
           :format-date="formatDate"
+          :format-relative-time="formatRelativeTime"
+          :is-dynamic-selected="isDynamicSelected"
+          :is-saving="isSaving"
+          :is-user-group="isUserGroup"
+          :pull-settings="pullSettings"
+          :selected-barcode="selectedBarcode"
+          :server-verification="Boolean(settings.server_verification)"
+          :settings="settings"
           @update-associate="(val) => { settings.associate_user_profile_with_barcode = val; onSettingChange(); }"
           @update-server="(val) => { settings.server_verification = val; onSettingChange(); }"
+          @update-pull-setting="(val) => { pullSettings.pull_setting = val; onSettingChange(); }"
+          @update-gender-setting="(val) => { pullSettings.gender_setting = val; onSettingChange(); }"
       />
 
       <!-- Barcodes List -->
       <BarcodesListCard
           v-show="activeTab === 'Barcodes'"
           :active-tab="activeTab"
-          :settings="settings"
+          :filter-type="filterType"
           :filtered-barcodes="filteredBarcodes"
           :has-active-filters="hasActiveFilters"
-          :filter-type="filterType"
           :owned-only="ownedOnly"
+          :pull-settings="pullSettings"
+          :settings="settings"
           :updating-limit="updatingLimit"
+          @delete="deleteBarcode"
           @update-filter="(val) => { filterType = val; onFilterChange(); }"
           @toggle-owned="() => { ownedOnly = !ownedOnly; onFilterChange(); }"
           @set-active="setActiveBarcode"
           @toggle-share="toggleShare"
-          @delete="deleteBarcode"
           @update-limit="updateDailyLimit"
           @increment-limit="incrementDailyLimit"
           @decrement-limit="decrementDailyLimit"
@@ -120,18 +124,10 @@
 
 <script setup>
 import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
-import {useRouter, useRoute} from 'vue-router';
-import {useApi} from '@/composables/useApi';
-import {useDailyLimit} from '@/composables/useDailyLimit';
-import {formatRelativeTime, formatDate, normalize} from '@/utils/dateUtils';
-import {
-  getBarcodeDisplayTitle,
-  getBarcodeDisplayId,
-  getBarcodeTypeLabel,
-  getProfileLabel,
-  getProfileTooltip,
-  getAssociationStatusText
-} from '@/utils/barcodeUtils';
+import {useRoute, useRouter} from 'vue-router';
+import {useApi} from '@/composables/common/useApi';
+import {useDailyLimit} from '@/composables/barcode/useDailyLimit';
+import {formatDate, formatRelativeTime} from '@/utils/common/dateUtils';
 import SettingsCard from '@/components/dashboard/SettingsCard.vue';
 import BarcodesListCard from '@/components/dashboard/BarcodesListCard.vue';
 import AddBarcodeCard from '@/components/dashboard/AddBarcodeCard.vue';
@@ -196,6 +192,10 @@ const settings = ref({
   server_verification: false,
   barcode: null
 });
+const pullSettings = ref({
+  pull_setting: 'Disable',
+  gender_setting: 'Unknow'
+});
 const barcodes = ref([]);
 const barcodeChoices = ref([]);
 const isUserGroup = ref(false);
@@ -235,6 +235,10 @@ async function loadDashboard() {
       server_verification: false,
       barcode: null
     };
+    pullSettings.value = {
+      pull_setting: 'Disable',
+      gender_setting: 'Unknow'
+    };
     barcodeChoices.value = [];
 
     // Set choices first
@@ -248,6 +252,14 @@ async function loadDashboard() {
       server_verification: Boolean(data.settings.server_verification),
       barcode: data.settings.barcode ? Number(data.settings.barcode) : null
     };
+
+    // Set pull settings if provided
+    if (data.pull_settings) {
+      pullSettings.value = {
+        pull_setting: data.pull_settings.pull_setting || 'Disable',
+        gender_setting: data.pull_settings.gender_setting || 'Unknow'
+      };
+    }
 
     barcodes.value = data.barcodes || [];
     isUserGroup.value = Boolean(data.is_user_group);
@@ -296,7 +308,8 @@ async function autoSaveSettings() {
     // ensure barcode ID is a number
     const settingsToSend = {
       ...settings.value,
-      barcode: settings.value.barcode ? Number(settings.value.barcode) : null
+      barcode: settings.value.barcode ? Number(settings.value.barcode) : null,
+      pull_settings: pullSettings.value
     };
 
     const response = await apiUpdateBarcodeSettings(settingsToSend);
@@ -313,6 +326,13 @@ async function autoSaveSettings() {
       // Update association status from backend
       if (response.settings && response.settings.associate_user_profile_with_barcode !== undefined) {
         settings.value.associate_user_profile_with_barcode = Boolean(response.settings.associate_user_profile_with_barcode);
+      }
+      // Update pull settings from backend
+      if (response.pull_settings) {
+        pullSettings.value = {
+          pull_setting: response.pull_settings.pull_setting || 'Disable',
+          gender_setting: response.pull_settings.gender_setting || 'Unknow'
+        };
       }
     }
 
@@ -455,6 +475,11 @@ function onSettingChange() {
 // Set active barcode directly from the list
 async function setActiveBarcode(barcode) {
   if (!barcode) return;
+  // Check if pull setting is enabled
+  if (pullSettings.value.pull_setting === 'Enable') {
+    showMessage('Barcode selection is disabled when pull setting is enabled. Please disable pull setting first.', 'danger');
+    return;
+  }
   // No-op if already active
   if (Number(settings.value.barcode) === Number(barcode.id)) return;
   settings.value.barcode = Number(barcode.id);
@@ -485,7 +510,7 @@ const currentBarcodeInfo = computed(() => {
 onMounted(() => {
   // Initialize tab from URL (?tab=Overview|Barcodes|Add)
   const initialTab = (route.query.tab || 'Overview');
-  if (['Overview','Barcodes','Add'].includes(initialTab)) {
+  if (['Overview', 'Barcodes', 'Add'].includes(initialTab)) {
     activeTab.value = initialTab;
   }
   loadDashboard();
@@ -494,7 +519,8 @@ onMounted(() => {
 // Keep URL in sync with tab
 watch(activeTab, (tab) => {
   const q = {...route.query, tab};
-  router.replace({ query: q }).catch(() => {});
+  router.replace({query: q}).catch(() => {
+  });
 });
 
 onUnmounted(() => {

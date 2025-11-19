@@ -15,7 +15,8 @@
 
     <!-- Auto-save Status Toast -->
     <transition name="slide-down">
-      <div v-if="autoSaveStatus.show" :class="['message-toast md-banner', autoSaveStatus.type === 'success' ? 'md-banner-success' : 'md-banner-error']">
+      <div v-if="autoSaveStatus.show"
+           :class="['message-toast md-banner', autoSaveStatus.type === 'success' ? 'md-banner-success' : 'md-banner-error']">
         <md-icon>{{ autoSaveStatus.type === 'success' ? 'check_circle' : 'error' }}</md-icon>
         <span class="md-typescale-body-medium">{{ autoSaveStatus.message }}</span>
         <md-icon-button @click="autoSaveStatus.show = false">
@@ -42,7 +43,7 @@
           <!-- Avatar Upload Section -->
           <div class="avatar-section md-mb-8">
             <h2 class="md-typescale-headline-small section-title md-mb-6">Profile Photo</h2>
-            
+
             <div class="avatar-upload-container md-flex md-items-center md-gap-8">
               <div class="avatar-section-center">
                 <div class="avatar-wrapper md-avatar-xl" @click="selectImage">
@@ -52,22 +53,22 @@
                     <span class="md-typescale-label-medium">Change Photo</span>
                   </div>
                 </div>
-                
+
                 <div class="avatar-info">
                   <p class="md-typescale-body-medium md-m-0">Click to upload a new profile photo</p>
                   <p class="md-typescale-body-small md-m-0 md-mt-1">JPG or PNG • Max 5MB • Recommended: Square image</p>
                 </div>
               </div>
             </div>
-            
+
             <input
-              ref="fileInput"
-              accept="image/jpeg,image/jpg,image/png"
-              class="hidden-input"
-              type="file"
-              @change="handleFileSelect"
+                ref="fileInput"
+                accept="image/jpeg,image/jpg,image/png"
+                class="hidden-input"
+                type="file"
+                @change="handleFileSelect"
             >
-            
+
             <transition name="fade">
               <div v-if="errors.user_profile_img" class="md-banner md-banner-error md-mt-4">
                 <md-icon>error</md-icon>
@@ -81,26 +82,26 @@
           <!-- Personal Information Section -->
           <div class="info-section md-mt-8">
             <h2 class="md-typescale-headline-small section-title md-mb-6">Personal Information</h2>
-            
+
             <div class="md-form-field">
               <md-outlined-text-field
-                v-model="formData.name"
-                :error="!!errors.name"
-                :error-text="errors.name"
-                label="Full Name"
-                @input="handleFieldChange('name')"
-                @keyup.enter="!loading && handleSubmit()"
+                  v-model="formData.name"
+                  :error="!!errors.name"
+                  :error-text="errors.name"
+                  label="Full Name"
+                  @input="handleFieldChange('name')"
+                  @keyup.enter="!loading && handleSubmit()"
               >
                 <md-icon slot="leading-icon">badge</md-icon>
               </md-outlined-text-field>
 
               <md-outlined-text-field
-                v-model="formData.information_id"
-                :error="!!errors.information_id"
-                :error-text="errors.information_id"
-                label="Information ID"
-                @input="handleFieldChange('information_id')"
-                @keyup.enter="!loading && handleSubmit()"
+                  v-model="formData.information_id"
+                  :error="!!errors.information_id"
+                  :error-text="errors.information_id"
+                  label="Information ID"
+                  @input="handleFieldChange('information_id')"
+                  @keyup.enter="!loading && handleSubmit()"
               >
                 <md-icon slot="leading-icon">fingerprint</md-icon>
               </md-outlined-text-field>
@@ -117,7 +118,7 @@
                 <md-icon class="md-mr-2">{{ hasPasskey ? 'key' : 'key_off' }}</md-icon>
                 {{ hasPasskey ? 'Passkey registered' : 'No passkey registered' }}
               </div>
-              <md-filled-button type="button" :disabled="passkeyBusy" @click="registerPasskey">
+              <md-filled-button :disabled="passkeyBusy" type="button" @click="registerPasskey">
                 <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
                 <md-icon v-else slot="icon">{{ hasPasskey ? 'sync' : 'key' }}</md-icon>
                 {{ hasPasskey ? 'Replace Passkey' : 'Register Passkey' }}
@@ -188,14 +189,14 @@
 </template>
 
 <script setup>
-import {onMounted, onUnmounted, ref, watch} from 'vue';
+import {onMounted, onUnmounted, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {getUserProfile, updateUserProfile} from '@/api/auth';
 import {baseURL} from '@/config';
-import {useImageCropper} from '@/composables/useImageCropper.js';
-import {usePasskeyRegistration} from '@/composables/usePasskeyRegistration.js';
-import {useAutoSave} from '@/composables/useAutoSave.js';
-import {validateImageFile, fileToBase64} from '@/utils/imageUtils.js';
+import {useImageCropper} from '@/composables/user/useImageCropper.js';
+import {usePasskeyRegistration} from '@/composables/auth/usePasskeyRegistration.js';
+import {useAutoSave} from '@/composables/common/useAutoSave.js';
+import {fileToBase64, validateImageFile} from '@/utils/user/imageUtils.js';
 import '@/assets/css/auth-merged.css';
 
 const router = useRouter();
@@ -435,7 +436,7 @@ const loadProfile = async () => {
       if (typeof response.data.has_passkey !== 'undefined') {
         hasPasskey.value = !!response.data.has_passkey;
       }
-      
+
       // Initialize original data for auto-save comparison
       originalData.value = {
         name: response.data.name || '',
