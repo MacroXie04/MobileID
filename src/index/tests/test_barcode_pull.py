@@ -187,3 +187,96 @@ class BarcodePullTest(TestCase):
             
         self.assertEqual(result["status"], "success")
         self.assertIn("male_owned", result["barcode"])
+
+    def test_pull_setting_disabled(self):
+        """Test that pull logic is skipped when setting is Disable"""
+        self.pull_settings.pull_setting = "Disable"
+        self.pull_settings.save()
+        
+        # Even though candidates exist, it should fail because no barcode is selected in settings
+        # and pull is disabled.
+        result = generate_barcode(self.school_user)
+        
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["message"], "No barcode selected.")
+
+    def test_user_not_school(self):
+        """Test that pull logic is skipped for non-School users"""
+        # Create a regular user with pull enabled (though UI might prevent this, backend should handle it)
+        regular_user = User.objects.create_user("regular", password="pw")
+        user_group, _ = Group.objects.get_or_create(name="User")
+        regular_user.groups.add(user_group)
+        
+        # Case 1: User in 'User' group.
+        UserBarcodePullSettings.objects.create(
+            user=regular_user,
+            pull_setting="Enable",
+            gender_setting="Male"
+        )
+        UserBarcodeSettings.objects.create(user=regular_user)
+        
+        # generate_barcode for 'User' group forces Identification barcode, ignoring pull settings.
+        result = generate_barcode(regular_user)
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["barcode_type"], "Identification")
+        
+        # Case 2: User with no group (Permission Denied)
+        no_group_user = User.objects.create_user("nogroup", password="pw")
+        result = generate_barcode(no_group_user)
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["message"], "Permission Denied.")
+
+    def test_pull_empty_pool_behavior(self):
+        """Test behavior when pool is empty and no existing selection"""
+        # Delete all candidates
+        self.bc_male.delete()
+        self.bc_owned.delete()
+        
+        result = generate_barcode(self.school_user)
+        
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["message"], "No barcode selected.")
+
+    def test_pull_empty_pool_with_existing_selection(self):
+        """Test behavior when pool is empty but user has an existing selection"""
+        # Pre-select a barcode
+        self.user_settings.barcode = self.bc_male
+        self.user_settings.save()
+        
+        # Make pool empty by gender mismatch
+        self.pull_settings.gender_setting = "Female"
+        self.pull_settings.save()
+        
+        # Should fall back to existing selection (bc_male) even though it doesn't match gender?
+        # The pull logic fails to find candidate, so it leaves settings.barcode alone.
+        # Then it uses settings.barcode.
+        
+        with patch("index.services.barcode._timestamp", return_value="20230101000000"):
+            result = generate_barcode(self.school_user)
+            
+        self.assertEqual(result["status"], "success")
+        self.assertIn("male_shareable", result["barcode"])
+
+    def test_pull_gender_unknow(self):
+        """Test pulling with gender 'Unknow'"""
+        self.pull_settings.gender_setting = "Unknow"
+        self.pull_settings.save()
+        
+        # Create an Unknow gender barcode
+        bc_unknow = Barcode.objects.create(
+            user=User.objects.create_user("owner_unknow"),
+            barcode="unknow_shareable",
+            barcode_type="DynamicBarcode",
+            share_with_others=True,
+        )
+        BarcodeUserProfile.objects.create(
+            linked_barcode=bc_unknow,
+            gender_barcode="Unknow"
+        )
+        
+        # Should pick bc_unknow (others are Male/Female)
+        with patch("index.services.barcode._timestamp", return_value="20230101000000"):
+            result = generate_barcode(self.school_user)
+            
+        self.assertEqual(result["status"], "success")
+        self.assertIn("unknow_shareable", result["barcode"])
