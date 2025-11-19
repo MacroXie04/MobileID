@@ -17,7 +17,6 @@ class URLConfigurationTest(TestCase):
 
     def test_admin_url_uses_custom_path(self):
         """Test that admin URL uses custom path from settings"""
-        from django.conf import settings
         from django.urls import clear_url_caches
         from importlib import reload
         import core.urls
