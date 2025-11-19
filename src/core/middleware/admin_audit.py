@@ -118,7 +118,7 @@ class AdminAuditMiddleware:
         forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
         if forwarded:
             return forwarded.split(",")[0].strip()
-        return request.META.get("REMOTE_ADDR", "")
+        return request.META.get("REMOTE_ADDR") or None
 
 
 def log_admin_login(request, user, success=True):
@@ -163,4 +163,4 @@ def _get_client_ip_from_request(request):
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
     if forwarded:
         return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "")
+    return request.META.get("REMOTE_ADDR") or None

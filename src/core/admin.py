@@ -13,12 +13,13 @@ class AdminAuditLogAdmin(admin.ModelAdmin):
 
     list_display = (
         "timestamp",
-        "user",
+        "user_display",
         "action",
         "resource",
         "success",
         "ip_address",
     )
+    list_select_related = ["user"]
     list_filter = ("action", "success", "timestamp")
     search_fields = ("user__username", "resource", "ip_address")
     readonly_fields = (
@@ -58,6 +59,15 @@ class AdminAuditLogAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    @admin.display(description="User", ordering="user__username")
+    def user_display(self, obj):
+        if not obj.user:
+            return "-"
+        try:
+            return obj.user.username
+        except AttributeError:
+            return str(obj.user)
 
     def has_add_permission(self, request):
         """Prevent manual creation of audit logs"""

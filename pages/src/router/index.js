@@ -1,5 +1,6 @@
 import {createRouter, createWebHistory} from "vue-router";
 import {userInfo} from "@/api/auth";
+import {refreshToken} from "@/utils/auth/tokenRefresh";
 
 const Login = () => import("@/views/authn/Login.vue");
 const Home = () => import("@/views/home/Home.vue");
@@ -43,6 +44,21 @@ router.beforeEach(async (to, _from, next) => {
             }
             return next();
         }
+
+        // Try refresh if user info fetch failed
+        const refreshSuccess = await refreshToken();
+        if (refreshSuccess) {
+            const retryData = await userInfo();
+            if (retryData) {
+                window.userInfo = retryData;
+                // Check if User type trying to access barcode dashboard
+                if (to.path === '/dashboard' && retryData.groups && retryData.groups.includes('User')) {
+                    return next({path: "/"});
+                }
+                return next();
+            }
+        }
+
         return next({path: "/login", query: {redirect: to.fullPath}});
     } catch (_err) {
         window.apiError = "API server is offline";

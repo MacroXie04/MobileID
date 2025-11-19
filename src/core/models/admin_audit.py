@@ -64,5 +64,8 @@ class AdminAuditLog(models.Model):
         verbose_name_plural = "Admin Audit Logs"
 
     def __str__(self):
-        username = self.user.username if self.user else "anonymous"
+        try:
+            username = self.user.username if self.user else "anonymous"
+        except AttributeError:
+            username = str(self.user) if self.user else "anonymous"
         return f"{username} - {self.action} - {self.resource or 'N/A'} at {self.timestamp.isoformat()}"

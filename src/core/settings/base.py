@@ -322,8 +322,10 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     # Tests: keep tokens long to avoid flakiness; Prod: short-lived access, moderate refresh
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1) if TESTING else timedelta(minutes=10),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1) if TESTING else timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1) if TESTING else timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=1 if TESTING else int(env("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "7"))
+    ),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
