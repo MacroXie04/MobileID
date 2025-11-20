@@ -97,14 +97,17 @@ def process_user_cookie(raw_cookie: str) -> ProcessedCookie:
         if not any(k.startswith(prefix) for prefix in blacklist_prefixes)
     }
 
-    # Additional validation: check if we have at least one session-related cookie
+    # Additional validation: check if we have at least one session-related
+    # cookie
     session_keys = [k for k in filtered_kv.keys() if "session" in k.lower()]
     if not session_keys:
         warnings.append("No session cookies found - authentication may fail")
 
     # Rebuild the header_value from filtered cookies
     header_value = (
-        "; ".join(f"{k}={v}" for k, v in filtered_kv.items()) if filtered_kv else ""
+        "; ".join(f"{k}={v}" for k, v in filtered_kv.items())
+        if filtered_kv
+        else ""
     )
 
     return ProcessedCookie(

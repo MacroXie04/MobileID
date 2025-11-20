@@ -1,7 +1,7 @@
 """
 Base Django settings for core project.
 
-This file contains all common settings shared between development and production.
+This file contains all common settings shared between development and production.  # noqa: E501
 Environment-specific settings are defined in dev.py and prod.py.
 """
 
@@ -126,8 +126,12 @@ WSGI_APPLICATION = "core.wsgi.application"
 DB_PROFILE = os.getenv("DB_PROFILE", "local").lower()
 
 # Common options
-DB_CONN_MAX_AGE = int(os.getenv("DB_CONN_MAX_AGE", "60"))  # persistent connections
-DB_SSL_MODE = os.getenv("DB_SSL_MODE", "").lower()  # "", "require", "verify-full"
+DB_CONN_MAX_AGE = int(
+    os.getenv("DB_CONN_MAX_AGE", "60")
+)  # persistent connections
+DB_SSL_MODE = os.getenv(
+    "DB_SSL_MODE", ""
+).lower()  # "", "require", "verify-full"
 DB_DISABLE_SERVER_CERT_VERIFICATION = (
     os.getenv("DB_SSL_DISABLE_VERIFY", "false").lower() == "true"
 )
@@ -140,7 +144,8 @@ def _apply_common(db_cfg: dict) -> dict:
         db_cfg.setdefault("OPTIONS", {})
         db_cfg["OPTIONS"]["sslmode"] = DB_SSL_MODE
         if DB_DISABLE_SERVER_CERT_VERIFICATION:
-            # psycopg: sslrootcert='' + sslmode=require will skip verification; for mysqlclient use 'ssl' dict
+            # psycopg: sslrootcert='' + sslmode=require will skip verification;
+            # for mysqlclient use 'ssl' dict
             db_cfg["OPTIONS"]["sslmode"] = "require"
     return db_cfg
 
@@ -150,7 +155,9 @@ def _from_url(url_env_name: str, default_url: str = "") -> dict:
     if not url:
         return {}
     cfg = dj_database_url.parse(
-        url, conn_max_age=DB_CONN_MAX_AGE, ssl_require=(DB_SSL_MODE == "require")
+        url,
+        conn_max_age=DB_CONN_MAX_AGE,
+        ssl_require=(DB_SSL_MODE == "require"),
     )
     return _apply_common(cfg)
 
@@ -158,12 +165,14 @@ def _from_url(url_env_name: str, default_url: str = "") -> dict:
 DATABASES = {}
 
 # 1) Prefer explicit URL for the chosen profile
-#    - For local MySQL, set DATABASE_URL_LOCAL like: mysql://user:pass@127.0.0.1:3306/dbname
+#    - For local MySQL, set DATABASE_URL_LOCAL like:
+#      mysql://user:pass@127.0.0.1:3306/dbname
 #    - For local Postgres: postgres://user:pass@127.0.0.1:5432/dbname
-#    - For GCP/Cloud SQL TCP: same postgres/mysql URL pointing to the Cloud SQL proxy IP or public IP
+#    - For GCP/Cloud SQL TCP: same postgres/mysql URL pointing to the Cloud SQL
+#      proxy IP or public IP
 #    - For GCP/Cloud SQL Unix socket:
-#        postgres:  postgres://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE
-#        mysql:     mysql://user:pass@/dbname?unix_socket=/cloudsql/PROJECT:REGION:INSTANCE
+#        postgres:  postgres://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE  # noqa: E501
+#        mysql:     mysql://user:pass@/dbname?unix_socket=/cloudsql/PROJECT:REGION:INSTANCE  # noqa: E501
 profile_to_env = {
     "local": "DATABASE_URL_LOCAL",
     "gcp": "DATABASE_URL_GCP",
@@ -171,7 +180,8 @@ profile_to_env = {
 
 db_cfg = _from_url(profile_to_env.get(DB_PROFILE, "DATABASE_URL"))
 if not db_cfg:
-    # 2) Fallback to legacy discrete vars (DB_ENGINE, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
+    # 2) Fallback to legacy discrete vars (DB_ENGINE, DB_NAME, DB_USER,
+    # DB_PASSWORD, DB_HOST, DB_PORT)
     ENGINE = os.getenv("DB_ENGINE", "postgresql").lower()
     if ENGINE in {"postgres", "postgresql", "psql"}:
         engine_path = "django.db.backends.postgresql"
@@ -230,14 +240,18 @@ else:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"  # noqa: E501
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",  # noqa: E501
         "OPTIONS": {"min_length": 10},
     },
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"  # noqa: E501
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"  # noqa: E501
+    },
 ]
 
 # Prefer Argon2; keep PBKDF2 variants as fallback for compatibility
@@ -292,7 +306,9 @@ SESSION_ENGINE = os.getenv(
 
 # Session settings - Set to 10 years (effectively unlimited)
 SESSION_COOKIE_AGE = 315360000  # 10 years in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser close
+SESSION_EXPIRE_AT_BROWSER_CLOSE = (
+    False  # Keep session alive even after browser close
+)
 SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on each request
 
 # CORS settings
@@ -301,7 +317,9 @@ REST_FRAMEWORK = {
         "authn.middleware.authentication.CookieJWTAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+    ),
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
@@ -321,8 +339,11 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    # Tests: keep tokens long to avoid flakiness; Prod: short-lived access, moderate refresh
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1) if TESTING else timedelta(days=1),
+    # Tests: keep tokens long to avoid flakiness; Prod: short-lived access,
+    # moderate refresh
+    "ACCESS_TOKEN_LIFETIME": (
+        timedelta(days=1) if TESTING else timedelta(days=1)
+    ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
         days=1 if TESTING else int(env("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "7"))
     ),
@@ -338,11 +359,14 @@ LOGIN_CHALLENGE_NONCE_BYTES = int(env("LOGIN_CHALLENGE_NONCE_BYTES", "16"))
 # Admin security settings
 ADMIN_URL_PATH = env("ADMIN_URL_PATH", "admin")
 ADMIN_ALLOWED_IPS = csv_env("ADMIN_ALLOWED_IPS", [])
-ADMIN_SESSION_COOKIE_AGE = int(env("ADMIN_SESSION_COOKIE_AGE", "7200"))  # 2 hours
+ADMIN_SESSION_COOKIE_AGE = int(
+    env("ADMIN_SESSION_COOKIE_AGE", "7200")
+)  # 2 hours
 
 # Logging configuration
 if TESTING:
-    # Suppress warnings during testing to avoid noise from expected 4xx responses and dependencies
+    # Suppress warnings during testing to avoid noise from expected 4xx
+    # responses and dependencies
     LOGGING = {
         "version": 1,
         "disable_existing_loggers": False,

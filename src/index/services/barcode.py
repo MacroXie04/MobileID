@@ -53,13 +53,17 @@ def generate_unique_identification_barcode(max_attempts: int = 50) -> str:
         if not Barcode.objects.filter(barcode=code).exists():
             return code
     raise RuntimeError(
-        f"Unable to generate unique Identification barcode after {max_attempts} attempts."
+        f"Unable to generate unique Identification barcode after "
+        f"{max_attempts} attempts."
     )
 
 
 def _create_identification_barcode(user) -> Barcode:
-    """Delete prior Identification barcodes for *user* and create a fresh one."""
-    Barcode.objects.filter(user=user, barcode_type=BARCODE_IDENTIFICATION).delete()
+    """Delete prior Identification barcodes for *user* and create a fresh
+    one."""
+    Barcode.objects.filter(
+        user=user, barcode_type=BARCODE_IDENTIFICATION
+    ).delete()
     return Barcode.objects.create(
         user=user,
         barcode_type=BARCODE_IDENTIFICATION,
@@ -75,7 +79,8 @@ def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
     """
     now = timezone.now()
 
-    # Skip BarcodeUsage tracking for Identification barcodes since they regenerate each time
+    # Skip BarcodeUsage tracking for Identification barcodes since they
+    # regenerate each time
     # But still log transactions for audit purposes
     if barcode.barcode_type != BARCODE_IDENTIFICATION:
         # Try to update existing record first
@@ -85,7 +90,9 @@ def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
 
         # If no rows were updated, create a new record
         if not updated:
-            BarcodeUsage.objects.create(barcode=barcode, total_usage=1, last_used=now)
+            BarcodeUsage.objects.create(
+                barcode=barcode, total_usage=1, last_used=now
+            )
 
     if request_user is not None:
         TransactionService.create_transaction(
@@ -105,7 +112,8 @@ def _timestamp() -> str:
 # Public API
 # ---------------------------------------------------------------------------
 def generate_barcode(user) -> dict:
-    """Generate or refresh a barcode for *user* based on their group membership."""
+    """Generate or refresh a barcode for *user* based on their group
+    membership."""
     result = RESULT_TEMPLATE.copy()
 
     # Determine account type via groups
@@ -130,7 +138,10 @@ def generate_barcode(user) -> dict:
 
     # Wrap DB operations in an explicit transaction for select_for_update
     with transaction.atomic():
-        settings, _ = UserBarcodeSettings.objects.select_for_update().get_or_create(
+        (
+            settings,
+            _,
+        ) = UserBarcodeSettings.objects.select_for_update().get_or_create(
             user=user,
             defaults={
                 "barcode": None,
@@ -140,7 +151,10 @@ def generate_barcode(user) -> dict:
         )
 
         # handle barcode pull settings
-        pull_settings, _ = UserBarcodePullSettings.objects.select_for_update().get_or_create(
+        (
+            pull_settings,
+            _,
+        ) = UserBarcodePullSettings.objects.select_for_update().get_or_create(
             user=user,
             defaults={
                 "pull_setting": "Disable",
@@ -148,11 +162,16 @@ def generate_barcode(user) -> dict:
             },
         )
 
-        if pull_settings.pull_setting == "Enable" and user.groups.filter(name="School").exists():
+        if (
+            pull_settings.pull_setting == "Enable"
+            and user.groups.filter(name="School").exists()
+        ):
             # 1. Check for recent personal usage (Stickiness) - 10 min
             cutoff_10m = timezone.now() - timedelta(minutes=10)
             recent_txn = (
-                Transaction.objects.filter(user=user, time_created__gte=cutoff_10m)
+                Transaction.objects.filter(
+                    user=user, time_created__gte=cutoff_10m
+                )
                 .order_by("-time_created")
                 .first()
             )
@@ -173,7 +192,7 @@ def generate_barcode(user) -> dict:
 
                 # Gender filter
                 qs = qs.filter(
-                    barcodeuserprofile__gender_barcode=pull_settings.gender_setting
+                    barcodeuserprofile__gender_barcode=pull_settings.gender_setting  # noqa: E501
                 )
 
                 # Usage filter: Exclude if used by ANYONE in last 5 mins
@@ -187,7 +206,7 @@ def generate_barcode(user) -> dict:
             if candidate:
                 settings.barcode = candidate
                 settings.save()
-        
+
         # Use the user-selected barcode
         selected = settings.barcode
 
@@ -215,7 +234,7 @@ def generate_barcode(user) -> dict:
         # Permission check:
         # - Users can always use their own barcodes
         # - For barcodes owned by others:
-        #   * Only DynamicBarcode is eligible, and only if share_with_others=True
+        #   * Only DynamicBarcode is eligible, and only if share_with_others=True  # noqa: E501
         if selected.user != user:
             if selected.barcode_type != BARCODE_DYNAMIC:
                 result.update(status="error", message="Permission Denied.")

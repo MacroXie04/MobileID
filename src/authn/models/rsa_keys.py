@@ -24,12 +24,17 @@ class RSAKeyPair(models.Model):
 
     # Public key (PEM format) - safe to expose via API
     public_key = models.TextField(
-        help_text="RSA public key in PEM format (BEGIN PUBLIC KEY...END PUBLIC KEY)"
+        help_text=(
+            "RSA public key in PEM format (BEGIN PUBLIC KEY...END PUBLIC KEY)"
+        )
     )
 
     # Private key (PEM format) - NEVER exposed, encrypted at rest if possible
     private_key = models.TextField(
-        help_text="RSA private key in PEM format (BEGIN PRIVATE KEY...END PRIVATE KEY)"
+        help_text=(
+            "RSA private key in PEM format (BEGIN PRIVATE KEY...END PRIVATE "
+            "KEY)"
+        )
     )
 
     # Key size (2048 or 4096)
@@ -43,7 +48,10 @@ class RSAKeyPair(models.Model):
     is_active = models.BooleanField(
         default=True,
         db_index=True,
-        help_text="Whether this key pair is currently active for encryption/decryption",
+        help_text=(
+            "Whether this key pair is currently active for encryption/"
+            "decryption"
+        ),
     )
 
     # Timestamps

@@ -30,7 +30,14 @@ class BarcodeUserProfileAdmin(admin.ModelAdmin):
     fieldsets = (
         (
             "Profile",
-            {"fields": ("linked_barcode", "name", "information_id", "gender_barcode")},
+            {
+                "fields": (
+                    "linked_barcode",
+                    "name",
+                    "information_id",
+                    "gender_barcode",
+                )
+            },
         ),
         (
             "Avatar (PNG base64 128x128)",
@@ -41,7 +48,10 @@ class BarcodeUserProfileAdmin(admin.ModelAdmin):
     @admin.display(description="Linked Barcode")
     def linked_barcode_display(self, obj):
         try:
-            return f"...{obj.linked_barcode.barcode[-4:]} ({obj.linked_barcode.barcode_type})"
+            return (
+                f"...{obj.linked_barcode.barcode[-4:]} "
+                f"({obj.linked_barcode.barcode_type})"
+            )
         except Exception:
             return "-"
 
@@ -49,7 +59,8 @@ class BarcodeUserProfileAdmin(admin.ModelAdmin):
     def avatar_preview(self, obj):
         if obj.user_profile_img:
             return format_html(
-                '<img src="data:image/png;base64,{}" style="height:64px;width:64px;border-radius:8px;object-fit:cover;" />',
+                '<img src="data:image/png;base64,{}" style="height:64px;'
+                'width:64px;border-radius:8px;object-fit:cover;" />',
                 obj.user_profile_img,
             )
         return "-"

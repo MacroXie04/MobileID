@@ -60,7 +60,9 @@ class UCMercedConfig:
     SLEEP_DURATION = 2
 
     # Session cookie
-    DEFAULT_SESSION_COOKIE = "session_for%3Aindex_php=8e6df98bc61073a5ac6ba55eb92a9045"
+    DEFAULT_SESSION_COOKIE = (
+        "session_for%3Aindex_php=8e6df98bc61073a5ac6ba55eb92a9045"
+    )
 
     # Headers
     DEFAULT_HEADERS = {
@@ -137,20 +139,27 @@ class WebDriverManager:
             chrome_options.binary_location = "/usr/bin/chromium"
             logger.info("Using Chromium (apt) at /usr/bin/chromium")
         else:
-            raise FileNotFoundError("No Chrome/Chromium found at /usr/bin or /snap/bin")
+            raise FileNotFoundError(
+                "No Chrome/Chromium found at /usr/bin or /snap/bin"
+            )
 
         try:
             service = Service(ChromeDriverManager().install())
-            logger.info("Using ChromeDriver from webdriver-manager (auto-matched)")
+            logger.info(
+                "Using ChromeDriver from webdriver-manager (auto-matched)"
+            )
         except Exception as e:
             logger.warning(
-                f"webdriver-manager failed ({e}); falling back to /usr/bin/chromedriver"
+                f"webdriver-manager failed ({e}); falling back to "
+                "/usr/bin/chromedriver"
             )
             service = Service("/usr/bin/chromedriver")
 
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.implicitly_wait(UCMercedConfig.IMPLICIT_WAIT)
-        logger.info(f"WebDriver initialized successfully on {platform.system()}")
+        logger.info(
+            f"WebDriver initialized successfully on {platform.system()}"
+        )
         return driver
 
 
@@ -162,7 +171,11 @@ class UCMercedMobileIdClient:
         self.config = UCMercedConfig()
 
     def send_otc(
-        self, mobile_id_rand: str, student_id: str, barcode: str, user_cookies: str
+        self,
+        mobile_id_rand: str,
+        student_id: str,
+        barcode: str,
+        user_cookies: str,
     ) -> ApiResponse:
         """
         Send OTC (One-Time Code) using provided parameters.
@@ -171,7 +184,8 @@ class UCMercedMobileIdClient:
             mobile_id_rand: Random mobile ID code
             student_id: Student ID number
             barcode: Barcode string
-            user_cookies: Raw Cookie header string from the authenticated browser session
+        user_cookies: Raw Cookie header string from the authenticated browser
+                      session
 
         Returns:
             ApiResponse object with status and details
@@ -180,10 +194,12 @@ class UCMercedMobileIdClient:
 
         try:
             with WebDriverManager(self.headless) as driver:
-                # Enable network and set headers to mirror the provided cURL as closely as possible
+                # Enable network and set headers to mirror the provided cURL
+                # as closely as possible
                 driver.execute_cdp_cmd("Network.enable", {})
 
-                # Some headers (like Cookie) are best applied via CDP extra headers
+                # Some headers (like Cookie) are best applied via CDP extra
+                # headers
                 ajax_headers = {
                     "Accept": "*/*",
                     "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
@@ -193,11 +209,14 @@ class UCMercedMobileIdClient:
                     "Referer": self.config.MOBILE_ID_URL,
                     "DNT": "1",
                     "X-Requested-With": "XMLHttpRequest",
-                    # UA hints and sec headers are best-effort; harmless if ignored
+                    # UA hints and sec headers are best-effort; harmless if ignored  # noqa: E501
                     "Sec-Fetch-Dest": "empty",
                     "Sec-Fetch-Mode": "cors",
                     "Sec-Fetch-Site": "same-origin",
-                    "sec-ch-ua": '"Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"',
+                    "sec-ch-ua": (
+                        '"Not;A=Brand";v="99", "Microsoft Edge";v="139", '
+                        '"Chromium";v="139"'
+                    ),
                     "sec-ch-ua-mobile": "?0",
                     "sec-ch-ua-platform": '"macOS"',
                     # Include the authenticated cookies captured from the user
@@ -210,7 +229,7 @@ class UCMercedMobileIdClient:
                         "Network.setUserAgentOverride",
                         {
                             "userAgent": (
-                                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "  # noqa: E501
                                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                                 "Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"
                             )
@@ -235,7 +254,9 @@ class UCMercedMobileIdClient:
                 )
 
                 # Prepare the JavaScript payload using fetch()
-                js_payload = self._build_js_payload(mobile_id_rand, student_id, barcode)
+                js_payload = self._build_js_payload(
+                    mobile_id_rand, student_id, barcode
+                )
 
                 # Execute the AJAX request
                 driver.execute_script(js_payload)
@@ -251,7 +272,9 @@ class UCMercedMobileIdClient:
 
                 # Determine success/failure
                 if self._is_success_response(response_text):
-                    logger.info(f"OTC sent successfully with code: {mobile_id_rand}")
+                    logger.info(
+                        f"OTC sent successfully with code: {mobile_id_rand}"
+                    )
                     return ApiResponse(
                         status="success",
                         code=mobile_id_rand,
@@ -266,7 +289,9 @@ class UCMercedMobileIdClient:
                     )
 
         except TimeoutException:
-            error_msg = f"Timeout waiting for response with code: {mobile_id_rand}"
+            error_msg = (
+                f"Timeout waiting for response with code: {mobile_id_rand}"
+            )
             logger.error(error_msg)
             return ApiResponse(status="error", error=error_msg)
 
@@ -283,12 +308,14 @@ class UCMercedMobileIdClient:
     def _build_js_payload(
         self, mobile_id_rand: str, student_id: str, barcode: str
     ) -> str:
-        """Build JavaScript fetch payload for AJAX request, mirroring the provided cURL.
+        """Build JavaScript fetch payload for AJAX request, mirroring the provided cURL.  # noqa: E501
 
         Ensures student ID is prefixed with 'S'.
         """
         # Ensure the student ID starts with 'S'
-        student_id_formatted = f"S{re.sub(r'^s?', '', student_id, flags=re.IGNORECASE)}"
+        student_id_formatted = (
+            f"S{re.sub(r'^s?', '', student_id, flags=re.IGNORECASE)}"
+        )
 
         # Safely encode parameters for x-www-form-urlencoded
         encoded_params = (
@@ -302,7 +329,7 @@ class UCMercedMobileIdClient:
             fetch("/mobileid/rand.php", {{
                 method: "POST",
                 headers: {{
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",  # noqa: E501
                     "X-Requested-With": "XMLHttpRequest"
                 }},
                 body: "{encoded_params}",
@@ -313,7 +340,7 @@ class UCMercedMobileIdClient:
                     document.body.innerHTML = "<pre>" + text + "</pre>";
                 }})
                 .catch(function(err) {{
-                    document.body.innerHTML = "<pre>ERROR: Request failed</pre>";
+                    document.body.innerHTML = "<pre>ERROR: Request failed</pre>";  # noqa: E501
                 }});
         }} catch (e) {{
             document.body.innerHTML = "<pre>ERROR: Request failed</pre>";
@@ -324,7 +351,8 @@ class UCMercedMobileIdClient:
         """Check if response indicates success."""
         success_indicators = ["added", "success", "complete"]
         return any(
-            indicator in response_text.lower() for indicator in success_indicators
+            indicator in response_text.lower()
+            for indicator in success_indicators
         )
 
     def auto_send_code(self, user_cookies: str) -> ApiResponse:
@@ -352,11 +380,15 @@ class UCMercedMobileIdClient:
                 logger.error(error_msg)
                 return ApiResponse(status="error", error=error_msg)
 
-            logger.info(f"Trying {len(mobile_data.mobile_id_rand_array)} codes")
+            logger.info(
+                f"Trying {len(mobile_data.mobile_id_rand_array)} codes"
+            )
 
-            for i, mobile_id_rand in enumerate(mobile_data.mobile_id_rand_array, 1):
+            for i, mobile_id_rand in enumerate(
+                mobile_data.mobile_id_rand_array, 1
+            ):
                 logger.info(
-                    f"Attempting code {i}/{len(mobile_data.mobile_id_rand_array)}: {mobile_id_rand}"
+                    f"Attempting code {i}/{len(mobile_data.mobile_id_rand_array)}: {mobile_id_rand}"  # noqa: E501
                 )
 
                 response = self.send_otc(
@@ -368,7 +400,7 @@ class UCMercedMobileIdClient:
 
                 if response.status == "success":
                     logger.info(
-                        f"Successfully authenticated with code: {mobile_id_rand}"
+                        f"Successfully authenticated with code: {mobile_id_rand}"  # noqa: E501
                     )
                     return response
 
@@ -433,11 +465,11 @@ class UCMercedMobileIdClient:
             try:
                 raw = base64.b64decode(b64_str, validate=False)
                 size = len(raw)
-                # Re-encode to ensure clean, unbroken base64 for the escape sequence
+                # Re-encode to ensure clean, unbroken base64 for the escape sequence  # noqa: E501
                 b64_clean = base64.b64encode(raw).decode("ascii")
                 # iTerm2 inline image escape
-                # \033]1337;File=inline=1;size=<bytes>;width=auto;height=auto:<base64>\a
-                esc = f"\033]1337;File=inline=1;size={size};width=auto;height=auto;preserveAspectRatio=1:{b64_clean}\a"
+                # \033]1337;File=inline=1;size=<bytes>;width=auto;height=auto:<base64>\a  # noqa: E501
+                esc = f"\033]1337;File=inline=1;size={size};width=auto;height=auto;preserveAspectRatio=1:{b64_clean}\a"  # noqa: E501
                 print(esc)
                 return True
             except Exception:
@@ -455,7 +487,9 @@ class UCMercedMobileIdClient:
 
         # Barcode
         if mobile_data.barcode:
-            barcode_preview = shorten(mobile_data.barcode, width=30, placeholder="...")
+            barcode_preview = shorten(
+                mobile_data.barcode, width=30, placeholder="..."
+            )
             print(f"[OK]   {'Barcode':<{LABEL_W}} : {barcode_preview}")
         else:
             print(f"[MISS] {'Barcode':<{LABEL_W}} : Not found")
@@ -463,7 +497,7 @@ class UCMercedMobileIdClient:
         # Mobile ID Codes
         if mobile_data.mobile_id_rand_array:
             print(
-                f"[OK]   {'Mobile ID Codes':<{LABEL_W}} : {len(mobile_data.mobile_id_rand_array)} found"
+                f"[OK]   {'Mobile ID Codes':<{LABEL_W}} : {len(mobile_data.mobile_id_rand_array)} found"  # noqa: E501
             )
             line("Sample Codes", mobile_data.mobile_id_rand_array[:3])
         else:
@@ -499,12 +533,16 @@ class UCMercedMobileIdClient:
                 # Extract format
                 format_match = re.search(r"data:image/([^;]+)", img_base64)
                 img_format = (
-                    format_match.group(1).upper() if format_match else "Unknown"
+                    format_match.group(1).upper()
+                    if format_match
+                    else "Unknown"
                 )
 
                 # Extract base64 data
                 base64_data = (
-                    img_base64.split(",")[1] if "," in img_base64 else img_base64
+                    img_base64.split(",")[1]
+                    if "," in img_base64
+                    else img_base64
                 )
 
                 # Calculate approximate size in KB
@@ -572,18 +610,18 @@ class UCMercedMobileIdClient:
                 "array": r"var\s+mobileid_rand_array\s*=\s*(\[[^\]]*\])",
                 "student_id": r"studentid:\s*[\"'](.*?)[\"']",
                 "barcode": r"barcode:\s*[\"'](.*?)[\"']",
-                "profile_img_js": r"var\s+profile_img_base64\s*=\s*[\"'](data:image\/[a-zA-Z]+;base64,[^\"']*)[\"']",
-                "profile_img_tag": r"<img[^>]*src=[\"'](data:image\/[^;]+;base64,[A-Za-z0-9+\/=]+)[\"'][^>]*>",
-                # Enhanced username patterns based on your updated HTML structure
-                "username_h4_primary": r'<h4[^>]*class="white-w4"[^>]*style="[^"]*color:\s*white[^"]*"[^>]*>([^<]+)</h4>',
+                "profile_img_js": r"var\s+profile_img_base64\s*=\s*[\"'](data:image\/[a-zA-Z]+;base64,[^\"']*)[\"']",  # noqa: E501  # noqa: E501
+                "profile_img_tag": r"<img[^>]*src=[\"'](data:image\/[^;]+;base64,[A-Za-z0-9+\/=]+)[\"'][^>]*>",  # noqa: E501  # noqa: E501
+                # Enhanced username patterns based on your updated HTML structure  # noqa: E501
+                "username_h4_primary": r'<h4[^>]*class="white-w4"[^>]*style="[^"]*color:\s*white[^"]*"[^>]*>([^<]+)</h4>',  # noqa: E501  # noqa: E501
                 # Exact match for your structure
-                "username_h4_flexible": r'<h4[^>]*class=["\']?[^"\']*white-w4[^"\']*["\']?[^>]*>([^<]+)</h4>',
+                "username_h4_flexible": r'<h4[^>]*class=["\']?[^"\']*white-w4[^"\']*["\']?[^>]*>([^<]+)</h4>',  # noqa: E501  # noqa: E501
                 # More flexible class matching
-                "username_h4_style": r'<h4[^>]*style="[^"]*color:\s*white[^"]*"[^>]*>([^<]+)</h4>',
+                "username_h4_style": r'<h4[^>]*style="[^"]*color:\s*white[^"]*"[^>]*>([^<]+)</h4>',  # noqa: E501  # noqa: E501
                 # Style-based matching
-                "username_h4_any": r"<h4[^>]*>([A-Za-z\s]+(?:Xie|[A-Z][a-z]+))</h4>",  # Any h4 with name-like content
-                "username_js": r"(?:username|name|fullname):\s*[\"'](.*?)[\"']",  # JavaScript variables
-                "display_name": r"<.*?class=[\"'][^\"']*(?:name|username|user-name)[^\"']*[\"'][^>]*>([^<]+)<",
+                "username_h4_any": r"<h4[^>]*>([A-Za-z\s]+(?:Xie|[A-Z][a-z]+))</h4>",  # noqa: E501  # noqa: E501
+                "username_js": r"(?:username|name|fullname):\s*[\"'](.*?)[\"']",  # noqa: E501  # noqa: E501
+                "display_name": r"<.*?class=[\"'][^\"']*(?:name|username|user-name)[^\"']*[\"'][^>]*>([^<]+)<",  # noqa: E501  # noqa: E501
                 # Generic name classes
             }
 
@@ -594,7 +632,9 @@ class UCMercedMobileIdClient:
                 try:
                     array_str = array_match.group(1)
                     mobile_id_rand_array = json.loads(array_str)
-                    logger.info(f"Found {len(mobile_id_rand_array)} mobile ID codes")
+                    logger.info(
+                        f"Found {len(mobile_id_rand_array)} mobile ID codes"
+                    )
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse mobile ID array: {e}")
 
@@ -607,16 +647,18 @@ class UCMercedMobileIdClient:
                 student_id = re.sub(r"[^0-9]", "", raw_student_id)
                 if student_id:
                     logger.info(
-                        f"Found student ID: {student_id} (cleaned from: {raw_student_id})"
+                        f"Found student ID: {student_id} (cleaned from: {raw_student_id})"  # noqa: E501
                     )
                 else:
-                    logger.warning(f"Student ID contained no digits: {raw_student_id}")
+                    logger.warning(
+                        f"Student ID contained no digits: {raw_student_id}"
+                    )
                     student_id = None
 
             # Extract username with multiple fallback patterns
             username = None
 
-            # Try primary exact match pattern first (most specific for your HTML structure)
+            # Try primary exact match pattern first (most specific for your HTML structure)  # noqa: E501
             username_primary_match = re.search(
                 patterns["username_h4_primary"], html_content, re.IGNORECASE
             )
@@ -626,38 +668,50 @@ class UCMercedMobileIdClient:
             else:
                 # Try flexible class-based pattern
                 username_flexible_match = re.search(
-                    patterns["username_h4_flexible"], html_content, re.IGNORECASE
+                    patterns["username_h4_flexible"],
+                    html_content,
+                    re.IGNORECASE,
                 )
                 if username_flexible_match:
                     username = username_flexible_match.group(1).strip()
-                    logger.info(f"Found username with flexible pattern: {username}")
+                    logger.info(
+                        f"Found username with flexible pattern: {username}"
+                    )
                 else:
                     # Try style-based pattern
                     username_style_match = re.search(
-                        patterns["username_h4_style"], html_content, re.IGNORECASE
+                        patterns["username_h4_style"],
+                        html_content,
+                        re.IGNORECASE,
                     )
                     if username_style_match:
                         username = username_style_match.group(1).strip()
-                        logger.info(f"Found username with style pattern: {username}")
+                        logger.info(
+                            f"Found username with style pattern: {username}"
+                        )
                     else:
                         # Try any h4 with name-like content
                         username_any_match = re.search(
-                            patterns["username_h4_any"], html_content, re.IGNORECASE
+                            patterns["username_h4_any"],
+                            html_content,
+                            re.IGNORECASE,
                         )
                         if username_any_match:
                             username = username_any_match.group(1).strip()
                             logger.info(
-                                f"Found username with any h4 pattern: {username}"
+                                f"Found username with any h4 pattern: {username}"  # noqa: E501
                             )
                         else:
                             # Try JavaScript variable pattern
                             username_js_match = re.search(
-                                patterns["username_js"], html_content, re.IGNORECASE
+                                patterns["username_js"],
+                                html_content,
+                                re.IGNORECASE,
                             )
                             if username_js_match:
                                 username = username_js_match.group(1).strip()
                                 logger.info(
-                                    f"Found username in JS variable: {username}"
+                                    f"Found username in JS variable: {username}"  # noqa: E501
                                 )
                             else:
                                 # Try generic name class pattern
@@ -667,18 +721,26 @@ class UCMercedMobileIdClient:
                                     re.IGNORECASE,
                                 )
                                 if display_name_match:
-                                    username = display_name_match.group(1).strip()
+                                    username = display_name_match.group(
+                                        1
+                                    ).strip()
                                     logger.info(
-                                        f"Found username in name class: {username}"
+                                        f"Found username in name class: {username}"  # noqa: E501
                                     )
                                 else:
-                                    logger.warning("No username pattern matched")
+                                    logger.warning(
+                                        "No username pattern matched"
+                                    )
 
             # Clean up username if found
             if username:
                 # Remove any HTML entities and extra whitespace
-                username = re.sub(r"&[a-zA-Z]+;", "", username)  # Remove HTML entities
-                username = re.sub(r"\s+", " ", username).strip()  # Normalize whitespace
+                username = re.sub(
+                    r"&[a-zA-Z]+;", "", username
+                )  # Remove HTML entities
+                username = re.sub(
+                    r"\s+", " ", username
+                ).strip()  # Normalize whitespace
                 # Remove any remaining HTML tags
                 username = re.sub(r"<[^>]+>", "", username)
                 if username:
@@ -695,13 +757,17 @@ class UCMercedMobileIdClient:
 
             # Extract profile image
             profile_img_base64 = None
-            profile_img_match = re.search(patterns["profile_img_js"], html_content)
+            profile_img_match = re.search(
+                patterns["profile_img_js"], html_content
+            )
             if profile_img_match:
                 profile_img_base64 = profile_img_match.group(1)
                 logger.info("Found profile image in JavaScript variable")
             else:
                 # Try img tag as fallback
-                img_src_match = re.search(patterns["profile_img_tag"], html_content)
+                img_src_match = re.search(
+                    patterns["profile_img_tag"], html_content
+                )
                 if img_src_match:
                     profile_img_base64 = img_src_match.group(1)
                     logger.info("Found profile image in img tag")
@@ -727,12 +793,15 @@ def auto_send_code(
 ) -> Optional[Dict[str, str]]:
     """Send OTC codes automatically using a headless browser session.
 
-    Returns a dict like {"code": str, "response": str} on success, otherwise None.
+    Returns a dict like {"code": str, "response": str} on success, otherwise None.  # noqa: E501
     """
     client = UCMercedMobileIdClient(headless=headless)
     response = client.auto_send_code(user_cookies)
     if response and response.status == "success":
-        return {"code": response.code or "", "response": response.response or ""}
+        return {
+            "code": response.code or "",
+            "response": response.response or "",
+        }
     return None
 
 
@@ -742,9 +811,9 @@ if __name__ == "__main__":
     client = UCMercedMobileIdClient(headless=True)
 
     # Example: Get mobile ID data
-    user_cookie = r"""_scid=njgcOEfixQa9v_yNlmcaS7NN2LiUwg2g; _tt_enable_cookie=1; _ttp=01K10A60004X4B79PVZSMB962Z_.tt.1; _fbp=fb.1.1753431080973.171835158316531023; _mkto_trk=id:976-RKA-196&token:_mch-ucmerced.edu-287fe55e56c57e83ed76955576ad8151; _ga_TSE2LSBDQZ=GS2.1.s1753542745$o1$g0$t1753542745$j60$l0$h0; _ga_QHQ86LM5JZ=GS2.1.s1753680653$o2$g0$t1753680653$j60$l0$h0; _ga=GA1.2.34565484.1753431075; _ga_8F7K2W04Y2=GS2.2.s1753691907$o1$g1$t1753691916$j51$l0$h0; _sctr=1%7C1755014400000; nmstat=874ae77e-31c0-3db1-0a94-7e352a5a73c8; _scid_r=orgcOEfixQa9v_yNlmcaS7NN2LiUwg2gUV8nhQ; _uetvid=f2200fb0692e11f0b0554f688142cbe8; ttcsid=1755528621758::Pn-65uLzJipQ9aU0ZH4c.8.1755528621758; ttcsid_C8LNTT0H473GVAFU5FV0=1755528621758::r0ESk1Wqvt3l0_j7-MKw.8.1755528622487; session_for%3Aindex_php=ST-1756008062765-2c0fAHpXLQQ9a5BADCK0UHU4l; _pk_ref.1.cb1f=%5B%22%22%2C%22%22%2C1756008063%2C%22https%3A%2F%2Fapi-70cee857.duosecurity.com%2F%22%5D; _pk_ses.1.cb1f=*; _pk_id.1.cb1f=8fd908bc11af365d.1750952586.12.1756008776.1756008063."""  # noqa: E501
+    user_cookie = r"""_scid=njgcOEfixQa9v_yNlmcaS7NN2LiUwg2g; _tt_enable_cookie=1; _ttp=01K10A60004X4B79PVZSMB962Z_.tt.1; _fbp=fb.1.1753431080973.171835158316531023; _mkto_trk=id:976-RKA-196&token:_mch-ucmerced.edu-287fe55e56c57e83ed76955576ad8151; _ga_TSE2LSBDQZ=GS2.1.s1753542745$o1$g0$t1753542745$j60$l0$h0; _ga_QHQ86LM5JZ=GS2.1.s1753680653$o2$g0$t1753680653$j60$l0$h0; _ga=GA1.2.34565484.1753431075; _ga_8F7K2W04Y2=GS2.2.s1753691907$o1$g1$t1753691916$j51$l0$h0; _sctr=1%7C1755014400000; nmstat=874ae77e-31c0-3db1-0a94-7e352a5a73c8; _scid_r=orgcOEfixQa9v_yNlmcaS7NN2LiUwg2gUV8nhQ; _uetvid=f2200fb0692e11f0b0554f688142cbe8; ttcsid=1755528621758::Pn-65uLzJipQ9aU0ZH4c.8.1755528621758; ttcsid_C8LNTT0H473GVAFU5FV0=1755528621758::r0ESk1Wqvt3l0_j7-MKw.8.1755528622487; session_for%3Aindex_php=ST-1756008062765-2c0fAHpXLQQ9a5BADCK0UHU4l; _pk_ref.1.cb1f=%5B%22%22%2C%22%22%2C1756008063%2C%22https%3A%2F%2Fapi-70cee857.duosecurity.com%2F%22%5D; _pk_ses.1.cb1f=*; _pk_id.1.cb1f=8fd908bc11af365d.1750952586.12.1756008776.1756008063."""  # noqa: E501  # noqa: E501  # noqa: E501
     mobile_data = client.get_mobile_id_data(user_cookie)
 
     print(mobile_data.profile_img_base64)
 
-    # The fetch results will be automatically printed by the enhanced get_mobile_id_data method
+    # The fetch results will be automatically printed by the enhanced get_mobile_id_data method  # noqa: E501

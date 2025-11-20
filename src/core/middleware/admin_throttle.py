@@ -1,7 +1,8 @@
 """
 Admin login throttling middleware.
 
-Applies rate limiting to Django admin login POST requests to prevent brute force attacks.
+Applies rate limiting to Django admin login POST requests to prevent brute
+force attacks.
 """
 
 from django.conf import settings
@@ -31,7 +32,8 @@ class AdminLoginThrottleMiddleware:
         if request.method == "POST" and request.path == self.admin_login_path:
             if self._is_throttled(request):
                 return HttpResponse(
-                    "Too many login attempts. Please try again later.", status=429
+                    "Too many login attempts. Please try again later.",
+                    status=429,
                 )
 
         return self.get_response(request)

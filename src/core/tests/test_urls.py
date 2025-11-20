@@ -26,10 +26,10 @@ class URLConfigurationTest(TestCase):
         with override_settings(ADMIN_URL_PATH="custom-admin"):
             reload(core.urls)
             clear_url_caches()
-            
+
             url = reverse("admin:index")
             self.assertTrue(url.startswith("/custom-admin/"))
-            
+
         # Restore original state
         reload(core.urls)
         clear_url_caches()

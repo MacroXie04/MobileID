@@ -17,7 +17,10 @@ class UserProfileModelTest(TestCase):
             user=self.user,
             name="Test User",
             information_id="TEST123",
-            user_profile_img="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
+            user_profile_img=(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+"  # noqa: E501
+                "hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+            ),
         )
 
         self.assertEqual(profile.user, self.user)
@@ -39,7 +42,9 @@ class UserProfileModelTest(TestCase):
 
     def test_user_profile_unique_uuid(self):
         """Test that each UserProfile gets a unique UUID"""
-        user2 = User.objects.create_user(username="testuser2", password="testpass123")
+        user2 = User.objects.create_user(
+            username="testuser2", password="testpass123"
+        )
 
         profile1 = UserProfile.objects.create(
             user=self.user, name="User 1", information_id="ID1"

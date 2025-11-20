@@ -1,7 +1,7 @@
 """
 Development Django settings for core project.
 
-This file imports base settings and overrides them with development-specific values.
+This file imports base settings and overrides them with development-specific values.  # noqa: E501
 """
 
 from .base import *  # noqa: F403, F401
@@ -38,7 +38,9 @@ CSRF_TRUSTED_ORIGINS = csv_env(
 
 # If using django-cors-headers:
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
-CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
+CORS_ALLOW_CREDENTIALS = (
+    env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
+)
 
 # Cookies - Development: insecure cookies allowed
 SESSION_COOKIE_SAMESITE = "Lax"
@@ -58,7 +60,7 @@ SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 X_FRAME_OPTIONS = "SAMEORIGIN"
 CSP_DEFAULT_POLICY = env(
     "CSP_DEFAULT_POLICY",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:;",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:;",  # noqa: E501
 )
 
 # Development logging - more verbose
@@ -67,7 +69,7 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",  # noqa: E501
             "style": "{",
         },
     },

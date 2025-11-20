@@ -38,7 +38,8 @@ class UserRegistrationAPITest(APITestCase):
         cache.clear()
         data = self.registration_data.copy()
         data["user_profile_img_base64"] = (
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+"
+            "hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
         )
 
         url = reverse("authn:api_register")
@@ -90,5 +91,7 @@ class UserRegistrationAPITest(APITestCase):
     def test_registration_rate_limit(self):
         url = reverse("authn:api_register")
 
-        response1 = self.client.post(url, self.registration_data, format="json")
+        response1 = self.client.post(
+            url, self.registration_data, format="json"
+        )
         self.assertIn(response1.status_code, [200, 429])

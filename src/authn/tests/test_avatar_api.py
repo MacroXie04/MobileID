@@ -22,7 +22,9 @@ class AvatarUploadAPITest(APITestCase):
         create_user_profile(self.user, "Test User", "TEST123", None)
 
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
+        )
 
     def _create_test_image(self):
         image = Image.new("RGB", (100, 100), color="red")
@@ -39,7 +41,9 @@ class AvatarUploadAPITest(APITestCase):
             "test.png", image_content, content_type="image/png"
         )
 
-        response = self.client.post(url, {"avatar": image_file}, format="multipart")
+        response = self.client.post(
+            url, {"avatar": image_file}, format="multipart"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["success"])
@@ -59,7 +63,9 @@ class AvatarUploadAPITest(APITestCase):
             "test.txt", b"not an image", content_type="text/plain"
         )
 
-        response = self.client.post(url, {"avatar": text_file}, format="multipart")
+        response = self.client.post(
+            url, {"avatar": text_file}, format="multipart"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(response.data["success"])
@@ -68,11 +74,14 @@ class AvatarUploadAPITest(APITestCase):
         url = reverse("authn:api_avatar_upload")
 
         with patch(
-            "django.core.files.uploadedfile.InMemoryUploadedFile.size", 6 * 1024 * 1024
+            "django.core.files.uploadedfile.InMemoryUploadedFile.size",
+            6 * 1024 * 1024,
         ):
             image_file = self._create_test_image()
 
-            response = self.client.post(url, {"avatar": image_file}, format="multipart")
+            response = self.client.post(
+                url, {"avatar": image_file}, format="multipart"
+            )
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
             self.assertFalse(response.data["success"])

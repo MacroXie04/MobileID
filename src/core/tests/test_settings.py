@@ -61,16 +61,22 @@ class SettingsConfigurationTest(TestCase):
 
     def test_rest_framework_configuration(self):
         """Test REST framework configuration"""
-        self.assertIn("DEFAULT_AUTHENTICATION_CLASSES", settings.REST_FRAMEWORK)
+        self.assertIn(
+            "DEFAULT_AUTHENTICATION_CLASSES", settings.REST_FRAMEWORK
+        )
         self.assertIn("DEFAULT_PERMISSION_CLASSES", settings.REST_FRAMEWORK)
 
         # Check authentication classes
-        auth_classes = settings.REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"]
+        auth_classes = settings.REST_FRAMEWORK[
+            "DEFAULT_AUTHENTICATION_CLASSES"
+        ]
         self.assertIn(
-            "authn.middleware.authentication.CookieJWTAuthentication", auth_classes
+            "authn.middleware.authentication.CookieJWTAuthentication",
+            auth_classes,
         )
         self.assertIn(
-            "rest_framework_simplejwt.authentication.JWTAuthentication", auth_classes
+            "rest_framework_simplejwt.authentication.JWTAuthentication",
+            auth_classes,
         )
 
     def test_jwt_configuration(self):
@@ -130,7 +136,9 @@ class EnvironmentVariableTest(TestCase):
         from django.conf import settings
 
         # Need to reload settings or test in isolation
-        self.assertTrue(settings.DEBUG or True)  # Test passes in test environment
+        self.assertTrue(
+            settings.DEBUG or True
+        )  # Test passes in test environment
 
     @patch.dict(os.environ, {"DEBUG": "False"})
     def test_debug_false_from_env(self):
@@ -147,7 +155,8 @@ class EnvironmentVariableTest(TestCase):
         self.assertIsInstance(settings.ALLOWED_HOSTS, list)
 
     @patch.dict(
-        os.environ, {"CORS_ALLOWED_ORIGINS": "http://example.com,https://test.com"}
+        os.environ,
+        {"CORS_ALLOWED_ORIGINS": "http://example.com,https://test.com"},
     )
     def test_cors_origins_from_env(self):
         """Test CORS_ALLOWED_ORIGINS parsing from environment"""

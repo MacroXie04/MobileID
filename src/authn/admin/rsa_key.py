@@ -2,9 +2,16 @@ from django.contrib import admin
 from django.utils.html import format_html
 from authn.models import RSAKeyPair
 
+
 @admin.register(RSAKeyPair)
 class RSAKeyPairAdmin(admin.ModelAdmin):
-    list_display = ("kid_short", "key_size", "is_active", "created_at", "rotated_at")
+    list_display = (
+        "kid_short",
+        "key_size",
+        "is_active",
+        "created_at",
+        "rotated_at",
+    )
     list_filter = ("is_active", "key_size", "created_at")
     readonly_fields = (
         "kid",
@@ -34,11 +41,14 @@ class RSAKeyPairAdmin(admin.ModelAdmin):
         key = obj.public_key.strip()
         if len(key) > 100:
             return format_html(
-                '<code style="word-break: break-all;">{}<br/>...<br/>{}</code>',
+                '<code style="word-break: break-all;">{}<br/>...<br/>{}'
+                "</code>",
                 key[:50],
                 key[-50:],
             )
-        return format_html('<code style="word-break: break-all;">{}</code>', key)
+        return format_html(
+            '<code style="word-break: break-all;">{}</code>', key
+        )
 
     @admin.display(description="Private Key Preview")
     def private_key_preview(self, obj):
@@ -48,12 +58,14 @@ class RSAKeyPairAdmin(admin.ModelAdmin):
         key = obj.private_key.strip()
         if len(key) > 100:
             return format_html(
-                '<code style="word-break: break-all; color: #d32f2f;">{}<br/>...<br/>{}</code>',
+                '<code style="word-break: break-all; color: #d32f2f;">{}<br/>'
+                '...<br/>{}</code>',
                 key[:50],
                 key[-50:],
             )
         return format_html(
-            '<code style="word-break: break-all; color: #d32f2f;">{}</code>', key
+            '<code style="word-break: break-all; color: #d32f2f;">{}</code>',
+            key,
         )
 
     def has_delete_permission(self, request, obj=None):
@@ -61,4 +73,3 @@ class RSAKeyPairAdmin(admin.ModelAdmin):
         if obj and obj.is_active:
             return False
         return super().has_delete_permission(request, obj)
-

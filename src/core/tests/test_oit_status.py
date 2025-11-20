@@ -17,7 +17,10 @@ class OITStatusTest(TestCase):
 
     @patch("index.status.OIT.OIT.fetch_data")
     def test_oit_returns_operational_status_for_sso(self, mock_fetch_data):
-        """Test that OIT service returns 'Operational' status for SSO (Single Sign-On)"""
+        """
+        Test that OIT service returns 'Operational' status for SSO
+        (Single Sign-On)
+        """
         # Mock HTML response with SSO service operational
         mock_html = """
         <div class="service">
@@ -31,7 +34,9 @@ class OITStatusTest(TestCase):
 
         self.assertIn("services", status_info)
         self.assertIn("SSO (Single Sign-On)", status_info["services"])
-        self.assertEqual(status_info["services"]["SSO (Single Sign-On)"], "Operational")
+        self.assertEqual(
+            status_info["services"]["SSO (Single Sign-On)"], "Operational"
+        )
 
     @patch("index.status.OIT.OIT.fetch_data")
     def test_oit_returns_operational_status_for_duo_2fa(self, mock_fetch_data):
@@ -73,7 +78,10 @@ class OITStatusTest(TestCase):
     def test_oit_returns_operational_status_for_dining_payment_systems(
         self, mock_fetch_data
     ):
-        """Test that OIT service returns 'Operational' status for Dining Payment Systems"""
+        """
+        Test that OIT service returns 'Operational' status for Dining Payment
+        Systems
+        """
         # Mock HTML response with Dining Payment Systems service operational
         mock_html = """
         <div class="service">
@@ -93,7 +101,10 @@ class OITStatusTest(TestCase):
 
     @patch("index.status.OIT.OIT.fetch_data")
     def test_oit_returns_multiple_services_status(self, mock_fetch_data):
-        """Test that OIT service returns status for multiple services including the required ones"""
+        """
+        Test that OIT service returns status for multiple services including
+        the required ones
+        """
         # Mock HTML response with multiple services
         mock_html = """
         <div class="service">
@@ -117,6 +128,8 @@ class OITStatusTest(TestCase):
 
         status_info = self.oit.get_status()
 
+        self.assertIn("services", status_info)
+
         # Verify all required services are present and operational
         required_services = [
             "SSO (Single Sign-On)",
@@ -131,7 +144,9 @@ class OITStatusTest(TestCase):
 
     @patch("index.status.OIT.OIT.fetch_data")
     def test_oit_handles_service_outage_status(self, mock_fetch_data):
-        """Test that OIT service can handle non-operational status for services"""
+        """
+        Test that OIT service can handle non-operational status for services
+        """
         # Mock HTML response with some services having issues
         mock_html = """
         <div class="service">
@@ -156,11 +171,16 @@ class OITStatusTest(TestCase):
         status_info = self.oit.get_status()
 
         # Verify services are captured with their actual status
-        self.assertEqual(status_info["services"]["SSO (Single Sign-On)"], "Operational")
-        self.assertEqual(status_info["services"]["Duo 2FA"], "Degraded Performance")
+        self.assertEqual(
+            status_info["services"]["SSO (Single Sign-On)"], "Operational"
+        )
+        self.assertEqual(
+            status_info["services"]["Duo 2FA"], "Degraded Performance"
+        )
         self.assertEqual(status_info["services"]["CatCard"], "Operational")
         self.assertEqual(
-            status_info["services"]["Dining Payment Systems"], "Service Disruption"
+            status_info["services"]["Dining Payment Systems"],
+            "Service Disruption",
         )
 
     @patch("index.status.OIT.OIT.fetch_data")
@@ -183,7 +203,7 @@ class OITStatusTest(TestCase):
         self.assertIsInstance(status_info["time"], str)
 
         # Verify time format (should be YYYY-MM-DD HH:MM:SS)
-        time_pattern = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
+        time_pattern = r"\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
         self.assertRegex(status_info["time"], time_pattern)
 
     @patch("requests.get")
@@ -193,7 +213,7 @@ class OITStatusTest(TestCase):
         mock_response = mock_get.return_value
         mock_response.raise_for_status.side_effect = Exception("HTTP Error")
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017
             self.oit.fetch_data()
 
     def test_oit_parse_status_with_empty_html(self):
@@ -206,7 +226,9 @@ class OITStatusTest(TestCase):
 
     def test_oit_parse_status_with_malformed_html(self):
         """Test that OIT service handles malformed HTML gracefully"""
-        malformed_html = "<div>Some malformed content without proper structure</div>"
+        malformed_html = (
+            "<div>Some malformed content without proper structure</div>"
+        )
         data = self.oit.parse_status(malformed_html)
 
         self.assertEqual(data.time, data.time)  # Time should still be set
@@ -215,7 +237,10 @@ class OITStatusTest(TestCase):
         )  # No services found due to malformed HTML
 
     def test_oit_fetch_real_status_from_ucmerced(self):
-        """Test that OIT service can fetch and parse real status from https://status.ucmerced.edu/"""
+        """
+        Test that OIT service can fetch and parse real status from
+        https://status.ucmerced.edu/
+        """
         try:
             # Fetch real status from UC Merced status page
             status_info = self.oit.get_status()
@@ -226,7 +251,8 @@ class OITStatusTest(TestCase):
             self.assertIsInstance(status_info["services"], dict)
             self.assertIsInstance(status_info["time"], str)
 
-            # Verify that we got some services (the page should have many services)
+            # Verify that we got some services (the page should have many
+            # services)
             self.assertGreater(len(status_info["services"]), 0)
 
             # Verify that our required services are present in the real data
@@ -241,22 +267,27 @@ class OITStatusTest(TestCase):
                 self.assertIn(
                     service,
                     status_info["services"],
-                    f"Required service '{service}' not found in real status data",
+                    f"Required service '{service}' not found in real "
+                    f"status data",
                 )
-                # Verify the service has a status (could be Operational, Service Disruption, etc.)
+                # Verify the service has a status (could be Operational,
+                # Service Disruption, etc.)
                 self.assertIsNotNone(status_info["services"][service])
                 self.assertGreater(len(status_info["services"][service]), 0)
 
             # Print the actual status for debugging/information
-            print("\nReal UC Merced Status Retrieved:")
+            print("\\nReal UC Merced Status Retrieved:")
             print(f"Time: {status_info['time']}")
             print(f"Total Services: {len(status_info['services'])}")
             for service in required_services:
                 print(f"{service}: {status_info['services'][service]}")
 
         except Exception as e:
-            # If the real fetch fails (network issues, etc.), we'll skip this test
-            self.skipTest(f"Could not fetch real status from UC Merced: {str(e)}")
+            # If the real fetch fails (network issues, etc.), we'll skip
+            # this test
+            self.skipTest(
+                f"Could not fetch real status from UC Merced: {str(e)}"
+            )
 
     def test_oit_real_status_contains_operational_services(self):
         """Test that real UC Merced status contains operational services"""
@@ -278,7 +309,8 @@ class OITStatusTest(TestCase):
                 "No operational services found in real status data",
             )
 
-            # Verify our required services are operational (based on the current status page)
+            # Verify our required services are operational (based on the
+            # current status page)
             required_services = [
                 "SSO (Single Sign-On)",
                 "Duo 2FA",
@@ -297,11 +329,14 @@ class OITStatusTest(TestCase):
                 len(operational_required),
                 0,
                 f"None of the required services are operational. "
-                f"Current status: {[(s, status_info['services'].get(s, 'Not Found')) for s in required_services]}",
+                f"Current status: {[(s, status_info['services'].get(s, 'Not Found')) for s in required_services]}",  # noqa: E501
             )
 
-            print(f"\nOperational Required Services: {operational_required}")
+            print(f"\\nOperational Required Services: {operational_required}")
 
         except Exception as e:
-            # If the real fetch fails (network issues, etc.), we'll skip this test
-            self.skipTest(f"Could not fetch real status from UC Merced: {str(e)}")
+            # If the real fetch fails (network issues, etc.), we'll skip
+            # this test
+            self.skipTest(
+                f"Could not fetch real status from UC Merced: {str(e)}"
+            )

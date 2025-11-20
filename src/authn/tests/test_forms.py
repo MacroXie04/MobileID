@@ -51,7 +51,8 @@ class UserFormTest(TestCase):
             "name": "Test User",
             "information_id": "TEST123",
             "user_profile_img_base64": "data:image/png;base64,"
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+"
+            "hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
         }
 
         form = UserRegisterForm(data=form_data)
@@ -66,7 +67,10 @@ class UserFormTest(TestCase):
             "password2": "testpass123",
             "name": "Test User",
             "information_id": "TEST123",
-            "user_profile_img_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
+            "user_profile_img_base64": (
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+"  # noqa: E501
+                "hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+            ),
         }
 
         form = UserRegisterForm(data=form_data)

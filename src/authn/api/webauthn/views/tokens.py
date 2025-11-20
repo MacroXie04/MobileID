@@ -6,7 +6,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from django.utils.decorators import method_decorator
@@ -20,7 +23,7 @@ from ..serializers import (
 LOGIN_VIEW_THROTTLES = (LoginRateThrottle, UsernameRateThrottle)
 
 
-@method_decorator(ensure_csrf_cookie, name='dispatch')
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class CookieTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
     throttle_scope = "login"
@@ -46,16 +49,19 @@ class CookieTokenRefreshView(TokenRefreshView):
 
     def post(self, request, *args, **kwargs):
         # Check if refresh token is in cookies but not in body
-        if "refresh" not in request.data and "refresh_token" in request.COOKIES:
+        if (
+            "refresh" not in request.data
+            and "refresh_token" in request.COOKIES
+        ):
             data = request.data.copy()
             data["refresh"] = request.COOKIES["refresh_token"]
-            
+
             serializer = self.get_serializer(data=data)
             try:
                 serializer.is_valid(raise_exception=True)
             except TokenError as e:
                 raise InvalidToken(e.args[0])
-            
+
             response = Response(serializer.validated_data, status=200)
         else:
             response = super().post(request, *args, **kwargs)
@@ -90,7 +96,8 @@ def api_logout(request):
 class RSALoginView(TokenObtainPairView):
     """
     Login view that ENFORCES RSA-encrypted password submissions.
-    This is the new secure login endpoint that requires encrypted passwords with nonce.
+    This is the new secure login endpoint that requires encrypted passwords
+    with nonce.
     """
 
     permission_classes = [AllowAny]

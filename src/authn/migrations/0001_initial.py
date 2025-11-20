@@ -32,15 +32,19 @@ class Migration(migrations.Migration):
                 ("information_id", models.CharField(max_length=100)),
                 (
                     "profile_uuid",
-                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, unique=True
+                    ),
                 ),
                 (
                     "user_profile_img",
                     models.TextField(
                         blank=True,
-                        help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.",
+                        help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.",  # noqa: E501
                         null=True,
-                        validators=[django.core.validators.MaxLengthValidator(10000)],
+                        validators=[
+                            django.core.validators.MaxLengthValidator(10000)
+                        ],
                         verbose_name="avatar (Base64)",
                     ),
                 ),

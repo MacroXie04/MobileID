@@ -2,7 +2,12 @@ from unittest.mock import Mock
 
 from django.contrib.auth.models import User, Group
 from django.test import TestCase
-from index.models import Barcode, BarcodeUsage, UserBarcodeSettings, BarcodeUserProfile
+from index.models import (
+    Barcode,
+    BarcodeUsage,
+    UserBarcodeSettings,
+    BarcodeUserProfile,
+)
 
 
 class BarcodeSerializerTest(TestCase):
@@ -82,7 +87,9 @@ class BarcodeSerializerTest(TestCase):
         from index.serializers import BarcodeSerializer
 
         BarcodeUserProfile.objects.create(
-            linked_barcode=self.barcode, name="Test User", information_id="TEST123"
+            linked_barcode=self.barcode,
+            name="Test User",
+            information_id="TEST123",
         )
 
         serializer = BarcodeSerializer(self.barcode)
@@ -184,7 +191,7 @@ class UserBarcodeSettingsSerializerTest(TestCase):
         self.assertFalse(field_states["barcode_disabled"])
 
     def test_validate_user_group_profile_association(self):
-        """Test validation prevents User group from enabling profile association"""
+        """Test validation prevents User group from enabling profile association"""  # noqa: E501
         from index.serializers import UserBarcodeSettingsSerializer
 
         self.user.groups.add(self.user_group)
@@ -204,7 +211,9 @@ class UserBarcodeSettingsSerializerTest(TestCase):
 
         # Create barcodes
         dynamic_barcode = Barcode.objects.create(
-            user=self.user, barcode="12345678901234", barcode_type="DynamicBarcode"
+            user=self.user,
+            barcode="12345678901234",
+            barcode_type="DynamicBarcode",
         )
 
         settings = UserBarcodeSettings.objects.create(user=self.user)

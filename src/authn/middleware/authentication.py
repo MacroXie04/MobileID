@@ -13,11 +13,18 @@ class CookieJWTAuthentication(JWTAuthentication):
         if reason:
             # Debugging: log the token details
             header_token = request.META.get("HTTP_X_CSRFTOKEN", "")
-            print(f"CSRF DEBUG: Reason='{reason}'. Token='{header_token}' (len={len(header_token)})")
-            
-            # If token is "null" or "undefined" (common frontend issues), provide clearer error
+            print(
+                f"CSRF DEBUG: Reason='{reason}'. Token='{header_token}' "
+                f"(len={len(header_token)})"
+            )
+
+            # If token is "null" or "undefined" (common frontend issues),
+            # provide clearer error
             if header_token in ("null", "undefined", ""):
-                 raise exceptions.PermissionDenied(f"CSRF Failed: Token missing or invalid ({header_token}). Please refresh the page.")
+                raise exceptions.PermissionDenied(
+                    f"CSRF Failed: Token missing or invalid ({header_token}). "
+                    "Please refresh the page."
+                )
 
             raise exceptions.PermissionDenied(f"CSRF Failed: {reason}")
 
@@ -45,7 +52,7 @@ class CookieJWTAuthentication(JWTAuthentication):
 
         if used_cookie and request.method not in SAFE_METHODS:
             # TODO: Re-enable CSRF check once frontend cookie handling is fixed
-            # self.enforce_csrf(django_request)
+            self.enforce_csrf(django_request)
             pass
 
         return user, validated_token

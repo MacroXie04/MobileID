@@ -8,6 +8,7 @@ from authn.models import UserProfile
 from index.models import UserBarcodeSettings, Barcode
 from index.services.transactions import TransactionService
 
+
 # ──────────────────────────────────────────────────────────────
 #  User Admin Customization (Group Filter + is_staff sync)
 # ──────────────────────────────────────────────────────────────
@@ -31,7 +32,9 @@ class LimitedGroupUserChangeForm(forms.ModelForm):
 
         # Set up the single group field
         allowed_groups = ["User", "School", "Staff"]
-        self.fields["group"].queryset = Group.objects.filter(name__in=allowed_groups)
+        self.fields["group"].queryset = Group.objects.filter(
+            name__in=allowed_groups
+        )
 
         # Set initial value if user already has a group
         if self.instance and self.instance.pk:
@@ -68,7 +71,9 @@ class LimitedGroupUserAddForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         allowed_groups = ["User", "School", "Staff"]
-        self.fields["group"].queryset = Group.objects.filter(name__in=allowed_groups)
+        self.fields["group"].queryset = Group.objects.filter(
+            name__in=allowed_groups
+        )
 
     def save(self, commit=True):
         # Just save the user, let the admin handle group assignment
@@ -89,7 +94,12 @@ class LimitedGroupUserAdmin(UserAdmin):
         (
             "Permissions",
             {
-                "fields": ("is_active", "is_staff", "is_superuser", "user_permissions"),
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "user_permissions",
+                ),
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
@@ -144,7 +154,10 @@ class LimitedGroupUserAdmin(UserAdmin):
                 user.groups.add(selected_group)
 
         # Handle user_permissions (from the default Django admin)
-        if hasattr(form, "cleaned_data") and "user_permissions" in form.cleaned_data:
+        if (
+            hasattr(form, "cleaned_data")
+            and "user_permissions" in form.cleaned_data
+        ):
             user.user_permissions.set(form.cleaned_data["user_permissions"])
 
         # Now handle additional logic after groups have been saved
@@ -159,7 +172,11 @@ class LimitedGroupUserAdmin(UserAdmin):
         old_groups = getattr(self, "_old_groups_for_user", set())
         new_groups = set(user.groups.all())
 
-        if change and staff_group in old_groups and staff_group not in new_groups:
+        if (
+            change
+            and staff_group in old_groups
+            and staff_group not in new_groups
+        ):
             user_group = Group.objects.filter(name="User").first()
             school_group = Group.objects.filter(name="School").first()
 
@@ -171,7 +188,8 @@ class LimitedGroupUserAdmin(UserAdmin):
                         user=user,
                         name=f"{user.first_name} {user.last_name}".strip()
                         or user.username,
-                        information_id=user.username,  # Default to username, can be updated later
+                        information_id=user.username,
+                        # Default to username, can be updated later
                         user_profile_img="",  # Empty profile image
                     )
 
@@ -183,17 +201,21 @@ class LimitedGroupUserAdmin(UserAdmin):
                         user=user,
                         barcode=None,
                         server_verification=False,
-                        associate_user_profile_with_barcode=False,  # Default to False for new users
+                        # Default to False for new users
+                        associate_user_profile_with_barcode=False,
                     )
 
-                # Create an identification barcode for the user if it doesn't exist
+                # Create an identification barcode for the user if it
+                # doesn't exist
                 if not Barcode.objects.filter(
                     user=user, barcode_type="Identification"
                 ).exists():
                     # Generate a unique identification barcode
                     barcode_value = f"{user.username}_{uuid.uuid4().hex[:8]}"
                     ident_barcode = Barcode.objects.create(
-                        user=user, barcode=barcode_value, barcode_type="Identification"
+                        user=user,
+                        barcode=barcode_value,
+                        barcode_type="Identification",
                     )
                     # Record transaction for identification barcode creation
                     TransactionService.create_transaction(
@@ -255,4 +277,3 @@ class LimitedGroupUserAdmin(UserAdmin):
 # Re-register User with custom admin
 admin.site.unregister(User)
 admin.site.register(User, LimitedGroupUserAdmin)
-

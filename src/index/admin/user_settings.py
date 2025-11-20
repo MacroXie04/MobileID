@@ -13,7 +13,10 @@ class UserBarcodeSettingsAdmin(admin.ModelAdmin):
         "server_verification",
         "associate_user_profile_with_barcode",
     )
-    list_filter = ("server_verification", "associate_user_profile_with_barcode")
+    list_filter = (
+        "server_verification",
+        "associate_user_profile_with_barcode",
+    )
     search_fields = ("user__username", "barcode__barcode")
     ordering = ("user__username",)
     autocomplete_fields = ["user", "barcode"]

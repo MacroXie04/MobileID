@@ -39,15 +39,21 @@ class AdminAuditLog(models.Model):
         related_name="admin_audit_logs",
     )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
-    action = models.CharField(max_length=20, choices=ACTION_CHOICES, db_index=True)
+    action = models.CharField(
+        max_length=20, choices=ACTION_CHOICES, db_index=True
+    )
     resource = models.CharField(
-        max_length=200, blank=True, help_text="Model or resource being accessed"
+        max_length=200,
+        blank=True,
+        help_text="Model or resource being accessed",
     )
     success = models.BooleanField(default=True, db_index=True)
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     user_agent = models.TextField(blank=True)
     details = models.JSONField(
-        default=dict, blank=True, help_text="Additional details about the action"
+        default=dict,
+        blank=True,
+        help_text="Additional details about the action",
     )
 
     class Meta:
@@ -68,4 +74,7 @@ class AdminAuditLog(models.Model):
             username = self.user.username if self.user else "anonymous"
         except AttributeError:
             username = str(self.user) if self.user else "anonymous"
-        return f"{username} - {self.action} - {self.resource or 'N/A'} at {self.timestamp.isoformat()}"
+        return (
+            f"{username} - {self.action} - {self.resource or 'N/A'} at "
+            f"{self.timestamp.isoformat()}"
+        )

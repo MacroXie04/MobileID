@@ -14,7 +14,9 @@ class _BaseLoginSerializer(TokenObtainPairSerializer):
     generic_error_message = "Invalid username or password."
 
     def _get_client_ip(self):
-        request = self.context.get("request") if hasattr(self, "context") else None
+        request = (
+            self.context.get("request") if hasattr(self, "context") else None
+        )
         if not request:
             return None
         forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
@@ -42,7 +44,8 @@ class _BaseLoginSerializer(TokenObtainPairSerializer):
             return
 
         logger.warning(
-            "Login attempt blocked due to lock", extra={"username": attempt.username}
+            "Login attempt blocked due to lock",
+            extra={"username": attempt.username},
         )
         self._log_auth_event(
             attempt.username,
@@ -50,7 +53,9 @@ class _BaseLoginSerializer(TokenObtainPairSerializer):
             "blocked",
             reason="locked",
         )
-        raise serializers.ValidationError({"detail": self.generic_error_message})
+        raise serializers.ValidationError(
+            {"detail": self.generic_error_message}
+        )
 
     def _record_failed_attempt(self, attempt, client_ip):
         if not attempt:
@@ -128,7 +133,9 @@ class _BaseLoginSerializer(TokenObtainPairSerializer):
             logger.exception("Failed to persist login audit log")
 
     def _get_user_agent(self):
-        request = self.context.get("request") if hasattr(self, "context") else None
+        request = (
+            self.context.get("request") if hasattr(self, "context") else None
+        )
         if not request:
             return None
         return request.META.get("HTTP_USER_AGENT")

@@ -1,0 +1,22 @@
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+import { fileURLToPath, URL } from 'node:url'
+
+export default defineConfig({
+    plugins: [vue({
+        template: {
+            compilerOptions: {
+                isCustomElement: (tag) => tag.startsWith('md-')
+            }
+        }
+    })],
+    resolve: {
+        alias: {
+            '@': fileURLToPath(new URL('./src', import.meta.url))
+        }
+    },
+    test: {
+        globals: true,
+        environment: 'jsdom',
+    },
+})

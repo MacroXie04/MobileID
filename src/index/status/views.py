@@ -13,7 +13,8 @@ def health_check(request):
     Health check endpoint for monitoring and orchestration tools.
 
     Returns:
-        JsonResponse: A JSON response with status and database connectivity info.
+        JsonResponse: A JSON response with status and database connectivity
+                      info.
     """
     response_data = {"status": "healthy", "service": "MobileID"}
 

@@ -32,7 +32,8 @@ def passkey_register_verify(request):
     expected = _get_valid_challenge(request, "webauthn_reg_chal")
     if not expected:
         return Response(
-            {"success": False, "message": "Missing or expired challenge"}, status=400
+            {"success": False, "message": "Missing or expired challenge"},
+            status=400,
         )
     try:
         verify_and_create_passkey(request.user, request.data, expected)
@@ -63,7 +64,8 @@ def passkey_auth_verify(request):
     expected = _get_valid_challenge(request, "webauthn_auth_chal")
     if not expected:
         return Response(
-            {"success": False, "message": "Missing or expired challenge"}, status=400
+            {"success": False, "message": "Missing or expired challenge"},
+            status=400,
         )
     try:
         user = verify_authentication(request.data, expected)

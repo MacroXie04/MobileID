@@ -18,7 +18,8 @@ def get_rsa_private_key():
     if not rsa_private_key:
         logger.error("RSA_PRIVATE_KEY environment variable is not set")
         raise ValueError(
-            "RSA_PRIVATE_KEY environment variable is required for password decryption"
+            "RSA_PRIVATE_KEY environment variable is required for password "
+            "decryption"
         )
     return rsa_private_key
 

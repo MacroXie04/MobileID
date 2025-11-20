@@ -27,7 +27,8 @@ class CreatedTransaction:
 class TransactionService:
     """
     Service layer for Transaction-related reads/writes.
-    Keeps your views thin and reusable for Celery tasks, management commands, etc.
+    Keeps your views thin and reusable for Celery tasks, management commands,
+    etc.
     """
 
     # -----------------------------
@@ -135,7 +136,9 @@ class TransactionService:
             )
             to_create.append(t)
 
-        created = Transaction.objects.bulk_create(to_create, batch_size=batch_size)
+        created = Transaction.objects.bulk_create(
+            to_create, batch_size=batch_size
+        )
 
         return [
             CreatedTransaction(
@@ -184,7 +187,9 @@ class TransactionService:
             qs = qs.filter(time_created__lt=until)
 
         agg = (
-            qs.values("barcode_used_id").annotate(c=Count("id")).order_by("-c")[:limit]
+            qs.values("barcode_used_id")
+            .annotate(c=Count("id"))
+            .order_by("-c")[:limit]
         )
         return [(row["barcode_used_id"], row["c"]) for row in agg]
 
@@ -249,7 +254,8 @@ class TransactionService:
         total = qs.count()
         with_fk = qs.filter(barcode_used__isnull=False).count()
 
-        # Optionally exclude rows whose FK points to a deleted/missing Barcode (unlikely with SET_NULL)
+        # Optionally exclude rows whose FK points to a deleted/missing Barcode
+        # (unlikely with SET_NULL)
         per_barcode_qs = qs
         if only_valid_barcodes:
             per_barcode_qs = per_barcode_qs.filter(barcode_used__isnull=False)
@@ -285,4 +291,6 @@ class TransactionService:
             qs = qs.filter(time_created__gte=since)
         if until:
             qs = qs.filter(time_created__lt=until)
-        return qs.select_related("user", "barcode_used").order_by("-time_created")
+        return qs.select_related("user", "barcode_used").order_by(
+            "-time_created"
+        )

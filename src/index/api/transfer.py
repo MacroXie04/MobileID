@@ -22,7 +22,9 @@ class TransferCatCardAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        """Process CatCard cookies and store barcode data for authenticated user"""
+        """
+        Process CatCard cookies and store barcode data for authenticated user
+        """
         try:
             # Get cookies from request data
             raw_cookies = request.data.get("cookies", "")
@@ -40,9 +42,14 @@ class TransferCatCardAPIView(APIView):
 
             # Log warnings if any
             if processed.warnings:
-                logger.warning(f"Cookie processing warnings: {processed.warnings}")
-                # If there are critical warnings about missing session cookies, return error
-                if any("Missing required cookie" in w for w in processed.warnings):
+                logger.warning(
+                    f"Cookie processing warnings: {processed.warnings}"
+                )
+                # If there are critical warnings about missing session
+                # cookies, return error
+                if any(
+                    "Missing required cookie" in w for w in processed.warnings
+                ):
                     return Response(
                         {
                             "error": "Invalid cookies: "
@@ -59,8 +66,9 @@ class TransferCatCardAPIView(APIView):
             result = service.transfer_barcode()
 
             logger.info(
-                f"Transfer result for user {request.user.username}: {result.status} - "
-                f"{result.response if result.status == 'success' else result.error}"
+                f"Transfer result for user {request.user.username}: "
+                f"{result.status} - "
+                f"{result.response if result.status == 'success' else result.error}"  # noqa: E501
             )
 
             if result.status == "success":
@@ -75,14 +83,17 @@ class TransferCatCardAPIView(APIView):
             else:
                 return Response(
                     {
-                        "error": result.error or "Failed to store barcode data",
+                        "error": result.error
+                        or "Failed to store barcode data",
                         "success": False,
                     },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
         except Exception as e:
-            logger.error(f"Transfer error for user {request.user.username}: {e}")
+            logger.error(
+                f"Transfer error for user {request.user.username}: {e}"
+            )
             return Response(
                 {"error": "Internal server error", "success": False},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

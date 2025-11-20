@@ -13,7 +13,7 @@ class AdminIPWhitelistMiddleware:
     Middleware that restricts admin access to whitelisted IP addresses.
 
     Only applies when ADMIN_ALLOWED_IPS is configured (non-empty list).
-    If ADMIN_ALLOWED_IPS is empty, the middleware allows all access (for development).
+    If ADMIN_ALLOWED_IPS is empty, the middleware allows all access (for development).  # noqa: E501
     """
 
     def __init__(self, get_response):
@@ -27,7 +27,8 @@ class AdminIPWhitelistMiddleware:
             client_ip = self._get_client_ip(request)
             if client_ip not in self.allowed_ips:
                 return HttpResponseForbidden(
-                    "Access denied. Your IP address is not authorized to access this resource."
+                    "Access denied. Your IP address is not authorized to "
+                    "access this resource."
                 )
 
         return self.get_response(request)

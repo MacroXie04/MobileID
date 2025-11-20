@@ -16,7 +16,11 @@ class Migration(migrations.Migration):
             model_name="barcodeuserprofile",
             name="gender_barcode",
             field=models.CharField(
-                choices=[("Male", "Male"), ("Female", "Female"), ("Unknow", "Unknow")],
+                choices=[
+                    ("Male", "Male"),
+                    ("Female", "Female"),
+                    ("Unknow", "Unknow"),
+                ],
                 default="Unknow",
                 max_length=10,
             ),
@@ -26,7 +30,7 @@ class Migration(migrations.Migration):
             name="user_profile_img",
             field=models.TextField(
                 blank=True,
-                help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.",
+                help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.",  # noqa: E501
                 null=True,
                 verbose_name="avatar (Base64)",
             ),

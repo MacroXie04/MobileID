@@ -20,7 +20,8 @@ from django.urls import path
 app_name = "authn"
 
 urlpatterns = [
-    # RSA public key endpoint (must be before token endpoint for proper routing)
+    # RSA public key endpoint (must be before token endpoint for proper
+    # routing)
     path("public-key/", get_public_key, name="api_public_key"),
     # JWT authentication endpoints
     path("login-challenge/", login_challenge, name="api_login_challenge"),
@@ -28,9 +29,15 @@ urlpatterns = [
         "login/", RSALoginView.as_view(), name="api_rsa_login"
     ),  # New encrypted-only login
     path(
-        "token/", CookieTokenObtainPairView.as_view(), name="api_token_obtain_pair"
+        "token/",
+        CookieTokenObtainPairView.as_view(),
+        name="api_token_obtain_pair",
     ),  # Legacy endpoint
-    path("token/refresh/", CookieTokenRefreshView.as_view(), name="api_token_refresh"),
+    path(
+        "token/refresh/",
+        CookieTokenRefreshView.as_view(),
+        name="api_token_refresh",
+    ),
     path("logout/", api_logout, name="api_logout"),
     path("register/", api_register, name="api_register"),
     # user info
@@ -51,6 +58,14 @@ urlpatterns = [
         passkey_register_verify,
         name="passkey_register_verify",
     ),
-    path("passkeys/auth/options/", passkey_auth_options, name="passkey_auth_options"),
-    path("passkeys/auth/verify/", passkey_auth_verify, name="passkey_auth_verify"),
+    path(
+        "passkeys/auth/options/",
+        passkey_auth_options,
+        name="passkey_auth_options",
+    ),
+    path(
+        "passkeys/auth/verify/",
+        passkey_auth_verify,
+        name="passkey_auth_verify",
+    ),
 ]

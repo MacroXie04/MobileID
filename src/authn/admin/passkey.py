@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from authn.models import PasskeyCredential
 
+
 @admin.register(PasskeyCredential)
 class PasskeyCredentialAdmin(admin.ModelAdmin):
     list_display = (
@@ -53,7 +54,8 @@ class PasskeyCredentialAdmin(admin.ModelAdmin):
         if not obj.credential_id:
             return "—"
         return format_html(
-            '<code style="word-break: break-all;">...{}</code>', obj.credential_id[-8:]
+            '<code style="word-break: break-all;">...{}</code>',
+            obj.credential_id[-8:],
         )
 
     @admin.display(description="Public Key (Preview)")
@@ -61,7 +63,8 @@ class PasskeyCredentialAdmin(admin.ModelAdmin):
         if not obj.public_key:
             return "—"
         return format_html(
-            '<code style="word-break: break-all;">...{}</code>', obj.public_key[-12:]
+            '<code style="word-break: break-all;">...{}</code>',
+            obj.public_key[-12:],
         )
 
     @admin.action(description="Replace Passkey (Delete selected)")
@@ -70,6 +73,6 @@ class PasskeyCredentialAdmin(admin.ModelAdmin):
         queryset.delete()
         self.message_user(
             request,
-            f"Successfully deleted {count} passkey(s). Users will need to register new ones.",
+            f"Successfully deleted {count} passkey(s). Users will need to "
+            "register new ones.",
         )
-

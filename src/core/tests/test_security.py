@@ -19,7 +19,9 @@ class ErrorHandlingTest(TestCase):
     def test_admin_access_requires_staff(self):
         """Test that admin access requires staff privileges"""
         # Create regular user
-        user = User.objects.create_user(username="regular", password="test123")
+        user = User.objects.create_user(
+            username="regular", password="test123"
+        )
         self.client.force_login(user)
 
         response = self.client.get(reverse("admin:index"))
@@ -43,7 +45,9 @@ class SecurityTest(TestCase):
 
     def test_csrf_protection_enabled(self):
         """Test that CSRF protection is enabled"""
-        self.assertIn("django.middleware.csrf.CsrfViewMiddleware", settings.MIDDLEWARE)
+        self.assertIn(
+            "django.middleware.csrf.CsrfViewMiddleware", settings.MIDDLEWARE
+        )
 
     def test_clickjacking_protection_enabled(self):
         """Test that clickjacking protection is enabled"""
@@ -55,13 +59,15 @@ class SecurityTest(TestCase):
     def test_security_middleware_enabled(self):
         """Test that security middleware is enabled"""
         self.assertIn(
-            "django.middleware.security.SecurityMiddleware", settings.MIDDLEWARE
+            "django.middleware.security.SecurityMiddleware",
+            settings.MIDDLEWARE,
         )
 
     @override_settings(USE_HTTPS=True)
     def test_https_settings_when_enabled(self):
         """Test HTTPS-related settings when USE_HTTPS is enabled"""
-        # This tests the structure; actual HTTPS settings would be tested in deployment
+        # This tests the structure; actual HTTPS settings would be tested in
+        # deployment
         self.assertTrue(True)
 
     def test_session_security_settings(self):
@@ -74,7 +80,8 @@ class SecurityTest(TestCase):
         """Test that password validation is configured appropriately"""
         # Expect validators to be configured (not disabled)
         self.assertGreaterEqual(len(settings.AUTH_PASSWORD_VALIDATORS), 1)
-        # Ensure MinimumLengthValidator is present (min_length configured in settings)
+        # Ensure MinimumLengthValidator is present (min_length configured in
+        # settings)
         has_min_length = any(
             v.get("NAME", "").endswith("MinimumLengthValidator")
             for v in settings.AUTH_PASSWORD_VALIDATORS
@@ -138,7 +145,7 @@ class SecurityTest(TestCase):
         admin_login_url = reverse("admin:login")
 
         # Make 3 attempts (should be allowed)
-        for i in range(3):
+        for _ in range(3):
             response = client.post(
                 admin_login_url,
                 {"username": "test", "password": "wrong"},
@@ -168,7 +175,7 @@ class SecurityTest(TestCase):
         admin_login_url = reverse("admin:login")
 
         # Make a few attempts (should be allowed)
-        for i in range(3):
+        for _ in range(3):
             response = client.post(
                 admin_login_url,
                 {"username": "test", "password": "wrong"},
@@ -194,9 +201,11 @@ class SecurityTest(TestCase):
 
         # Check that session expiry is set (session should exist)
         self.assertTrue(client.session.session_key)
-        # Session expiry should be set to ADMIN_SESSION_COOKIE_AGE (3600 seconds = 1 hour)
+        # Session expiry should be set to ADMIN_SESSION_COOKIE_AGE (3600
+        # seconds = 1 hour)
         expiry_age = client.session.get_expiry_age()
-        # Expiry should be approximately 3600 seconds (within 5 seconds tolerance)
+        # Expiry should be approximately 3600 seconds (within 5 seconds
+        # tolerance)
         self.assertAlmostEqual(expiry_age, 3600, delta=5)
 
     def test_admin_audit_log_created_on_post_action(self):
@@ -210,14 +219,19 @@ class SecurityTest(TestCase):
 
         # Create staff user
         staff_user = User.objects.create_user(
-            username="staff4", password="test123", is_staff=True, is_superuser=True
+            username="staff4",
+            password="test123",
+            is_staff=True,
+            is_superuser=True,
         )
         client = Client(REMOTE_ADDR="127.0.0.1")
         client.force_login(staff_user)
 
         # Perform a POST action (like changing a user)
         # First create a test user to modify
-        test_user = User.objects.create_user(username="testuser", password="test123")
+        test_user = User.objects.create_user(
+            username="testuser", password="test123"
+        )
 
         # POST to change the user (this should create an audit log)
         change_url = reverse("admin:auth_user_change", args=[test_user.id])
@@ -239,6 +253,7 @@ class SecurityTest(TestCase):
         )
         self.assertGreaterEqual(logs.count(), 1)
 
+    @override_settings(ADMIN_ALLOWED_IPS=[])
     def test_admin_audit_log_includes_ip_and_user_agent(self):
         """Test that admin audit log includes IP address and user agent"""
         from django.test import Client
@@ -250,13 +265,20 @@ class SecurityTest(TestCase):
 
         # Create staff user
         staff_user = User.objects.create_user(
-            username="staff5", password="test123", is_staff=True, is_superuser=True
+            username="staff5",
+            password="test123",
+            is_staff=True,
+            is_superuser=True,
         )
-        client = Client(REMOTE_ADDR="192.168.1.100", HTTP_USER_AGENT="TestAgent/1.0")
+        client = Client(
+            REMOTE_ADDR="192.168.1.100", HTTP_USER_AGENT="TestAgent/1.0"
+        )
         client.force_login(staff_user)
 
         # Perform a POST action to trigger audit logging
-        test_user = User.objects.create_user(username="testuser2", password="test123")
+        test_user = User.objects.create_user(
+            username="testuser2", password="test123"
+        )
         change_url = reverse("admin:auth_user_change", args=[test_user.id])
         client.post(
             change_url,

@@ -4,7 +4,8 @@ Django management command to generate RSA key pairs for password encryption.
 Usage:
     python manage.py generate_rsa_keypair
     python manage.py generate_rsa_keypair --key-size 4096
-    python manage.py generate_rsa_keypair --keep-active  # Don't deactivate existing keys
+    python manage.py generate_rsa_keypair --keep-active  # Don't deactivate
+                                                         # existing keys
 """
 
 import logging
@@ -72,7 +73,8 @@ class Command(BaseCommand):
                     if deactivated_count > 0:
                         self.stdout.write(
                             self.style.WARNING(
-                                f"Deactivated {deactivated_count} existing active key pair(s)"
+                                f"Deactivated {deactivated_count} "
+                                f"existing active key pair(s)"
                             )
                         )
 
@@ -86,7 +88,8 @@ class Command(BaseCommand):
 
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f"Successfully created RSA-{key_size} key pair with ID: {key_pair.kid}"
+                        f"Successfully created RSA-{key_size} key pair "
+                        f"with ID: {key_pair.kid}"
                     )
                 )
                 self.stdout.write(f"Key ID: {key_pair.kid}")

@@ -49,7 +49,9 @@ class AuthenticationAPITest(APITestCase):
 
     def test_user_info_authenticated(self):
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
+        )
 
         url = reverse("authn:api_user_info")
         response = self.client.get(url)
@@ -65,12 +67,17 @@ class AuthenticationAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_user_img_success(self):
-        avatar_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        avatar_b64 = (
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+"
+            "hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        )
         self.user.userprofile.user_profile_img = avatar_b64
         self.user.userprofile.save()
 
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
+        )
 
         url = reverse("authn:api_user_image")
         response = self.client.get(url)
@@ -80,7 +87,9 @@ class AuthenticationAPITest(APITestCase):
 
     def test_user_img_not_found(self):
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
+        )
 
         url = reverse("authn:api_user_image")
         response = self.client.get(url)
@@ -91,7 +100,9 @@ class AuthenticationAPITest(APITestCase):
         self.user.userprofile.save()
 
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
+        )
 
         url = reverse("authn:api_user_image")
         response = self.client.get(url)

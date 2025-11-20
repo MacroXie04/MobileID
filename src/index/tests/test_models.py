@@ -1,6 +1,11 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
-from index.models import Barcode, BarcodeUsage, UserBarcodeSettings, BarcodeUserProfile
+from index.models import (
+    Barcode,
+    BarcodeUsage,
+    UserBarcodeSettings,
+    BarcodeUserProfile,
+)
 
 
 class BarcodeModelTest(TestCase):
@@ -28,15 +33,23 @@ class BarcodeModelTest(TestCase):
         """Test Barcode __str__ method for different types"""
         # Dynamic barcode
         dynamic_barcode = Barcode.objects.create(
-            user=self.user, barcode="1234567890123456", barcode_type="DynamicBarcode"
+            user=self.user,
+            barcode="1234567890123456",
+            barcode_type="DynamicBarcode",
         )
-        self.assertEqual(str(dynamic_barcode), "Dynamic barcode ending with 3456")
+        self.assertEqual(
+            str(dynamic_barcode), "Dynamic barcode ending with 3456"
+        )
 
         # Identification barcode - use different barcode value
         ident_barcode = Barcode.objects.create(
-            user=self.user, barcode="9876543210987654", barcode_type="Identification"
+            user=self.user,
+            barcode="9876543210987654",
+            barcode_type="Identification",
         )
-        self.assertEqual(str(ident_barcode), "testuser's identification Barcode")
+        self.assertEqual(
+            str(ident_barcode), "testuser's identification Barcode"
+        )
 
         # Others barcode - use different barcode value
         other_barcode = Barcode.objects.create(
@@ -58,8 +71,10 @@ class BarcodeModelTest(TestCase):
         )
 
         # Creating another barcode with the same value should raise error
-        user2 = User.objects.create_user(username="testuser2", password="testpass123")
-        with self.assertRaises(Exception):
+        user2 = User.objects.create_user(
+            username="testuser2", password="testpass123"
+        )
+        with self.assertRaises(Exception):  # noqa: B017
             Barcode.objects.create(
                 user=user2, barcode="uniquebarcode123", barcode_type="Others"
             )
@@ -78,7 +93,9 @@ class BarcodeUsageModelTest(TestCase):
 
     def test_barcode_usage_creation(self):
         """Test creating BarcodeUsage"""
-        usage = BarcodeUsage.objects.create(barcode=self.barcode, total_usage=5)
+        usage = BarcodeUsage.objects.create(
+            barcode=self.barcode, total_usage=5
+        )
 
         self.assertEqual(usage.barcode, self.barcode)
         self.assertEqual(usage.total_usage, 5)
@@ -86,16 +103,18 @@ class BarcodeUsageModelTest(TestCase):
 
     def test_barcode_usage_str_representation(self):
         """Test BarcodeUsage __str__ method"""
-        usage = BarcodeUsage.objects.create(barcode=self.barcode, total_usage=10)
-
-        expected = (
-            f"Barcode ending with 3456 - Total Usage: 10 - Last Used: {usage.last_used}"
+        usage = BarcodeUsage.objects.create(
+            barcode=self.barcode, total_usage=10
         )
+
+        expected = f"Barcode ending with 3456 - Total Usage: 10 - Last Used: {usage.last_used}"  # noqa: E501
         self.assertEqual(str(usage), expected)
 
     def test_barcode_usage_auto_now(self):
         """Test that last_used is automatically updated"""
-        usage = BarcodeUsage.objects.create(barcode=self.barcode, total_usage=1)
+        usage = BarcodeUsage.objects.create(
+            barcode=self.barcode, total_usage=1
+        )
         original_time = usage.last_used
 
         # Update usage

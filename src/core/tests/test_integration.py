@@ -23,7 +23,9 @@ class IntegrationTest(APITestCase):
         create_user_profile(self.user, "Integration User", "INT123", None)
 
     def test_complete_authentication_flow(self):
-        """Test complete authentication flow from login to authenticated request"""
+        """
+        Test complete authentication flow from login to authenticated request
+        """
         # Test login
         login_url = reverse("authn:api_token_obtain_pair")
         login_data = {"username": "integrationtest", "password": "testpass123"}
@@ -37,7 +39,9 @@ class IntegrationTest(APITestCase):
 
         # Test authenticated request using JWT
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
+        )
 
         user_info_url = reverse("authn:api_user_info")
         response = self.client.get(user_info_url)
@@ -50,7 +54,9 @@ class IntegrationTest(APITestCase):
         """Test barcode generation flow for User group member"""
         # Authenticate user
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
+        )
 
         # Generate barcode
         generate_url = reverse("index:api_generate_barcode")
@@ -71,7 +77,9 @@ class IntegrationTest(APITestCase):
 
         for url in protected_urls:
             response = self.client.get(url)
-            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+            self.assertEqual(
+                response.status_code, status.HTTP_401_UNAUTHORIZED
+            )
 
     def test_cors_preflight_request(self):
         """Test CORS preflight request handling"""
@@ -83,4 +91,6 @@ class IntegrationTest(APITestCase):
         )
 
         # Should not return 405 Method Not Allowed
-        self.assertNotEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertNotEqual(
+            response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED
+        )

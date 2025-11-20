@@ -9,7 +9,9 @@ class PasskeyCredential(models.Model):
     """
 
     # foreign key to user
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="passkey")
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="passkey"
+    )
 
     # Base64URL-encoded credential ID
     credential_id = models.CharField(max_length=255, unique=True)
@@ -21,7 +23,9 @@ class PasskeyCredential(models.Model):
     sign_count = models.BigIntegerField(default=0)
 
     # Attestation format for reference/debugging
-    attestation_format = models.CharField(max_length=100, blank=True, default="")
+    attestation_format = models.CharField(
+        max_length=100, blank=True, default=""
+    )
 
     # When created/updated
     created_at = models.DateTimeField(auto_now_add=True)
@@ -31,4 +35,6 @@ class PasskeyCredential(models.Model):
         app_label = "authn"
 
     def __str__(self):
-        return f"Passkey for {self.user.username} ({self.credential_id[:8]}...)"
+        return (
+            f"Passkey for {self.user.username} ({self.credential_id[:8]}...)"
+        )

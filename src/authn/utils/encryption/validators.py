@@ -28,7 +28,9 @@ def validate_encrypted_password_format(encrypted_password):
         raise ValueError("Encrypted password must be a string")
 
     if len(encrypted_password) < 100:
-        raise ValueError("Encrypted password is too short to be valid RSA ciphertext")
+        raise ValueError(
+            "Encrypted password is too short to be valid RSA ciphertext"
+        )
 
     try:
         decoded = base64.b64decode(encrypted_password)
@@ -36,6 +38,8 @@ def validate_encrypted_password_format(encrypted_password):
         raise ValueError(f"Invalid Base64 encoding: {str(exc)}")
 
     if len(decoded) < 200 or len(decoded) > 600:
-        raise ValueError(f"Invalid RSA ciphertext length: {len(decoded)} bytes")
+        raise ValueError(
+            f"Invalid RSA ciphertext length: {len(decoded)} bytes"
+        )
 
     return True

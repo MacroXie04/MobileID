@@ -35,7 +35,8 @@ class BarcodeUserProfileInline(admin.TabularInline):
     def avatar_preview(self, obj):
         if obj and getattr(obj, "user_profile_img", None):
             return format_html(
-                '<img src="data:image/png;base64,{}" style="height:64px;width:64px;border-radius:8px;object-fit:cover;" />',
+                '<img src="data:image/png;base64,{}" style="height:64px;'
+                'width:64px;border-radius:8px;object-fit:cover;" />',
                 obj.user_profile_img,
             )
         return "-"

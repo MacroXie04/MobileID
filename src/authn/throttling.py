@@ -48,7 +48,8 @@ class AdminLoginThrottle(SimpleRateThrottle):
     """
     Throttle admin login attempts per client/IP.
 
-    This throttle is applied via middleware to Django admin login POST requests.
+    This throttle is applied via middleware to Django admin login POST
+    requests.
     """
 
     scope = "admin_login"

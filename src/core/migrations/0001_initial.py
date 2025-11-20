@@ -26,7 +26,10 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("ip_address", models.GenericIPAddressField(blank=True, null=True)),
+                (
+                    "ip_address",
+                    models.GenericIPAddressField(blank=True, null=True),
+                ),
                 (
                     "action",
                     models.CharField(
@@ -52,7 +55,10 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("success", models.BooleanField(db_index=True, default=True)),
-                ("timestamp", models.DateTimeField(auto_now_add=True, db_index=True)),
+                (
+                    "timestamp",
+                    models.DateTimeField(auto_now_add=True, db_index=True),
+                ),
                 ("user_agent", models.TextField(blank=True)),
                 (
                     "details",
@@ -85,13 +91,16 @@ class Migration(migrations.Migration):
                         fields=["action"], name="core_admina_action_0ed87f_idx"
                     ),
                     models.Index(
-                        fields=["success"], name="core_admina_success_11d5f7_idx"
+                        fields=["success"],
+                        name="core_admina_success_11d5f7_idx",
                     ),
                     models.Index(
-                        fields=["timestamp"], name="core_admina_timesta_8f049f_idx"
+                        fields=["timestamp"],
+                        name="core_admina_timesta_8f049f_idx",
                     ),
                     models.Index(
-                        fields=["ip_address"], name="core_admina_ip_addr_4e8ecf_idx"
+                        fields=["ip_address"],
+                        name="core_admina_ip_addr_4e8ecf_idx",
                     ),
                 ],
             },

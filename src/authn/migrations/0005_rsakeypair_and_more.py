@@ -35,13 +35,13 @@ class Migration(migrations.Migration):
                 (
                     "public_key",
                     models.TextField(
-                        help_text="RSA public key in PEM format (BEGIN PUBLIC KEY...END PUBLIC KEY)"
+                        help_text="RSA public key in PEM format (BEGIN PUBLIC KEY...END PUBLIC KEY)"  # noqa: E501
                     ),
                 ),
                 (
                     "private_key",
                     models.TextField(
-                        help_text="RSA private key in PEM format (BEGIN PRIVATE KEY...END PRIVATE KEY)"
+                        help_text="RSA private key in PEM format (BEGIN PRIVATE KEY...END PRIVATE KEY)"  # noqa: E501
                     ),
                 ),
                 (
@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
                     models.BooleanField(
                         db_index=True,
                         default=True,
-                        help_text="Whether this key pair is currently active for encryption/decryption",
+                        help_text="Whether this key pair is currently active for encryption/decryption",  # noqa: E501
                     ),
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),

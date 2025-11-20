@@ -60,13 +60,15 @@ class UsageLimitService:
             if today_count >= usage.daily_usage_limit:
                 return (
                     False,
-                    f"Daily usage limit of {usage.daily_usage_limit} scans has been reached",
+                    f"Daily usage limit of {usage.daily_usage_limit} scans "
+                    "has been reached",
                 )
 
             return True, None
 
         except BarcodeUsage.DoesNotExist:
-            # If no usage record exists, allow usage (will be created on first use)
+            # If no usage record exists, allow usage (will be created on first
+            # use)
             return True, None
 
     @staticmethod
@@ -87,7 +89,8 @@ class UsageLimitService:
             if usage.total_usage >= usage.total_usage_limit:
                 return (
                     False,
-                    f"Total usage limit of {usage.total_usage_limit} scans has been reached",
+                    f"Total usage limit of {usage.total_usage_limit} scans "
+                    "has been reached",
                 )
 
             return True, None

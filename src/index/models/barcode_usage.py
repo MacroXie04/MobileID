@@ -42,4 +42,7 @@ class BarcodeUsage(models.Model):
         app_label = "index"
 
     def __str__(self):
-        return f"Barcode ending with {self.barcode.barcode[-4:]} - Total Usage: {self.total_usage} - Last Used: {self.last_used}"
+        return (
+            f"Barcode ending with {self.barcode.barcode[-4:]} - "
+            f"Total Usage: {self.total_usage} - Last Used: {self.last_used}"
+        )

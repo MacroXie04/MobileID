@@ -16,7 +16,11 @@ urlpatterns = [
         name="api_generate_barcode",
     ),
     # get active profile based on settings
-    path("active_profile/", ActiveProfileAPIView.as_view(), name="api_active_profile"),
+    path(
+        "active_profile/",
+        ActiveProfileAPIView.as_view(),
+        name="api_active_profile",
+    ),
     # barcode dashboard
     path(
         "barcode_dashboard/",
@@ -24,5 +28,9 @@ urlpatterns = [
         name="api_barcode_dashboard",
     ),
     # transfer card endpoint
-    path("transfer/", TransferCatCardAPIView.as_view(), name="api_catcard_transfer"),
+    path(
+        "transfer/",
+        TransferCatCardAPIView.as_view(),
+        name="api_catcard_transfer",
+    ),
 ]

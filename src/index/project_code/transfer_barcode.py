@@ -37,7 +37,10 @@ class BarcodeData:
 
 class TransferBarcode(UCMercedMobileIdClient):
     def __init__(
-        self, user_cookies: str, user: Optional[User] = None, headless: bool = True
+        self,
+        user_cookies: str,
+        user: Optional[User] = None,
+        headless: bool = True,
     ):
         super().__init__(headless=headless)
         self.barcode_user: Optional[User] = user
@@ -52,7 +55,7 @@ class TransferBarcode(UCMercedMobileIdClient):
         # Validate that we have meaningful data before proceeding
         if not self._has_meaningful_data(mobile_data):
             raise ValueError(
-                "No meaningful mobile ID data found. Please check your credentials and try again."
+                "No meaningful mobile ID data found. Please check your credentials and try again."  # noqa: E501
             )
 
         return BarcodeData(
@@ -79,13 +82,13 @@ class TransferBarcode(UCMercedMobileIdClient):
 
         # Normalize value for DynamicBarcode storage
         if is_digits and len(raw_barcode) == 28:
-            # For 28-digit barcodes, store only the last 14 digits as dynamic base
+            # For 28-digit barcodes, store only the last 14 digits as dynamic base  # noqa: E501
             normalized_value = raw_barcode[-14:]
         elif is_digits and len(raw_barcode) >= 14:
             # For other long digit sequences, take the last 14 digits
             normalized_value = raw_barcode[-14:]
         else:
-            # For shorter barcodes or non-digit sequences, truncate to 120 chars max
+            # For shorter barcodes or non-digit sequences, truncate to 120 chars max  # noqa: E501
             # but still treat as DynamicBarcode
             normalized_value = raw_barcode[:120]
 
@@ -94,7 +97,9 @@ class TransferBarcode(UCMercedMobileIdClient):
             existing = Barcode.objects.filter(barcode=normalized_value).first()
             if existing:
                 if existing.user_id != user.id:
-                    raise ValueError("Barcode already exists for a different user.")
+                    raise ValueError(
+                        "Barcode already exists for a different user."
+                    )
                 if existing.barcode_type != barcode_type:
                     existing.barcode_type = barcode_type
                     existing.save(update_fields=["barcode_type"])
@@ -115,7 +120,7 @@ class TransferBarcode(UCMercedMobileIdClient):
             name = (barcode_data.username or "").strip() or user.username
             information_id = (barcode_data.information_id or "").strip()
             # Store the full base64 PNG (already normalized to 128x128)
-            # Do not truncate, otherwise the image becomes corrupted/half-rendered
+            # Do not truncate, otherwise the image becomes corrupted/half-rendered  # noqa: E501
             avatar_b64 = (barcode_data.user_profile_img or "").strip() or None
             cookies = (barcode_data.user_cookies or "").strip() or None
 
@@ -128,7 +133,10 @@ class TransferBarcode(UCMercedMobileIdClient):
                 if information_id and profile.information_id != information_id:
                     profile.information_id = information_id
                     updates.append("information_id")
-                if avatar_b64 is not None and profile.user_profile_img != avatar_b64:
+                if (
+                    avatar_b64 is not None
+                    and profile.user_profile_img != avatar_b64
+                ):
                     profile.user_profile_img = avatar_b64
                     updates.append("user_profile_img")
                 if cookies is not None and profile.user_cookies != cookies:
@@ -163,9 +171,11 @@ class TransferBarcode(UCMercedMobileIdClient):
         Check if the mobile data contains meaningful information.
         Returns True if at least some key data is present, False otherwise.
         """
-        # Check for essential data - we need at least some of these to be meaningful
+        # Check for essential data - we need at least some of these to be meaningful  # noqa: E501
         has_barcode = bool(mobile_data.barcode and mobile_data.barcode.strip())
-        has_student_id = bool(mobile_data.student_id and mobile_data.student_id.strip())
+        has_student_id = bool(
+            mobile_data.student_id and mobile_data.student_id.strip()
+        )
         has_mobile_codes = bool(
             mobile_data.mobile_id_rand_array
             and len(mobile_data.mobile_id_rand_array) > 0
@@ -192,19 +202,27 @@ class TransferBarcode(UCMercedMobileIdClient):
 
         # We need at least 2 out of 4 meaningful pieces of data
         meaningful_count = sum(
-            [has_barcode, has_student_id, has_mobile_codes, has_meaningful_username]
+            [
+                has_barcode,
+                has_student_id,
+                has_mobile_codes,
+                has_meaningful_username,
+            ]
         )
 
         return meaningful_count >= 2
 
-    def _convert_profile_image_to_png_128(self, possibly_data_uri_b64: str) -> str:
+    def _convert_profile_image_to_png_128(
+        self, possibly_data_uri_b64: str
+    ) -> str:
         try:
             if not possibly_data_uri_b64:
                 return ""
 
             # Strip data URI prefix if present
-            if "," in possibly_data_uri_b64 and possibly_data_uri_b64.startswith(
-                "data:image"
+            if (
+                "," in possibly_data_uri_b64
+                and possibly_data_uri_b64.startswith("data:image")
             ):
                 _, b64_data = possibly_data_uri_b64.split(",", 1)
             else:

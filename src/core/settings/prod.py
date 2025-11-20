@@ -1,7 +1,7 @@
 """
 Production Django settings for core project.
 
-This file imports base settings and overrides them with production-specific values.
+This file imports base settings and overrides them with production-specific values.  # noqa: E501
 """
 
 from .base import *  # noqa: F403, F401
@@ -46,13 +46,19 @@ CSRF_TRUSTED_ORIGINS = csv_env(
 
 # If using django-cors-headers:
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
-CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
+CORS_ALLOW_CREDENTIALS = (
+    env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
+)
 
 # Cookies - Production: secure cookies required
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SECURE = False  # env("SESSION_COOKIE_SECURE", "True").lower() == "true"
-CSRF_COOKIE_SECURE = False  # env("CSRF_COOKIE_SECURE", "True").lower() == "true"
+SESSION_COOKIE_SECURE = (
+    False  # env("SESSION_COOKIE_SECURE", "True").lower() == "true"
+)
+CSRF_COOKIE_SECURE = (
+    False  # env("CSRF_COOKIE_SECURE", "True").lower() == "true"
+)
 CSRF_COOKIE_HTTPONLY = False
 
 # Security settings - Production: strict security
@@ -66,14 +72,14 @@ SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 X_FRAME_OPTIONS = "SAMEORIGIN"
 CSP_DEFAULT_POLICY = env(
     "CSP_DEFAULT_POLICY",
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:",  # noqa: E501
 )
 
 # Admin security - Production: MUST be configured
 ADMIN_URL_PATH = env("ADMIN_URL_PATH")
 if not ADMIN_URL_PATH or ADMIN_URL_PATH == "admin":
     raise ValueError(
-        "ADMIN_URL_PATH must be set to a non-default value in production environment. "
+        "ADMIN_URL_PATH must be set to a non-default value in production environment. "  # noqa: E501
         "This setting is required for security."
     )
 
@@ -91,11 +97,11 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",  # noqa: E501
             "style": "{",
         },
         "json": {
-            "format": '{{"time": "{asctime}", "level": "{levelname}", "module": "{module}", "message": "{message}"}}',
+            "format": '{{"time": "{asctime}", "level": "{levelname}", "module": "{module}", "message": "{message}"}}',  # noqa: E501
             "style": "{",
         },
     },

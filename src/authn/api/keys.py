@@ -45,7 +45,8 @@ def get_public_key(request):
         logger.error("No active RSA key pair available")
         return Response(
             {
-                "detail": "No active RSA key pair available. Please run: python manage.py generate_rsa_keypair"
+                "detail": "No active RSA key pair available. Please run: "
+                "python manage.py generate_rsa_keypair"
             },
             status=503,  # Service Unavailable
         )

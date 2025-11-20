@@ -29,7 +29,11 @@ class TransactionAdmin(admin.ModelAdmin):
     autocomplete_fields = ["user", "barcode_used"]
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related("user", "barcode_used")
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("user", "barcode_used")
+        )
 
     @admin.display(description="Barcode")
     def barcode_display(self, obj):
@@ -51,7 +55,8 @@ class TransactionAdmin(admin.ModelAdmin):
         b = obj.barcode_used
         if not b:
             return "-"
-        # If a profile is linked to this barcode, use its name; otherwise fall back to username
+        # If a profile is linked to this barcode, use its name; otherwise fall
+        # back to username
         try:
             profile = b.barcodeuserprofile
             if profile and profile.name:

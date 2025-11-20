@@ -41,4 +41,7 @@ class LoginAuditLog(models.Model):
 
     def __str__(self):
         status = "success" if self.success else self.result
-        return f"{self.username or 'anonymous'} - {status} at {self.created_at.isoformat()}"
+        return (
+            f"{self.username or 'anonymous'} - {status} at "
+            f"{self.created_at.isoformat()}"
+        )

@@ -17,7 +17,9 @@ class UserProfileAPITest(APITestCase):
         create_user_profile(self.user, "Test User", "TEST123", None)
 
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
+        )
 
     def test_get_profile_success(self):
         url = reverse("authn:api_profile")
@@ -42,7 +44,10 @@ class UserProfileAPITest(APITestCase):
 
     def test_update_profile_with_avatar(self):
         url = reverse("authn:api_profile")
-        avatar_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        avatar_b64 = (
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+"
+            "hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        )
         data = {"name": "Updated Name", "user_profile_img_base64": avatar_b64}
 
         response = self.client.put(url, data, format="json")

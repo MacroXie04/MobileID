@@ -18,7 +18,12 @@ class BarcodeAdmin(admin.ModelAdmin):
         "usage_count",
     )
     list_filter = ("barcode_type", "user")
-    search_fields = ("barcode", "barcode_uuid", "user__username", "user__email")
+    search_fields = (
+        "barcode",
+        "barcode_uuid",
+        "user__username",
+        "user__email",
+    )
     readonly_fields = ("barcode_uuid", "time_created", "barcode_display_full")
     # Commented out date_hierarchy to avoid timezone issues
     # date_hierarchy = 'time_created'
@@ -60,9 +65,13 @@ class BarcodeAdmin(admin.ModelAdmin):
     @admin.display(description="UUID")
     def barcode_uuid_display(self, obj):
         """Display UUID in a more readable format"""
-        return format_html("<code>{}</code>", str(obj.barcode_uuid)[:8] + "...")
+        return format_html(
+            "<code>{}</code>", str(obj.barcode_uuid)[:8] + "..."
+        )
 
-    @admin.display(description="Total Usage", ordering="barcodeusage__total_usage")
+    @admin.display(
+        description="Total Usage", ordering="barcodeusage__total_usage"
+    )
     def usage_count(self, obj):
         """Display total usage count from related BarcodeUsage"""
         try:

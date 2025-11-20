@@ -24,7 +24,8 @@ from webauthn.helpers.structs import (
 
 
 def _rp_id() -> str:
-    # Require RP ID or derive strictly from BACKEND_ORIGIN (no localhost fallback)
+    # Require RP ID or derive strictly from BACKEND_ORIGIN (no localhost
+    # fallback)
     rp = getattr(settings, "WEBAUTHN_RP_ID", None)
     if rp:
         return rp
@@ -37,7 +38,8 @@ def _rp_id() -> str:
     host = parsed.hostname
     if not host:
         raise ImproperlyConfigured(
-            "BACKEND_ORIGIN must include a valid hostname (e.g., https://example.com)"
+            "BACKEND_ORIGIN must include a valid hostname (e.g., "
+            "https://example.com)"
         )
     return host
 
@@ -83,14 +85,17 @@ def _pydantic_load(model_cls, data):
         return data
 
 
-def build_registration_options(user: User, exclude_existing: bool = True) -> dict:
+def build_registration_options(
+    user: User, exclude_existing: bool = True
+) -> dict:
     exclude: List[PublicKeyCredentialDescriptor] = []
     if exclude_existing:
         existing = PasskeyCredential.objects.filter(user=user).first()
         if existing:
             exclude.append(
                 PublicKeyCredentialDescriptor(
-                    id=base64url_to_bytes(existing.credential_id), type="public-key"
+                    id=base64url_to_bytes(existing.credential_id),
+                    type="public-key",
                 )
             )
 
@@ -133,7 +138,9 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
     else:
         # Fallback: best-effort
         result = json.loads(
-            json.dumps(options, default=lambda o: getattr(o, "__dict__", str(o)))
+            json.dumps(
+                options, default=lambda o: getattr(o, "__dict__", str(o))
+            )
         )
 
     # Ensure pubKeyCredParams is present (required by WebAuthn spec)
@@ -150,7 +157,9 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
         elif isinstance(raw_challenge, str):
             # Already a string - ensure it's valid base64url
             result["challenge"] = raw_challenge
-    elif "challenge" in result and isinstance(result["challenge"], (bytes, bytearray)):
+    elif "challenge" in result and isinstance(
+        result["challenge"], (bytes, bytearray)
+    ):
         result["challenge"] = bytes_to_base64url(result["challenge"])
 
     # Ensure other required fields have proper structure
@@ -163,7 +172,9 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
         # Ensure required displayName is present
         if not result["user"].get("displayName"):
             # Fall back to name if displayName missing
-            result["user"]["displayName"] = result["user"].get("name") or getattr(
+            result["user"]["displayName"] = result["user"].get(
+                "name"
+            ) or getattr(
                 getattr(user, "userprofile", None), "name", user.username
             )
 
@@ -173,7 +184,8 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
 def verify_and_create_passkey(
     user: User, credential: dict, expected_challenge
 ) -> PasskeyCredential:
-    # Convert challenge from base64url string (stored in session) to bytes for verification
+    # Convert challenge from base64url string (stored in session) to bytes for
+    # verification
     # The webauthn library expects the challenge as bytes
     expected_bytes = expected_challenge
     if isinstance(expected_challenge, str):
@@ -181,12 +193,15 @@ def verify_and_create_passkey(
             # Decode from base64url to bytes
             expected_bytes = base64url_to_bytes(expected_challenge)
         except Exception as e:
-            print(f"Challenge decode error: {e}, challenge: {expected_challenge}")
+            print(
+                f"Challenge decode error: {e}, challenge: {expected_challenge}"
+            )
             # If it's not valid base64url, treat as raw string and encode
             expected_bytes = expected_challenge.encode("utf-8")
 
     print(
-        f"Registration verification - expected challenge bytes length: {len(expected_bytes) if expected_bytes else 'None'}"
+        f"Registration verification - expected challenge bytes length: "
+        f"{len(expected_bytes) if expected_bytes else 'None'}"
     )
 
     verification = verify_registration_response(
@@ -198,7 +213,9 @@ def verify_and_create_passkey(
     )
 
     cred_id_b64u = bytes_to_base64url(verification.credential_id)
-    public_key_cose_b64u = bytes_to_base64url(verification.credential_public_key)
+    public_key_cose_b64u = bytes_to_base64url(
+        verification.credential_public_key
+    )
     sign_count = verification.sign_count
 
     # Enforce single passkey per user
@@ -220,7 +237,8 @@ def build_authentication_options(user: Optional[User] = None) -> dict:
         if existing:
             allow_credentials = [
                 PublicKeyCredentialDescriptor(
-                    id=base64url_to_bytes(existing.credential_id), type="public-key"
+                    id=base64url_to_bytes(existing.credential_id),
+                    type="public-key",
                 )
             ]
 
@@ -253,7 +271,9 @@ def build_authentication_options(user: Optional[User] = None) -> dict:
     else:
         # Fallback: best-effort
         result = json.loads(
-            json.dumps(options, default=lambda o: getattr(o, "__dict__", str(o)))
+            json.dumps(
+                options, default=lambda o: getattr(o, "__dict__", str(o))
+            )
         )
 
     # Ensure challenge is properly formatted - use raw challenge if available
@@ -263,11 +283,15 @@ def build_authentication_options(user: Optional[User] = None) -> dict:
         elif isinstance(raw_challenge, str):
             # Already a string - ensure it's valid base64url
             result["challenge"] = raw_challenge
-    elif "challenge" in result and isinstance(result["challenge"], (bytes, bytearray)):
+    elif "challenge" in result and isinstance(
+        result["challenge"], (bytes, bytearray)
+    ):
         result["challenge"] = bytes_to_base64url(result["challenge"])
 
     # Ensure allowCredentials is properly formatted if present
-    if "allowCredentials" in result and isinstance(result["allowCredentials"], list):
+    if "allowCredentials" in result and isinstance(
+        result["allowCredentials"], list
+    ):
         for cred in result["allowCredentials"]:
             if "id" in cred and isinstance(cred["id"], (bytes, bytearray)):
                 cred["id"] = bytes_to_base64url(cred["id"])
@@ -289,7 +313,8 @@ def verify_authentication(credential: dict, expected_challenge) -> User:
     if not stored:
         raise ValueError("Unknown credential")
 
-    # Convert challenge from base64url string (stored in session) to bytes for verification
+    # Convert challenge from base64url string (stored in session) to bytes for
+    # verification
     # The webauthn library expects the challenge as bytes
     expected_bytes = expected_challenge
     if isinstance(expected_challenge, str):
@@ -297,12 +322,16 @@ def verify_authentication(credential: dict, expected_challenge) -> User:
             # Decode from base64url to bytes
             expected_bytes = base64url_to_bytes(expected_challenge)
         except Exception as e:
-            print(f"Auth challenge decode error: {e}, challenge: {expected_challenge}")
+            print(
+                f"Auth challenge decode error: {e}, challenge: "
+                f"{expected_challenge}"
+            )
             # If it's not valid base64url, treat as raw string and encode
             expected_bytes = expected_challenge.encode("utf-8")
 
     print(
-        f"Authentication verification - expected challenge bytes length: {len(expected_bytes) if expected_bytes else 'None'}"
+        f"Authentication verification - expected challenge bytes length: "
+        f"{len(expected_bytes) if expected_bytes else 'None'}"
     )
 
     result = verify_authentication_response(

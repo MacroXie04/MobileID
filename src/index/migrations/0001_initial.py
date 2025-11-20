@@ -31,13 +31,18 @@ class Migration(migrations.Migration):
                 (
                     "time_created",
                     models.DateTimeField(
-                        auto_now_add=True, null=True, verbose_name="time created"
+                        auto_now_add=True,
+                        null=True,
+                        verbose_name="time created",
                     ),
                 ),
                 (
                     "barcode_uuid",
                     models.UUIDField(
-                        default=uuid.uuid4, editable=False, null=True, unique=True
+                        default=uuid.uuid4,
+                        editable=False,
+                        null=True,
+                        unique=True,
                     ),
                 ),
                 (
@@ -79,7 +84,8 @@ class Migration(migrations.Migration):
                 (
                     "barcode",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to="index.barcode"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="index.barcode",
                     ),
                 ),
             ],
@@ -102,9 +108,11 @@ class Migration(migrations.Migration):
                     "user_profile_img",
                     models.TextField(
                         blank=True,
-                        help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.",
+                        help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.",  # noqa: E501
                         null=True,
-                        validators=[django.core.validators.MaxLengthValidator(10000)],
+                        validators=[
+                            django.core.validators.MaxLengthValidator(10000)
+                        ],
                         verbose_name="avatar (Base64)",
                     ),
                 ),
@@ -112,7 +120,8 @@ class Migration(migrations.Migration):
                 (
                     "linked_barcode",
                     models.OneToOneField(
-                        on_delete=django.db.models.deletion.CASCADE, to="index.barcode"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="index.barcode",
                     ),
                 ),
             ],
