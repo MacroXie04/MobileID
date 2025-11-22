@@ -31,8 +31,8 @@
           @input="clearTransferError('cookie')"
         >
           <template #leading-icon>
-<md-icon >cookie</md-icon>
-</template>
+            <md-icon>cookie</md-icon>
+          </template>
         </md-outlined-text-field>
 
         <div class="md-flex md-items-center md-gap-2">
@@ -47,8 +47,8 @@
             @click="requestTransferCode"
           >
             <template #icon>
-<md-icon >sync_alt</md-icon>
-</template>
+              <md-icon>sync_alt</md-icon>
+            </template>
             Request Transfer
           </md-filled-button>
         </div>
@@ -82,22 +82,22 @@
           @input="clearError('newBarcode')"
         >
           <template #leading-icon>
-<md-icon >pin</md-icon>
-</template>
+            <md-icon>pin</md-icon>
+          </template>
         </md-outlined-text-field>
 
         <div class="form-actions md-flex md-gap-3 md-flex-wrap">
           <md-outlined-button type="button" @click="toggleScanner">
             <template #icon>
-<md-icon >{{ showScanner ? 'videocam_off' : 'qr_code_scanner' }}</md-icon>
-</template>
+              <md-icon>{{ showScanner ? 'videocam_off' : 'qr_code_scanner' }}</md-icon>
+            </template>
             {{ showScanner ? 'Close Scanner' : 'Scan with Camera' }}
           </md-outlined-button>
 
           <md-filled-button :disabled="!newBarcode.trim()" type="submit">
             <template #icon>
-<md-icon >add</md-icon>
-</template>
+              <md-icon>add</md-icon>
+            </template>
             Add Barcode
           </md-filled-button>
         </div>
@@ -122,8 +122,8 @@
                 :value="device.deviceId"
               >
                 <template #headline>
-<div >{{ device.label }}</div>
-</template>
+                  <div>{{ device.label }}</div>
+                </template>
               </md-select-option>
             </md-outlined-select>
           </div>

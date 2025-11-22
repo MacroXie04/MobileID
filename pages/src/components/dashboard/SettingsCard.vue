@@ -22,65 +22,45 @@
         </div>
         <md-list>
           <md-list-item>
-            <template #start>
-<md-icon >autorenew</md-icon>
-</template>
-            <template #headline>
-<div >Enable Automatic Pull</div>
-</template>
-            <template #supporting-text>
-<div >
+            <md-icon slot="start">autorenew</md-icon>
+            <div slot="headline">Enable Automatic Pull</div>
+            <div slot="supporting-text">
               When enabled, barcode selection will be automatically managed. Manual barcode
               selection is disabled.
             </div>
-</template>
-            <template #end>
-<md-switch
-              
-              :selected="pullSettings.pull_setting === 'Enable'"
-              @change="
-                (e) => $emit('update-pull-setting', e.target.selected ? 'Enable' : 'Disable')
-              "
-            ></md-switch>
-</template>
+            <div slot="end">
+              <md-switch
+                :selected="pullSettings.pull_setting === 'Enable'"
+                @change="
+                  (e) => $emit('update-pull-setting', e.target.selected ? 'Enable' : 'Disable')
+                "
+              ></md-switch>
+            </div>
           </md-list-item>
 
           <md-divider inset></md-divider>
 
           <md-list-item>
-            <template #start>
-<md-icon >person</md-icon>
-</template>
-            <template #headline>
-<div >Gender Setting</div>
-</template>
-            <template #supporting-text>
-<div >Select gender preference for automatic barcode pulling</div>
-</template>
-            <template #end>
-<md-outlined-select
-              
-              :disabled="pullSettings.pull_setting !== 'Enable'"
-              :value="pullSettings.gender_setting"
-              @change="(e) => $emit('update-gender-setting', e.target.value)"
-            >
-              <md-select-option value="Male">
-                <template #headline>
-<div >Male</div>
-</template>
-              </md-select-option>
-              <md-select-option value="Female">
-                <template #headline>
-<div >Female</div>
-</template>
-              </md-select-option>
-              <md-select-option value="Unknow">
-                <template #headline>
-<div >Unknown</div>
-</template>
-              </md-select-option>
-            </md-outlined-select>
-</template>
+            <md-icon slot="start">person</md-icon>
+            <div slot="headline">Gender Setting</div>
+            <div slot="supporting-text">Select gender preference for automatic barcode pulling</div>
+            <div slot="end">
+              <md-outlined-select
+                :disabled="pullSettings.pull_setting !== 'Enable'"
+                :value="pullSettings.gender_setting"
+                @change="(e) => $emit('update-gender-setting', e.target.value)"
+              >
+                <md-select-option value="Male">
+                  <div slot="headline">Male</div>
+                </md-select-option>
+                <md-select-option value="Female">
+                  <div slot="headline">Female</div>
+                </md-select-option>
+                <md-select-option value="Unknow">
+                  <div slot="headline">Unknown</div>
+                </md-select-option>
+              </md-outlined-select>
+            </div>
           </md-list-item>
         </md-list>
       </div>
@@ -197,44 +177,30 @@
         </div>
         <md-list>
           <md-list-item>
-            <template #start>
-<md-icon >person_pin</md-icon>
-</template>
-            <template #headline>
-<div >Profile Association</div>
-</template>
-            <template #supporting-text>
-<div >Use profile data from the ID server</div>
-</template>
-            <template #end>
-<md-switch
-              
-              :disabled="isUserGroup"
-              :selected="associateUserProfileWithBarcode"
-              @change="(e) => $emit('update-associate', e.target.selected)"
-            ></md-switch>
-</template>
+            <md-icon slot="start">person_pin</md-icon>
+            <div slot="headline">Profile Association</div>
+            <div slot="supporting-text">Use profile data from the ID server</div>
+            <div slot="end">
+              <md-switch
+                :disabled="isUserGroup"
+                :selected="associateUserProfileWithBarcode"
+                @change="(e) => $emit('update-associate', e.target.selected)"
+              ></md-switch>
+            </div>
           </md-list-item>
 
           <md-divider inset></md-divider>
 
           <md-list-item>
-            <template #start>
-<md-icon >security</md-icon>
-</template>
-            <template #headline>
-<div >Server Verification</div>
-</template>
-            <template #supporting-text>
-<div >Validate on server (may take longer or fail)</div>
-</template>
-            <template #end>
-<md-switch
-              
-              :selected="serverVerification"
-              @change="(e) => $emit('update-server', e.target.selected)"
-            ></md-switch>
-</template>
+            <md-icon slot="start">security</md-icon>
+            <div slot="headline">Server Verification</div>
+            <div slot="supporting-text">Validate on server (may take longer or fail)</div>
+            <div slot="end">
+              <md-switch
+                :selected="serverVerification"
+                @change="(e) => $emit('update-server', e.target.selected)"
+              ></md-switch>
+            </div>
           </md-list-item>
         </md-list>
       </div>

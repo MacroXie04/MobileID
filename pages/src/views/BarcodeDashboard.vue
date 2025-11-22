@@ -7,9 +7,7 @@
           <h3 class="md-typescale-title-medium md-m-0">Barcode Dashboard</h3>
         </div>
         <md-filled-tonal-button @click="router.push('/')">
-          <template #icon>
-<md-icon >arrow_back</md-icon>
-</template>
+          <md-icon slot="icon">arrow_back</md-icon>
           Back to Home
         </md-filled-tonal-button>
       </div>
@@ -133,33 +131,23 @@
       />
       <!-- Floating Action Button to Add -->
       <md-fab style="position: fixed; right: 24px; bottom: 24px; z-index: 10" @click="goToAddTab">
-        <template #icon>
-<md-icon >add</md-icon>
-</template>
-        <template #label>
-<div >Add Barcode</div>
-</template>
+        <md-icon slot="icon">add</md-icon>
+        <div slot="label">Add Barcode</div>
       </md-fab>
     </main>
 
     <!-- Delete Confirmation Dialog -->
     <md-dialog :open="showConfirmDialog" @close="showConfirmDialog = false">
-      <template #headline>
-<div >Delete Barcode?</div>
-</template>
-      <template #content>
-<form  method="dialog">
+      <div slot="headline">Delete Barcode?</div>
+      <form slot="content" method="dialog">
         <p class="md-typescale-body-large">
           This will permanently delete the barcode. This action cannot be undone.
         </p>
       </form>
-</template>
-      <template #actions>
-<div >
+      <div slot="actions">
         <md-text-button @click="showConfirmDialog = false">Cancel</md-text-button>
         <md-filled-button @click="confirmDelete">Delete</md-filled-button>
       </div>
-</template>
     </md-dialog>
   </div>
 </template>

@@ -7,9 +7,7 @@
           <h3 class="md-typescale-title-medium md-m-0">Edit Profile</h3>
         </div>
         <md-filled-tonal-button @click="router.push('/')">
-          <template #icon>
-<md-icon >arrow_back</md-icon>
-</template>
+          <md-icon slot="icon">arrow_back</md-icon>
           Back to Home
         </md-filled-tonal-button>
       </div>
@@ -105,9 +103,7 @@
                 @input="handleFieldChange('name')"
                 @keyup.enter="!loading && handleSubmit()"
               >
-                <template #leading-icon>
-<md-icon >badge</md-icon>
-</template>
+                <md-icon slot="leading-icon">badge</md-icon>
               </md-outlined-text-field>
 
               <md-outlined-text-field
@@ -118,9 +114,7 @@
                 @input="handleFieldChange('information_id')"
                 @keyup.enter="!loading && handleSubmit()"
               >
-                <template #leading-icon>
-<md-icon >fingerprint</md-icon>
-</template>
+                <md-icon slot="leading-icon">fingerprint</md-icon>
               </md-outlined-text-field>
             </div>
           </div>
@@ -137,9 +131,7 @@
               </div>
               <md-filled-button :disabled="passkeyBusy" type="button" @click="registerPasskey">
                 <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
-                <template #icon>
-                  <md-icon v-if="!passkeyBusy">{{ hasPasskey ? 'sync' : 'key' }}</md-icon>
-                </template>
+                <md-icon slot="icon" v-if="!passkeyBusy">{{ hasPasskey ? 'sync' : 'key' }}</md-icon>
                 {{ hasPasskey ? 'Replace Passkey' : 'Register Passkey' }}
               </md-filled-button>
             </div>
@@ -183,39 +175,31 @@
     class="cropper-dialog"
     @close="handleDialogClose"
   >
-    <template #headline>
-<div >
+    <div slot="headline">
       <md-icon>crop</md-icon>
       Crop Your Photo
     </div>
-</template>
-    <template #content>
-<form  class="cropper-content" method="dialog">
+    <form slot="content" class="cropper-content" method="dialog">
       <div ref="cropperContainer" class="cropper-container md-rounded-lg">
         <img ref="cropperImage" alt="Image to crop" class="cropper-image" />
       </div>
-      <div class="cropper-tips md-typescale-body-small md-p-4 md-mt-4 md-rounded-lg md-text-center">
+      <div
+        class="cropper-tips md-typescale-body-small md-p-4 md-mt-4 md-rounded-lg md-text-center"
+      >
         Drag to reposition • Scroll to zoom • Double-click to reset
       </div>
     </form>
-</template>
-    <template #actions>
-<div >
+    <div slot="actions">
       <md-text-button @click="cancelCrop">Cancel</md-text-button>
       <md-text-button @click="resetCrop">
-        <template #icon>
-<md-icon >refresh</md-icon>
-</template>
+        <md-icon slot="icon">refresh</md-icon>
         Reset
       </md-text-button>
       <md-filled-button @click="applyCrop">
-        <template #icon>
-<md-icon >check</md-icon>
-</template>
+        <md-icon slot="icon">check</md-icon>
         Apply
       </md-filled-button>
     </div>
-</template>
   </md-dialog>
 </template>
 

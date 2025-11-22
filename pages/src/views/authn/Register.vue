@@ -54,9 +54,7 @@
               @input="clearError('username')"
               @keyup.enter="!loading && handleSubmit()"
             >
-              <template #leading-icon>
-<md-icon >person</md-icon>
-</template>
+              <md-icon slot="leading-icon">person</md-icon>
             </md-outlined-text-field>
 
             <md-outlined-text-field
@@ -68,9 +66,7 @@
               @input="clearError('name')"
               @keyup.enter="!loading && handleSubmit()"
             >
-              <template #leading-icon>
-<md-icon >badge</md-icon>
-</template>
+              <md-icon slot="leading-icon">badge</md-icon>
             </md-outlined-text-field>
 
             <md-outlined-text-field
@@ -82,9 +78,7 @@
               @input="clearError('information_id')"
               @keyup.enter="!loading && handleSubmit()"
             >
-              <template #leading-icon>
-<md-icon >fingerprint</md-icon>
-</template>
+              <md-icon slot="leading-icon">fingerprint</md-icon>
             </md-outlined-text-field>
 
             <md-outlined-text-field
@@ -97,18 +91,10 @@
               @input="clearError('password1')"
               @keyup.enter="!loading && handleSubmit()"
             >
-              <template #leading-icon>
-<md-icon >lock</md-icon>
-</template>
-              <template #trailing-icon>
-<md-icon-button
-                
-                type="button"
-                @click="showPassword1 = !showPassword1"
-              >
+              <md-icon slot="leading-icon">lock</md-icon>
+              <md-icon-button slot="trailing-icon" type="button" @click="showPassword1 = !showPassword1">
                 <md-icon>{{ showPassword1 ? 'visibility_off' : 'visibility' }}</md-icon>
               </md-icon-button>
-</template>
             </md-outlined-text-field>
 
             <md-outlined-text-field
@@ -121,18 +107,10 @@
               @input="clearError('password2')"
               @keyup.enter="!loading && handleSubmit()"
             >
-              <template #leading-icon>
-<md-icon >lock</md-icon>
-</template>
-              <template #trailing-icon>
-<md-icon-button
-                
-                type="button"
-                @click="showPassword2 = !showPassword2"
-              >
+              <md-icon slot="leading-icon">lock</md-icon>
+              <md-icon-button slot="trailing-icon" type="button" @click="showPassword2 = !showPassword2">
                 <md-icon>{{ showPassword2 ? 'visibility_off' : 'visibility' }}</md-icon>
               </md-icon-button>
-</template>
             </md-outlined-text-field>
           </div>
 
@@ -147,9 +125,7 @@
           <!-- Submit Button -->
           <md-filled-button :disabled="loading" class="submit-button" type="submit">
             <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
-            <template #icon>
-              <md-icon v-if="!loading">how_to_reg</md-icon>
-            </template>
+            <md-icon slot="icon" v-if="!loading">how_to_reg</md-icon>
             {{ loading ? 'Creating Account...' : 'Create Account' }}
           </md-filled-button>
         </form>
@@ -173,93 +149,85 @@
     class="cropper-dialog"
     @close="handleDialogClose"
   >
-    <template #headline>
-<div >
+    <div slot="headline">
       <md-icon>crop</md-icon>
       Crop Your Photo
     </div>
-</template>
-    <template #content>
-<form  class="cropper-content" method="dialog">
-      <div class="cropper-main">
-        <div ref="cropperContainer" class="cropper-container">
-          <img
-            v-show="!cropperLoading"
-            ref="cropperImage"
-            alt="Image to crop"
-            class="cropper-image"
-          />
-          <div v-if="cropperLoading" class="cropper-loading">
-            <md-circular-progress indeterminate></md-circular-progress>
-            <p class="md-typescale-body-medium">Loading image...</p>
+    <form slot="content" class="cropper-content" method="dialog">
+        <div class="cropper-main">
+          <div ref="cropperContainer" class="cropper-container">
+            <img
+              v-show="!cropperLoading"
+              ref="cropperImage"
+              alt="Image to crop"
+              class="cropper-image"
+            />
+            <div v-if="cropperLoading" class="cropper-loading">
+              <md-circular-progress indeterminate></md-circular-progress>
+              <p class="md-typescale-body-medium">Loading image...</p>
+            </div>
           </div>
-        </div>
-        <div class="cropper-sidebar">
-          <div class="cropper-preview-section">
-            <h3 class="md-typescale-title-small">Preview</h3>
-            <div ref="cropperPreview" class="cropper-preview"></div>
-            <p class="md-typescale-body-small preview-text">Final result (128×128)</p>
-          </div>
+          <div class="cropper-sidebar">
+            <div class="cropper-preview-section">
+              <h3 class="md-typescale-title-small">Preview</h3>
+              <div ref="cropperPreview" class="cropper-preview"></div>
+              <p class="md-typescale-body-small preview-text">Final result (128×128)</p>
+            </div>
 
-          <div class="cropper-controls">
-            <h3 class="md-typescale-title-small">Controls</h3>
+            <div class="cropper-controls">
+              <h3 class="md-typescale-title-small">Controls</h3>
 
-            <!-- Zoom Controls -->
-            <div class="control-group">
-              <label class="md-typescale-body-small">Zoom</label>
-              <div class="zoom-controls">
-                <md-icon-button :disabled="cropperLoading" @click="zoomOut">
-                  <md-icon>zoom_out</md-icon>
-                </md-icon-button>
-                <input
-                  v-model="zoomLevel"
-                  :disabled="cropperLoading"
-                  class="zoom-slider"
-                  max="3"
-                  min="0.1"
-                  step="0.1"
-                  type="range"
-                  @input="handleZoomChange"
-                />
-                <md-icon-button :disabled="cropperLoading" @click="zoomIn">
-                  <md-icon>zoom_in</md-icon>
-                </md-icon-button>
-              </div>
-              <div class="zoom-value md-typescale-body-small">
-                {{ Math.round(zoomLevel * 100) }}%
+              <!-- Zoom Controls -->
+              <div class="control-group">
+                <label class="md-typescale-body-small">Zoom</label>
+                <div class="zoom-controls">
+                  <md-icon-button :disabled="cropperLoading" @click="zoomOut">
+                    <md-icon>zoom_out</md-icon>
+                  </md-icon-button>
+                  <input
+                    v-model="zoomLevel"
+                    :disabled="cropperLoading"
+                    class="zoom-slider"
+                    max="3"
+                    min="0.1"
+                    step="0.1"
+                    type="range"
+                    @input="handleZoomChange"
+                  />
+                  <md-icon-button :disabled="cropperLoading" @click="zoomIn">
+                    <md-icon>zoom_in</md-icon>
+                  </md-icon-button>
+                </div>
+                <div class="zoom-value md-typescale-body-small">
+                  {{ Math.round(zoomLevel * 100) }}%
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="cropper-tips md-typescale-body-small">
-        <md-icon>info</md-icon>
-        <span class="tips-desktop"
-          >Drag to move • Scroll to zoom • Drag corners to resize crop area</span
-        >
-        <span class="tips-mobile">Drag to move • Pinch to zoom • Drag corners to resize</span>
+        <div class="cropper-tips md-typescale-body-small">
+          <md-icon>info</md-icon>
+          <span class="tips-desktop"
+            >Drag to move • Scroll to zoom • Drag corners to resize crop area</span
+          >
+          <span class="tips-mobile">Drag to move • Pinch to zoom • Drag corners to resize</span>
+        </div>
+      </form>
+    <div slot="actions">
+      <div>
+        <md-text-button @click="cancelCrop">Cancel</md-text-button>
+        <md-text-button :disabled="cropperLoading" @click="resetCrop">
+          <md-icon slot="icon">refresh</md-icon>
+          Reset
+        </md-text-button>
+        <md-filled-button :disabled="cropperLoading || applyingCrop" @click="applyCrop">
+          <md-circular-progress v-if="applyingCrop" indeterminate></md-circular-progress>
+          <md-icon slot="icon" v-if="!applyingCrop">check</md-icon>
+          {{ applyingCrop ? 'Processing...' : 'Apply' }}
+        </md-filled-button>
       </div>
-    </form>
-</template>
-    <template #actions>
-<div >
-      <md-text-button @click="cancelCrop">Cancel</md-text-button>
-      <md-text-button :disabled="cropperLoading" @click="resetCrop">
-        <template #icon>
-<md-icon >refresh</md-icon>
-</template>
-        Reset
-      </md-text-button>
-      <md-filled-button :disabled="cropperLoading || applyingCrop" @click="applyCrop">
-        <md-circular-progress v-if="applyingCrop" indeterminate></md-circular-progress>
-        <template #icon>
-          <md-icon v-if="!applyingCrop">check</md-icon>
-        </template>
-        {{ applyingCrop ? 'Processing...' : 'Apply' }}
-      </md-filled-button>
     </div>
-</template>
   </md-dialog>
 </template>
 

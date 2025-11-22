@@ -7,9 +7,7 @@
           <h1 class="md-typescale-title-medium md-m-0">{{ profile?.name || 'User' }}</h1>
         </div>
         <md-filled-tonal-button @click="handleLogout">
-          <template #icon>
-<md-icon >logout</md-icon>
-</template>
+          <md-icon slot="icon">logout</md-icon>
           Sign Out
         </md-filled-tonal-button>
       </div>

@@ -68,6 +68,15 @@ INSTALLED_APPS = [
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 # Additional locations to look for static files during development
 # Note: STATICFILES_DIRS should NOT include STATIC_ROOT
 STATICFILES_DIRS = [
@@ -86,6 +95,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     # Default Django middleware
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "core.middleware.admin_ip_whitelist.AdminIPWhitelistMiddleware",
     "core.middleware.admin_throttle.AdminLoginThrottleMiddleware",
     "core.middleware.csp.ContentSecurityPolicyMiddleware",
@@ -160,67 +170,81 @@ def _from_url(url_env_name: str, default_url: str = "") -> dict:
 
 DATABASES = {}
 
-# 1) Prefer explicit URL for the chosen profile
-#    - For local MySQL, set DATABASE_URL_LOCAL like:
-#      mysql://user:pass@127.0.0.1:3306/dbname
-#    - For local Postgres: postgres://user:pass@127.0.0.1:5432/dbname
-#    - For GCP/Cloud SQL TCP: same postgres/mysql URL pointing to the Cloud SQL
-#      proxy IP or public IP
-#    - For GCP/Cloud SQL Unix socket:
-#        postgres:  postgres://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE  # noqa: E501
-#        mysql:     mysql://user:pass@/dbname?unix_socket=/cloudsql/PROJECT:REGION:INSTANCE  # noqa: E501
-profile_to_env = {
-    "local": "DATABASE_URL_LOCAL",
-    "gcp": "DATABASE_URL_GCP",
-}
-
-db_cfg = _from_url(profile_to_env.get(DB_PROFILE, "DATABASE_URL"))
-if not db_cfg:
-    # 2) Fallback to legacy discrete vars (DB_ENGINE, DB_NAME, DB_USER,
-    # DB_PASSWORD, DB_HOST, DB_PORT)
-    ENGINE = os.getenv("DB_ENGINE", "postgresql").lower()
-    if ENGINE in {"postgres", "postgresql", "psql"}:
-        engine_path = "django.db.backends.postgresql"
-    elif ENGINE in {"mysql"}:
-        engine_path = "django.db.backends.mysql"
-    else:
-        engine_path = "django.db.backends.sqlite3"
-
-    host = os.getenv("DB_HOST", "")
-    port = os.getenv("DB_PORT", "")
-    name = os.getenv("DB_NAME", "")
-    user = os.getenv("DB_USER", "")
-    pwd = os.getenv("DB_PASSWORD", "")
-
-    # Cloud SQL Unix socket override (if provided)
-    # For Postgres: set CLOUDSQL_UNIX_SOCKET=/cloudsql/PROJECT:REGION:INSTANCE
-    # For MySQL:   same var; django will pass via OPTIONS
-    unix_socket = os.getenv("CLOUDSQL_UNIX_SOCKET", "")
-
-    options = {}
-    if unix_socket:
-        if "postgresql" in engine_path:
-            # psycopg uses host=/cloudsql/instance to connect via socket
-            host = unix_socket
-        elif "mysql" in engine_path:
-            options["unix_socket"] = unix_socket
-
-    if DB_SSL_MODE in {"require", "verify-ca", "verify-full"}:
-        if "postgresql" in engine_path:
-            options["sslmode"] = DB_SSL_MODE
-        elif "mysql" in engine_path:
-            options["ssl"] = {"ssl-mode": DB_SSL_MODE}
-
-    db_cfg = {
-        "ENGINE": engine_path,
-        "NAME": name,
-        "USER": user,
-        "PASSWORD": pwd,
-        "HOST": host or None,
-        "PORT": port or None,
-        "OPTIONS": options or {},
-        "CONN_MAX_AGE": DB_CONN_MAX_AGE,
+# Check if running in Google Cloud Run
+if os.environ.get("K_SERVICE"):
+    # Cloud Run (PostgreSQL via Cloud SQL Auth Proxy)
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": f"/cloudsql/{os.environ.get('INSTANCE_CONNECTION_NAME')}",
+        "USER": os.environ.get("DB_USER"),
+        "NAME": os.environ.get("DB_NAME"),
+        "PASSWORD": os.environ.get("DB_PASSWORD"),
     }
+else:
+    # Local development or other environments
+    # 1) Prefer explicit URL for the chosen profile
+    #    - For local MySQL, set DATABASE_URL_LOCAL like:
+    #      mysql://user:pass@127.0.0.1:3306/dbname
+    #    - For local Postgres: postgres://user:pass@127.0.0.1:5432/dbname
+    #    - For GCP/Cloud SQL TCP: same postgres/mysql URL pointing to the Cloud SQL
+    #      proxy IP or public IP
+    #    - For GCP/Cloud SQL Unix socket:
+    #        postgres:  postgres://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE  # noqa: E501
+    #        mysql:     mysql://user:pass@/dbname?unix_socket=/cloudsql/PROJECT:REGION:INSTANCE  # noqa: E501
+    profile_to_env = {
+        "local": "DATABASE_URL_LOCAL",
+        "gcp": "DATABASE_URL_GCP",
+    }
+
+    db_cfg = _from_url(profile_to_env.get(DB_PROFILE, "DATABASE_URL"))
+    if not db_cfg:
+        # 2) Fallback to legacy discrete vars (DB_ENGINE, DB_NAME, DB_USER,
+        # DB_PASSWORD, DB_HOST, DB_PORT)
+        ENGINE = os.getenv("DB_ENGINE", "postgresql").lower()
+        if ENGINE in {"postgres", "postgresql", "psql"}:
+            engine_path = "django.db.backends.postgresql"
+        elif ENGINE in {"mysql"}:
+            engine_path = "django.db.backends.mysql"
+        else:
+            engine_path = "django.db.backends.sqlite3"
+
+        host = os.getenv("DB_HOST", "")
+        port = os.getenv("DB_PORT", "")
+        name = os.getenv("DB_NAME", "")
+        user = os.getenv("DB_USER", "")
+        pwd = os.getenv("DB_PASSWORD", "")
+
+        # Cloud SQL Unix socket override (if provided)
+        # For Postgres: set CLOUDSQL_UNIX_SOCKET=/cloudsql/PROJECT:REGION:INSTANCE
+        # For MySQL:   same var; django will pass via OPTIONS
+        unix_socket = os.getenv("CLOUDSQL_UNIX_SOCKET", "")
+
+        options = {}
+        if unix_socket:
+            if "postgresql" in engine_path:
+                # psycopg uses host=/cloudsql/instance to connect via socket
+                host = unix_socket
+            elif "mysql" in engine_path:
+                options["unix_socket"] = unix_socket
+
+        if DB_SSL_MODE in {"require", "verify-ca", "verify-full"}:
+            if "postgresql" in engine_path:
+                options["sslmode"] = DB_SSL_MODE
+            elif "mysql" in engine_path:
+                options["ssl"] = {"ssl-mode": DB_SSL_MODE}
+
+        db_cfg = {
+            "ENGINE": engine_path,
+            "NAME": name,
+            "USER": user,
+            "PASSWORD": pwd,
+            "HOST": host or None,
+            "PORT": port or None,
+            "OPTIONS": options or {},
+            "CONN_MAX_AGE": DB_CONN_MAX_AGE,
+        }
+
+    DATABASES["default"] = db_cfg
 
 # Use SQLite for tests, configured database for everything else
 if TESTING:
@@ -228,8 +252,6 @@ if TESTING:
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": ":memory:",  # Use in-memory database for tests
     }
-else:
-    DATABASES["default"] = db_cfg
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

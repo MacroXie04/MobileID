@@ -28,9 +28,7 @@
         </md-filter-chip>
         <md-divider vertical></md-divider>
         <md-filter-chip :selected="ownedOnly" @click="$emit('toggle-owned')">
-          <template #icon>
-<md-icon >person</md-icon>
-</template>
+          <md-icon slot="icon">person</md-icon>
           Owned only
         </md-filter-chip>
       </div>
@@ -61,10 +59,8 @@
             <div class="barcode-badges md-flex md-gap-2 md-flex-wrap">
               <md-assist-chip has-icon>
                 <template #icon>
-<md-icon  aria-hidden="true">{{
-                  iconForType(barcode.barcode_type)
-                }}</md-icon>
-</template>
+                  <md-icon aria-hidden="true">{{ iconForType(barcode.barcode_type) }}</md-icon>
+                </template>
                 {{ getBarcodeTypeLabel(barcode.barcode_type) }}
               </md-assist-chip>
               <md-assist-chip
@@ -74,8 +70,8 @@
                 has-icon
               >
                 <template #icon>
-<md-icon  aria-hidden="true">check_circle</md-icon>
-</template>
+                  <md-icon aria-hidden="true">check_circle</md-icon>
+                </template>
                 Active
               </md-assist-chip>
               <md-assist-chip
@@ -85,8 +81,8 @@
                 has-icon
               >
                 <template #icon>
-<md-icon  aria-hidden="true">person</md-icon>
-</template>
+                  <md-icon aria-hidden="true">person</md-icon>
+                </template>
                 {{ barcode.owner }}
               </md-assist-chip>
               <md-assist-chip
@@ -95,8 +91,8 @@
                 data-aria-label="Shared barcode"
               >
                 <template #icon>
-<md-icon  aria-hidden="true">group</md-icon>
-</template>
+                  <md-icon aria-hidden="true">group</md-icon>
+                </template>
                 Shared
               </md-assist-chip>
               <md-assist-chip
@@ -105,10 +101,10 @@
                 has-icon
               >
                 <template #icon>
-<md-icon  aria-hidden="true"
-                  >{{ barcode.profile_info?.has_avatar ? 'account_circle' : 'badge' }}
-                </md-icon>
-</template>
+                  <md-icon aria-hidden="true"
+                    >{{ barcode.profile_info?.has_avatar ? 'account_circle' : 'badge' }}
+                  </md-icon>
+                </template>
                 {{ getProfileLabel(barcode) }}
               </md-assist-chip>
             </div>
@@ -177,9 +173,7 @@
                 type="number"
                 @input="(e) => $emit('update-limit', barcode, e.target.value)"
               >
-                <template #leading-icon>
-<md-icon >pin</md-icon>
-</template>
+                <md-icon slot="leading-icon">pin</md-icon>
               </md-outlined-text-field>
               <md-icon-button
                 :disabled="Number(barcode.daily_usage_limit || 0) === 0"
@@ -215,9 +209,7 @@
             "
             @click="$emit('set-active', barcode)"
           >
-            <template #icon>
-<md-icon >check_circle</md-icon>
-</template>
+            <md-icon slot="icon">check_circle</md-icon>
             Set Active
           </md-filled-tonal-button>
           <md-assist-chip
@@ -229,10 +221,10 @@
             @click="$emit('toggle-share', barcode)"
           >
             <template #icon>
-<md-icon  aria-hidden="true">{{
-              barcode.share_with_others ? 'share' : 'lock'
-            }}</md-icon>
-</template>
+              <md-icon aria-hidden="true">{{
+                barcode.share_with_others ? 'share' : 'lock'
+              }}</md-icon>
+            </template>
             {{ barcode.share_with_others ? 'Shared' : 'Private' }}
           </md-assist-chip>
           <md-icon-button

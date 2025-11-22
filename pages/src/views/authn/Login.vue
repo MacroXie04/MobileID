@@ -22,9 +22,7 @@
               @input="clearError('username')"
               @keyup.enter="!loading && handleSubmit()"
             >
-              <template #leading-icon>
-<md-icon >person</md-icon>
-</template>
+              <md-icon slot="leading-icon">person</md-icon>
             </md-outlined-text-field>
 
             <md-outlined-text-field
@@ -37,14 +35,10 @@
               @input="clearError('password')"
               @keyup.enter="!loading && handleSubmit()"
             >
-              <template #leading-icon>
-                <md-icon>lock</md-icon>
-              </template>
-              <template #trailing-icon>
-                <md-icon-button type="button" @click="showPassword = !showPassword">
-                  <md-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</md-icon>
-                </md-icon-button>
-              </template>
+              <md-icon slot="leading-icon">lock</md-icon>
+              <md-icon-button slot="trailing-icon" type="button" @click="showPassword = !showPassword">
+                <md-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</md-icon>
+              </md-icon-button>
             </md-outlined-text-field>
           </div>
 
@@ -59,9 +53,7 @@
           <!-- Submit Button -->
           <md-filled-button ref="submitBtn" :disabled="loading" class="submit-button" type="submit">
             <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
-            <template #icon>
-              <md-icon v-if="!loading">login</md-icon>
-            </template>
+            <md-icon slot="icon" v-if="!loading">login</md-icon>
             {{ loading ? 'Signing in...' : 'Sign In' }}
           </md-filled-button>
           <md-text-button
@@ -71,9 +63,7 @@
             @click="signInWithPasskey"
           >
             <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
-            <template #icon>
-              <md-icon v-if="!passkeyBusy">key</md-icon>
-            </template>
+            <md-icon slot="icon" v-if="!passkeyBusy">key</md-icon>
             {{ passkeyBusy ? 'Waiting for device...' : 'Sign in with passkey' }}
           </md-text-button>
         </form>

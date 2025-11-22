@@ -53,9 +53,7 @@
         </ul>
       </div>
       <md-filled-button class="retry-button" @click="retryConnection">
-        <template #icon>
-<md-icon >refresh</md-icon>
-</template>
+        <md-icon slot="icon">refresh</md-icon>
         Retry Connection
       </md-filled-button>
     </div>

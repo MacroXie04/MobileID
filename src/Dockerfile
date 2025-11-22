@@ -24,6 +24,10 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # Copy project
 COPY . /app/
 
+# Collect static files
+# Use a dummy secret key for build step; production key should be provided at runtime
+RUN SECRET_KEY=build_secret python manage.py collectstatic --noinput
+
 # Expose port
 EXPOSE 8000
 
