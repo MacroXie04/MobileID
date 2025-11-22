@@ -4,10 +4,7 @@ from django.contrib.auth import get_user_model
 
 
 class Command(BaseCommand):
-    help = (
-        "Creates a superuser if it does not exist, "
-        "using environment variables."
-    )
+    help = "Creates a superuser from env vars if it does not exist."
 
     def handle(self, *args, **options):
         User = get_user_model()
@@ -34,8 +31,5 @@ class Command(BaseCommand):
             User.objects.create_superuser(
                 username=username, email=email, password=password
             )
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f'Superuser "{username}" created successfully.'
-                )
-            )
+            msg = f'Superuser "{username}" created successfully.'
+            self.stdout.write(self.style.SUCCESS(msg))
