@@ -36,7 +36,11 @@
               @keyup.enter="!loading && handleSubmit()"
             >
               <md-icon slot="leading-icon">lock</md-icon>
-              <md-icon-button slot="trailing-icon" type="button" @click="showPassword = !showPassword">
+              <md-icon-button
+                slot="trailing-icon"
+                type="button"
+                @click="showPassword = !showPassword"
+              >
                 <md-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</md-icon>
               </md-icon-button>
             </md-outlined-text-field>
@@ -53,7 +57,7 @@
           <!-- Submit Button -->
           <md-filled-button ref="submitBtn" :disabled="loading" class="submit-button" type="submit">
             <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
-            <md-icon slot="icon" v-if="!loading">login</md-icon>
+            <md-icon v-if="!loading" slot="icon">login</md-icon>
             {{ loading ? 'Signing in...' : 'Sign In' }}
           </md-filled-button>
           <md-text-button
@@ -63,7 +67,7 @@
             @click="signInWithPasskey"
           >
             <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
-            <md-icon slot="icon" v-if="!passkeyBusy">key</md-icon>
+            <md-icon v-if="!passkeyBusy" slot="icon">key</md-icon>
             {{ passkeyBusy ? 'Waiting for device...' : 'Sign in with passkey' }}
           </md-text-button>
         </form>

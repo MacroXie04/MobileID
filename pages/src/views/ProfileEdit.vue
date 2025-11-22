@@ -131,7 +131,7 @@
               </div>
               <md-filled-button :disabled="passkeyBusy" type="button" @click="registerPasskey">
                 <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
-                <md-icon slot="icon" v-if="!passkeyBusy">{{ hasPasskey ? 'sync' : 'key' }}</md-icon>
+                <md-icon v-if="!passkeyBusy" slot="icon">{{ hasPasskey ? 'sync' : 'key' }}</md-icon>
                 {{ hasPasskey ? 'Replace Passkey' : 'Register Passkey' }}
               </md-filled-button>
             </div>
@@ -183,9 +183,7 @@
       <div ref="cropperContainer" class="cropper-container md-rounded-lg">
         <img ref="cropperImage" alt="Image to crop" class="cropper-image" />
       </div>
-      <div
-        class="cropper-tips md-typescale-body-small md-p-4 md-mt-4 md-rounded-lg md-text-center"
-      >
+      <div class="cropper-tips md-typescale-body-small md-p-4 md-mt-4 md-rounded-lg md-text-center">
         Drag to reposition • Scroll to zoom • Double-click to reset
       </div>
     </form>

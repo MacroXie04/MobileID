@@ -30,9 +30,7 @@
           placeholder="Paste your Barcode cookies here"
           @input="clearTransferError('cookie')"
         >
-          <template #leading-icon>
-            <md-icon>cookie</md-icon>
-          </template>
+          <md-icon slot="leading-icon">cookie</md-icon>
         </md-outlined-text-field>
 
         <div class="md-flex md-items-center md-gap-2">
@@ -46,9 +44,7 @@
             :disabled="transferLoading || !transferCookie.trim()"
             @click="requestTransferCode"
           >
-            <template #icon>
-              <md-icon>sync_alt</md-icon>
-            </template>
+            <md-icon slot="icon">sync_alt</md-icon>
             Request Transfer
           </md-filled-button>
         </div>
@@ -81,23 +77,17 @@
           placeholder="Enter or scan barcode"
           @input="clearError('newBarcode')"
         >
-          <template #leading-icon>
-            <md-icon>pin</md-icon>
-          </template>
+          <md-icon slot="leading-icon">pin</md-icon>
         </md-outlined-text-field>
 
         <div class="form-actions md-flex md-gap-3 md-flex-wrap">
           <md-outlined-button type="button" @click="toggleScanner">
-            <template #icon>
-              <md-icon>{{ showScanner ? 'videocam_off' : 'qr_code_scanner' }}</md-icon>
-            </template>
+            <md-icon slot="icon">{{ showScanner ? 'videocam_off' : 'qr_code_scanner' }}</md-icon>
             {{ showScanner ? 'Close Scanner' : 'Scan with Camera' }}
           </md-outlined-button>
 
           <md-filled-button :disabled="!newBarcode.trim()" type="submit">
-            <template #icon>
-              <md-icon>add</md-icon>
-            </template>
+            <md-icon slot="icon">add</md-icon>
             Add Barcode
           </md-filled-button>
         </div>
@@ -121,9 +111,7 @@
                 :key="device.deviceId"
                 :value="device.deviceId"
               >
-                <template #headline>
-                  <div>{{ device.label }}</div>
-                </template>
+                <div slot="headline">{{ device.label }}</div>
               </md-select-option>
             </md-outlined-select>
           </div>

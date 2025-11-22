@@ -58,9 +58,9 @@
             </h3>
             <div class="barcode-badges md-flex md-gap-2 md-flex-wrap">
               <md-assist-chip has-icon>
-                <template #icon>
-                  <md-icon aria-hidden="true">{{ iconForType(barcode.barcode_type) }}</md-icon>
-                </template>
+                <md-icon slot="icon" aria-hidden="true">{{
+                  iconForType(barcode.barcode_type)
+                }}</md-icon>
                 {{ getBarcodeTypeLabel(barcode.barcode_type) }}
               </md-assist-chip>
               <md-assist-chip
@@ -69,9 +69,7 @@
                 data-aria-label="Active barcode"
                 has-icon
               >
-                <template #icon>
-                  <md-icon aria-hidden="true">check_circle</md-icon>
-                </template>
+                <md-icon slot="icon" aria-hidden="true">check_circle</md-icon>
                 Active
               </md-assist-chip>
               <md-assist-chip
@@ -80,9 +78,7 @@
                 data-aria-label="Owner"
                 has-icon
               >
-                <template #icon>
-                  <md-icon aria-hidden="true">person</md-icon>
-                </template>
+                <md-icon slot="icon" aria-hidden="true">person</md-icon>
                 {{ barcode.owner }}
               </md-assist-chip>
               <md-assist-chip
@@ -90,9 +86,7 @@
                 aria-label="Shared barcode"
                 data-aria-label="Shared barcode"
               >
-                <template #icon>
-                  <md-icon aria-hidden="true">group</md-icon>
-                </template>
+                <md-icon slot="icon" aria-hidden="true">group</md-icon>
                 Shared
               </md-assist-chip>
               <md-assist-chip
@@ -100,11 +94,9 @@
                 :title="getProfileTooltip(barcode)"
                 has-icon
               >
-                <template #icon>
-                  <md-icon aria-hidden="true"
-                    >{{ barcode.profile_info?.has_avatar ? 'account_circle' : 'badge' }}
-                  </md-icon>
-                </template>
+                <md-icon slot="icon" aria-hidden="true"
+                  >{{ barcode.profile_info?.has_avatar ? 'account_circle' : 'badge' }}
+                </md-icon>
                 {{ getProfileLabel(barcode) }}
               </md-assist-chip>
             </div>
@@ -220,11 +212,9 @@
             has-icon
             @click="$emit('toggle-share', barcode)"
           >
-            <template #icon>
-              <md-icon aria-hidden="true">{{
-                barcode.share_with_others ? 'share' : 'lock'
-              }}</md-icon>
-            </template>
+            <md-icon slot="icon" aria-hidden="true">{{
+              barcode.share_with_others ? 'share' : 'lock'
+            }}</md-icon>
             {{ barcode.share_with_others ? 'Shared' : 'Private' }}
           </md-assist-chip>
           <md-icon-button

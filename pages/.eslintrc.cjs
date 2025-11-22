@@ -9,6 +9,7 @@ module.exports = {
     'vue/multi-word-component-names': 'off',
     // Allow alias-based imports resolved by Vite
     'vue/no-reserved-component-names': 'off',
+    'vue/no-deprecated-slot-attribute': 'off',
     'no-unused-vars': [
       'error',
       {
