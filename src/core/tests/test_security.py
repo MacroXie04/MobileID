@@ -19,9 +19,7 @@ class ErrorHandlingTest(TestCase):
     def test_admin_access_requires_staff(self):
         """Test that admin access requires staff privileges"""
         # Create regular user
-        user = User.objects.create_user(
-            username="regular", password="test123"
-        )
+        user = User.objects.create_user(username="regular", password="test123")
         self.client.force_login(user)
 
         response = self.client.get(reverse("admin:index"))
@@ -45,9 +43,7 @@ class SecurityTest(TestCase):
 
     def test_csrf_protection_enabled(self):
         """Test that CSRF protection is enabled"""
-        self.assertIn(
-            "django.middleware.csrf.CsrfViewMiddleware", settings.MIDDLEWARE
-        )
+        self.assertIn("django.middleware.csrf.CsrfViewMiddleware", settings.MIDDLEWARE)
 
     def test_clickjacking_protection_enabled(self):
         """Test that clickjacking protection is enabled"""
@@ -229,9 +225,7 @@ class SecurityTest(TestCase):
 
         # Perform a POST action (like changing a user)
         # First create a test user to modify
-        test_user = User.objects.create_user(
-            username="testuser", password="test123"
-        )
+        test_user = User.objects.create_user(username="testuser", password="test123")
 
         # POST to change the user (this should create an audit log)
         change_url = reverse("admin:auth_user_change", args=[test_user.id])
@@ -270,15 +264,11 @@ class SecurityTest(TestCase):
             is_staff=True,
             is_superuser=True,
         )
-        client = Client(
-            REMOTE_ADDR="192.168.1.100", HTTP_USER_AGENT="TestAgent/1.0"
-        )
+        client = Client(REMOTE_ADDR="192.168.1.100", HTTP_USER_AGENT="TestAgent/1.0")
         client.force_login(staff_user)
 
         # Perform a POST action to trigger audit logging
-        test_user = User.objects.create_user(
-            username="testuser2", password="test123"
-        )
+        test_user = User.objects.create_user(username="testuser2", password="test123")
         change_url = reverse("admin:auth_user_change", args=[test_user.id])
         client.post(
             change_url,

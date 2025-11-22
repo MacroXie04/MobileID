@@ -65,13 +65,9 @@ class BarcodeAdmin(admin.ModelAdmin):
     @admin.display(description="UUID")
     def barcode_uuid_display(self, obj):
         """Display UUID in a more readable format"""
-        return format_html(
-            "<code>{}</code>", str(obj.barcode_uuid)[:8] + "..."
-        )
+        return format_html("<code>{}</code>", str(obj.barcode_uuid)[:8] + "...")
 
-    @admin.display(
-        description="Total Usage", ordering="barcodeusage__total_usage"
-    )
+    @admin.display(description="Total Usage", ordering="barcodeusage__total_usage")
     def usage_count(self, obj):
         """Display total usage count from related BarcodeUsage"""
         try:

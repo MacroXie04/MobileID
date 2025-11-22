@@ -2,18 +2,12 @@
 <template>
   <div class="menu-container">
     <md-list class="user-menu-list">
-      <md-list-item
-          class="menu-item"
-          @click="handleEditProfile"
-      >
+      <md-list-item class="menu-item" @click="handleEditProfile">
         <md-icon slot="start">edit</md-icon>
         <div slot="headline">Edit Profile</div>
       </md-list-item>
       <md-divider></md-divider>
-      <md-list-item
-          class="menu-item menu-item-logout"
-          @click="handleLogout"
-      >
+      <md-list-item class="menu-item menu-item-logout" @click="handleLogout">
         <md-icon slot="start">logout</md-icon>
         <div slot="headline">Log out</div>
       </md-list-item>
@@ -22,7 +16,7 @@
 </template>
 
 <script setup>
-import {useRouter} from 'vue-router';
+import { useRouter } from 'vue-router';
 
 // Material Web Components
 import '@material/web/icon/icon.js';

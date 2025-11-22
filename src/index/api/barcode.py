@@ -14,9 +14,7 @@ class ActiveProfileAPIView(APIView):
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.info(
-            f"ActiveProfileAPIView called by user: {request.user.username}"
-        )
+        logger.info(f"ActiveProfileAPIView called by user: {request.user.username}")
 
         # Check if user is School type
         if not request.user.groups.filter(name="School").exists():
@@ -31,15 +29,10 @@ class ActiveProfileAPIView(APIView):
                 f"barcode={settings.barcode}"
             )
 
-            if (
-                settings.associate_user_profile_with_barcode
-                and settings.barcode
-            ):
+            if settings.associate_user_profile_with_barcode and settings.barcode:
                 try:
                     barcode_profile = settings.barcode.barcodeuserprofile
-                    logger.info(
-                        f"BarcodeUserProfile found: {barcode_profile.name}"
-                    )
+                    logger.info(f"BarcodeUserProfile found: {barcode_profile.name}")
 
                     profile_data = {
                         "name": barcode_profile.name,
@@ -54,14 +47,11 @@ class ActiveProfileAPIView(APIView):
                             img_data = f"data:image/png;base64,{img_data}"
                         profile_data["avatar_data"] = img_data
 
-                    logger.info(
-                        f"Returning profile data for: {profile_data['name']}"
-                    )
+                    logger.info(f"Returning profile data for: {profile_data['name']}")
                     return Response({"profile_info": profile_data})
                 except BarcodeUserProfile.DoesNotExist:
                     logger.info(
-                        "BarcodeUserProfile does not exist for selected "
-                        "barcode"
+                        "BarcodeUserProfile does not exist for selected " "barcode"
                     )
                     pass
         except UserBarcodeSettings.DoesNotExist:

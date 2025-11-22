@@ -71,9 +71,7 @@ class AdminAuditMiddleware:
             action = AdminAuditLog.ACTION
 
         # Log the action
-        self._log_admin_action(
-            request, action, resource=resource, success=True
-        )
+        self._log_admin_action(request, action, resource=resource, success=True)
 
     def _log_admin_action(
         self, request, action, resource="", success=True, details=None
@@ -87,9 +85,7 @@ class AdminAuditMiddleware:
         try:
             with transaction.atomic():
                 AdminAuditLog.objects.create(
-                    user=(
-                        request.user if request.user.is_authenticated else None
-                    ),
+                    user=(request.user if request.user.is_authenticated else None),
                     ip_address=self._get_client_ip(request),
                     action=action,
                     resource=resource,
@@ -139,9 +135,7 @@ def log_admin_login(request, user, success=True):
             resource="admin",
             success=success,
             user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
-            details={
-                "username": getattr(user, "username", "") if user else ""
-            },
+            details={"username": getattr(user, "username", "") if user else ""},
         )
     except Exception:
         pass

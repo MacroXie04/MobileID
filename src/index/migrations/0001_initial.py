@@ -110,9 +110,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.",  # noqa: E501
                         null=True,
-                        validators=[
-                            django.core.validators.MaxLengthValidator(10000)
-                        ],
+                        validators=[django.core.validators.MaxLengthValidator(10000)],
                         verbose_name="avatar (Base64)",
                     ),
                 ),

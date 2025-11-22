@@ -85,9 +85,7 @@ class BarcodePullTest(TestCase):
         """Test pulling a valid candidate (Male, Shareable)"""
         # Ensure no usage history
 
-        with patch(
-            "index.services.barcode._timestamp", return_value="20230101000000"
-        ):
+        with patch("index.services.barcode._timestamp", return_value="20230101000000"):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")
@@ -133,9 +131,7 @@ class BarcodePullTest(TestCase):
         )
 
         # bc_owned is still available
-        with patch(
-            "index.services.barcode._timestamp", return_value="20230101000000"
-        ):
+        with patch("index.services.barcode._timestamp", return_value="20230101000000"):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")
@@ -160,9 +156,7 @@ class BarcodePullTest(TestCase):
             last_used=now - timedelta(minutes=2)
         )
 
-        with patch(
-            "index.services.barcode._timestamp", return_value="20230101000000"
-        ):
+        with patch("index.services.barcode._timestamp", return_value="20230101000000"):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")
@@ -188,9 +182,7 @@ class BarcodePullTest(TestCase):
         )
 
         # Only bc_owned should be available
-        with patch(
-            "index.services.barcode._timestamp", return_value="20230101000000"
-        ):
+        with patch("index.services.barcode._timestamp", return_value="20230101000000"):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")
@@ -257,9 +249,7 @@ class BarcodePullTest(TestCase):
         # The pull logic fails to find candidate, so it leaves settings.barcode alone.  # noqa: E501
         # Then it uses settings.barcode.
 
-        with patch(
-            "index.services.barcode._timestamp", return_value="20230101000000"
-        ):
+        with patch("index.services.barcode._timestamp", return_value="20230101000000"):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")
@@ -282,9 +272,7 @@ class BarcodePullTest(TestCase):
         )
 
         # Should pick bc_unknow (others are Male/Female)
-        with patch(
-            "index.services.barcode._timestamp", return_value="20230101000000"
-        ):
+        with patch("index.services.barcode._timestamp", return_value="20230101000000"):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")

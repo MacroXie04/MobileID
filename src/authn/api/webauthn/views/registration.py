@@ -63,9 +63,7 @@ def api_register(request):
             "password2": request.data.get("password2"),
             "name": request.data.get("name"),
             "information_id": request.data.get("information_id"),
-            "user_profile_img_base64": request.data.get(
-                "user_profile_img_base64", ""
-            ),
+            "user_profile_img_base64": request.data.get("user_profile_img_base64", ""),
         }
 
         form = UserRegisterForm(data=form_data)
@@ -84,15 +82,11 @@ def api_register(request):
                     "message": "Registration successful",
                     "data": {
                         "username": user.username,
-                        "groups": list(
-                            user.groups.values_list("name", flat=True)
-                        ),
+                        "groups": list(user.groups.values_list("name", flat=True)),
                     },
                 }
             )
-            set_auth_cookies(
-                response, access_token, refresh_token, request=request
-            )
+            set_auth_cookies(response, access_token, refresh_token, request=request)
 
             return response
 

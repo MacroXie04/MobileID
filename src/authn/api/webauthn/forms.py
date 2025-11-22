@@ -62,9 +62,7 @@ class UserRegisterForm(UserCreationForm):
         • remove data-URI prefix
         • ensure content is valid Base64
         """
-        b64 = _clean_base64(
-            self.cleaned_data.get("user_profile_img_base64", "")
-        )
+        b64 = _clean_base64(self.cleaned_data.get("user_profile_img_base64", ""))
         if not b64:
             return ""
 

@@ -14,8 +14,7 @@ class BarcodeUserProfile(models.Model):
         null=True,
         blank=True,
         help_text=(
-            "Base64 encoded PNG of the user's 128*128 avatar. "
-            "No data-URI prefix."
+            "Base64 encoded PNG of the user's 128*128 avatar. " "No data-URI prefix."
         ),
         verbose_name="avatar (Base64)",
     )

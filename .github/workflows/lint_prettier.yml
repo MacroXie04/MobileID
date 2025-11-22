@@ -1,0 +1,31 @@
+name: Lint Prettier
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+          cache-dependency-path: pages/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./pages
+        run: npm install
+      
+      - name: Run Prettier
+        working-directory: ./pages
+        run: npx prettier --check .
+

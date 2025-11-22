@@ -31,7 +31,12 @@
       </a>
 
       <!-- Row 3 -->
-      <a class="btn-grid" href="https://alynx.ucmerced.edu/" rel="noopener noreferrer" target="_blank">
+      <a
+        class="btn-grid"
+        href="https://alynx.ucmerced.edu/"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
         <i class="fa fa-link fa-2x"></i>
         <p>Alynx</p>
       </a>
@@ -44,10 +49,10 @@
 </template>
 
 <script setup>
-import {toRefs} from 'vue';
-import {useRouter} from 'vue-router';
-import {logout} from '@/api/auth';
-import {clearAuthCookies, clearAuthStorage} from '@/utils/auth/cookie';
+import { toRefs } from 'vue';
+import { useRouter } from 'vue-router';
+import { logout } from '@/api/auth';
+import { clearAuthCookies, clearAuthStorage } from '@/utils/auth/cookie';
 
 // CSS
 import '@/assets/css/school-merged.css';
@@ -58,12 +63,12 @@ const router = useRouter();
 const props = defineProps({
   serverStatus: {
     type: String,
-    default: "Emergency"
-  }
+    default: 'Emergency',
+  },
 });
 
 // Destructure props for reactivity
-const {serverStatus} = toRefs(props);
+const { serverStatus } = toRefs(props);
 
 // Functions
 function handleEditProfile() {
@@ -85,10 +90,10 @@ async function handleLogout() {
 
     // Clear user profile cache
     try {
-      const {clearUserProfile} = await import('@/composables/user/useUserInfo');
+      const { clearUserProfile } = await import('@/composables/user/useUserInfo');
       clearUserProfile();
     } catch (error) {
-      console.warn("Could not clear user profile cache:", error);
+      console.warn('Could not clear user profile cache:', error);
     }
 
     // Redirect to login page
@@ -102,4 +107,3 @@ async function handleLogout() {
   }
 }
 </script>
-

@@ -1,6 +1,6 @@
 /* SettingsCard.vue (Dashboard) Specific Styles */
 .settings-section {
-    padding: 1rem;
-    border-radius: 0.75rem;
-    border: 1px solid var(--md-sys-color-outline-variant);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--md-sys-color-outline-variant);
 }

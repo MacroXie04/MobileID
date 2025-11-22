@@ -32,9 +32,7 @@ class LimitedGroupUserChangeForm(forms.ModelForm):
 
         # Set up the single group field
         allowed_groups = ["User", "School", "Staff"]
-        self.fields["group"].queryset = Group.objects.filter(
-            name__in=allowed_groups
-        )
+        self.fields["group"].queryset = Group.objects.filter(name__in=allowed_groups)
 
         # Set initial value if user already has a group
         if self.instance and self.instance.pk:
@@ -71,9 +69,7 @@ class LimitedGroupUserAddForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         allowed_groups = ["User", "School", "Staff"]
-        self.fields["group"].queryset = Group.objects.filter(
-            name__in=allowed_groups
-        )
+        self.fields["group"].queryset = Group.objects.filter(name__in=allowed_groups)
 
     def save(self, commit=True):
         # Just save the user, let the admin handle group assignment
@@ -154,10 +150,7 @@ class LimitedGroupUserAdmin(UserAdmin):
                 user.groups.add(selected_group)
 
         # Handle user_permissions (from the default Django admin)
-        if (
-            hasattr(form, "cleaned_data")
-            and "user_permissions" in form.cleaned_data
-        ):
+        if hasattr(form, "cleaned_data") and "user_permissions" in form.cleaned_data:
             user.user_permissions.set(form.cleaned_data["user_permissions"])
 
         # Now handle additional logic after groups have been saved
@@ -172,11 +165,7 @@ class LimitedGroupUserAdmin(UserAdmin):
         old_groups = getattr(self, "_old_groups_for_user", set())
         new_groups = set(user.groups.all())
 
-        if (
-            change
-            and staff_group in old_groups
-            and staff_group not in new_groups
-        ):
+        if change and staff_group in old_groups and staff_group not in new_groups:
             user_group = Group.objects.filter(name="User").first()
             school_group = Group.objects.filter(name="School").first()
 

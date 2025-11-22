@@ -60,9 +60,7 @@ class UCMercedConfig:
     SLEEP_DURATION = 2
 
     # Session cookie
-    DEFAULT_SESSION_COOKIE = (
-        "session_for%3Aindex_php=8e6df98bc61073a5ac6ba55eb92a9045"
-    )
+    DEFAULT_SESSION_COOKIE = "session_for%3Aindex_php=8e6df98bc61073a5ac6ba55eb92a9045"
 
     # Headers
     DEFAULT_HEADERS = {
@@ -139,15 +137,11 @@ class WebDriverManager:
             chrome_options.binary_location = "/usr/bin/chromium"
             logger.info("Using Chromium (apt) at /usr/bin/chromium")
         else:
-            raise FileNotFoundError(
-                "No Chrome/Chromium found at /usr/bin or /snap/bin"
-            )
+            raise FileNotFoundError("No Chrome/Chromium found at /usr/bin or /snap/bin")
 
         try:
             service = Service(ChromeDriverManager().install())
-            logger.info(
-                "Using ChromeDriver from webdriver-manager (auto-matched)"
-            )
+            logger.info("Using ChromeDriver from webdriver-manager (auto-matched)")
         except Exception as e:
             logger.warning(
                 f"webdriver-manager failed ({e}); falling back to "
@@ -157,9 +151,7 @@ class WebDriverManager:
 
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.implicitly_wait(UCMercedConfig.IMPLICIT_WAIT)
-        logger.info(
-            f"WebDriver initialized successfully on {platform.system()}"
-        )
+        logger.info(f"WebDriver initialized successfully on {platform.system()}")
         return driver
 
 
@@ -254,9 +246,7 @@ class UCMercedMobileIdClient:
                 )
 
                 # Prepare the JavaScript payload using fetch()
-                js_payload = self._build_js_payload(
-                    mobile_id_rand, student_id, barcode
-                )
+                js_payload = self._build_js_payload(mobile_id_rand, student_id, barcode)
 
                 # Execute the AJAX request
                 driver.execute_script(js_payload)
@@ -272,9 +262,7 @@ class UCMercedMobileIdClient:
 
                 # Determine success/failure
                 if self._is_success_response(response_text):
-                    logger.info(
-                        f"OTC sent successfully with code: {mobile_id_rand}"
-                    )
+                    logger.info(f"OTC sent successfully with code: {mobile_id_rand}")
                     return ApiResponse(
                         status="success",
                         code=mobile_id_rand,
@@ -289,9 +277,7 @@ class UCMercedMobileIdClient:
                     )
 
         except TimeoutException:
-            error_msg = (
-                f"Timeout waiting for response with code: {mobile_id_rand}"
-            )
+            error_msg = f"Timeout waiting for response with code: {mobile_id_rand}"
             logger.error(error_msg)
             return ApiResponse(status="error", error=error_msg)
 
@@ -313,9 +299,7 @@ class UCMercedMobileIdClient:
         Ensures student ID is prefixed with 'S'.
         """
         # Ensure the student ID starts with 'S'
-        student_id_formatted = (
-            f"S{re.sub(r'^s?', '', student_id, flags=re.IGNORECASE)}"
-        )
+        student_id_formatted = f"S{re.sub(r'^s?', '', student_id, flags=re.IGNORECASE)}"
 
         # Safely encode parameters for x-www-form-urlencoded
         encoded_params = (
@@ -351,8 +335,7 @@ class UCMercedMobileIdClient:
         """Check if response indicates success."""
         success_indicators = ["added", "success", "complete"]
         return any(
-            indicator in response_text.lower()
-            for indicator in success_indicators
+            indicator in response_text.lower() for indicator in success_indicators
         )
 
     def auto_send_code(self, user_cookies: str) -> ApiResponse:
@@ -380,13 +363,9 @@ class UCMercedMobileIdClient:
                 logger.error(error_msg)
                 return ApiResponse(status="error", error=error_msg)
 
-            logger.info(
-                f"Trying {len(mobile_data.mobile_id_rand_array)} codes"
-            )
+            logger.info(f"Trying {len(mobile_data.mobile_id_rand_array)} codes")
 
-            for i, mobile_id_rand in enumerate(
-                mobile_data.mobile_id_rand_array, 1
-            ):
+            for i, mobile_id_rand in enumerate(mobile_data.mobile_id_rand_array, 1):
                 logger.info(
                     f"Attempting code {i}/{len(mobile_data.mobile_id_rand_array)}: {mobile_id_rand}"  # noqa: E501
                 )
@@ -487,9 +466,7 @@ class UCMercedMobileIdClient:
 
         # Barcode
         if mobile_data.barcode:
-            barcode_preview = shorten(
-                mobile_data.barcode, width=30, placeholder="..."
-            )
+            barcode_preview = shorten(mobile_data.barcode, width=30, placeholder="...")
             print(f"[OK]   {'Barcode':<{LABEL_W}} : {barcode_preview}")
         else:
             print(f"[MISS] {'Barcode':<{LABEL_W}} : Not found")
@@ -533,16 +510,12 @@ class UCMercedMobileIdClient:
                 # Extract format
                 format_match = re.search(r"data:image/([^;]+)", img_base64)
                 img_format = (
-                    format_match.group(1).upper()
-                    if format_match
-                    else "Unknown"
+                    format_match.group(1).upper() if format_match else "Unknown"
                 )
 
                 # Extract base64 data
                 base64_data = (
-                    img_base64.split(",")[1]
-                    if "," in img_base64
-                    else img_base64
+                    img_base64.split(",")[1] if "," in img_base64 else img_base64
                 )
 
                 # Calculate approximate size in KB
@@ -632,9 +605,7 @@ class UCMercedMobileIdClient:
                 try:
                     array_str = array_match.group(1)
                     mobile_id_rand_array = json.loads(array_str)
-                    logger.info(
-                        f"Found {len(mobile_id_rand_array)} mobile ID codes"
-                    )
+                    logger.info(f"Found {len(mobile_id_rand_array)} mobile ID codes")
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse mobile ID array: {e}")
 
@@ -650,9 +621,7 @@ class UCMercedMobileIdClient:
                         f"Found student ID: {student_id} (cleaned from: {raw_student_id})"  # noqa: E501
                     )
                 else:
-                    logger.warning(
-                        f"Student ID contained no digits: {raw_student_id}"
-                    )
+                    logger.warning(f"Student ID contained no digits: {raw_student_id}")
                     student_id = None
 
             # Extract username with multiple fallback patterns
@@ -674,9 +643,7 @@ class UCMercedMobileIdClient:
                 )
                 if username_flexible_match:
                     username = username_flexible_match.group(1).strip()
-                    logger.info(
-                        f"Found username with flexible pattern: {username}"
-                    )
+                    logger.info(f"Found username with flexible pattern: {username}")
                 else:
                     # Try style-based pattern
                     username_style_match = re.search(
@@ -686,9 +653,7 @@ class UCMercedMobileIdClient:
                     )
                     if username_style_match:
                         username = username_style_match.group(1).strip()
-                        logger.info(
-                            f"Found username with style pattern: {username}"
-                        )
+                        logger.info(f"Found username with style pattern: {username}")
                     else:
                         # Try any h4 with name-like content
                         username_any_match = re.search(
@@ -721,26 +686,18 @@ class UCMercedMobileIdClient:
                                     re.IGNORECASE,
                                 )
                                 if display_name_match:
-                                    username = display_name_match.group(
-                                        1
-                                    ).strip()
+                                    username = display_name_match.group(1).strip()
                                     logger.info(
                                         f"Found username in name class: {username}"  # noqa: E501
                                     )
                                 else:
-                                    logger.warning(
-                                        "No username pattern matched"
-                                    )
+                                    logger.warning("No username pattern matched")
 
             # Clean up username if found
             if username:
                 # Remove any HTML entities and extra whitespace
-                username = re.sub(
-                    r"&[a-zA-Z]+;", "", username
-                )  # Remove HTML entities
-                username = re.sub(
-                    r"\s+", " ", username
-                ).strip()  # Normalize whitespace
+                username = re.sub(r"&[a-zA-Z]+;", "", username)  # Remove HTML entities
+                username = re.sub(r"\s+", " ", username).strip()  # Normalize whitespace
                 # Remove any remaining HTML tags
                 username = re.sub(r"<[^>]+>", "", username)
                 if username:
@@ -757,17 +714,13 @@ class UCMercedMobileIdClient:
 
             # Extract profile image
             profile_img_base64 = None
-            profile_img_match = re.search(
-                patterns["profile_img_js"], html_content
-            )
+            profile_img_match = re.search(patterns["profile_img_js"], html_content)
             if profile_img_match:
                 profile_img_base64 = profile_img_match.group(1)
                 logger.info("Found profile image in JavaScript variable")
             else:
                 # Try img tag as fallback
-                img_src_match = re.search(
-                    patterns["profile_img_tag"], html_content
-                )
+                img_src_match = re.search(patterns["profile_img_tag"], html_content)
                 if img_src_match:
                     profile_img_base64 = img_src_match.group(1)
                     logger.info("Found profile image in img tag")

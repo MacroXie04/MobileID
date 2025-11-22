@@ -21,9 +21,7 @@ class UserProfileServiceTest(TestCase):
             "hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
         )
 
-        returned_user = create_user_profile(
-            self.user, name, info_id, avatar_b64
-        )
+        returned_user = create_user_profile(self.user, name, info_id, avatar_b64)
 
         self.assertEqual(returned_user, self.user)
         profile = UserProfile.objects.get(user=self.user)

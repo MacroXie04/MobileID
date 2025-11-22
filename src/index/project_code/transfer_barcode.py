@@ -97,9 +97,7 @@ class TransferBarcode(UCMercedMobileIdClient):
             existing = Barcode.objects.filter(barcode=normalized_value).first()
             if existing:
                 if existing.user_id != user.id:
-                    raise ValueError(
-                        "Barcode already exists for a different user."
-                    )
+                    raise ValueError("Barcode already exists for a different user.")
                 if existing.barcode_type != barcode_type:
                     existing.barcode_type = barcode_type
                     existing.save(update_fields=["barcode_type"])
@@ -133,10 +131,7 @@ class TransferBarcode(UCMercedMobileIdClient):
                 if information_id and profile.information_id != information_id:
                     profile.information_id = information_id
                     updates.append("information_id")
-                if (
-                    avatar_b64 is not None
-                    and profile.user_profile_img != avatar_b64
-                ):
+                if avatar_b64 is not None and profile.user_profile_img != avatar_b64:
                     profile.user_profile_img = avatar_b64
                     updates.append("user_profile_img")
                 if cookies is not None and profile.user_cookies != cookies:
@@ -173,9 +168,7 @@ class TransferBarcode(UCMercedMobileIdClient):
         """
         # Check for essential data - we need at least some of these to be meaningful  # noqa: E501
         has_barcode = bool(mobile_data.barcode and mobile_data.barcode.strip())
-        has_student_id = bool(
-            mobile_data.student_id and mobile_data.student_id.strip()
-        )
+        has_student_id = bool(mobile_data.student_id and mobile_data.student_id.strip())
         has_mobile_codes = bool(
             mobile_data.mobile_id_rand_array
             and len(mobile_data.mobile_id_rand_array) > 0
@@ -212,17 +205,14 @@ class TransferBarcode(UCMercedMobileIdClient):
 
         return meaningful_count >= 2
 
-    def _convert_profile_image_to_png_128(
-        self, possibly_data_uri_b64: str
-    ) -> str:
+    def _convert_profile_image_to_png_128(self, possibly_data_uri_b64: str) -> str:
         try:
             if not possibly_data_uri_b64:
                 return ""
 
             # Strip data URI prefix if present
-            if (
-                "," in possibly_data_uri_b64
-                and possibly_data_uri_b64.startswith("data:image")
+            if "," in possibly_data_uri_b64 and possibly_data_uri_b64.startswith(
+                "data:image"
             ):
                 _, b64_data = possibly_data_uri_b64.split(",", 1)
             else:

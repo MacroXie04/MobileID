@@ -60,17 +60,13 @@ class BarcodeServiceTest(TestCase):
         self.assertNotEqual(barcode1, barcode2)
 
     @patch("index.services.barcode.Barcode.objects.filter")
-    def test_generate_unique_identification_barcode_max_attempts(
-        self, mock_filter
-    ):
+    def test_generate_unique_identification_barcode_max_attempts(self, mock_filter):
         """Test max attempts for unique barcode generation"""
         # Mock that all generated barcodes already exist
         mock_filter.return_value.exists.return_value = True
 
         with self.assertRaises(RuntimeError):
-            generate_unique_identification_barcode(
-                50
-            )  # Pass max_attempts parameter
+            generate_unique_identification_barcode(50)  # Pass max_attempts parameter
 
     def test_create_identification_barcode(self):
         """Test creating identification barcode"""
@@ -85,9 +81,7 @@ class BarcodeServiceTest(TestCase):
         new_barcode = _create_identification_barcode(self.user)
 
         # Check that old barcode was deleted
-        self.assertFalse(
-            Barcode.objects.filter(id=existing_barcode.id).exists()
-        )
+        self.assertFalse(Barcode.objects.filter(id=existing_barcode.id).exists())
 
         # Check new barcode
         self.assertEqual(new_barcode.user, self.user)
@@ -124,15 +118,11 @@ class BarcodeServiceTest(TestCase):
         result = generate_barcode(self.staff_user)
 
         self.assertEqual(result["status"], "error")
-        self.assertEqual(
-            result["message"], "Staff accounts cannot generate barcodes."
-        )
+        self.assertEqual(result["message"], "Staff accounts cannot generate barcodes.")
 
     def test_generate_barcode_invalid_group(self):
         """Test barcode generation for user with no valid group"""
-        user_no_group = User.objects.create_user(
-            username="nogroup", password="test123"
-        )
+        user_no_group = User.objects.create_user(username="nogroup", password="test123")
 
         result = generate_barcode(user_no_group)
 
@@ -148,9 +138,7 @@ class BarcodeServiceTest(TestCase):
         self.assertEqual(len(result["barcode"]), 28)
 
         # Check that identification barcode was created
-        barcode = Barcode.objects.get(
-            user=self.user, barcode_type="Identification"
-        )
+        barcode = Barcode.objects.get(user=self.user, barcode_type="Identification")
         self.assertEqual(barcode.barcode, result["barcode"])
 
     def test_generate_barcode_user_group_existing(self):
@@ -168,12 +156,8 @@ class BarcodeServiceTest(TestCase):
         self.assertEqual(result["barcode_type"], "Identification")
 
         # Check that new barcode was created and old one was deleted
-        self.assertFalse(
-            Barcode.objects.filter(id=existing_barcode.id).exists()
-        )
-        new_barcode = Barcode.objects.get(
-            user=self.user, barcode_type="Identification"
-        )
+        self.assertFalse(Barcode.objects.filter(id=existing_barcode.id).exists())
+        new_barcode = Barcode.objects.get(user=self.user, barcode_type="Identification")
         self.assertNotEqual(new_barcode.barcode, existing_barcode.barcode)
 
     def test_generate_barcode_school_group_no_selection(self):
@@ -195,9 +179,7 @@ class BarcodeServiceTest(TestCase):
             user=self.school_user, barcode=dynamic_barcode
         )
 
-        with patch(
-            "index.services.barcode._timestamp", return_value="20231201120000"
-        ):
+        with patch("index.services.barcode._timestamp", return_value="20231201120000"):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")
@@ -213,9 +195,7 @@ class BarcodeServiceTest(TestCase):
             barcode_type="Others",
         )
 
-        UserBarcodeSettings.objects.create(
-            user=self.school_user, barcode=other_barcode
-        )
+        UserBarcodeSettings.objects.create(user=self.school_user, barcode=other_barcode)
 
         result = generate_barcode(self.school_user)
 
@@ -238,9 +218,7 @@ class BarcodeServiceTest(TestCase):
             server_verification=False,  # Disabled to avoid session attribute error  # noqa: E501
         )
 
-        with patch(
-            "index.services.barcode._timestamp", return_value="20231201120000"
-        ):
+        with patch("index.services.barcode._timestamp", return_value="20231201120000"):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")

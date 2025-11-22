@@ -47,9 +47,7 @@ def api_avatar_upload(request):
     try:
         profile = request.user.userprofile
     except Exception:
-        return Response(
-            {"success": False, "message": "Profile not found"}, status=404
-        )
+        return Response({"success": False, "message": "Profile not found"}, status=404)
 
     if "avatar" not in request.FILES:
         return Response(
@@ -60,9 +58,7 @@ def api_avatar_upload(request):
     avatar_file = request.FILES["avatar"]
 
     if not avatar_file.content_type.startswith("image/"):
-        return Response(
-            {"success": False, "message": "Invalid file type"}, status=400
-        )
+        return Response({"success": False, "message": "Invalid file type"}, status=400)
 
     if avatar_file.size > 5 * 1024 * 1024:
         return Response(
@@ -78,9 +74,7 @@ def api_avatar_upload(request):
         profile.user_profile_img = b64
         profile.save()
 
-        return Response(
-            {"success": True, "message": "Avatar uploaded successfully"}
-        )
+        return Response({"success": True, "message": "Avatar uploaded successfully"})
     except Exception:
         logging.exception("Error processing avatar image upload")
         return Response(

@@ -15,8 +15,13 @@
 
     <!-- Auto-save Status Toast -->
     <transition name="slide-down">
-      <div v-if="autoSaveStatus.show"
-           :class="['message-toast md-banner', autoSaveStatus.type === 'success' ? 'md-banner-success' : 'md-banner-error']">
+      <div
+        v-if="autoSaveStatus.show"
+        :class="[
+          'message-toast md-banner',
+          autoSaveStatus.type === 'success' ? 'md-banner-success' : 'md-banner-error',
+        ]"
+      >
         <md-icon>{{ autoSaveStatus.type === 'success' ? 'check_circle' : 'error' }}</md-icon>
         <span class="md-typescale-body-medium">{{ autoSaveStatus.message }}</span>
         <md-icon-button @click="autoSaveStatus.show = false">
@@ -27,7 +32,11 @@
 
     <!-- Success Message Toast -->
     <transition name="slide-down">
-      <div v-if="successMessage" class="message-toast md-banner md-banner-success" style="top: 160px;">
+      <div
+        v-if="successMessage"
+        class="message-toast md-banner md-banner-success"
+        style="top: 160px"
+      >
         <md-icon>check_circle</md-icon>
         <span class="md-typescale-body-medium">{{ successMessage }}</span>
         <md-icon-button @click="successMessage = ''">
@@ -47,7 +56,7 @@
             <div class="avatar-upload-container md-flex md-items-center md-gap-8">
               <div class="avatar-section-center">
                 <div class="avatar-wrapper md-avatar-xl" @click="selectImage">
-                  <img :src="getAvatarSrc()" alt="Profile" class="avatar-image">
+                  <img :src="getAvatarSrc()" alt="Profile" class="avatar-image" />
                   <div class="avatar-overlay">
                     <md-icon>photo_camera</md-icon>
                     <span class="md-typescale-label-medium">Change Photo</span>
@@ -56,18 +65,20 @@
 
                 <div class="avatar-info">
                   <p class="md-typescale-body-medium md-m-0">Click to upload a new profile photo</p>
-                  <p class="md-typescale-body-small md-m-0 md-mt-1">JPG or PNG • Max 5MB • Recommended: Square image</p>
+                  <p class="md-typescale-body-small md-m-0 md-mt-1">
+                    JPG or PNG • Max 5MB • Recommended: Square image
+                  </p>
                 </div>
               </div>
             </div>
 
             <input
-                ref="fileInput"
-                accept="image/jpeg,image/jpg,image/png"
-                class="hidden-input"
-                type="file"
-                @change="handleFileSelect"
-            >
+              ref="fileInput"
+              accept="image/jpeg,image/jpg,image/png"
+              class="hidden-input"
+              type="file"
+              @change="handleFileSelect"
+            />
 
             <transition name="fade">
               <div v-if="errors.user_profile_img" class="md-banner md-banner-error md-mt-4">
@@ -85,23 +96,23 @@
 
             <div class="md-form-field">
               <md-outlined-text-field
-                  v-model="formData.name"
-                  :error="!!errors.name"
-                  :error-text="errors.name"
-                  label="Full Name"
-                  @input="handleFieldChange('name')"
-                  @keyup.enter="!loading && handleSubmit()"
+                v-model="formData.name"
+                :error="!!errors.name"
+                :error-text="errors.name"
+                label="Full Name"
+                @input="handleFieldChange('name')"
+                @keyup.enter="!loading && handleSubmit()"
               >
                 <md-icon slot="leading-icon">badge</md-icon>
               </md-outlined-text-field>
 
               <md-outlined-text-field
-                  v-model="formData.information_id"
-                  :error="!!errors.information_id"
-                  :error-text="errors.information_id"
-                  label="Information ID"
-                  @input="handleFieldChange('information_id')"
-                  @keyup.enter="!loading && handleSubmit()"
+                v-model="formData.information_id"
+                :error="!!errors.information_id"
+                :error-text="errors.information_id"
+                label="Information ID"
+                @input="handleFieldChange('information_id')"
+                @keyup.enter="!loading && handleSubmit()"
               >
                 <md-icon slot="leading-icon">fingerprint</md-icon>
               </md-outlined-text-field>
@@ -120,7 +131,7 @@
               </div>
               <md-filled-button :disabled="passkeyBusy" type="button" @click="registerPasskey">
                 <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
-                <md-icon v-else slot="icon">{{ hasPasskey ? 'sync' : 'key' }}</md-icon>
+                <md-icon v-if="!passkeyBusy" slot="icon">{{ hasPasskey ? 'sync' : 'key' }}</md-icon>
                 {{ hasPasskey ? 'Replace Passkey' : 'Register Passkey' }}
               </md-filled-button>
             </div>
@@ -138,9 +149,7 @@
               <md-icon v-else-if="lastSaved" class="auto-save-icon md-text-primary">
                 check_circle
               </md-icon>
-              <md-icon v-else class="auto-save-icon md-text-on-surface-variant">
-                schedule
-              </md-icon>
+              <md-icon v-else class="auto-save-icon md-text-on-surface-variant"> schedule </md-icon>
               <span class="md-typescale-body-small">
                 {{ getAutoSaveStatusText() }}
               </span>
@@ -160,14 +169,19 @@
   </div>
 
   <!-- Cropper Dialog -->
-  <md-dialog ref="cropperDialog" :open="showCropper" class="cropper-dialog" @close="handleDialogClose">
+  <md-dialog
+    ref="cropperDialog"
+    :open="showCropper"
+    class="cropper-dialog"
+    @close="handleDialogClose"
+  >
     <div slot="headline">
       <md-icon>crop</md-icon>
       Crop Your Photo
     </div>
     <form slot="content" class="cropper-content" method="dialog">
       <div ref="cropperContainer" class="cropper-container md-rounded-lg">
-        <img ref="cropperImage" alt="Image to crop" class="cropper-image">
+        <img ref="cropperImage" alt="Image to crop" class="cropper-image" />
       </div>
       <div class="cropper-tips md-typescale-body-small md-p-4 md-mt-4 md-rounded-lg md-text-center">
         Drag to reposition • Scroll to zoom • Double-click to reset
@@ -185,18 +199,17 @@
       </md-filled-button>
     </div>
   </md-dialog>
-
 </template>
 
 <script setup>
-import {onMounted, onUnmounted, ref} from 'vue';
-import {useRouter} from 'vue-router';
-import {getUserProfile, updateUserProfile} from '@/api/auth';
-import {baseURL} from '@/config';
-import {useImageCropper} from '@/composables/user/useImageCropper.js';
-import {usePasskeyRegistration} from '@/composables/auth/usePasskeyRegistration.js';
-import {useAutoSave} from '@/composables/common/useAutoSave.js';
-import {fileToBase64, validateImageFile} from '@/utils/user/imageUtils.js';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { getUserProfile, updateUserProfile } from '@/api/auth';
+import { baseURL } from '@/config';
+import { useImageCropper } from '@/composables/user/useImageCropper.js';
+import { usePasskeyRegistration } from '@/composables/auth/usePasskeyRegistration.js';
+import { useAutoSave } from '@/composables/common/useAutoSave.js';
+import { fileToBase64, validateImageFile } from '@/utils/user/imageUtils.js';
 import '@/assets/css/auth-merged.css';
 
 const router = useRouter();
@@ -209,7 +222,7 @@ const cropperDialog = ref(null);
 const loading = ref(false);
 const formData = ref({
   name: '',
-  information_id: ''
+  information_id: '',
 });
 const avatarFile = ref(null);
 const avatarPreviewUrl = ref('');
@@ -222,37 +235,33 @@ const originalData = ref({});
 const {
   cropperImage,
   showCropper,
-  cropperLoading,
-  applyingCrop,
   initializeCropper,
   resetCrop,
   applyCrop: applyCropBase,
-  closeCropper
+  closeCropper,
 } = useImageCropper({
   targetWidth: 256,
   targetHeight: 256,
   quality: 0.9,
-  enableAdvancedControls: false
+  enableAdvancedControls: false,
 });
 
 // Passkey registration composable
 const {
   passkeyBusy,
   error: passkeyError,
-  registerPasskey: registerPasskeyBase
+  registerPasskey: registerPasskeyBase,
 } = usePasskeyRegistration();
 
 // Auto-save composable
 const {
   autoSaving,
   lastSaved,
-  hasChanges,
   autoSaveStatus,
   triggerAutoSave,
   getStatusText: getAutoSaveStatusText,
-  hideToast
 } = useAutoSave(autoSaveChanges, {
-  debounceMs: 1500
+  debounceMs: 1500,
 });
 
 // Methods
@@ -278,7 +287,7 @@ const handleFileSelect = async (event) => {
   // Validate file
   const validation = validateImageFile(file, {
     allowedTypes: /^image\/(jpe?g|png)$/i,
-    maxSizeMB: 5
+    maxSizeMB: 5,
   });
 
   if (!validation.success) {
@@ -340,7 +349,7 @@ async function autoSaveChanges() {
   // Prepare data for auto-save
   const profileData = {
     name: formData.value.name,
-    information_id: formData.value.information_id
+    information_id: formData.value.information_id,
   };
 
   // Check if text fields have changed
@@ -353,7 +362,7 @@ async function autoSaveChanges() {
 
   // Only auto-save if data has actually changed
   if (!textFieldsChanged && !avatarFile.value) {
-    return {success: false};
+    return { success: false };
   }
 
   const response = await updateUserProfile(profileData);
@@ -362,7 +371,7 @@ async function autoSaveChanges() {
     // Update original data to match current data
     originalData.value = {
       name: formData.value.name,
-      information_id: formData.value.information_id
+      information_id: formData.value.information_id,
     };
 
     // Clear avatar file after successful save
@@ -370,9 +379,9 @@ async function autoSaveChanges() {
       avatarFile.value = null;
     }
 
-    return {success: true, message: 'Profile auto-saved successfully'};
+    return { success: true, message: 'Profile auto-saved successfully' };
   } else {
-    return {success: false, message: response.message || 'Auto-save failed'};
+    return { success: false, message: response.message || 'Auto-save failed' };
   }
 }
 
@@ -384,7 +393,7 @@ const handleSubmit = async () => {
 
   try {
     // Prepare data including base64 avatar if available
-    const profileData = {...formData.value};
+    const profileData = { ...formData.value };
 
     // Add base64 avatar if there's a new one
     if (avatarFile.value) {
@@ -395,7 +404,7 @@ const handleSubmit = async () => {
     const response = await updateUserProfile(profileData);
     if (!response.success) {
       if (response.errors) {
-        Object.keys(response.errors).forEach(key => {
+        Object.keys(response.errors).forEach((key) => {
           if (Array.isArray(response.errors[key])) {
             errors.value[key] = response.errors[key][0];
           } else {
@@ -414,7 +423,7 @@ const handleSubmit = async () => {
     // Update original data to match current data
     originalData.value = {
       name: formData.value.name,
-      information_id: formData.value.information_id
+      information_id: formData.value.information_id,
     };
 
     setTimeout(() => {
@@ -432,7 +441,7 @@ const loadProfile = async () => {
   try {
     const response = await getUserProfile();
     if (response.success) {
-      formData.value = {...response.data};
+      formData.value = { ...response.data };
       if (typeof response.data.has_passkey !== 'undefined') {
         hasPasskey.value = !!response.data.has_passkey;
       }
@@ -440,19 +449,19 @@ const loadProfile = async () => {
       // Initialize original data for auto-save comparison
       originalData.value = {
         name: response.data.name || '',
-        information_id: response.data.information_id || ''
+        information_id: response.data.information_id || '',
       };
 
       // Load avatar separately
       try {
         const avatarResponse = await fetch(`${baseURL}/authn/user_img/`, {
-          credentials: "include"
+          credentials: 'include',
         });
         if (avatarResponse.ok) {
           const blob = await avatarResponse.blob();
           avatarPreviewUrl.value = URL.createObjectURL(blob);
         }
-      } catch (avatarError) {
+      } catch (_avatarError) {
         console.log('No avatar found or error loading avatar');
       }
     }
@@ -468,7 +477,7 @@ async function registerPasskey() {
   if (success) {
     hasPasskey.value = true;
     successMessage.value = 'Passkey registered successfully!';
-    setTimeout(() => successMessage.value = '', 3000);
+    setTimeout(() => (successMessage.value = ''), 3000);
   } else if (passkeyError.value) {
     errors.value.general = passkeyError.value;
   }
@@ -487,4 +496,3 @@ onMounted(() => {
   loadProfile();
 });
 </script>
-

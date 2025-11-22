@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: ./src
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./src:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=docker-dev-secret-key
+      - DB_PROFILE=local
+      - DATABASE_URL_LOCAL=postgres://postgres:postgres@db:5432/mobileid_local
+    restart: always
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=mobileid_local
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
+volumes:
+  postgres_data:

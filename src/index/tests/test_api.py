@@ -32,9 +32,7 @@ class GenerateBarcodeAPITest(APITestCase):
 
         # Authenticate user
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
     def test_generate_barcode_success(self):
         """Test successful barcode generation"""
@@ -88,9 +86,7 @@ class BarcodeDashboardAPITest(APITestCase):
     def _authenticate_user(self, user):
         """Helper to authenticate a user"""
         refresh = RefreshToken.for_user(user)
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
     def test_dashboard_get_school_user(self):
         """Test getting dashboard data for school user"""
@@ -128,9 +124,7 @@ class BarcodeDashboardAPITest(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertIn(
-            "User type accounts cannot access", response.data["detail"]
-        )
+        self.assertIn("User type accounts cannot access", response.data["detail"])
 
     def test_dashboard_post_update_settings(self):
         """Test updating barcode settings"""
@@ -302,12 +296,8 @@ class BarcodeDashboardAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("pull_settings", response.data)
-        self.assertEqual(
-            response.data["pull_settings"]["pull_setting"], "Disable"
-        )
-        self.assertEqual(
-            response.data["pull_settings"]["gender_setting"], "Unknow"
-        )
+        self.assertEqual(response.data["pull_settings"]["pull_setting"], "Disable")
+        self.assertEqual(response.data["pull_settings"]["gender_setting"], "Unknow")
 
     def test_dashboard_post_update_pull_settings(self):
         """Test updating pull settings via POST"""
@@ -326,17 +316,11 @@ class BarcodeDashboardAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "success")
         self.assertIn("pull_settings", response.data)
-        self.assertEqual(
-            response.data["pull_settings"]["pull_setting"], "Enable"
-        )
-        self.assertEqual(
-            response.data["pull_settings"]["gender_setting"], "Male"
-        )
+        self.assertEqual(response.data["pull_settings"]["pull_setting"], "Enable")
+        self.assertEqual(response.data["pull_settings"]["gender_setting"], "Male")
 
         # Check settings were updated in database
-        pull_settings = UserBarcodePullSettings.objects.get(
-            user=self.school_user
-        )
+        pull_settings = UserBarcodePullSettings.objects.get(user=self.school_user)
         self.assertEqual(pull_settings.pull_setting, "Enable")
         self.assertEqual(pull_settings.gender_setting, "Male")
 
@@ -474,9 +458,7 @@ class BarcodeDashboardAPITest(APITestCase):
         self.assertIsNone(settings.barcode)
 
         # Check that pull settings were updated
-        pull_settings = UserBarcodePullSettings.objects.get(
-            user=self.school_user
-        )
+        pull_settings = UserBarcodePullSettings.objects.get(user=self.school_user)
         self.assertEqual(pull_settings.pull_setting, "Enable")
         self.assertEqual(pull_settings.gender_setting, "Male")
 
@@ -502,9 +484,7 @@ class ActiveProfileAPITest(APITestCase):
 
     def _auth(self, user):
         refresh = RefreshToken.for_user(user)
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
     def test_non_school_user_gets_none(self):
         self._auth(self.regular_user)
@@ -537,9 +517,7 @@ class ActiveProfileAPITest(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(resp.data["profile_info"])
         self.assertEqual(resp.data["profile_info"]["name"], "School User")
-        self.assertEqual(
-            resp.data["profile_info"]["information_id"], "SCHOOL123"
-        )
+        self.assertEqual(resp.data["profile_info"]["information_id"], "SCHOOL123")
         self.assertFalse(resp.data["profile_info"]["has_avatar"])
 
     def test_school_user_with_avatar_adds_data_uri(self):
@@ -581,9 +559,7 @@ class TransferCatCardAPITest(APITestCase):
         group = Group.objects.create(name="School")
         self.user.groups.add(group)
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
     def test_missing_cookies_returns_400(self):
         url = reverse("index:api_catcard_transfer")
@@ -591,9 +567,7 @@ class TransferCatCardAPITest(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     @patch("index.api.transfer.process_user_cookie")
-    def test_warning_for_missing_required_cookie_returns_400(
-        self, mock_process
-    ):
+    def test_warning_for_missing_required_cookie_returns_400(self, mock_process):
         mock_process.return_value = SimpleNamespace(
             header_value="Cookie: a=b",
             warnings=["Missing required cookie session"],
@@ -631,7 +605,5 @@ class TransferCatCardAPITest(APITestCase):
         mock_transfer_cls.return_value = mock_instance
         url = reverse("index:api_catcard_transfer")
         resp = self.client.post(url, {"cookies": "good"}, format="json")
-        self.assertEqual(
-            resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertFalse(resp.data["success"])

@@ -54,17 +54,11 @@ class EncryptedTokenObtainPairSerializer(_BaseLoginSerializer):
             self._log_auth_event(
                 username, client_ip, "failure", reason="invalid_credentials"
             )
-            raise AuthenticationFailed(
-                detail=self.generic_error_message
-            ) from exc
+            raise AuthenticationFailed(detail=self.generic_error_message) from exc
         except TokenError as exc:  # pragma: no cover
             self._record_failed_attempt(attempt_record, client_ip)
-            self._log_auth_event(
-                username, client_ip, "failure", reason="token_error"
-            )
-            raise AuthenticationFailed(
-                detail=self.generic_error_message
-            ) from exc
+            self._log_auth_event(username, client_ip, "failure", reason="token_error")
+            raise AuthenticationFailed(detail=self.generic_error_message) from exc
 
         self._reset_failed_attempts(attempt_record, client_ip)
         self._log_auth_event(username, client_ip, "success")
@@ -92,9 +86,7 @@ class RSAEncryptedLoginSerializer(_BaseLoginSerializer):
             self._log_auth_event(
                 username, client_ip, "failure", reason="missing_password"
             )
-            raise serializers.ValidationError(
-                {"detail": self.generic_error_message}
-            )
+            raise serializers.ValidationError({"detail": self.generic_error_message})
 
         try:
             validate_encrypted_password_format(password)
@@ -109,9 +101,7 @@ class RSAEncryptedLoginSerializer(_BaseLoginSerializer):
                 "failure",
                 reason="invalid_encryption_format",
             )
-            raise serializers.ValidationError(
-                {"detail": self.generic_error_message}
-            )
+            raise serializers.ValidationError({"detail": self.generic_error_message})
 
         try:
             decrypted_password, nonce = decrypt_password_with_nonce(password)
@@ -124,9 +114,7 @@ class RSAEncryptedLoginSerializer(_BaseLoginSerializer):
             self._log_auth_event(
                 username, client_ip, "failure", reason="decrypt_failed"
             )
-            raise serializers.ValidationError(
-                {"detail": self.generic_error_message}
-            )
+            raise serializers.ValidationError({"detail": self.generic_error_message})
 
         try:
             consume_login_challenge(nonce)
@@ -134,12 +122,8 @@ class RSAEncryptedLoginSerializer(_BaseLoginSerializer):
             logger.warning(
                 "Login attempt with invalid or expired nonce for %s", username
             )
-            self._log_auth_event(
-                username, client_ip, "failure", reason="invalid_nonce"
-            )
-            raise serializers.ValidationError(
-                {"detail": self.generic_error_message}
-            )
+            self._log_auth_event(username, client_ip, "failure", reason="invalid_nonce")
+            raise serializers.ValidationError({"detail": self.generic_error_message})
 
         try:
             data = super().validate(attrs)
@@ -148,17 +132,11 @@ class RSAEncryptedLoginSerializer(_BaseLoginSerializer):
             self._log_auth_event(
                 username, client_ip, "failure", reason="invalid_credentials"
             )
-            raise AuthenticationFailed(
-                detail=self.generic_error_message
-            ) from exc
+            raise AuthenticationFailed(detail=self.generic_error_message) from exc
         except TokenError as exc:  # pragma: no cover
             self._record_failed_attempt(attempt_record, client_ip)
-            self._log_auth_event(
-                username, client_ip, "failure", reason="token_error"
-            )
-            raise AuthenticationFailed(
-                detail=self.generic_error_message
-            ) from exc
+            self._log_auth_event(username, client_ip, "failure", reason="token_error")
+            raise AuthenticationFailed(detail=self.generic_error_message) from exc
 
         self._reset_failed_attempts(attempt_record, client_ip)
         self._log_auth_event(username, client_ip, "success")

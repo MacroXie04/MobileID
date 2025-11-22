@@ -61,9 +61,7 @@ def generate_unique_identification_barcode(max_attempts: int = 50) -> str:
 def _create_identification_barcode(user) -> Barcode:
     """Delete prior Identification barcodes for *user* and create a fresh
     one."""
-    Barcode.objects.filter(
-        user=user, barcode_type=BARCODE_IDENTIFICATION
-    ).delete()
+    Barcode.objects.filter(user=user, barcode_type=BARCODE_IDENTIFICATION).delete()
     return Barcode.objects.create(
         user=user,
         barcode_type=BARCODE_IDENTIFICATION,
@@ -90,9 +88,7 @@ def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
 
         # If no rows were updated, create a new record
         if not updated:
-            BarcodeUsage.objects.create(
-                barcode=barcode, total_usage=1, last_used=now
-            )
+            BarcodeUsage.objects.create(barcode=barcode, total_usage=1, last_used=now)
 
     if request_user is not None:
         TransactionService.create_transaction(
@@ -169,9 +165,7 @@ def generate_barcode(user) -> dict:
             # 1. Check for recent personal usage (Stickiness) - 10 min
             cutoff_10m = timezone.now() - timedelta(minutes=10)
             recent_txn = (
-                Transaction.objects.filter(
-                    user=user, time_created__gte=cutoff_10m
-                )
+                Transaction.objects.filter(user=user, time_created__gte=cutoff_10m)
                 .order_by("-time_created")
                 .first()
             )

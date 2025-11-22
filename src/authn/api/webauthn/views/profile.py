@@ -35,9 +35,7 @@ def api_profile(request):
     try:
         profile = request.user.userprofile
     except Exception:
-        return Response(
-            {"success": False, "message": "Profile not found"}, status=404
-        )
+        return Response({"success": False, "message": "Profile not found"}, status=404)
 
     if request.method == "GET":
         return Response(
@@ -80,9 +78,7 @@ def api_profile(request):
                 return Response(
                     {
                         "success": False,
-                        "errors": {
-                            "user_profile_img": "Invalid Base64 avatar data"
-                        },
+                        "errors": {"user_profile_img": "Invalid Base64 avatar data"},
                     },
                     status=400,
                 )
@@ -90,6 +86,4 @@ def api_profile(request):
             profile.user_profile_img = None
 
     profile.save()
-    return Response(
-        {"success": True, "message": "Profile updated successfully"}
-    )
+    return Response({"success": True, "message": "Profile updated successfully"})
