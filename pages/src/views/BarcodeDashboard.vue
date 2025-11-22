@@ -7,7 +7,9 @@
           <h3 class="md-typescale-title-medium md-m-0">Barcode Dashboard</h3>
         </div>
         <md-filled-tonal-button @click="router.push('/')">
-          <md-icon slot="icon">arrow_back</md-icon>
+          <template #icon>
+<md-icon >arrow_back</md-icon>
+</template>
           Back to Home
         </md-filled-tonal-button>
       </div>
@@ -15,8 +17,14 @@
 
     <!-- Flash Messages -->
     <transition name="slide-down">
-      <div v-if="message"
-           :class="['message-toast', 'md-banner', messageType === 'success' ? 'md-banner-success' : 'md-banner-error']">
+      <div
+        v-if="message"
+        :class="[
+          'message-toast',
+          'md-banner',
+          messageType === 'success' ? 'md-banner-success' : 'md-banner-error',
+        ]"
+      >
         <md-icon>{{ messageType === 'success' ? 'check_circle' : 'error' }}</md-icon>
         <span class="md-typescale-body-medium">{{ message }}</span>
         <md-icon-button @click="message = ''">
@@ -30,104 +38,138 @@
       <!-- Tabs Navigation -->
       <div class="tabs-bar md-flex md-gap-2 md-items-center md-mb-6">
         <div class="chip-wrapper" @click="setTab('Overview')">
-          <md-filter-chip :selected="activeTab === 'Overview'">
-            Overview
-          </md-filter-chip>
+          <md-filter-chip :selected="activeTab === 'Overview'"> Overview </md-filter-chip>
         </div>
         <div class="chip-wrapper" @click="setTab('Barcodes')">
-          <md-filter-chip :selected="activeTab === 'Barcodes'">
-            Available Barcodes
-          </md-filter-chip>
+          <md-filter-chip :selected="activeTab === 'Barcodes'"> Available Barcodes </md-filter-chip>
         </div>
         <div class="chip-wrapper" @click="setTab('Add')">
-          <md-filter-chip :selected="activeTab === 'Add'">
-            Transfer & Add Barcode
-          </md-filter-chip>
+          <md-filter-chip :selected="activeTab === 'Add'"> Transfer & Add Barcode </md-filter-chip>
         </div>
       </div>
 
       <!-- Barcode Settings -->
       <SettingsCard
-          v-show="activeTab === 'Overview'"
-          :associate-user-profile-with-barcode="Boolean(settings.associate_user_profile_with_barcode)"
-          :barcode-choices="barcodeChoices"
-          :current-barcode-has-profile="currentBarcodeHasProfile"
-          :current-barcode-info="currentBarcodeInfo"
-          :errors="errors"
-          :format-date="formatDate"
-          :format-relative-time="formatRelativeTime"
-          :is-dynamic-selected="isDynamicSelected"
-          :is-saving="isSaving"
-          :is-user-group="isUserGroup"
-          :pull-settings="pullSettings"
-          :selected-barcode="selectedBarcode"
-          :server-verification="Boolean(settings.server_verification)"
-          :settings="settings"
-          @update-associate="(val) => { settings.associate_user_profile_with_barcode = val; onSettingChange(); }"
-          @update-server="(val) => { settings.server_verification = val; onSettingChange(); }"
-          @update-pull-setting="(val) => { pullSettings.pull_setting = val; onSettingChange(); }"
-          @update-gender-setting="(val) => { pullSettings.gender_setting = val; onSettingChange(); }"
+        v-show="activeTab === 'Overview'"
+        :associate-user-profile-with-barcode="Boolean(settings.associate_user_profile_with_barcode)"
+        :barcode-choices="barcodeChoices"
+        :current-barcode-has-profile="currentBarcodeHasProfile"
+        :current-barcode-info="currentBarcodeInfo"
+        :errors="errors"
+        :format-date="formatDate"
+        :format-relative-time="formatRelativeTime"
+        :is-dynamic-selected="isDynamicSelected"
+        :is-saving="isSaving"
+        :is-user-group="isUserGroup"
+        :pull-settings="pullSettings"
+        :selected-barcode="selectedBarcode"
+        :server-verification="Boolean(settings.server_verification)"
+        :settings="settings"
+        @update-associate="
+          (val) => {
+            settings.associate_user_profile_with_barcode = val;
+            onSettingChange();
+          }
+        "
+        @update-server="
+          (val) => {
+            settings.server_verification = val;
+            onSettingChange();
+          }
+        "
+        @update-pull-setting="
+          (val) => {
+            pullSettings.pull_setting = val;
+            onSettingChange();
+          }
+        "
+        @update-gender-setting="
+          (val) => {
+            pullSettings.gender_setting = val;
+            onSettingChange();
+          }
+        "
       />
 
       <!-- Barcodes List -->
       <BarcodesListCard
-          v-show="activeTab === 'Barcodes'"
-          :active-tab="activeTab"
-          :filter-type="filterType"
-          :filtered-barcodes="filteredBarcodes"
-          :has-active-filters="hasActiveFilters"
-          :owned-only="ownedOnly"
-          :pull-settings="pullSettings"
-          :settings="settings"
-          :updating-limit="updatingLimit"
-          @delete="deleteBarcode"
-          @update-filter="(val) => { filterType = val; onFilterChange(); }"
-          @toggle-owned="() => { ownedOnly = !ownedOnly; onFilterChange(); }"
-          @set-active="setActiveBarcode"
-          @toggle-share="toggleShare"
-          @update-limit="updateDailyLimit"
-          @increment-limit="incrementDailyLimit"
-          @decrement-limit="decrementDailyLimit"
-          @toggle-unlimited-switch="toggleUnlimitedSwitch"
-          @apply-limit-preset="applyLimitPreset"
+        v-show="activeTab === 'Barcodes'"
+        :active-tab="activeTab"
+        :filter-type="filterType"
+        :filtered-barcodes="filteredBarcodes"
+        :has-active-filters="hasActiveFilters"
+        :owned-only="ownedOnly"
+        :pull-settings="pullSettings"
+        :settings="settings"
+        :updating-limit="updatingLimit"
+        @delete="deleteBarcode"
+        @update-filter="
+          (val) => {
+            filterType = val;
+            onFilterChange();
+          }
+        "
+        @toggle-owned="
+          () => {
+            ownedOnly = !ownedOnly;
+            onFilterChange();
+          }
+        "
+        @set-active="setActiveBarcode"
+        @toggle-share="toggleShare"
+        @update-limit="updateDailyLimit"
+        @increment-limit="incrementDailyLimit"
+        @decrement-limit="decrementDailyLimit"
+        @toggle-unlimited-switch="toggleUnlimitedSwitch"
+        @apply-limit-preset="applyLimitPreset"
       />
 
       <!-- Add Barcode Section -->
       <AddBarcodeCard
-          v-show="activeTab === 'Add'"
-          :active-tab="activeTab"
-          @added="loadDashboard"
-          @message="showMessage"
+        v-show="activeTab === 'Add'"
+        :active-tab="activeTab"
+        @added="loadDashboard"
+        @message="showMessage"
       />
       <!-- Floating Action Button to Add -->
-      <md-fab style="position: fixed; right: 24px; bottom: 24px; z-index: 10;" @click="goToAddTab">
-        <md-icon slot="icon">add</md-icon>
-        <div slot="label">Add Barcode</div>
+      <md-fab style="position: fixed; right: 24px; bottom: 24px; z-index: 10" @click="goToAddTab">
+        <template #icon>
+<md-icon >add</md-icon>
+</template>
+        <template #label>
+<div >Add Barcode</div>
+</template>
       </md-fab>
     </main>
 
     <!-- Delete Confirmation Dialog -->
     <md-dialog :open="showConfirmDialog" @close="showConfirmDialog = false">
-      <div slot="headline">Delete Barcode?</div>
-      <form slot="content" method="dialog">
+      <template #headline>
+<div >Delete Barcode?</div>
+</template>
+      <template #content>
+<form  method="dialog">
         <p class="md-typescale-body-large">
           This will permanently delete the barcode. This action cannot be undone.
         </p>
       </form>
-      <div slot="actions">
+</template>
+      <template #actions>
+<div >
         <md-text-button @click="showConfirmDialog = false">Cancel</md-text-button>
         <md-filled-button @click="confirmDelete">Delete</md-filled-button>
       </div>
+</template>
     </md-dialog>
   </div>
 </template>
 
 <script setup>
-import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
-import {useRoute, useRouter} from 'vue-router';
-import {useApi} from '@/composables/common/useApi';
-import {useDailyLimit} from '@/composables/barcode/useDailyLimit';
-import {formatDate, formatRelativeTime} from '@/utils/common/dateUtils';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useApi } from '@/composables/common/useApi';
+import { useDailyLimit } from '@/composables/barcode/useDailyLimit';
+import { formatDate, formatRelativeTime } from '@/utils/common/dateUtils';
 import SettingsCard from '@/components/dashboard/SettingsCard.vue';
 import BarcodesListCard from '@/components/dashboard/BarcodesListCard.vue';
 import AddBarcodeCard from '@/components/dashboard/AddBarcodeCard.vue';
@@ -141,11 +183,10 @@ const route = useRoute();
 const {
   apiGetBarcodeDashboard,
   apiUpdateBarcodeSettings,
-  apiCreateBarcode,
   apiDeleteBarcode,
   apiGetActiveProfile,
   apiUpdateBarcodeShare,
-  apiUpdateBarcodeDailyLimit
+  apiUpdateBarcodeDailyLimit,
 } = useApi();
 
 // Utility function for showing messages
@@ -166,14 +207,15 @@ const {
   incrementDailyLimit: incrementDailyLimitBase,
   decrementDailyLimit: decrementDailyLimitBase,
   toggleUnlimitedSwitch: toggleUnlimitedSwitchBase,
-  applyLimitPreset: applyLimitPresetBase
+  applyLimitPreset: applyLimitPresetBase,
 } = useDailyLimit(apiUpdateBarcodeDailyLimit, showMessage);
 
 // Wrapper functions that pass barcodes ref
 const updateDailyLimit = (barcode, value) => updateDailyLimitBase(barcode, value, barcodes);
 const incrementDailyLimit = (barcode) => incrementDailyLimitBase(barcode, barcodes);
 const decrementDailyLimit = (barcode) => decrementDailyLimitBase(barcode, barcodes);
-const toggleUnlimitedSwitch = (barcode, event) => toggleUnlimitedSwitchBase(barcode, event, barcodes);
+const toggleUnlimitedSwitch = (barcode, event) =>
+  toggleUnlimitedSwitchBase(barcode, event, barcodes);
 const applyLimitPreset = (barcode, value) => applyLimitPresetBase(barcode, value, barcodes);
 
 // Reactive state
@@ -190,11 +232,11 @@ const activeTab = ref('Overview');
 const settings = ref({
   associate_user_profile_with_barcode: false,
   server_verification: false,
-  barcode: null
+  barcode: null,
 });
 const pullSettings = ref({
   pull_setting: 'Disable',
-  gender_setting: 'Unknow'
+  gender_setting: 'Unknow',
 });
 const barcodes = ref([]);
 const barcodeChoices = ref([]);
@@ -202,13 +244,13 @@ const isUserGroup = ref(false);
 const isSchoolGroup = ref(false);
 const isDynamicSelected = computed(() => {
   if (!settings.value.barcode) return false;
-  const current = barcodeChoices.value.find(c => Number(c.id) === Number(settings.value.barcode));
+  const current = barcodeChoices.value.find((c) => Number(c.id) === Number(settings.value.barcode));
   return current?.barcode_type === 'DynamicBarcode';
 });
 
 const currentBarcodeHasProfile = computed(() => {
   if (!settings.value.barcode) return false;
-  const current = barcodeChoices.value.find(c => Number(c.id) === Number(settings.value.barcode));
+  const current = barcodeChoices.value.find((c) => Number(c.id) === Number(settings.value.barcode));
   return current?.has_profile_addon || false;
 });
 
@@ -216,7 +258,7 @@ const currentBarcodeHasProfile = computed(() => {
 const selectedBarcode = computed(() => {
   if (!settings.value.barcode) return null;
   const id = Number(settings.value.barcode);
-  return (barcodes.value || []).find(b => Number(b.id) === id) || null;
+  return (barcodes.value || []).find((b) => Number(b.id) === id) || null;
 });
 
 // Dialog state
@@ -233,11 +275,11 @@ async function loadDashboard() {
     settings.value = {
       associate_user_profile_with_barcode: false,
       server_verification: false,
-      barcode: null
+      barcode: null,
     };
     pullSettings.value = {
       pull_setting: 'Disable',
-      gender_setting: 'Unknow'
+      gender_setting: 'Unknow',
     };
     barcodeChoices.value = [];
 
@@ -248,16 +290,18 @@ async function loadDashboard() {
     await nextTick(); // Wait for choices to be rendered
 
     settings.value = {
-      associate_user_profile_with_barcode: Boolean(data.settings.associate_user_profile_with_barcode),
+      associate_user_profile_with_barcode: Boolean(
+        data.settings.associate_user_profile_with_barcode
+      ),
       server_verification: Boolean(data.settings.server_verification),
-      barcode: data.settings.barcode ? Number(data.settings.barcode) : null
+      barcode: data.settings.barcode ? Number(data.settings.barcode) : null,
     };
 
     // Set pull settings if provided
     if (data.pull_settings) {
       pullSettings.value = {
         pull_setting: data.pull_settings.pull_setting || 'Disable',
-        gender_setting: data.pull_settings.gender_setting || 'Unknow'
+        gender_setting: data.pull_settings.gender_setting || 'Unknow',
       };
     }
 
@@ -267,7 +311,6 @@ async function loadDashboard() {
 
     // Check for active profile (for School users with barcode profile association)
     await checkActiveProfile();
-
   } catch (error) {
     showMessage('Failed to load dashboard: ' + error.message, 'danger');
   } finally {
@@ -309,7 +352,7 @@ async function autoSaveSettings() {
     const settingsToSend = {
       ...settings.value,
       barcode: settings.value.barcode ? Number(settings.value.barcode) : null,
-      pull_settings: pullSettings.value
+      pull_settings: pullSettings.value,
     };
 
     const response = await apiUpdateBarcodeSettings(settingsToSend);
@@ -321,17 +364,24 @@ async function autoSaveSettings() {
       }
       // Ensure the updated barcode value is properly typed
       if (response.settings && response.settings.barcode !== undefined) {
-        settings.value.barcode = response.settings.barcode ? Number(response.settings.barcode) : null;
+        settings.value.barcode = response.settings.barcode
+          ? Number(response.settings.barcode)
+          : null;
       }
       // Update association status from backend
-      if (response.settings && response.settings.associate_user_profile_with_barcode !== undefined) {
-        settings.value.associate_user_profile_with_barcode = Boolean(response.settings.associate_user_profile_with_barcode);
+      if (
+        response.settings &&
+        response.settings.associate_user_profile_with_barcode !== undefined
+      ) {
+        settings.value.associate_user_profile_with_barcode = Boolean(
+          response.settings.associate_user_profile_with_barcode
+        );
       }
       // Update pull settings from backend
       if (response.pull_settings) {
         pullSettings.value = {
           pull_setting: response.pull_settings.pull_setting || 'Disable',
-          gender_setting: response.pull_settings.gender_setting || 'Unknow'
+          gender_setting: response.pull_settings.gender_setting || 'Unknow',
         };
       }
     }
@@ -341,9 +391,8 @@ async function autoSaveSettings() {
     const remainingTime = Math.max(0, 1000 - elapsed);
 
     if (remainingTime > 0) {
-      await new Promise(resolve => setTimeout(resolve, remainingTime));
+      await new Promise((resolve) => setTimeout(resolve, remainingTime));
     }
-
   } catch (error) {
     if (error.status === 400 && error.errors) {
       errors.value = error.errors;
@@ -356,13 +405,12 @@ async function autoSaveSettings() {
     const remainingTime = Math.max(0, 1000 - elapsed);
 
     if (remainingTime > 0) {
-      await new Promise(resolve => setTimeout(resolve, remainingTime));
+      await new Promise((resolve) => setTimeout(resolve, remainingTime));
     }
   } finally {
     isSaving.value = false;
   }
 }
-
 
 // Filter state
 const filterType = ref('All'); // All | Dynamic | Static | Identification
@@ -372,16 +420,16 @@ const filteredBarcodes = computed(() => {
   let result = [...(barcodes.value || [])];
 
   if (ownedOnly.value) {
-    result = result.filter(b => b.is_owned_by_current_user);
+    result = result.filter((b) => b.is_owned_by_current_user);
   }
 
   if (filterType.value !== 'All') {
     if (filterType.value === 'Dynamic') {
-      result = result.filter(b => b.barcode_type === 'DynamicBarcode');
+      result = result.filter((b) => b.barcode_type === 'DynamicBarcode');
     } else if (filterType.value === 'Static') {
-      result = result.filter(b => b.barcode_type === 'Others');
+      result = result.filter((b) => b.barcode_type === 'Others');
     } else if (filterType.value === 'Identification') {
-      result = result.filter(b => b.barcode_type === 'Identification');
+      result = result.filter((b) => b.barcode_type === 'Identification');
     }
   }
 
@@ -439,9 +487,12 @@ async function toggleShare(barcode) {
     const res = await apiUpdateBarcodeShare(barcode.id, next);
     if (res?.status === 'success' && res?.barcode) {
       // Update local list entry optimistically with server echo
-      const idx = barcodes.value.findIndex(b => Number(b.id) === Number(barcode.id));
+      const idx = barcodes.value.findIndex((b) => Number(b.id) === Number(barcode.id));
       if (idx !== -1) {
-        barcodes.value[idx] = {...barcodes.value[idx], share_with_others: res.barcode.share_with_others};
+        barcodes.value[idx] = {
+          ...barcodes.value[idx],
+          share_with_others: res.barcode.share_with_others,
+        };
       }
       showMessage(next ? 'Sharing enabled' : 'Sharing disabled', 'success');
     }
@@ -477,7 +528,10 @@ async function setActiveBarcode(barcode) {
   if (!barcode) return;
   // Check if pull setting is enabled
   if (pullSettings.value.pull_setting === 'Enable') {
-    showMessage('Barcode selection is disabled when pull setting is enabled. Please disable pull setting first.', 'danger');
+    showMessage(
+      'Barcode selection is disabled when pull setting is enabled. Please disable pull setting first.',
+      'danger'
+    );
     return;
   }
   // No-op if already active
@@ -486,14 +540,13 @@ async function setActiveBarcode(barcode) {
   await autoSaveSettings();
 }
 
-
 // Scanner functionality has been moved to AddBarcodeCard component
 // Utility functions (date formatting, barcode formatting) imported from utils
 
 // Get current barcode info
 const currentBarcodeInfo = computed(() => {
   if (!settings.value.barcode) return null;
-  const current = barcodeChoices.value.find(c => Number(c.id) === Number(settings.value.barcode));
+  const current = barcodeChoices.value.find((c) => Number(c.id) === Number(settings.value.barcode));
   if (!current) return null;
 
   // Check if it's an Identification barcode
@@ -505,11 +558,10 @@ const currentBarcodeInfo = computed(() => {
   return `${current.barcode_type} ending with ...${current.barcode.slice(-4)}`;
 });
 
-
 // Lifecycle
 onMounted(() => {
   // Initialize tab from URL (?tab=Overview|Barcodes|Add)
-  const initialTab = (route.query.tab || 'Overview');
+  const initialTab = route.query.tab || 'Overview';
   if (['Overview', 'Barcodes', 'Add'].includes(initialTab)) {
     activeTab.value = initialTab;
   }
@@ -518,9 +570,8 @@ onMounted(() => {
 
 // Keep URL in sync with tab
 watch(activeTab, (tab) => {
-  const q = {...route.query, tab};
-  router.replace({query: q}).catch(() => {
-  });
+  const q = { ...route.query, tab };
+  router.replace({ query: q }).catch(() => {});
 });
 
 onUnmounted(() => {

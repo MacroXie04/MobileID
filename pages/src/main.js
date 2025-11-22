@@ -1,9 +1,9 @@
 // src/main.js
 
-import {createApp} from 'vue';
+import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
-import {baseURL} from './config';
+import { baseURL } from './config';
 
 // Global Material 3 Styles
 import '@/styles/global.css';
@@ -15,7 +15,7 @@ import 'cropperjs/dist/cropper.css';
 import $ from 'jquery';
 // Material Web - Import all components and the typescale styles
 import '@material/web/all.js';
-import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
+import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
 
 // Local fonts (replace Google Fonts CDN)
 import '@fontsource/roboto/400.css';
@@ -39,9 +39,9 @@ app.use(router);
 // Add the Material Design typescale styles to the document.
 // adoptedStyleSheets is a modern and efficient way to apply global styles.
 try {
-    document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
-} catch (_) {
-    // Older browsers without constructable stylesheets support: no-op
+  document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+} catch {
+  // Older browsers without constructable stylesheets support: no-op
 }
 
 app.mount('#app');

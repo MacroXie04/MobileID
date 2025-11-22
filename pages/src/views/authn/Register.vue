@@ -10,14 +10,15 @@
     <!-- Main Content -->
     <main class="auth-main">
       <div class="auth-card md-card md-rounded-xl">
-
         <!-- Registration Form -->
         <form class="auth-form" novalidate @submit.prevent="handleSubmit">
           <!-- Avatar Upload Section -->
           <div class="avatar-section">
-            <div class="avatar-upload-wrapper md-flex md-items-center md-gap-4 md-p-3 md-rounded-lg">
+            <div
+              class="avatar-upload-wrapper md-flex md-items-center md-gap-4 md-p-3 md-rounded-lg"
+            >
               <div class="avatar-container" @click="selectImage">
-                <img :src="getAvatarSrc()" alt="Profile" class="avatar-image">
+                <img :src="getAvatarSrc()" alt="Profile" class="avatar-image" />
                 <div class="avatar-overlay">
                   <md-icon>photo_camera</md-icon>
                 </div>
@@ -28,12 +29,12 @@
               </div>
             </div>
             <input
-                ref="fileInput"
-                accept="image/jpeg,image/jpg,image/png"
-                class="hidden-input"
-                type="file"
-                @change="handleFileSelect"
-            >
+              ref="fileInput"
+              accept="image/jpeg,image/jpg,image/png"
+              class="hidden-input"
+              type="file"
+              @change="handleFileSelect"
+            />
             <transition name="slide-up">
               <div v-if="errors.user_profile_img" class="md-banner md-banner-error md-mt-2">
                 <md-icon>error</md-icon>
@@ -45,71 +46,93 @@
           <!-- Form Fields -->
           <div class="form-fields">
             <md-outlined-text-field
-                v-model="formData.username"
-                :error="!!errors.username"
-                :error-text="errors.username"
-                label="Username"
-                @blur="validateField('username')"
-                @input="clearError('username')"
-                @keyup.enter="!loading && handleSubmit()"
+              v-model="formData.username"
+              :error="!!errors.username"
+              :error-text="errors.username"
+              label="Username"
+              @blur="validateField('username')"
+              @input="clearError('username')"
+              @keyup.enter="!loading && handleSubmit()"
             >
-              <md-icon slot="leading-icon">person</md-icon>
+              <template #leading-icon>
+<md-icon >person</md-icon>
+</template>
             </md-outlined-text-field>
 
             <md-outlined-text-field
-                v-model="formData.name"
-                :error="!!errors.name"
-                :error-text="errors.name"
-                label="Full Name"
-                @blur="validateField('name')"
-                @input="clearError('name')"
-                @keyup.enter="!loading && handleSubmit()"
+              v-model="formData.name"
+              :error="!!errors.name"
+              :error-text="errors.name"
+              label="Full Name"
+              @blur="validateField('name')"
+              @input="clearError('name')"
+              @keyup.enter="!loading && handleSubmit()"
             >
-              <md-icon slot="leading-icon">badge</md-icon>
+              <template #leading-icon>
+<md-icon >badge</md-icon>
+</template>
             </md-outlined-text-field>
 
             <md-outlined-text-field
-                v-model="formData.information_id"
-                :error="!!errors.information_id"
-                :error-text="errors.information_id"
-                label="Information ID"
-                @blur="validateField('information_id')"
-                @input="clearError('information_id')"
-                @keyup.enter="!loading && handleSubmit()"
+              v-model="formData.information_id"
+              :error="!!errors.information_id"
+              :error-text="errors.information_id"
+              label="Information ID"
+              @blur="validateField('information_id')"
+              @input="clearError('information_id')"
+              @keyup.enter="!loading && handleSubmit()"
             >
-              <md-icon slot="leading-icon">fingerprint</md-icon>
+              <template #leading-icon>
+<md-icon >fingerprint</md-icon>
+</template>
             </md-outlined-text-field>
 
             <md-outlined-text-field
-                v-model="formData.password1"
-                :error="!!errors.password1"
-                :error-text="errors.password1"
-                :type="showPassword1 ? 'text' : 'password'"
-                label="Password"
-                @blur="validateField('password1')"
-                @input="clearError('password1')"
-                @keyup.enter="!loading && handleSubmit()"
+              v-model="formData.password1"
+              :error="!!errors.password1"
+              :error-text="errors.password1"
+              :type="showPassword1 ? 'text' : 'password'"
+              label="Password"
+              @blur="validateField('password1')"
+              @input="clearError('password1')"
+              @keyup.enter="!loading && handleSubmit()"
             >
-              <md-icon slot="leading-icon">lock</md-icon>
-              <md-icon-button slot="trailing-icon" type="button" @click="showPassword1 = !showPassword1">
+              <template #leading-icon>
+<md-icon >lock</md-icon>
+</template>
+              <template #trailing-icon>
+<md-icon-button
+                
+                type="button"
+                @click="showPassword1 = !showPassword1"
+              >
                 <md-icon>{{ showPassword1 ? 'visibility_off' : 'visibility' }}</md-icon>
               </md-icon-button>
+</template>
             </md-outlined-text-field>
 
             <md-outlined-text-field
-                v-model="formData.password2"
-                :error="!!errors.password2"
-                :error-text="errors.password2"
-                :type="showPassword2 ? 'text' : 'password'"
-                label="Confirm Password"
-                @blur="validateField('password2')"
-                @input="clearError('password2')"
-                @keyup.enter="!loading && handleSubmit()"
+              v-model="formData.password2"
+              :error="!!errors.password2"
+              :error-text="errors.password2"
+              :type="showPassword2 ? 'text' : 'password'"
+              label="Confirm Password"
+              @blur="validateField('password2')"
+              @input="clearError('password2')"
+              @keyup.enter="!loading && handleSubmit()"
             >
-              <md-icon slot="leading-icon">lock</md-icon>
-              <md-icon-button slot="trailing-icon" type="button" @click="showPassword2 = !showPassword2">
+              <template #leading-icon>
+<md-icon >lock</md-icon>
+</template>
+              <template #trailing-icon>
+<md-icon-button
+                
+                type="button"
+                @click="showPassword2 = !showPassword2"
+              >
                 <md-icon>{{ showPassword2 ? 'visibility_off' : 'visibility' }}</md-icon>
               </md-icon-button>
+</template>
             </md-outlined-text-field>
           </div>
 
@@ -124,7 +147,9 @@
           <!-- Submit Button -->
           <md-filled-button :disabled="loading" class="submit-button" type="submit">
             <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
-            <md-icon v-else slot="icon">how_to_reg</md-icon>
+            <template #icon>
+              <md-icon v-if="!loading">how_to_reg</md-icon>
+            </template>
             {{ loading ? 'Creating Account...' : 'Create Account' }}
           </md-filled-button>
         </form>
@@ -142,15 +167,28 @@
   </div>
 
   <!-- Cropper Dialog -->
-  <md-dialog ref="cropperDialog" :open="showCropper" class="cropper-dialog" @close="handleDialogClose">
-    <div slot="headline">
+  <md-dialog
+    ref="cropperDialog"
+    :open="showCropper"
+    class="cropper-dialog"
+    @close="handleDialogClose"
+  >
+    <template #headline>
+<div >
       <md-icon>crop</md-icon>
       Crop Your Photo
     </div>
-    <form slot="content" class="cropper-content" method="dialog">
+</template>
+    <template #content>
+<form  class="cropper-content" method="dialog">
       <div class="cropper-main">
         <div ref="cropperContainer" class="cropper-container">
-          <img v-show="!cropperLoading" ref="cropperImage" alt="Image to crop" class="cropper-image">
+          <img
+            v-show="!cropperLoading"
+            ref="cropperImage"
+            alt="Image to crop"
+            class="cropper-image"
+          />
           <div v-if="cropperLoading" class="cropper-loading">
             <md-circular-progress indeterminate></md-circular-progress>
             <p class="md-typescale-body-medium">Loading image...</p>
@@ -174,20 +212,22 @@
                   <md-icon>zoom_out</md-icon>
                 </md-icon-button>
                 <input
-                    v-model="zoomLevel"
-                    :disabled="cropperLoading"
-                    class="zoom-slider"
-                    max="3"
-                    min="0.1"
-                    step="0.1"
-                    type="range"
-                    @input="handleZoomChange"
-                >
+                  v-model="zoomLevel"
+                  :disabled="cropperLoading"
+                  class="zoom-slider"
+                  max="3"
+                  min="0.1"
+                  step="0.1"
+                  type="range"
+                  @input="handleZoomChange"
+                />
                 <md-icon-button :disabled="cropperLoading" @click="zoomIn">
                   <md-icon>zoom_in</md-icon>
                 </md-icon-button>
               </div>
-              <div class="zoom-value md-typescale-body-small">{{ Math.round(zoomLevel * 100) }}%</div>
+              <div class="zoom-value md-typescale-body-small">
+                {{ Math.round(zoomLevel * 100) }}%
+              </div>
             </div>
           </div>
         </div>
@@ -195,32 +235,41 @@
 
       <div class="cropper-tips md-typescale-body-small">
         <md-icon>info</md-icon>
-        <span class="tips-desktop">Drag to move • Scroll to zoom • Drag corners to resize crop area</span>
+        <span class="tips-desktop"
+          >Drag to move • Scroll to zoom • Drag corners to resize crop area</span
+        >
         <span class="tips-mobile">Drag to move • Pinch to zoom • Drag corners to resize</span>
       </div>
     </form>
-    <div slot="actions">
+</template>
+    <template #actions>
+<div >
       <md-text-button @click="cancelCrop">Cancel</md-text-button>
       <md-text-button :disabled="cropperLoading" @click="resetCrop">
-        <md-icon slot="icon">refresh</md-icon>
+        <template #icon>
+<md-icon >refresh</md-icon>
+</template>
         Reset
       </md-text-button>
       <md-filled-button :disabled="cropperLoading || applyingCrop" @click="applyCrop">
         <md-circular-progress v-if="applyingCrop" indeterminate></md-circular-progress>
-        <md-icon v-else slot="icon">check</md-icon>
+        <template #icon>
+          <md-icon v-if="!applyingCrop">check</md-icon>
+        </template>
         {{ applyingCrop ? 'Processing...' : 'Apply' }}
       </md-filled-button>
     </div>
+</template>
   </md-dialog>
 </template>
 
 <script setup>
-import {onUnmounted, ref} from 'vue';
-import {useRouter} from 'vue-router';
-import {register} from '@/api/auth.js';
-import {useRegisterValidation} from '@/composables/auth/useRegisterValidation.js';
-import {useImageCropper} from '@/composables/user/useImageCropper.js';
-import {validateImageFile} from '@/utils/user/imageUtils.js';
+import { onUnmounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { register } from '@/api/auth.js';
+import { useRegisterValidation } from '@/composables/auth/useRegisterValidation.js';
+import { useImageCropper } from '@/composables/user/useImageCropper.js';
+import { validateImageFile } from '@/utils/user/imageUtils.js';
 import '@/assets/css/auth-merged.css';
 
 const router = useRouter();
@@ -237,7 +286,7 @@ const formData = ref({
   information_id: '',
   password1: '',
   password2: '',
-  user_profile_img_base64: ''
+  user_profile_img_base64: '',
 });
 const avatarFile = ref(null);
 const avatarPreviewUrl = ref('');
@@ -251,7 +300,7 @@ const {
   validateField: validateSingleField,
   validateForm,
   setServerErrors,
-  setGeneralError
+  setGeneralError,
 } = useRegisterValidation();
 
 // Image cropper composable with advanced controls
@@ -268,12 +317,12 @@ const {
   zoomOut,
   handleZoomChange,
   applyCrop: applyCropBase,
-  closeCropper
+  closeCropper,
 } = useImageCropper({
   targetWidth: 128,
   targetHeight: 128,
   quality: 0.7,
-  enableAdvancedControls: true
+  enableAdvancedControls: true,
 });
 
 // Methods
@@ -313,7 +362,7 @@ const handleFileSelect = async (event) => {
 // Apply crop wrapper
 const applyCrop = async () => {
   try {
-    const result = await applyCropBase({maxBase64Length: 30000});
+    const result = await applyCropBase({ maxBase64Length: 30000 });
 
     if (result) {
       avatarFile.value = result.file;
@@ -353,7 +402,7 @@ const handleSubmit = async () => {
   }
 
   loading.value = true;
-  Object.keys(errors).forEach(key => delete errors[key]);
+  Object.keys(errors).forEach((key) => delete errors[key]);
 
   try {
     // Register user
@@ -364,14 +413,17 @@ const handleSubmit = async () => {
       if (response.errors) {
         setServerErrors(response.errors);
       } else {
-        setGeneralError(response.detail || response.message || 'Registration failed. Please check your information.');
+        setGeneralError(
+          response.detail ||
+            response.message ||
+            'Registration failed. Please check your information.'
+        );
       }
       return;
     }
 
     // Success - avatar was already included in registration data as base64
     router.push('/');
-
   } catch (error) {
     console.error('Registration error:', error);
 
@@ -385,7 +437,7 @@ const handleSubmit = async () => {
       } else {
         setGeneralError('Registration failed. Please try again.');
       }
-    } catch (parseError) {
+    } catch (_parseError) {
       setGeneralError('Network error. Please check your connection and try again.');
     }
   } finally {

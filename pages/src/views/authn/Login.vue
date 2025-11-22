@@ -14,35 +14,41 @@
         <form class="auth-form" novalidate @submit.prevent="handleSubmit">
           <div class="form-fields">
             <md-outlined-text-field
-                v-model="formData.username"
-                :error="!!errors.username"
-                :error-text="errors.username"
-                label="Username"
-                @blur="validateField('username')"
-                @input="clearError('username')"
-                @keyup.enter="!loading && handleSubmit()"
+              v-model="formData.username"
+              :error="!!errors.username"
+              :error-text="errors.username"
+              label="Username"
+              @blur="validateField('username')"
+              @input="clearError('username')"
+              @keyup.enter="!loading && handleSubmit()"
             >
-              <md-icon slot="leading-icon">person</md-icon>
+              <template #leading-icon>
+<md-icon >person</md-icon>
+</template>
             </md-outlined-text-field>
 
             <md-outlined-text-field
-                v-model="formData.password"
-                :error="!!errors.password"
-                :error-text="errors.password"
-                :type="showPassword ? 'text' : 'password'"
-                label="Password"
-                @blur="validateField('password')"
-                @input="clearError('password')"
-                @keyup.enter="!loading && handleSubmit()"
+              v-model="formData.password"
+              :error="!!errors.password"
+              :error-text="errors.password"
+              :type="showPassword ? 'text' : 'password'"
+              label="Password"
+              @blur="validateField('password')"
+              @input="clearError('password')"
+              @keyup.enter="!loading && handleSubmit()"
             >
-              <md-icon slot="leading-icon">lock</md-icon>
-              <md-icon-button
-                  slot="trailing-icon"
-                  type="button"
-                  @click="showPassword = !showPassword"
+              <template #leading-icon>
+<md-icon >lock</md-icon>
+</template>
+              <template #trailing-icon>
+<md-icon-button
+                
+                type="button"
+                @click="showPassword = !showPassword"
               >
                 <md-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</md-icon>
               </md-icon-button>
+</template>
             </md-outlined-text-field>
           </div>
 
@@ -55,19 +61,23 @@
           </transition>
 
           <!-- Submit Button -->
-          <md-filled-button
-              ref="submitBtn"
-              :disabled="loading"
-              class="submit-button"
-              type="submit"
-          >
+          <md-filled-button ref="submitBtn" :disabled="loading" class="submit-button" type="submit">
             <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
-            <md-icon v-else slot="icon">login</md-icon>
+            <template #icon>
+              <md-icon v-if="!loading">login</md-icon>
+            </template>
             {{ loading ? 'Signing in...' : 'Sign In' }}
           </md-filled-button>
-          <md-text-button :disabled="passkeyBusy" class="submit-button" type="button" @click="signInWithPasskey">
+          <md-text-button
+            :disabled="passkeyBusy"
+            class="submit-button"
+            type="button"
+            @click="signInWithPasskey"
+          >
             <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
-            <md-icon v-else slot="icon">key</md-icon>
+            <template #icon>
+              <md-icon v-if="!passkeyBusy">key</md-icon>
+            </template>
             {{ passkeyBusy ? 'Waiting for device...' : 'Sign in with passkey' }}
           </md-text-button>
         </form>
@@ -86,26 +96,32 @@
 </template>
 
 <script setup>
-import {onMounted, reactive, ref} from 'vue';
-import {login} from '@/api/auth.js';
-import {ApiError} from '@/api/client.js';
-import {useRouter} from 'vue-router';
-import {useLoginValidation} from '@/composables/auth/useLoginValidation.js';
-import {usePasskeyAuth} from '@/composables/auth/usePasskeyAuth.js';
+import { onMounted, reactive, ref } from 'vue';
+import { login } from '@/api/auth.js';
+import { ApiError } from '@/api/client.js';
+import { useRouter } from 'vue-router';
+import { useLoginValidation } from '@/composables/auth/useLoginValidation.js';
+import { usePasskeyAuth } from '@/composables/auth/usePasskeyAuth.js';
 import '@/assets/css/auth-merged.css';
 
 const router = useRouter();
-const formData = reactive({username: '', password: ''});
+const formData = reactive({ username: '', password: '' });
 const loading = ref(false);
 const showPassword = ref(false);
 const iconBtn = ref(null);
 const submitBtn = ref(null);
 
 // Use validation composable
-const {errors, clearError, validateField: validateSingleField, validateForm, setGeneralError} = useLoginValidation();
+const {
+  errors,
+  clearError,
+  validateField: validateSingleField,
+  validateForm,
+  setGeneralError,
+} = useLoginValidation();
 
 // Use passkey authentication composable
-const {passkeyBusy, error: passkeyError, signInWithPasskey: passkeySignIn} = usePasskeyAuth();
+const { passkeyBusy, error: passkeyError, signInWithPasskey: passkeySignIn } = usePasskeyAuth();
 
 onMounted(() => {
   if (iconBtn.value) {

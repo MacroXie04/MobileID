@@ -10,7 +10,7 @@
           <!-- Progress Bar -->
           <transition name="fade">
             <div v-if="showProgressBar" class="progress-wrapper">
-              <md-linear-progress :value="progressValue / 100"/>
+              <md-linear-progress :value="progressValue / 100" />
               <div class="progress-time">{{ Math.ceil(progressValue / 10) }}s</div>
             </div>
           </transition>
@@ -21,14 +21,14 @@
     <!-- ────── BUTTON ────── -->
     <div class="action-wrapper">
       <button
-          :class="{
+        :class="{
           processing: isProcessing,
           success: successMessage,
-          error: errorMessage
+          error: errorMessage,
         }"
-          :disabled="isProcessing || barcodeDisplayed"
-          class="action-button"
-          @click="handleGenerate"
+        :disabled="isProcessing || barcodeDisplayed"
+        class="action-button"
+        @click="handleGenerate"
       >
         <span class="button-content">
           <md-icon class="button-icon">{{ buttonIcon }}</md-icon>
@@ -39,7 +39,7 @@
 
       <transition name="fade">
         <div v-if="isProcessing" class="progress-indicator">
-          <md-circular-progress indeterminate/>
+          <md-circular-progress indeterminate />
         </div>
       </transition>
     </div>
@@ -53,8 +53,8 @@ import '@material/web/progress/circular-progress.js';
 import '@material/web/progress/linear-progress.js';
 import '@material/web/ripple/ripple.js';
 
-import {useBarcodeDisplay} from '@/composables/barcode/useBarcodeDisplay.js';
-import {usePdf417} from '@/composables/barcode/usePdf417.js';
+import { useBarcodeDisplay } from '@/composables/barcode/useBarcodeDisplay.js';
+import { usePdf417 } from '@/composables/barcode/usePdf417.js';
 
 // CSS
 import '@/assets/css/user-merged.css';
@@ -76,10 +76,10 @@ const {
   resetUI,
   startProcessing,
   showSuccess,
-  showError
+  showError,
 } = useBarcodeDisplay();
 
-const {drawPdf417ToContainer} = usePdf417();
+const { drawPdf417ToContainer } = usePdf417();
 
 // Handle generate button click
 function handleGenerate() {
@@ -91,7 +91,7 @@ function handleGenerate() {
 function drawPDF417(data) {
   drawPdf417ToContainer('barcode-container', data, {
     moduleWidth: 2.5,
-    moduleHeight: 1
+    moduleHeight: 1,
   });
 }
 
@@ -101,6 +101,6 @@ defineExpose({
   showSuccess,
   showError,
   drawPDF417,
-  resetUI
+  resetUI,
 });
 </script>

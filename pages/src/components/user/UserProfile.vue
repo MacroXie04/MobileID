@@ -4,12 +4,12 @@
     <div class="avatar-wrapper">
       <div class="avatar-container">
         <img
-            v-if="avatarUrl && !showInitials"
-            :src="avatarUrl"
-            alt="User avatar"
-            class="avatar-image"
-            @error="handleImageError"
-        >
+          v-if="avatarUrl && !showInitials"
+          :src="avatarUrl"
+          alt="User avatar"
+          class="avatar-image"
+          @error="handleImageError"
+        />
         <div v-else class="avatar-initials">
           {{ getInitials(profile?.name) }}
         </div>
@@ -29,9 +29,9 @@
 </template>
 
 <script setup>
-import {computed, ref, watch} from 'vue';
+import { computed, ref, watch } from 'vue';
 import defaultAvatar from '@/assets/images/avatar_placeholder.png';
-import {getInitials, handleAvatarError} from '@/utils/user/profileUtils.js';
+import { getInitials, handleAvatarError } from '@/utils/user/profileUtils.js';
 
 // CSS
 import '@/assets/css/user-merged.css';
@@ -43,12 +43,12 @@ const showInitials = ref(false);
 const props = defineProps({
   profile: {
     type: Object,
-    default: () => ({})
+    default: () => ({}),
   },
   avatarSrc: {
     type: String,
-    default: ''
-  }
+    default: '',
+  },
 });
 
 // Computed
@@ -60,11 +60,14 @@ const avatarUrl = computed(() => {
 });
 
 // Watch for avatarSrc changes
-watch(() => props.avatarSrc, (newVal) => {
-  if (newVal) {
-    showInitials.value = false;
+watch(
+  () => props.avatarSrc,
+  (newVal) => {
+    if (newVal) {
+      showInitials.value = false;
+    }
   }
-});
+);
 
 // Handle image loading error
 function handleImageError(event) {
@@ -73,7 +76,7 @@ function handleImageError(event) {
     placeholderSrc: defaultAvatar,
     onShowInitials: () => {
       showInitials.value = true;
-    }
+    },
   });
 }
 </script>

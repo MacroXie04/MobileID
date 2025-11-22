@@ -7,7 +7,9 @@
           <h1 class="md-typescale-title-medium md-m-0">{{ profile?.name || 'User' }}</h1>
         </div>
         <md-filled-tonal-button @click="handleLogout">
-          <md-icon slot="icon">logout</md-icon>
+          <template #icon>
+<md-icon >logout</md-icon>
+</template>
           Sign Out
         </md-filled-tonal-button>
       </div>
@@ -18,11 +20,7 @@
       <div class="home-grid md-grid-container md-grid-cols-1 md-grid-cols-2 md-grid-cols-3">
         <!-- User Profile Card -->
         <section class="md-card profile-overview-card">
-          <UserProfile
-              :avatar-src="avatarSrc"
-              :profile="profile"
-              class="user-profile-component"
-          />
+          <UserProfile :avatar-src="avatarSrc" :profile="profile" class="user-profile-component" />
         </section>
 
         <!-- Barcode Card -->
@@ -31,10 +29,7 @@
             <md-icon>qr_code_2</md-icon>
             <h2 class="md-typescale-headline-small md-m-0">Digital ID Barcode</h2>
           </div>
-          <BarcodeDisplay
-              ref="barcodeDisplayRef"
-              @generate="handleGenerate"
-          />
+          <BarcodeDisplay ref="barcodeDisplayRef" @generate="handleGenerate" />
         </section>
 
         <!-- Quick Actions Card -->
@@ -43,10 +38,7 @@
             <md-icon>dashboard</md-icon>
             <h2 class="md-typescale-headline-small md-m-0">Quick Actions</h2>
           </div>
-          <UserMenu
-              class="user-menu-component"
-              @logout="handleLogout"
-          />
+          <UserMenu class="user-menu-component" @logout="handleLogout" />
         </section>
       </div>
     </main>
@@ -54,18 +46,18 @@
 </template>
 
 <script setup>
-import {onMounted, ref} from "vue";
-import {useRouter} from "vue-router";
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 // Components
-import UserProfile from "@/components/user/UserProfile.vue";
-import BarcodeDisplay from "@/components/user/BarcodeDisplay.vue";
-import UserMenu from "@/components/user/UserMenu.vue";
+import UserProfile from '@/components/user/UserProfile.vue';
+import BarcodeDisplay from '@/components/user/BarcodeDisplay.vue';
+import UserMenu from '@/components/user/UserMenu.vue';
 
 // Composables
-import {useApi} from "@/composables/common/useApi";
-import {useUserInfo} from "@/composables/user/useUserInfo";
-import {baseURL} from "@/config";
+import { useApi } from '@/composables/common/useApi';
+import { useUserInfo } from '@/composables/user/useUserInfo';
+import { baseURL } from '@/config';
 
 // CSS
 import '@/assets/css/home-merged.css';
@@ -76,8 +68,8 @@ const profile = ref(null);
 const barcodeDisplayRef = ref(null);
 
 // Use composables
-const {apiGenerateBarcode} = useApi();
-const {avatarSrc, loadAvatar} = useUserInfo();
+const { apiGenerateBarcode } = useApi();
+const { avatarSrc, loadAvatar } = useUserInfo();
 
 /* ── lifecycle ──────────────────────────────────────────────────────────── */
 onMounted(() => {
@@ -100,9 +92,9 @@ async function handleGenerate() {
   barcodeDisplay.startProcessing();
 
   try {
-    const {status, barcode, message} = await apiGenerateBarcode();
+    const { status, barcode, message } = await apiGenerateBarcode();
 
-    if (status === "success" && barcode) {
+    if (status === 'success' && barcode) {
       barcodeDisplay.drawPDF417(barcode);
       barcodeDisplay.showSuccess(message || 'Success');
     } else {
@@ -110,16 +102,19 @@ async function handleGenerate() {
     }
   } catch (err) {
     // Handle different types of errors
-    if (err.message.includes("Token refresh failed") || err.message.includes("Max retries exceeded")) {
-      console.log("Token refresh failed or max retries exceeded, redirecting to login page");
+    if (
+      err.message.includes('Token refresh failed') ||
+      err.message.includes('Max retries exceeded')
+    ) {
+      console.log('Token refresh failed or max retries exceeded, redirecting to login page');
       router.push('/login');
       return;
-    } else if (err.message.includes("Network error")) {
-      barcodeDisplay.showError("Network Error");
-      console.error("Network error:", err.message);
+    } else if (err.message.includes('Network error')) {
+      barcodeDisplay.showError('Network Error');
+      console.error('Network error:', err.message);
     } else {
-      barcodeDisplay.showError("Error");
-      console.error("Barcode generation error:", err);
+      barcodeDisplay.showError('Error');
+      console.error('Barcode generation error:', err);
     }
   }
 }
@@ -129,8 +124,8 @@ async function handleLogout() {
   try {
     // Call logout API
     await fetch(`${baseURL}/authn/logout/`, {
-      method: "POST",
-      credentials: "include"
+      method: 'POST',
+      credentials: 'include',
     });
 
     // Clear window.userInfo
@@ -139,7 +134,7 @@ async function handleLogout() {
     // Navigate to login
     router.push('/login');
   } catch (error) {
-    console.error("Logout error:", error);
+    console.error('Logout error:', error);
     // Even if logout API fails, clear local data and redirect
     window.userInfo = null;
     router.push('/login');
