@@ -38,9 +38,7 @@ CSRF_TRUSTED_ORIGINS = csv_env(
 
 # If using django-cors-headers:
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
-CORS_ALLOW_CREDENTIALS = (
-    env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
-)
+CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
 # Cookies - Development: insecure cookies allowed
 SESSION_COOKIE_SAMESITE = "Lax"

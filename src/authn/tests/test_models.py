@@ -42,9 +42,7 @@ class UserProfileModelTest(TestCase):
 
     def test_user_profile_unique_uuid(self):
         """Test that each UserProfile gets a unique UUID"""
-        user2 = User.objects.create_user(
-            username="testuser2", password="testpass123"
-        )
+        user2 = User.objects.create_user(username="testuser2", password="testpass123")
 
         profile1 = UserProfile.objects.create(
             user=self.user, name="User 1", information_id="ID1"

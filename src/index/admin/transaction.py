@@ -29,11 +29,7 @@ class TransactionAdmin(admin.ModelAdmin):
     autocomplete_fields = ["user", "barcode_used"]
 
     def get_queryset(self, request):
-        return (
-            super()
-            .get_queryset(request)
-            .select_related("user", "barcode_used")
-        )
+        return super().get_queryset(request).select_related("user", "barcode_used")
 
     @admin.display(description="Barcode")
     def barcode_display(self, obj):

@@ -40,10 +40,7 @@ class BarcodeDashboardAPIView(APIView):
         # Check if user is in User group - they shouldn't access this endpoint
         if user.groups.filter(name="User").exists():
             return Response(
-                {
-                    "detail": "User type accounts cannot access barcode "
-                    "dashboard"
-                },
+                {"detail": "User type accounts cannot access barcode " "dashboard"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -115,9 +112,7 @@ class BarcodeDashboardAPIView(APIView):
         settings_serializer = UserBarcodeSettingsSerializer(
             settings, context={"request": request}
         )
-        pull_settings_serializer = UserBarcodePullSettingsSerializer(
-            pull_settings
-        )
+        pull_settings_serializer = UserBarcodePullSettingsSerializer(pull_settings)
         barcodes_serializer = BarcodeSerializer(
             barcodes, many=True, context={"request": request}
         )
@@ -139,10 +134,7 @@ class BarcodeDashboardAPIView(APIView):
         # Check if user is in User group - they shouldn't access this endpoint
         if user.groups.filter(name="User").exists():
             return Response(
-                {
-                    "detail": "User type accounts cannot access barcode "
-                    "dashboard"
-                },
+                {"detail": "User type accounts cannot access barcode " "dashboard"},
                 status=status.HTTP_403_FORBIDDEN,
             )
         settings, _ = UserBarcodeSettings.objects.get_or_create(user=user)
@@ -165,18 +157,14 @@ class BarcodeDashboardAPIView(APIView):
         # Handle pull_settings if provided
         pull_settings_data = data.pop("pull_settings", None)
         if pull_settings_data:
-            pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(
-                user=user
-            )
+            pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(user=user)
             pull_serializer = UserBarcodePullSettingsSerializer(
                 pull_settings, data=pull_settings_data, partial=True
             )
             if pull_serializer.is_valid():
                 pull_serializer.save()
                 pull_settings.refresh_from_db()
-                pull_settings_enabled_after = (
-                    pull_settings.pull_setting == "Enable"
-                )
+                pull_settings_enabled_after = pull_settings.pull_setting == "Enable"
             else:
                 return Response(
                     {
@@ -230,12 +218,8 @@ class BarcodeDashboardAPIView(APIView):
             serializer.save()
 
             # Get updated pull settings for response
-            pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(
-                user=user
-            )
-            pull_settings_serializer = UserBarcodePullSettingsSerializer(
-                pull_settings
-            )
+            pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(user=user)
+            pull_settings_serializer = UserBarcodePullSettingsSerializer(pull_settings)
 
             return Response(
                 {
@@ -256,10 +240,7 @@ class BarcodeDashboardAPIView(APIView):
         # Check if user is in User group - they shouldn't access this endpoint
         if request.user.groups.filter(name="User").exists():
             return Response(
-                {
-                    "detail": "User type accounts cannot access barcode "
-                    "dashboard"
-                },
+                {"detail": "User type accounts cannot access barcode " "dashboard"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -272,9 +253,7 @@ class BarcodeDashboardAPIView(APIView):
             # Record a transaction for barcode creation via service layer
             from index.services.transactions import TransactionService
 
-            TransactionService.create_transaction(
-                user=request.user, barcode=barcode
-            )
+            TransactionService.create_transaction(user=request.user, barcode=barcode)
             return Response(
                 {
                     "status": "success",
@@ -296,10 +275,7 @@ class BarcodeDashboardAPIView(APIView):
         # Check if user is in User group - they shouldn't access this endpoint
         if request.user.groups.filter(name="User").exists():
             return Response(
-                {
-                    "detail": "User type accounts cannot access barcode "
-                    "dashboard"
-                },
+                {"detail": "User type accounts cannot access barcode " "dashboard"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -357,8 +333,7 @@ class BarcodeDashboardAPIView(APIView):
                     return Response(
                         {
                             "status": "error",
-                            "message": "Daily usage limit must be 0 or "
-                            "greater",
+                            "message": "Daily usage limit must be 0 or " "greater",
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
@@ -396,10 +371,7 @@ class BarcodeDashboardAPIView(APIView):
         # Check if user is in User group - they shouldn't access this endpoint
         if request.user.groups.filter(name="User").exists():
             return Response(
-                {
-                    "detail": "User type accounts cannot access barcode "
-                    "dashboard"
-                },
+                {"detail": "User type accounts cannot access barcode " "dashboard"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 

@@ -91,7 +91,5 @@ class UserRegistrationAPITest(APITestCase):
     def test_registration_rate_limit(self):
         url = reverse("authn:api_register")
 
-        response1 = self.client.post(
-            url, self.registration_data, format="json"
-        )
+        response1 = self.client.post(url, self.registration_data, format="json")
         self.assertIn(response1.status_code, [200, 429])

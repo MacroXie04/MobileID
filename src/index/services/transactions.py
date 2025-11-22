@@ -136,9 +136,7 @@ class TransactionService:
             )
             to_create.append(t)
 
-        created = Transaction.objects.bulk_create(
-            to_create, batch_size=batch_size
-        )
+        created = Transaction.objects.bulk_create(to_create, batch_size=batch_size)
 
         return [
             CreatedTransaction(
@@ -187,9 +185,7 @@ class TransactionService:
             qs = qs.filter(time_created__lt=until)
 
         agg = (
-            qs.values("barcode_used_id")
-            .annotate(c=Count("id"))
-            .order_by("-c")[:limit]
+            qs.values("barcode_used_id").annotate(c=Count("id")).order_by("-c")[:limit]
         )
         return [(row["barcode_used_id"], row["c"]) for row in agg]
 
@@ -291,6 +287,4 @@ class TransactionService:
             qs = qs.filter(time_created__gte=since)
         if until:
             qs = qs.filter(time_created__lt=until)
-        return qs.select_related("user", "barcode_used").order_by(
-            "-time_created"
-        )
+        return qs.select_related("user", "barcode_used").order_by("-time_created")

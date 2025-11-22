@@ -63,8 +63,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                     continue
                 owner_name = b.user.username if b.user != user else "Your"
                 display = (
-                    f"{owner_name} Dynamic Barcode ending with "
-                    f"{b.barcode[-4:]}"
+                    f"{owner_name} Dynamic Barcode ending with " f"{b.barcode[-4:]}"
                 )
 
                 # Check if barcode has profile
@@ -130,9 +129,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
             if is_user:
                 # User type only sees identification barcode
                 barcodes = (
-                    Barcode.objects.filter(
-                        user=user, barcode_type="Identification"
-                    )
+                    Barcode.objects.filter(user=user, barcode_type="Identification")
                     .prefetch_related("barcodeuserprofile")
                     .order_by("-time_created")
                 )
@@ -207,9 +204,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
             pass
 
         # Standard users cannot enable profile association
-        if is_user_group and data.get(
-            "associate_user_profile_with_barcode", False
-        ):
+        if is_user_group and data.get("associate_user_profile_with_barcode", False):
             raise serializers.ValidationError(
                 {
                     "associate_user_profile_with_barcode": (
@@ -224,8 +219,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "barcode": (
-                        "Barcode selection is disabled when pull setting is "
-                        "enabled."
+                        "Barcode selection is disabled when pull setting is " "enabled."
                     )
                 }
             )
@@ -247,11 +241,7 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                     and not b.share_with_others
                 ):
                     raise serializers.ValidationError(
-                        {
-                            "barcode": (
-                                "Selected barcode is not shared by its owner."
-                            )
-                        }
+                        {"barcode": ("Selected barcode is not shared by its owner.")}
                     )
             except Barcode.DoesNotExist:
                 raise serializers.ValidationError(

@@ -49,10 +49,7 @@ class CookieTokenRefreshView(TokenRefreshView):
 
     def post(self, request, *args, **kwargs):
         # Check if refresh token is in cookies but not in body
-        if (
-            "refresh" not in request.data
-            and "refresh_token" in request.COOKIES
-        ):
+        if "refresh" not in request.data and "refresh_token" in request.COOKIES:
             data = request.data.copy()
             data["refresh"] = request.COOKIES["refresh_token"]
 

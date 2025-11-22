@@ -18,9 +18,7 @@ class AdminSessionExpiryMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         self.admin_path = f"/{settings.ADMIN_URL_PATH}/"
-        self.admin_session_age = getattr(
-            settings, "ADMIN_SESSION_COOKIE_AGE", 7200
-        )
+        self.admin_session_age = getattr(settings, "ADMIN_SESSION_COOKIE_AGE", 7200)
 
     def __call__(self, request):
         # Set shorter session expiry for admin requests

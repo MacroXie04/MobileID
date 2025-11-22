@@ -31,9 +31,7 @@ class LoginSecurityTests(APITestCase):
     @staticmethod
     def _provision_rsa_key():
         RSAKeyPair.objects.all().delete()
-        private_key = rsa.generate_private_key(
-            public_exponent=65537, key_size=2048
-        )
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         public_key = private_key.public_key()
         private_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
@@ -152,9 +150,7 @@ class LoginSecurityTests(APITestCase):
             format="json",
         )
         self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn(
-            "Invalid username or password.", str(second.data["detail"])
-        )
+        self.assertIn("Invalid username or password.", str(second.data["detail"]))
 
     def test_login_creates_audit_log_entry(self):
         response = self._perform_rsa_login()

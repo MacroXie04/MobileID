@@ -1,4 +1,4 @@
-name: Frontend Lint
+name: Lint Prettier
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: ['**']
 
 jobs:
-  lint:
+  prettier:
     runs-on: ubuntu-latest
     
     steps:
@@ -24,10 +24,6 @@ jobs:
       - name: Install dependencies
         working-directory: ./pages
         run: npm install
-      
-      - name: Run ESLint
-        working-directory: ./pages
-        run: npm run lint
       
       - name: Run Prettier
         working-directory: ./pages

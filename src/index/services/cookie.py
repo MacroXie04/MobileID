@@ -105,9 +105,7 @@ def process_user_cookie(raw_cookie: str) -> ProcessedCookie:
 
     # Rebuild the header_value from filtered cookies
     header_value = (
-        "; ".join(f"{k}={v}" for k, v in filtered_kv.items())
-        if filtered_kv
-        else ""
+        "; ".join(f"{k}={v}" for k, v in filtered_kv.items()) if filtered_kv else ""
     )
 
     return ProcessedCookie(

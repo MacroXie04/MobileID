@@ -17,9 +17,7 @@ def decrypt_password_with_nonce(encrypted_password_b64):
         try:
             payload = json.loads(decrypted_bytes.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            logger.error(
-                "Failed to parse decrypted payload as JSON: %s", str(exc)
-            )
+            logger.error("Failed to parse decrypted payload as JSON: %s", str(exc))
             raise ValueError("Invalid encrypted payload format")
 
         if not isinstance(payload, dict):
@@ -63,9 +61,7 @@ def decrypt_password(encrypted_password):
             decrypted_bytes = decrypt_rsa_ciphertext(encrypted_password)
             return decrypted_bytes.decode("utf-8")
         except Exception as exc:
-            logger.error(
-                "Password decryption failed in legacy path: %s", str(exc)
-            )
+            logger.error("Password decryption failed in legacy path: %s", str(exc))
             raise ValueError("Password decryption failed")
     except Exception as exc:
         logger.error("Password decryption failed: %s", str(exc))

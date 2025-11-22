@@ -61,15 +61,11 @@ class SettingsConfigurationTest(TestCase):
 
     def test_rest_framework_configuration(self):
         """Test REST framework configuration"""
-        self.assertIn(
-            "DEFAULT_AUTHENTICATION_CLASSES", settings.REST_FRAMEWORK
-        )
+        self.assertIn("DEFAULT_AUTHENTICATION_CLASSES", settings.REST_FRAMEWORK)
         self.assertIn("DEFAULT_PERMISSION_CLASSES", settings.REST_FRAMEWORK)
 
         # Check authentication classes
-        auth_classes = settings.REST_FRAMEWORK[
-            "DEFAULT_AUTHENTICATION_CLASSES"
-        ]
+        auth_classes = settings.REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"]
         self.assertIn(
             "authn.middleware.authentication.CookieJWTAuthentication",
             auth_classes,
@@ -136,9 +132,7 @@ class EnvironmentVariableTest(TestCase):
         from django.conf import settings
 
         # Need to reload settings or test in isolation
-        self.assertTrue(
-            settings.DEBUG or True
-        )  # Test passes in test environment
+        self.assertTrue(settings.DEBUG or True)  # Test passes in test environment
 
     @patch.dict(os.environ, {"DEBUG": "False"})
     def test_debug_false_from_env(self):

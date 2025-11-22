@@ -17,9 +17,7 @@ class UserProfileAPITest(APITestCase):
         create_user_profile(self.user, "Test User", "TEST123", None)
 
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
     def test_get_profile_success(self):
         url = reverse("authn:api_profile")

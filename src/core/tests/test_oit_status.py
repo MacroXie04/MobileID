@@ -34,9 +34,7 @@ class OITStatusTest(TestCase):
 
         self.assertIn("services", status_info)
         self.assertIn("SSO (Single Sign-On)", status_info["services"])
-        self.assertEqual(
-            status_info["services"]["SSO (Single Sign-On)"], "Operational"
-        )
+        self.assertEqual(status_info["services"]["SSO (Single Sign-On)"], "Operational")
 
     @patch("index.status.OIT.OIT.fetch_data")
     def test_oit_returns_operational_status_for_duo_2fa(self, mock_fetch_data):
@@ -171,12 +169,8 @@ class OITStatusTest(TestCase):
         status_info = self.oit.get_status()
 
         # Verify services are captured with their actual status
-        self.assertEqual(
-            status_info["services"]["SSO (Single Sign-On)"], "Operational"
-        )
-        self.assertEqual(
-            status_info["services"]["Duo 2FA"], "Degraded Performance"
-        )
+        self.assertEqual(status_info["services"]["SSO (Single Sign-On)"], "Operational")
+        self.assertEqual(status_info["services"]["Duo 2FA"], "Degraded Performance")
         self.assertEqual(status_info["services"]["CatCard"], "Operational")
         self.assertEqual(
             status_info["services"]["Dining Payment Systems"],
@@ -226,9 +220,7 @@ class OITStatusTest(TestCase):
 
     def test_oit_parse_status_with_malformed_html(self):
         """Test that OIT service handles malformed HTML gracefully"""
-        malformed_html = (
-            "<div>Some malformed content without proper structure</div>"
-        )
+        malformed_html = "<div>Some malformed content without proper structure</div>"
         data = self.oit.parse_status(malformed_html)
 
         self.assertEqual(data.time, data.time)  # Time should still be set
@@ -267,8 +259,7 @@ class OITStatusTest(TestCase):
                 self.assertIn(
                     service,
                     status_info["services"],
-                    f"Required service '{service}' not found in real "
-                    f"status data",
+                    f"Required service '{service}' not found in real " f"status data",
                 )
                 # Verify the service has a status (could be Operational,
                 # Service Disruption, etc.)
@@ -285,9 +276,7 @@ class OITStatusTest(TestCase):
         except Exception as e:
             # If the real fetch fails (network issues, etc.), we'll skip
             # this test
-            self.skipTest(
-                f"Could not fetch real status from UC Merced: {str(e)}"
-            )
+            self.skipTest(f"Could not fetch real status from UC Merced: {str(e)}")
 
     def test_oit_real_status_contains_operational_services(self):
         """Test that real UC Merced status contains operational services"""
@@ -337,6 +326,4 @@ class OITStatusTest(TestCase):
         except Exception as e:
             # If the real fetch fails (network issues, etc.), we'll skip
             # this test
-            self.skipTest(
-                f"Could not fetch real status from UC Merced: {str(e)}"
-            )
+            self.skipTest(f"Could not fetch real status from UC Merced: {str(e)}")

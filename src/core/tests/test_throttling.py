@@ -11,9 +11,7 @@ class ThrottlingConfigurationTest(APITestCase):
 
     def test_throttling_rates_configured(self):
         """Test that throttling rates are properly configured"""
-        throttle_rates = settings.REST_FRAMEWORK.get(
-            "DEFAULT_THROTTLE_RATES", {}
-        )
+        throttle_rates = settings.REST_FRAMEWORK.get("DEFAULT_THROTTLE_RATES", {})
 
         expected_rates = [
             "anon",
@@ -30,9 +28,7 @@ class ThrottlingConfigurationTest(APITestCase):
 
     def test_throttling_classes_configured(self):
         """Test that throttling classes are configured"""
-        throttle_classes = settings.REST_FRAMEWORK.get(
-            "DEFAULT_THROTTLE_CLASSES", []
-        )
+        throttle_classes = settings.REST_FRAMEWORK.get("DEFAULT_THROTTLE_CLASSES", [])
 
         expected_classes = [
             "rest_framework.throttling.AnonRateThrottle",

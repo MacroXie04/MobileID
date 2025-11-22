@@ -126,12 +126,8 @@ WSGI_APPLICATION = "core.wsgi.application"
 DB_PROFILE = os.getenv("DB_PROFILE", "local").lower()
 
 # Common options
-DB_CONN_MAX_AGE = int(
-    os.getenv("DB_CONN_MAX_AGE", "60")
-)  # persistent connections
-DB_SSL_MODE = os.getenv(
-    "DB_SSL_MODE", ""
-).lower()  # "", "require", "verify-full"
+DB_CONN_MAX_AGE = int(os.getenv("DB_CONN_MAX_AGE", "60"))  # persistent connections
+DB_SSL_MODE = os.getenv("DB_SSL_MODE", "").lower()  # "", "require", "verify-full"
 DB_DISABLE_SERVER_CERT_VERIFICATION = (
     os.getenv("DB_SSL_DISABLE_VERIFY", "false").lower() == "true"
 )
@@ -306,9 +302,7 @@ SESSION_ENGINE = os.getenv(
 
 # Session settings - Set to 10 years (effectively unlimited)
 SESSION_COOKIE_AGE = 315360000  # 10 years in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = (
-    False  # Keep session alive even after browser close
-)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser close
 SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on each request
 
 # CORS settings
@@ -317,9 +311,7 @@ REST_FRAMEWORK = {
         "authn.middleware.authentication.CookieJWTAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
@@ -341,9 +333,7 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     # Tests: keep tokens long to avoid flakiness; Prod: short-lived access,
     # moderate refresh
-    "ACCESS_TOKEN_LIFETIME": (
-        timedelta(days=1) if TESTING else timedelta(days=1)
-    ),
+    "ACCESS_TOKEN_LIFETIME": (timedelta(days=1) if TESTING else timedelta(days=1)),
     "REFRESH_TOKEN_LIFETIME": timedelta(
         days=1 if TESTING else int(env("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "7"))
     ),
@@ -359,9 +349,7 @@ LOGIN_CHALLENGE_NONCE_BYTES = int(env("LOGIN_CHALLENGE_NONCE_BYTES", "16"))
 # Admin security settings
 ADMIN_URL_PATH = env("ADMIN_URL_PATH", "admin")
 ADMIN_ALLOWED_IPS = csv_env("ADMIN_ALLOWED_IPS", [])
-ADMIN_SESSION_COOKIE_AGE = int(
-    env("ADMIN_SESSION_COOKIE_AGE", "7200")
-)  # 2 hours
+ADMIN_SESSION_COOKIE_AGE = int(env("ADMIN_SESSION_COOKIE_AGE", "7200"))  # 2 hours
 
 # Logging configuration
 if TESTING:

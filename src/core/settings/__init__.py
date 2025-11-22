@@ -18,13 +18,9 @@ import os
 settings_module = os.environ.get("DJANGO_SETTINGS_MODULE", "")
 
 # If DJANGO_SETTINGS_MODULE is explicitly set, use it
-if settings_module.endswith(".prod") or settings_module.endswith(
-    ".production"
-):
+if settings_module.endswith(".prod") or settings_module.endswith(".production"):
     from .prod import *  # noqa: F403, F401
-elif settings_module.endswith(".dev") or settings_module.endswith(
-    ".development"
-):
+elif settings_module.endswith(".dev") or settings_module.endswith(".development"):
     from .dev import *  # noqa: F403, F401
 else:
     # Auto-detect based on DEBUG and TESTING environment variables

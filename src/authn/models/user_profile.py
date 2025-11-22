@@ -14,17 +14,14 @@ class UserProfile(models.Model):
     information_id = models.CharField(max_length=100)
 
     # user uuid
-    profile_uuid = models.UUIDField(
-        default=uuid.uuid4, editable=False, unique=True
-    )
+    profile_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     # user profile image (base64 encoded png 128*128)
     user_profile_img = models.TextField(
         null=True,
         blank=True,
         help_text=(
-            "Base64 encoded PNG of the user's 128*128 avatar. "
-            "No data-URI prefix."
+            "Base64 encoded PNG of the user's 128*128 avatar. " "No data-URI prefix."
         ),
         verbose_name="avatar (Base64)",
     )

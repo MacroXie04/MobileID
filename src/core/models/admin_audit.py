@@ -39,9 +39,7 @@ class AdminAuditLog(models.Model):
         related_name="admin_audit_logs",
     )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
-    action = models.CharField(
-        max_length=20, choices=ACTION_CHOICES, db_index=True
-    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES, db_index=True)
     resource = models.CharField(
         max_length=200,
         blank=True,

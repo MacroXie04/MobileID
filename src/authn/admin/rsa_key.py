@@ -41,14 +41,11 @@ class RSAKeyPairAdmin(admin.ModelAdmin):
         key = obj.public_key.strip()
         if len(key) > 100:
             return format_html(
-                '<code style="word-break: break-all;">{}<br/>...<br/>{}'
-                "</code>",
+                '<code style="word-break: break-all;">{}<br/>...<br/>{}' "</code>",
                 key[:50],
                 key[-50:],
             )
-        return format_html(
-            '<code style="word-break: break-all;">{}</code>', key
-        )
+        return format_html('<code style="word-break: break-all;">{}</code>', key)
 
     @admin.display(description="Private Key Preview")
     def private_key_preview(self, obj):
@@ -59,7 +56,7 @@ class RSAKeyPairAdmin(admin.ModelAdmin):
         if len(key) > 100:
             return format_html(
                 '<code style="word-break: break-all; color: #d32f2f;">{}<br/>'
-                '...<br/>{}</code>',
+                "...<br/>{}</code>",
                 key[:50],
                 key[-50:],
             )

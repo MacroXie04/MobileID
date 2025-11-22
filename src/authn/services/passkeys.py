@@ -85,9 +85,7 @@ def _pydantic_load(model_cls, data):
         return data
 
 
-def build_registration_options(
-    user: User, exclude_existing: bool = True
-) -> dict:
+def build_registration_options(user: User, exclude_existing: bool = True) -> dict:
     exclude: List[PublicKeyCredentialDescriptor] = []
     if exclude_existing:
         existing = PasskeyCredential.objects.filter(user=user).first()
@@ -138,9 +136,7 @@ def build_registration_options(
     else:
         # Fallback: best-effort
         result = json.loads(
-            json.dumps(
-                options, default=lambda o: getattr(o, "__dict__", str(o))
-            )
+            json.dumps(options, default=lambda o: getattr(o, "__dict__", str(o)))
         )
 
     # Ensure pubKeyCredParams is present (required by WebAuthn spec)
@@ -157,9 +153,7 @@ def build_registration_options(
         elif isinstance(raw_challenge, str):
             # Already a string - ensure it's valid base64url
             result["challenge"] = raw_challenge
-    elif "challenge" in result and isinstance(
-        result["challenge"], (bytes, bytearray)
-    ):
+    elif "challenge" in result and isinstance(result["challenge"], (bytes, bytearray)):
         result["challenge"] = bytes_to_base64url(result["challenge"])
 
     # Ensure other required fields have proper structure
@@ -172,9 +166,7 @@ def build_registration_options(
         # Ensure required displayName is present
         if not result["user"].get("displayName"):
             # Fall back to name if displayName missing
-            result["user"]["displayName"] = result["user"].get(
-                "name"
-            ) or getattr(
+            result["user"]["displayName"] = result["user"].get("name") or getattr(
                 getattr(user, "userprofile", None), "name", user.username
             )
 
@@ -193,9 +185,7 @@ def verify_and_create_passkey(
             # Decode from base64url to bytes
             expected_bytes = base64url_to_bytes(expected_challenge)
         except Exception as e:
-            print(
-                f"Challenge decode error: {e}, challenge: {expected_challenge}"
-            )
+            print(f"Challenge decode error: {e}, challenge: {expected_challenge}")
             # If it's not valid base64url, treat as raw string and encode
             expected_bytes = expected_challenge.encode("utf-8")
 
@@ -213,9 +203,7 @@ def verify_and_create_passkey(
     )
 
     cred_id_b64u = bytes_to_base64url(verification.credential_id)
-    public_key_cose_b64u = bytes_to_base64url(
-        verification.credential_public_key
-    )
+    public_key_cose_b64u = bytes_to_base64url(verification.credential_public_key)
     sign_count = verification.sign_count
 
     # Enforce single passkey per user
@@ -271,9 +259,7 @@ def build_authentication_options(user: Optional[User] = None) -> dict:
     else:
         # Fallback: best-effort
         result = json.loads(
-            json.dumps(
-                options, default=lambda o: getattr(o, "__dict__", str(o))
-            )
+            json.dumps(options, default=lambda o: getattr(o, "__dict__", str(o)))
         )
 
     # Ensure challenge is properly formatted - use raw challenge if available
@@ -283,15 +269,11 @@ def build_authentication_options(user: Optional[User] = None) -> dict:
         elif isinstance(raw_challenge, str):
             # Already a string - ensure it's valid base64url
             result["challenge"] = raw_challenge
-    elif "challenge" in result and isinstance(
-        result["challenge"], (bytes, bytearray)
-    ):
+    elif "challenge" in result and isinstance(result["challenge"], (bytes, bytearray)):
         result["challenge"] = bytes_to_base64url(result["challenge"])
 
     # Ensure allowCredentials is properly formatted if present
-    if "allowCredentials" in result and isinstance(
-        result["allowCredentials"], list
-    ):
+    if "allowCredentials" in result and isinstance(result["allowCredentials"], list):
         for cred in result["allowCredentials"]:
             if "id" in cred and isinstance(cred["id"], (bytes, bytearray)):
                 cred["id"] = bytes_to_base64url(cred["id"])
@@ -323,8 +305,7 @@ def verify_authentication(credential: dict, expected_challenge) -> User:
             expected_bytes = base64url_to_bytes(expected_challenge)
         except Exception as e:
             print(
-                f"Auth challenge decode error: {e}, challenge: "
-                f"{expected_challenge}"
+                f"Auth challenge decode error: {e}, challenge: " f"{expected_challenge}"
             )
             # If it's not valid base64url, treat as raw string and encode
             expected_bytes = expected_challenge.encode("utf-8")

@@ -75,15 +75,9 @@ class BarcodeUsageAdmin(admin.ModelAdmin):
         if obj.total_usage < 10:
             return format_html('<span style="color: orange;">Low Usage</span>')
         if obj.total_usage < 50:
-            return format_html(
-                '<span style="color: blue;">Moderate Usage</span>'
-            )
+            return format_html('<span style="color: blue;">Moderate Usage</span>')
         return format_html('<span style="color: green;">High Usage</span>')
 
     def get_queryset(self, request):
         """Optimize queryset with select_related"""
-        return (
-            super()
-            .get_queryset(request)
-            .select_related("barcode", "barcode__user")
-        )
+        return super().get_queryset(request).select_related("barcode", "barcode__user")
