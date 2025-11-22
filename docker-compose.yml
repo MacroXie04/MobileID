@@ -1,0 +1,15 @@
+services:
+  backend:
+    build: ./src
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./src:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=docker-dev-secret-key
+      - DB_PROFILE=local
+      # Configuring for SQLite (default in dev.py/base.py if other DB vars aren't set)
+      # or allowing it to connect to a host DB if needed via host.docker.internal
+    restart: always

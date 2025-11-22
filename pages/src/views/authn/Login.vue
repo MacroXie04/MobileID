@@ -38,17 +38,13 @@
               @keyup.enter="!loading && handleSubmit()"
             >
               <template #leading-icon>
-<md-icon >lock</md-icon>
-</template>
+                <md-icon>lock</md-icon>
+              </template>
               <template #trailing-icon>
-<md-icon-button
-                
-                type="button"
-                @click="showPassword = !showPassword"
-              >
-                <md-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</md-icon>
-              </md-icon-button>
-</template>
+                <md-icon-button type="button" @click="showPassword = !showPassword">
+                  <md-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</md-icon>
+                </md-icon-button>
+              </template>
             </md-outlined-text-field>
           </div>
 
