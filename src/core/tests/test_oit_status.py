@@ -197,7 +197,7 @@ class OITStatusTest(TestCase):
         self.assertIsInstance(status_info["time"], str)
 
         # Verify time format (should be YYYY-MM-DD HH:MM:SS)
-        time_pattern = r"\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+        time_pattern = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
         self.assertRegex(status_info["time"], time_pattern)
 
     @patch("requests.get")
