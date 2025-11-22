@@ -23,6 +23,8 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy project
 COPY . /app/
+COPY run.sh /run.sh
+RUN chmod +x /run.sh
 
 # Collect static files
 # Use a dummy secret key for build step; production key should be provided at runtime
@@ -32,5 +34,5 @@ RUN SECRET_KEY=build_secret python manage.py collectstatic --noinput
 EXPOSE 8000
 
 # Default command (can be overridden in docker-compose)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "core.wsgi:application"]
+CMD ["/run.sh"]
 

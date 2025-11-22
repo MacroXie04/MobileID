@@ -1,0 +1,53 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: mobileid-478800
+  REGION: us-central1
+  SERVICE_NAME: mobileid
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and Push Container
+        run: |-
+          gcloud builds submit --tag gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
+          flags: '--add-cloudsql-instances=${{ secrets.INSTANCE_CONNECTION_NAME }} --allow-unauthenticated'
+          env_vars: |-
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            INSTANCE_CONNECTION_NAME=${{ secrets.INSTANCE_CONNECTION_NAME }}
+            GCP_PROJECT_ID=${{ env.PROJECT_ID }}
+            DJANGO_SETTINGS_MODULE=core.settings.prod
+            DJANGO_SUPERUSER_USERNAME=${{ secrets.ADMIN_USERNAME }}
+            DJANGO_SUPERUSER_EMAIL=${{ secrets.ADMIN_EMAIL }}
+            DJANGO_SUPERUSER_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+
