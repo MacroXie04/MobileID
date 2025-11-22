@@ -62,3 +62,4 @@ jobs:
             DJANGO_SUPERUSER_USERNAME=${{ secrets.ADMIN_USERNAME }}
             DJANGO_SUPERUSER_EMAIL=${{ secrets.ADMIN_EMAIL }}
             DJANGO_SUPERUSER_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+            SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
