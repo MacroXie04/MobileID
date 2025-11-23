@@ -10,4 +10,4 @@ For new code, use:
 """
 
 # Import development settings for backward compatibility
-from core.settings.dev import *  # noqa: F403, F401
+from core.settings.dev import *
