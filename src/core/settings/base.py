@@ -334,6 +334,19 @@ SESSION_COOKIE_AGE = 315360000  # 10 years in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser close
 SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on each request
 
+# REST throttle settings
+# Default to disabling throttles in development (when DEBUG=True)
+# Can be overridden with DISABLE_THROTTLES environment variable
+# In production, this should be overridden in prod.py
+throttle_setting = env("DISABLE_THROTTLES")
+if throttle_setting:
+    DISABLE_THROTTLES = throttle_setting.lower() == "true"
+else:
+    # Default to True (disable throttles) for development
+    # Production should override this in prod.py
+    DISABLE_THROTTLES = True
+THROTTLES_ENABLED = not DISABLE_THROTTLES
+
 # CORS settings
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -358,6 +371,10 @@ REST_FRAMEWORK = {
         "admin_login": "5/15min",
     },
 }
+
+if DISABLE_THROTTLES:
+    REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = []
+    REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {}
 
 SIMPLE_JWT = {
     # Tests: keep tokens long to avoid flakiness; Prod: short-lived access,

@@ -5,11 +5,13 @@ on:
     branches: ['**']
     paths:
       - 'src/**'
+      - 'src/.flake8'
       - '.github/workflows/lint_flake8.yml'
   pull_request:
     branches: ['**']
     paths:
       - 'src/**'
+      - 'src/.flake8'
       - '.github/workflows/lint_flake8.yml'
 
 jobs:

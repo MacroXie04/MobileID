@@ -1,8 +1,19 @@
+const aliasMap = require('./path-aliases.json');
+
 module.exports = {
   root: true,
   env: { browser: true, es2022: true, node: true },
-  extends: ['eslint:recommended', 'plugin:vue/vue3-recommended', 'prettier'],
+  extends: ['eslint:recommended', 'plugin:vue/vue3-recommended', 'plugin:import/recommended', 'prettier'],
   parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+  plugins: ['import'],
+  settings: {
+    'import/resolver': {
+      alias: {
+        map: Object.entries(aliasMap),
+        extensions: ['.js', '.vue', '.json'],
+      },
+    },
+  },
   rules: {
     'no-console':
       process.env.NODE_ENV === 'production' ? ['warn', { allow: ['warn', 'error'] }] : 'off',
@@ -18,5 +29,6 @@ module.exports = {
         caughtErrorsIgnorePattern: '^_',
       },
     ],
+    'import/no-unresolved': 'error',
   },
 };

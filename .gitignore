@@ -59,6 +59,12 @@ $RECYCLE.BIN/
 !.vscode/*.code-snippets
 .history/
 
+# Visual Studio
+*.sln
+*.suo
+*.ntvs*
+*.njsproj
+
 # IntelliJ IDEA / PyCharm / WebStorm
 .idea/
 *.iml
@@ -317,6 +323,7 @@ jspm_packages/
 .env.test.local
 .env.production.local
 .env.local
+*.local
 
 # parcel-bundler cache
 .cache
@@ -367,6 +374,7 @@ public
 pages/dist/
 pages/build/
 pages/.output/
+pages/dist-ssr/
 
 # Vue CLI
 .vue-cli-service

@@ -80,6 +80,8 @@ def api_register(request):
                 {
                     "success": True,
                     "message": "Registration successful",
+                    "access": access_token,
+                    "refresh": refresh_token,
                     "data": {
                         "username": user.username,
                         "groups": list(user.groups.values_list("name", flat=True)),

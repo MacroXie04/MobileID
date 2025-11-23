@@ -12,6 +12,12 @@ DEBUG = env("DEBUG", "False").lower() == "true"
 ENVIRONMENT = env("ENVIRONMENT", "production").lower()
 IS_PRODUCTION = True
 
+# Production: Enable throttles by default (override base.py default)
+# Can be disabled with DISABLE_THROTTLES environment variable
+if not env("DISABLE_THROTTLES"):
+    DISABLE_THROTTLES = False
+    THROTTLES_ENABLED = True
+
 # SECURITY WARNING: keep the secret key used in production secret!
 # Production MUST set SECRET_KEY via environment variable
 SECRET_KEY = env("SECRET_KEY")

@@ -1,26 +1,26 @@
 from authn.api.utils import clear_auth_cookies, set_auth_cookies
 from authn.throttling import LoginRateThrottle, UsernameRateThrottle
+from django.conf import settings
 from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
-
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import ensure_csrf_cookie
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from ..serializers import (
     EncryptedTokenObtainPairSerializer,
     RSAEncryptedLoginSerializer,
 )
 
-LOGIN_VIEW_THROTTLES = (LoginRateThrottle, UsernameRateThrottle)
+if getattr(settings, "THROTTLES_ENABLED", True):
+    LOGIN_VIEW_THROTTLES = (LoginRateThrottle, UsernameRateThrottle)
+else:
+    LOGIN_VIEW_THROTTLES = ()
 
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")
@@ -61,8 +61,21 @@ class CookieTokenRefreshView(TokenRefreshView):
 
             response = Response(serializer.validated_data, status=200)
         else:
-            response = super().post(request, *args, **kwargs)
+            # Refresh token is in request body
+            # Ensure we have the refresh field
+            if "refresh" not in request.data:
+                return Response(
+                    {"detail": "Refresh token is required"}, status=400
+                )
+            try:
+                response = super().post(request, *args, **kwargs)
+            except InvalidToken as e:
+                # Handle invalid token errors
+                return Response(
+                    {"detail": str(e)}, status=400
+                )
 
+        # Ensure tokens are returned in response body (for localStorage usage)
         if response.status_code == 200:
             access = response.data.get("access")
             refresh = response.data.get("refresh")
@@ -70,6 +83,12 @@ class CookieTokenRefreshView(TokenRefreshView):
                 set_auth_cookies(response, access, refresh, request=request)
                 # Force CSRF cookie to be set/rotated so frontend can read it
                 get_token(request)
+                # Ensure response body contains tokens (may have been modified by super())
+                if "access" not in response.data or "refresh" not in response.data:
+                    response.data = {
+                        "access": access,
+                        "refresh": refresh,
+                    }
         return response
 
 
@@ -111,5 +130,9 @@ class RSALoginView(TokenObtainPairView):
             refresh = response.data.get("refresh")
             if access and refresh:
                 set_auth_cookies(response, access, refresh, request=request)
-                response.data = {"message": "Login successful"}
+                response.data = {
+                    "message": "Login successful",
+                    "access": access,
+                    "refresh": refresh,
+                }
         return response
