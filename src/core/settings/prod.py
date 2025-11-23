@@ -82,7 +82,10 @@ if not ADMIN_URL_PATH:
     print("WARNING: ADMIN_URL_PATH not set in production. Defaulting to 'admin'.")
     ADMIN_URL_PATH = "admin"
 elif ADMIN_URL_PATH == "admin":
-    print("WARNING: ADMIN_URL_PATH set to default 'admin' in production. This is a security risk.")
+    print(
+        "WARNING: ADMIN_URL_PATH set to default 'admin' in production. "
+        "This is a security risk."
+    )
 
 # ADMIN_ALLOWED_IPS = csv_env("ADMIN_ALLOWED_IPS")
 # if not ADMIN_ALLOWED_IPS:
