@@ -87,13 +87,27 @@ elif ADMIN_URL_PATH == "admin":
         "This is a security risk."
     )
 
-# ADMIN_ALLOWED_IPS = csv_env("ADMIN_ALLOWED_IPS")
-# if not ADMIN_ALLOWED_IPS:
-#    raise ValueError(
-#        "ADMIN_ALLOWED_IPS must be set in production environment. "
-#        "This setting is required for security."
-#    )
+
 ADMIN_ALLOWED_IPS = []  # Disable IP whitelist for now
+
+
+# ---------------------------------------------------------------------
+# Cloud SQL MySQL database configuration (Production)
+# ---------------------------------------------------------------------
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "HOST": "/cloudsql/" + env("INSTANCE_CONNECTION_NAME"),
+        "PORT": "3306",
+        "NAME": env("DB_NAME", "mobileid_prod"),
+        "USER": env("DB_USER", "root"),
+        "PASSWORD": env("DB_PASSWORD"),
+        "OPTIONS": {
+            "charset": "utf8mb4",
+        },
+    }
+}
+
 
 # Production logging - structured logging
 LOGGING = {

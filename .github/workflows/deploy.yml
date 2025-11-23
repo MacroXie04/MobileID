@@ -1,6 +1,5 @@
 name: Deploy to Cloud Run
 
-# Trigger deployment only after "Django Tests" workflow succeeds on main branch
 on:
   workflow_run:
     workflows: [ "Django Tests" ]
@@ -10,21 +9,19 @@ on:
 
 env:
   PROJECT_ID: mobileid-478800
-  REGION: us-central1
+  REGION: us-west1   # 与 Cloud SQL 区域一致
   SERVICE_NAME: mobileid
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Execute only if the test workflow passed
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    
+
     permissions:
       contents: 'read'
       id-token: 'write'
 
     steps:
-      # Checkout the specific commit that passed the tests
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -48,9 +45,7 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
           image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
-          # Connect to Cloud SQL and allow public access
           flags: '--add-cloudsql-instances=${{ secrets.INSTANCE_CONNECTION_NAME }} --allow-unauthenticated'
-          # Inject environment variables from GitHub Secrets
           env_vars: |-
             DB_NAME=${{ secrets.DB_NAME }}
             DB_USER=${{ secrets.DB_USER }}
@@ -64,7 +59,6 @@ jobs:
             DJANGO_SUPERUSER_PASSWORD=${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
             
             SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
-            
             SELENIUM_ENABLED=${{ secrets.SELENIUM_ENABLED }}
             
             ALLOWED_HOSTS=*
@@ -74,5 +68,19 @@ jobs:
 
             CORS_ALLOWED_ORIGINS=*
             CSRF_TRUSTED_ORIGINS=https://*.run.app
-            
             ADMIN_URL_PATH=${{ secrets.ADMIN_URL_PATH }}
+
+      - name: Verify Deployment
+        run: gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }}
+
+      - name: Rollback on Failure
+        if: failure()
+        run: |-
+          echo "Deployment failed, rolling back to previous revision..."
+          LAST_REVISION=$(gcloud run revisions list --service=${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --sort-by="~createTime" --limit=2 --format="value(metadata.name)" | tail -n 1)
+          if [ -n "$LAST_REVISION" ]; then
+            gcloud run services update-traffic ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --to-revisions=$LAST_REVISION=100
+            echo "Rollback complete: now serving $LAST_REVISION"
+          else
+            echo "No previous revision found, skipping rollback."
+          fi
