@@ -187,8 +187,14 @@ class UCMercedMobileIdClient:
         Returns:
             ApiResponse object with status and details
         """
-        if settings and hasattr(settings, "SELENIUM_ENABLED") and not settings.SELENIUM_ENABLED:
-            return ApiResponse(status="error", error="Selenium disabled on Google Cloud")
+        if (
+            settings
+            and hasattr(settings, "SELENIUM_ENABLED")
+            and not settings.SELENIUM_ENABLED
+        ):
+            return ApiResponse(
+                status="error", error="Selenium disabled on Google Cloud"
+            )
 
         logger.info(f"Attempting to send OTC with code: {mobile_id_rand}")
 
@@ -356,8 +362,14 @@ class UCMercedMobileIdClient:
         Returns:
             ApiResponse with final result
         """
-        if settings and hasattr(settings, "SELENIUM_ENABLED") and not settings.SELENIUM_ENABLED:
-            return ApiResponse(status="error", error="Selenium disabled on Google Cloud")
+        if (
+            settings
+            and hasattr(settings, "SELENIUM_ENABLED")
+            and not settings.SELENIUM_ENABLED
+        ):
+            return ApiResponse(
+                status="error", error="Selenium disabled on Google Cloud"
+            )
 
         logger.info("Starting automatic code sending process")
 
@@ -416,7 +428,11 @@ class UCMercedMobileIdClient:
         Returns:
             MobileIdData object with extracted information
         """
-        if settings and hasattr(settings, "SELENIUM_ENABLED") and not settings.SELENIUM_ENABLED:
+        if (
+            settings
+            and hasattr(settings, "SELENIUM_ENABLED")
+            and not settings.SELENIUM_ENABLED
+        ):
             logger.error("Selenium disabled on Google Cloud")
             return MobileIdData(None, None, None, None)
 

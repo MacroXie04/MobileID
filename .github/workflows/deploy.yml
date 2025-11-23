@@ -72,3 +72,5 @@ jobs:
 
             CORS_ALLOWED_ORIGINS=*
             CSRF_TRUSTED_ORIGINS=https://*.run.app
+            
+            ADMIN_URL_PATH=${{ secrets.ADMIN_URL_PATH }}

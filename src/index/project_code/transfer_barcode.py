@@ -249,7 +249,9 @@ class TransferBarcode(UCMercedMobileIdClient):
 
     def transfer_barcode(self) -> ApiResponse:
         if hasattr(settings, "SELENIUM_ENABLED") and not settings.SELENIUM_ENABLED:
-            return ApiResponse(status="error", error="Selenium disabled on Google Cloud")
+            return ApiResponse(
+                status="error", error="Selenium disabled on Google Cloud"
+            )
 
         try:
             barcode_data = self.process_barcode_data()
