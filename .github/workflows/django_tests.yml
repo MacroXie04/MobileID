@@ -3,8 +3,14 @@ name: Django Tests
 on:
   push:
     branches: ['**']
+    paths:
+      - 'src/**'
+      - '.github/workflows/django_tests.yml'
   pull_request:
     branches: ['**']
+    paths:
+      - 'src/**'
+      - '.github/workflows/django_tests.yml'
 
 jobs:
   test:

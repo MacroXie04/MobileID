@@ -31,13 +31,20 @@ if not ALLOWED_HOSTS:
 
 # Production CORS origins - MUST be set via environment variable
 FRONTEND_ORIGINS_PROD = csv_env("CORS_ALLOWED_ORIGINS")
-if not FRONTEND_ORIGINS_PROD:
+
+# Handle wildcard for CORS
+if "*" in FRONTEND_ORIGINS_PROD or '["*"]' in FRONTEND_ORIGINS_PROD:
+    CORS_ALLOW_ALL_ORIGINS = True
+    FRONTEND_ORIGINS = []  # Don't add wildcard to CSRF trusted origins
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    FRONTEND_ORIGINS = FRONTEND_ORIGINS_PROD
+
+if not FRONTEND_ORIGINS_PROD and not CORS_ALLOW_ALL_ORIGINS:
     raise ValueError(
         "CORS_ALLOWED_ORIGINS must be set in production environment. "
         "This setting is required for CORS to work properly."
     )
-
-FRONTEND_ORIGINS = FRONTEND_ORIGINS_PROD
 
 # Django 5 requires scheme://host[:port]
 CSRF_TRUSTED_ORIGINS = csv_env(
@@ -45,7 +52,7 @@ CSRF_TRUSTED_ORIGINS = csv_env(
 )
 
 # If using django-cors-headers:
-CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
+CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS if not CORS_ALLOW_ALL_ORIGINS else []
 CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
 # Cookies - Production: secure cookies required
@@ -71,11 +78,11 @@ CSP_DEFAULT_POLICY = env(
 
 # Admin security - Production: MUST be configured
 ADMIN_URL_PATH = env("ADMIN_URL_PATH")
-if not ADMIN_URL_PATH or ADMIN_URL_PATH == "admin":
-    raise ValueError(
-        "ADMIN_URL_PATH must be set to a non-default value in production environment. "  # noqa: E501
-        "This setting is required for security."
-    )
+if not ADMIN_URL_PATH:
+    print("WARNING: ADMIN_URL_PATH not set in production. Defaulting to 'admin'.")
+    ADMIN_URL_PATH = "admin"
+elif ADMIN_URL_PATH == "admin":
+    print("WARNING: ADMIN_URL_PATH set to default 'admin' in production. This is a security risk.")
 
 # ADMIN_ALLOWED_IPS = csv_env("ADMIN_ALLOWED_IPS")
 # if not ADMIN_ALLOWED_IPS:

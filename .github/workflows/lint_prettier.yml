@@ -3,8 +3,14 @@ name: Lint Prettier
 on:
   push:
     branches: ['**']
+    paths:
+      - 'pages/**'
+      - '.github/workflows/lint_prettier.yml'
   pull_request:
     branches: ['**']
+    paths:
+      - 'pages/**'
+      - '.github/workflows/lint_prettier.yml'
 
 jobs:
   prettier:

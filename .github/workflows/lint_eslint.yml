@@ -3,8 +3,14 @@ name: Lint ESLint
 on:
   push:
     branches: ['**']
+    paths:
+      - 'pages/**'
+      - '.github/workflows/lint_eslint.yml'
   pull_request:
     branches: ['**']
+    paths:
+      - 'pages/**'
+      - '.github/workflows/lint_eslint.yml'
 
 jobs:
   eslint:

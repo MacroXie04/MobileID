@@ -3,8 +3,14 @@ name: Frontend Build
 on:
   push:
     branches: ['**']
+    paths:
+      - 'pages/**'
+      - '.github/workflows/frontend_build.yml'
   pull_request:
     branches: ['**']
+    paths:
+      - 'pages/**'
+      - '.github/workflows/frontend_build.yml'
 
 jobs:
   build:

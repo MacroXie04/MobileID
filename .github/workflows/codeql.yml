@@ -5,10 +5,18 @@ on:
     branches:
       - main
       - master
+    paths:
+      - 'src/**'
+      - 'pages/**'
+      - '.github/workflows/codeql.yml'
   pull_request:
     branches:
       - main
       - master
+    paths:
+      - 'src/**'
+      - 'pages/**'
+      - '.github/workflows/codeql.yml'
   schedule:
     - cron: '0 0 * * 0' # Weekly on Sunday
 

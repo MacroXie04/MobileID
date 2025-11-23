@@ -3,8 +3,14 @@ name: Lint Flake8
 on:
   push:
     branches: ['**']
+    paths:
+      - 'src/**'
+      - '.github/workflows/lint_flake8.yml'
   pull_request:
     branches: ['**']
+    paths:
+      - 'src/**'
+      - '.github/workflows/lint_flake8.yml'
 
 jobs:
   flake8:

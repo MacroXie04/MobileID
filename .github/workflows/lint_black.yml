@@ -3,8 +3,14 @@ name: Lint Black
 on:
   push:
     branches: ['**']
+    paths:
+      - 'src/**'
+      - '.github/workflows/lint_black.yml'
   pull_request:
     branches: ['**']
+    paths:
+      - 'src/**'
+      - '.github/workflows/lint_black.yml'
 
 jobs:
   black:

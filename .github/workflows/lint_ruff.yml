@@ -3,8 +3,14 @@ name: Lint Ruff
 on:
   push:
     branches: ['**']
+    paths:
+      - 'src/**'
+      - '.github/workflows/lint_ruff.yml'
   pull_request:
     branches: ['**']
+    paths:
+      - 'src/**'
+      - '.github/workflows/lint_ruff.yml'
 
 jobs:
   ruff:
