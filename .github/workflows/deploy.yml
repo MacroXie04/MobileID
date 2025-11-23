@@ -3,8 +3,8 @@ name: Deploy to Cloud Run
 # Trigger deployment only after "Django Tests" workflow succeeds on main branch
 on:
   workflow_run:
-    workflows: ["Django Tests"]
-    branches: [main]
+    workflows: [ "Django Tests" ]
+    branches: [ main ]
     types:
       - completed
 
@@ -38,7 +38,6 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # FIXED: Added 'src' to the command to specify the build context
       - name: Build and Push Container
         run: |-
           gcloud builds submit src --tag gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
@@ -63,3 +62,13 @@ jobs:
             DJANGO_SUPERUSER_EMAIL=${{ secrets.ADMIN_EMAIL }}
             DJANGO_SUPERUSER_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
             SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+            
+            SELENIUM_ENABLED=${{ secrets.SELENIUM_ENABLED }}
+            
+            ALLOWED_HOSTS=*
+            DB_PROFILE=gcp
+            DEBUG=False
+            ENVIRONMENT=production
+
+            CORS_ALLOWED_ORIGINS=*
+            CSRF_TRUSTED_ORIGINS=https://*.run.app

@@ -10,6 +10,11 @@ from textwrap import shorten
 from typing import Dict, List, Optional
 from urllib.parse import quote
 
+try:
+    from django.conf import settings
+except ImportError:
+    settings = None
+
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
@@ -182,6 +187,9 @@ class UCMercedMobileIdClient:
         Returns:
             ApiResponse object with status and details
         """
+        if settings and hasattr(settings, "SELENIUM_ENABLED") and not settings.SELENIUM_ENABLED:
+            return ApiResponse(status="error", error="Selenium disabled on Google Cloud")
+
         logger.info(f"Attempting to send OTC with code: {mobile_id_rand}")
 
         try:
@@ -348,6 +356,9 @@ class UCMercedMobileIdClient:
         Returns:
             ApiResponse with final result
         """
+        if settings and hasattr(settings, "SELENIUM_ENABLED") and not settings.SELENIUM_ENABLED:
+            return ApiResponse(status="error", error="Selenium disabled on Google Cloud")
+
         logger.info("Starting automatic code sending process")
 
         try:
@@ -405,6 +416,10 @@ class UCMercedMobileIdClient:
         Returns:
             MobileIdData object with extracted information
         """
+        if settings and hasattr(settings, "SELENIUM_ENABLED") and not settings.SELENIUM_ENABLED:
+            logger.error("Selenium disabled on Google Cloud")
+            return MobileIdData(None, None, None, None)
+
         logger.info("Fetching mobile ID data")
 
         try:

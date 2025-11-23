@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from PIL import Image
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
 from index.models import (
@@ -247,6 +248,9 @@ class TransferBarcode(UCMercedMobileIdClient):
             return ""
 
     def transfer_barcode(self) -> ApiResponse:
+        if hasattr(settings, "SELENIUM_ENABLED") and not settings.SELENIUM_ENABLED:
+            return ApiResponse(status="error", error="Selenium disabled on Google Cloud")
+
         try:
             barcode_data = self.process_barcode_data()
             self.store_barcode_data(barcode_data)
