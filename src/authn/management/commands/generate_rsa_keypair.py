@@ -36,8 +36,21 @@ class Command(BaseCommand):
             action="store_true",
             help="Keep existing active keys active (don't deactivate them)",
         )
+        parser.add_argument(
+            "--if-not-exists",
+            action="store_true",
+            help="Only generate key pair if no active key pair exists",
+        )
 
     def handle(self, *args, **options):
+        # Check if active keys exist (if flag is set)
+        if options["if_not_exists"]:
+            if RSAKeyPair.objects.filter(is_active=True).exists():
+                self.stdout.write(
+                    self.style.SUCCESS("Active RSA key pair already exists. Skipping.")
+                )
+                return
+
         key_size = options["key_size"]
         keep_active = options["keep_active"]
 
