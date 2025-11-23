@@ -58,9 +58,9 @@ jobs:
             INSTANCE_CONNECTION_NAME=${{ secrets.INSTANCE_CONNECTION_NAME }}
             GCP_PROJECT_ID=${{ env.PROJECT_ID }}
             DJANGO_SETTINGS_MODULE=core.settings.prod
-            DJANGO_SUPERUSER_USERNAME=${{ secrets.ADMIN_USERNAME }}
-            DJANGO_SUPERUSER_EMAIL=${{ secrets.ADMIN_EMAIL }}
-            DJANGO_SUPERUSER_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+            DJANGO_SUPERUSER_USERNAME=${{ secrets.DJANGO_ADMIN_USERNAME }}
+            DJANGO_SUPERUSER_EMAIL=${{ secrets.DJANGO_ADMIN_EMAIL }}
+            DJANGO_SUPERUSER_PASSWORD=${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
             SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
             
             SELENIUM_ENABLED=${{ secrets.SELENIUM_ENABLED }}
