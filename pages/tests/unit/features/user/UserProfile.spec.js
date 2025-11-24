@@ -56,4 +56,3 @@ describe('UserProfile', () => {
     expect(wrapper.find('.avatar-initials').text()).toBe('JD');
   });
 });
-

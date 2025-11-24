@@ -17,4 +17,3 @@ describe('App shell', () => {
     expect(wrapper.find('[data-test="router-view-placeholder"]').exists()).toBe(true);
   });
 });
-

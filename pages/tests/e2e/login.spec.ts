@@ -10,4 +10,3 @@ test.describe('Login flow smoke test', () => {
     await expect(page.getByRole('link', { name: /create an account/i })).toBeVisible();
   });
 });
-
