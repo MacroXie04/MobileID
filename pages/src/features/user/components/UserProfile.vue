@@ -46,10 +46,6 @@ const props = defineProps({
   },
 });
 
-const {
-  showInitials,
-  avatarUrl,
-  getInitials,
-  handleImageError
-} = useUserProfileComponentLogic(props);
+const { showInitials, avatarUrl, getInitials, handleImageError } =
+  useUserProfileComponentLogic(props);
 </script>

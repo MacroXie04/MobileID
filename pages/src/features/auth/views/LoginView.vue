@@ -99,6 +99,6 @@ const {
   clearError,
   validateField,
   handleSubmit,
-  signInWithPasskey
+  signInWithPasskey,
 } = useLoginLogic();
 </script>

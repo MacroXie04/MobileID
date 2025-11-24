@@ -61,10 +61,8 @@ const props = defineProps({
 
 const emit = defineEmits(['generate']);
 
-const {
-  shouldShowAvatar,
-  getInitials,
-  handleImageError,
-  handleGenerate
-} = useSchoolProfileLogic(props, emit);
+const { shouldShowAvatar, getInitials, handleImageError, handleGenerate } = useSchoolProfileLogic(
+  props,
+  emit
+);
 </script>

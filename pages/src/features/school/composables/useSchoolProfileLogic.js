@@ -22,7 +22,6 @@ export function useSchoolProfileLogic(props, emit) {
     shouldShowAvatar,
     getInitials,
     handleImageError,
-    handleGenerate
+    handleGenerate,
   };
 }
-

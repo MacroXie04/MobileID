@@ -322,7 +322,6 @@ export function useProfileEditLogic() {
     handleFieldChange,
     handleSubmit,
     registerPasskey,
-    resetCrop
+    resetCrop,
   };
 }
-

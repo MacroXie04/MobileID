@@ -232,6 +232,6 @@ const {
   handleFieldChange,
   handleSubmit,
   registerPasskey,
-  resetCrop
+  resetCrop,
 } = useProfileEditLogic();
 </script>

@@ -54,11 +54,5 @@ import UserMenu from '@user/components/UserMenu.vue';
 // CSS
 import '@/assets/styles/home/home-merged.css';
 
-const {
-  profile,
-  barcodeDisplayRef,
-  avatarSrc,
-  handleGenerate,
-  handleLogout
-} = useHomeUserLogic();
+const { profile, barcodeDisplayRef, avatarSrc, handleGenerate, handleLogout } = useHomeUserLogic();
 </script>

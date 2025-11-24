@@ -1,6 +1,7 @@
 import logging
 
 from authn.api.utils import set_auth_cookies
+from django.conf import settings
 from django.contrib.auth import login
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -11,6 +12,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from ..forms import UserRegisterForm
 
 
+class RegisterThrottle(AnonRateThrottle):
+    scope = "registration"
+
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def api_register(request):
@@ -18,19 +23,17 @@ def api_register(request):
     Register a new user with rudimentary rate limiting.
     """
 
-    class RegisterThrottle(AnonRateThrottle):
-        scope = "registration"
-
-    throttle = RegisterThrottle()
-    if not throttle.allow_request(request, None):
-        return Response(
-            {
-                "success": False,
-                "message": "Registration request is too frequent, please "
-                "try again later",
-            },
-            status=429,
-        )
+    if getattr(settings, "THROTTLES_ENABLED", True):
+        throttle = RegisterThrottle()
+        if not throttle.allow_request(request, None):
+            return Response(
+                {
+                    "success": False,
+                    "message": "Registration request is too frequent, please "
+                    "try again later",
+                },
+                status=429,
+            )
 
     try:
         required_fields = [

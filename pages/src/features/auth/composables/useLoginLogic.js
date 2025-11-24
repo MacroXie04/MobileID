@@ -10,7 +10,7 @@ export function useLoginLogic() {
   const formData = reactive({ username: '', password: '' });
   const loading = ref(false);
   const showPassword = ref(false);
-  
+
   // Template refs
   const iconBtn = ref(null);
   const submitBtn = ref(null);
@@ -98,7 +98,6 @@ export function useLoginLogic() {
     clearError,
     validateField,
     handleSubmit,
-    signInWithPasskey
+    signInWithPasskey,
   };
 }
-

@@ -40,7 +40,13 @@ export function useHomeUserLogic() {
       const barcode = response?.barcode;
       const message = response?.message;
 
-      console.log('Parsed values:', { status, barcode, message, hasBarcode: !!barcode, responseType: typeof response });
+      console.log('Parsed values:', {
+        status,
+        barcode,
+        message,
+        hasBarcode: !!barcode,
+        responseType: typeof response,
+      });
 
       // Check if response is valid
       if (!response || typeof response !== 'object') {
@@ -54,7 +60,12 @@ export function useHomeUserLogic() {
         barcodeDisplay.drawPDF417(barcode);
         barcodeDisplay.showSuccess(message || 'Success');
       } else {
-        console.warn('Barcode generation failed:', { status, barcode, message, fullResponse: response });
+        console.warn('Barcode generation failed:', {
+          status,
+          barcode,
+          message,
+          fullResponse: response,
+        });
         barcodeDisplay.showError(message || response?.detail || 'Server Error');
       }
     } catch (err) {
@@ -98,7 +109,6 @@ export function useHomeUserLogic() {
     barcodeDisplayRef,
     avatarSrc,
     handleGenerate,
-    handleLogout
+    handleLogout,
   };
 }
-

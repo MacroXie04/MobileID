@@ -279,6 +279,6 @@ const {
   getProfileLabel,
   getProfileTooltip,
   getBarcodeDisplayId,
-  formatRelativeTime
+  formatRelativeTime,
 } = useBarcodesListLogic();
 </script>

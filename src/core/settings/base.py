@@ -335,12 +335,16 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser
 SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on each request
 
 # REST throttle settings
-# Default to disabling throttles in development (when DEBUG=True)
-# Can be overridden with DISABLE_THROTTLES environment variable
-# In production, this should be overridden in prod.py
+# Default to disabling throttles in development (when DEBUG=True) unless testing.
+# Can be overridden with DISABLE_THROTTLES environment variable.
+# Production overrides this in prod.py.
 throttle_setting = env("DISABLE_THROTTLES")
-if throttle_setting:
+if throttle_setting not in (None, ""):
     DISABLE_THROTTLES = throttle_setting.lower() == "true"
+elif TESTING:
+    # Always keep throttles enabled when running tests so security behavior
+    # remains covered.
+    DISABLE_THROTTLES = False
 else:
     # Default to True (disable throttles) for development
     # Production should override this in prod.py

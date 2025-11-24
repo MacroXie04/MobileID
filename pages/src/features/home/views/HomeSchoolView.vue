@@ -41,6 +41,6 @@ const {
   serverStatus,
   barcodeDisplayRef,
   isRefreshingToken,
-  handleGenerate
+  handleGenerate,
 } = useHomeSchoolLogic();
 </script>

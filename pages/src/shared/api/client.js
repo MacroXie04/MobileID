@@ -18,7 +18,7 @@ export async function apiRequest(endpoint, options = {}) {
       data: options.body, // axios uses 'data' for body
       ...options,
     };
-    
+
     // Remove body from config as we mapped it to data
     delete config.body;
 
@@ -29,17 +29,10 @@ export async function apiRequest(endpoint, options = {}) {
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
       const errorData = error.response.data || {};
-      const message = 
-        errorData.message || 
-        errorData.detail || 
-        JSON.stringify(errorData) || 
-        error.message;
-        
-      throw new ApiError(
-        message,
-        error.response.status,
-        errorData
-      );
+      const message =
+        errorData.message || errorData.detail || JSON.stringify(errorData) || error.message;
+
+      throw new ApiError(message, error.response.status, errorData);
     } else if (error.request) {
       // The request was made but no response was received
       throw new Error('Network Error: No response received');

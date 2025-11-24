@@ -11,16 +11,23 @@ export function useAddBarcodeLogic(emit) {
   const errors = ref({});
 
   // Scanner composable
-  const { showScanner, scanning, scannerStatus, videoRef, cameras, selectedCameraId, toggleScanner } =
-    useBarcodeScanner({
-      onScan: (code) => {
-        newBarcode.value = code;
-        emit('message', 'Barcode scanned successfully!', 'success');
-      },
-      onError: (error) => {
-        emit('message', error.message || 'Scanner error occurred', 'danger');
-      },
-    });
+  const {
+    showScanner,
+    scanning,
+    scannerStatus,
+    videoRef,
+    cameras,
+    selectedCameraId,
+    toggleScanner,
+  } = useBarcodeScanner({
+    onScan: (code) => {
+      newBarcode.value = code;
+      emit('message', 'Barcode scanned successfully!', 'success');
+    },
+    onError: (error) => {
+      emit('message', error.message || 'Scanner error occurred', 'danger');
+    },
+  });
 
   // Transfer state
   const transferCookie = ref('');
@@ -129,7 +136,6 @@ export function useAddBarcodeLogic(emit) {
     clearError,
     addBarcode,
     clearTransferError,
-    requestTransferCode
+    requestTransferCode,
   };
 }
-

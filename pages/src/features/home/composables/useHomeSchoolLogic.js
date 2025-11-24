@@ -9,7 +9,7 @@ import { animateBarcodeSequence } from '@shared/utils/common/jQueryAnimations.js
 
 export function useHomeSchoolLogic() {
   const route = useRoute();
-  
+
   // State
   const loading = ref(false);
   const serverStatus = ref('Emergency');
@@ -182,7 +182,6 @@ export function useHomeSchoolLogic() {
     barcodeDisplayRef,
     isRefreshingToken,
     userInfoLoading: false, // exposed but not separately tracked here, reusing loading or just passing false if not needed
-    handleGenerate
+    handleGenerate,
   };
 }
-

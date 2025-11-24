@@ -3,7 +3,12 @@ const aliasMap = require('./path-aliases.json');
 module.exports = {
   root: true,
   env: { browser: true, es2022: true, node: true },
-  extends: ['eslint:recommended', 'plugin:vue/vue3-recommended', 'plugin:import/recommended', 'prettier'],
+  extends: [
+    'eslint:recommended',
+    'plugin:vue/vue3-recommended',
+    'plugin:import/recommended',
+    'prettier',
+  ],
   parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
   plugins: ['import'],
   settings: {

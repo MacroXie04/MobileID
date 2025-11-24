@@ -162,6 +162,6 @@ const {
   clearError,
   addBarcode,
   clearTransferError,
-  requestTransferCode
+  requestTransferCode,
 } = useAddBarcodeLogic(emit);
 </script>

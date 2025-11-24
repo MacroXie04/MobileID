@@ -2,31 +2,31 @@ name: Frontend Build
 
 on:
   push:
-    branches: ['**']
+    branches: ["**"]
     paths:
-      - 'pages/**'
-      - '.github/workflows/frontend_build.yml'
+      - "pages/**"
+      - ".github/workflows/frontend_build.yml"
   pull_request:
-    branches: ['**']
+    branches: ["**"]
     paths:
-      - 'pages/**'
-      - '.github/workflows/frontend_build.yml'
+      - "pages/**"
+      - ".github/workflows/frontend_build.yml"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
-          cache: 'npm'
+          node-version: "lts/*"
+          cache: "npm"
           cache-dependency-path: pages/package-lock.json
-      
+
       - name: Install dependencies
         working-directory: ./pages
         run: npm install
@@ -34,15 +34,14 @@ jobs:
       - name: Run unit tests
         working-directory: ./pages
         run: npm run test -- --run
-      
+
       - name: Build frontend
         working-directory: ./pages
         run: npm run build
-      
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: pages/dist
           retention-days: 7
-

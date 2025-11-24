@@ -167,7 +167,7 @@ const {
   filterType,
   ownedOnly,
   showConfirmDialog,
-  
+
   // Computed
   isDynamicSelected,
   currentBarcodeHasProfile,
@@ -189,12 +189,12 @@ const {
   goToAddTab,
   setTab,
   showMessage,
-  
+
   // Daily Limit methods
   updateDailyLimit,
   incrementDailyLimit,
   decrementDailyLimit,
   toggleUnlimitedSwitch,
-  applyLimitPreset
+  applyLimitPreset,
 } = useDashboardLogic();
 </script>

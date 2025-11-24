@@ -2,49 +2,48 @@ name: Database Migrations
 
 on:
   push:
-    branches: ['**']
+    branches: ["**"]
     paths:
-      - 'src/**'
-      - '.github/workflows/database_migrations.yml'
+      - "src/**"
+      - ".github/workflows/database_migrations.yml"
   pull_request:
-    branches: ['**']
+    branches: ["**"]
     paths:
-      - 'src/**'
-      - '.github/workflows/database_migrations.yml'
+      - "src/**"
+      - ".github/workflows/database_migrations.yml"
 
 jobs:
   test-migrations:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
-      
+          python-version: "3.12"
+          cache: "pip"
+
       - name: Install dependencies
         working-directory: ./src
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      
+
       - name: Check for missing migrations
         working-directory: ./src
         env:
-          DJANGO_SETTINGS_MODULE: 'core.settings.dev'
-          TESTING: 'True'
+          DJANGO_SETTINGS_MODULE: "core.settings.dev"
+          TESTING: "True"
         run: |
           python manage.py makemigrations --check --dry-run
 
       - name: Test migrations application
         working-directory: ./src
         env:
-          DJANGO_SETTINGS_MODULE: 'core.settings.dev'
-          TESTING: 'True'
+          DJANGO_SETTINGS_MODULE: "core.settings.dev"
+          TESTING: "True"
         run: |
           python manage.py migrate
-

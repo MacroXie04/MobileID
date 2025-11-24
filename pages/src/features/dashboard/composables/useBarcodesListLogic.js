@@ -80,7 +80,6 @@ export function useBarcodesListLogic() {
     getProfileLabel,
     getProfileTooltip,
     getBarcodeDisplayId,
-    formatRelativeTime
+    formatRelativeTime,
   };
 }
-

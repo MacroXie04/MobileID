@@ -278,6 +278,6 @@ const {
   applyCrop,
   cancelCrop,
   resetCrop,
-  handleDialogClose
+  handleDialogClose,
 } = useRegisterLogic();
 </script>

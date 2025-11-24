@@ -64,17 +64,13 @@ class CookieTokenRefreshView(TokenRefreshView):
             # Refresh token is in request body
             # Ensure we have the refresh field
             if "refresh" not in request.data:
-                return Response(
-                    {"detail": "Refresh token is required"}, status=400
-                )
+                return Response({"detail": "Refresh token is required"}, status=400)
             try:
                 response = super().post(request, *args, **kwargs)
             except InvalidToken as e:
                 # Handle invalid token errors
                 # Optionally log the exception info here using logging (not shown)
-                return Response(
-                    {"detail": "Invalid token."}, status=400
-                )
+                return Response({"detail": "Invalid token."}, status=400)
 
         # Ensure tokens are returned in response body (for localStorage usage)
         if response.status_code == 200:

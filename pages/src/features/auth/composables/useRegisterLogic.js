@@ -214,7 +214,7 @@ export function useRegisterLogic() {
     showPassword1,
     showPassword2,
     errors,
-    
+
     // Cropper state
     showCropper,
     cropperLoading,
@@ -228,7 +228,7 @@ export function useRegisterLogic() {
     clearError,
     validateField,
     handleSubmit,
-    
+
     // Cropper methods
     zoomIn,
     zoomOut,
@@ -236,7 +236,6 @@ export function useRegisterLogic() {
     applyCrop,
     cancelCrop,
     resetCrop,
-    handleDialogClose
+    handleDialogClose,
   };
 }
-

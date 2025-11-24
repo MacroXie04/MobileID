@@ -15,14 +15,11 @@ export function useUserProfileComponentLogic(props) {
   });
 
   // Watch for avatarSrc changes
-  watch(
-    avatarSrc,
-    (newVal) => {
-      if (newVal) {
-        showInitials.value = false;
-      }
+  watch(avatarSrc, (newVal) => {
+    if (newVal) {
+      showInitials.value = false;
     }
-  );
+  });
 
   // Handle image loading error
   function handleImageError(event) {
@@ -39,7 +36,6 @@ export function useUserProfileComponentLogic(props) {
     showInitials,
     avatarUrl,
     getInitials,
-    handleImageError
+    handleImageError,
   };
 }
-

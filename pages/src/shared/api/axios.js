@@ -88,7 +88,10 @@ api.interceptors.response.use(
           return api(originalRequest);
         } catch (refreshError) {
           // Refresh failed (400, 401, or network error)
-          console.error('Token refresh failed:', refreshError.response?.data || refreshError.message);
+          console.error(
+            'Token refresh failed:',
+            refreshError.response?.data || refreshError.message
+          );
           clearAuthTokens();
           // Only redirect if not already on login page
           if (!window.location.pathname.includes('/login')) {

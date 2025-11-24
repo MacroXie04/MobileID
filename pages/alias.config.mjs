@@ -7,6 +7,6 @@ const aliasMap = require('./path-aliases.json');
 export const pathAlias = Object.fromEntries(
   Object.entries(aliasMap).map(([key, relativePath]) => [
     key,
-    fileURLToPath(new URL(relativePath, import.meta.url))
+    fileURLToPath(new URL(relativePath, import.meta.url)),
   ])
 );

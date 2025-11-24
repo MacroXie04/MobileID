@@ -2,36 +2,35 @@ name: Lint ESLint
 
 on:
   push:
-    branches: ['**']
+    branches: ["**"]
     paths:
-      - 'pages/**'
-      - '.github/workflows/lint_eslint.yml'
+      - "pages/**"
+      - ".github/workflows/lint_eslint.yml"
   pull_request:
-    branches: ['**']
+    branches: ["**"]
     paths:
-      - 'pages/**'
-      - '.github/workflows/lint_eslint.yml'
+      - "pages/**"
+      - ".github/workflows/lint_eslint.yml"
 
 jobs:
   eslint:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
-          cache: 'npm'
+          node-version: "lts/*"
+          cache: "npm"
           cache-dependency-path: pages/package-lock.json
-      
+
       - name: Install dependencies
         working-directory: ./pages
         run: npm install
-      
+
       - name: Run ESLint
         working-directory: ./pages
         run: npm run lint
-

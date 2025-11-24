@@ -7,4 +7,3 @@
   "@user": "./src/features/user",
   "@shared": "./src/shared"
 }
-

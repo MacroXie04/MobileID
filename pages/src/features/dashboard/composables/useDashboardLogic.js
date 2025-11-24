@@ -85,13 +85,17 @@ export function useDashboardLogic() {
   // Computed Properties
   const isDynamicSelected = computed(() => {
     if (!settings.value.barcode) return false;
-    const current = barcodeChoices.value.find((c) => Number(c.id) === Number(settings.value.barcode));
+    const current = barcodeChoices.value.find(
+      (c) => Number(c.id) === Number(settings.value.barcode)
+    );
     return current?.barcode_type === 'DynamicBarcode';
   });
 
   const currentBarcodeHasProfile = computed(() => {
     if (!settings.value.barcode) return false;
-    const current = barcodeChoices.value.find((c) => Number(c.id) === Number(settings.value.barcode));
+    const current = barcodeChoices.value.find(
+      (c) => Number(c.id) === Number(settings.value.barcode)
+    );
     return current?.has_profile_addon || false;
   });
 
@@ -127,7 +131,9 @@ export function useDashboardLogic() {
 
   const currentBarcodeInfo = computed(() => {
     if (!settings.value.barcode) return null;
-    const current = barcodeChoices.value.find((c) => Number(c.id) === Number(settings.value.barcode));
+    const current = barcodeChoices.value.find(
+      (c) => Number(c.id) === Number(settings.value.barcode)
+    );
     if (!current) return null;
 
     // Check if it's an Identification barcode
@@ -359,9 +365,9 @@ export function useDashboardLogic() {
   }
 
   function onFilterChange(val) {
-     if (val) filterType.value = val;
+    if (val) filterType.value = val;
   }
-  
+
   function toggleOwned() {
     ownedOnly.value = !ownedOnly.value;
   }
@@ -414,7 +420,7 @@ export function useDashboardLogic() {
     ownedOnly,
     showConfirmDialog,
     barcodeToDelete,
-    
+
     // Computed
     isDynamicSelected,
     currentBarcodeHasProfile,
@@ -436,13 +442,12 @@ export function useDashboardLogic() {
     goToAddTab,
     setTab,
     showMessage,
-    
+
     // Daily Limit methods
     updateDailyLimit,
     incrementDailyLimit,
     decrementDailyLimit,
     toggleUnlimitedSwitch,
-    applyLimitPreset
+    applyLimitPreset,
   };
 }
-
