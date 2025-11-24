@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
-import UserProfile from '../UserProfile.vue';
+import UserProfile from '@user/components/UserProfile.vue';
 
 describe('UserProfile', () => {
   const mockProfile = {
@@ -56,3 +56,4 @@ describe('UserProfile', () => {
     expect(wrapper.find('.avatar-initials').text()).toBe('JD');
   });
 });
+

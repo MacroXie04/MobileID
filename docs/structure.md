@@ -101,6 +101,18 @@ Each feature folder groups its components, composables, and feature-scoped utili
 - **Styling** – prefer scoped `<style>` blocks per component; when global tokens are required, store them in `src/assets/styles` and import via the shared alias.
 - **Testing** – colocate unit tests next to the feature artifacts they validate (e.g., `src/features/user/components/__tests__`).
 
+## Testing Commands
+
+- Unit/component specs live under `pages/tests/unit/**`.
+- Vitest setup helpers live in `pages/tests/unit/setupTests.ts`.
+- Playwright E2E specs live under `pages/tests/e2e/**`.
+- `npm run test:unit` – headless Vitest suite (JSDOM + Vue Test Utils).
+- `npm run test:unit:watch` – Vitest in watch mode for local TDD loops.
+- `npm run test:e2e` – Playwright E2E suite against the Vite dev server.
+- `npm run test:e2e:ui` – launches the Playwright UI mode for debugging.
+- `npm run test:e2e:ci` – CI-friendly E2E run with line + GitHub reporters.
+- `npm test` – runs both the unit suite and the CI E2E suite sequentially.
+
 ## Migration Notes
 
 - Existing folders (`components/*`, `composables/*`, `utils/*`, `views/*`) will be migrated into their corresponding feature or shared directories without altering business logic.

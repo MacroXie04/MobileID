@@ -52,10 +52,9 @@ class CookieTokenRefreshView(TokenRefreshView):
 
     def post(self, request, *args, **kwargs):
         # Check if refresh token is in cookies but not in body
-        if (
-            "refresh" not in request.data
-            and "refresh_token" in request.COOKIES
-        ):
+        refresh_missing = "refresh" not in request.data
+        cookie_has_refresh = "refresh_token" in request.COOKIES
+        if refresh_missing and cookie_has_refresh:
             data = request.data.copy()
             data["refresh"] = request.COOKIES["refresh_token"]
 
@@ -90,10 +89,9 @@ class CookieTokenRefreshView(TokenRefreshView):
                 # Force CSRF cookie to be set/rotated so frontend can read it
                 get_token(request)
                 # Ensure response body contains tokens (super() may strip them)
-                if (
-                    "access" not in response.data
-                    or "refresh" not in response.data
-                ):
+                access_missing = "access" not in response.data
+                refresh_missing = "refresh" not in response.data
+                if access_missing or refresh_missing:
                     response.data = {
                         "access": access,
                         "refresh": refresh,

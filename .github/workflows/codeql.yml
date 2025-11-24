@@ -1,28 +1,21 @@
 name: CodeQL Security Analysis
 
 on:
-  push:
-    branches:
-      - main
-      - master
-    paths:
-      - "src/**"
-      - "pages/**"
-      - ".github/workflows/codeql.yml"
-  pull_request:
-    branches:
-      - main
-      - master
-    paths:
-      - "src/**"
-      - "pages/**"
-      - ".github/workflows/codeql.yml"
   schedule:
     - cron: "0 0 * * 0" # Weekly on Sunday
+  workflow_run:
+    workflows:
+      - Lint Ruff
+    branches:
+      - main
+      - master
+    types:
+      - completed
 
 jobs:
   analyze:
     name: Analyze
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -37,6 +30,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3

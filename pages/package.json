@@ -9,7 +9,12 @@
     "preview": "vite preview",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint --ext .js,.vue src",
     "format": "prettier --write .",
-    "test": "vitest"
+    "test": "npm run test:unit && npm run test:e2e:ci",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest watch",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:ci": "playwright test --reporter=line --reporter=github --reporter=html"
   },
   "dependencies": {
     "@fontsource/material-symbols-outlined": "^5.2.18",
@@ -27,6 +32,7 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@types/node": "^24.0.15",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/test-utils": "^2.4.6",
@@ -36,9 +42,10 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-vue": "^9.29.0",
     "jsdom": "^27.2.0",
+    "playwright": "^1.56.1",
     "prettier": "^3.3.3",
     "vite": "^7.0.4",
-    "vitest": "^4.0.10"
+    "vitest": "^4.0.13"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
