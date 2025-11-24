@@ -30,6 +30,10 @@ jobs:
       - name: Install dependencies
         working-directory: ./pages
         run: npm install
+
+      - name: Run unit tests
+        working-directory: ./pages
+        run: npm run test -- --run
       
       - name: Build frontend
         working-directory: ./pages

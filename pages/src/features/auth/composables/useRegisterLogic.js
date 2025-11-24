@@ -4,6 +4,7 @@ import { register, userInfo } from '@shared/api/auth.js';
 import { useRegisterValidation } from '@auth/composables/useRegisterValidation.js';
 import { useImageCropper } from '@user/composables/useImageCropper.js';
 import { validateImageFile } from '@user/utils/imageUtils.js';
+import avatarPlaceholder from '@/assets/images/user/avatar_placeholder.png';
 
 export function useRegisterLogic() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export function useRegisterLogic() {
 
   // Methods
   const getAvatarSrc = () => {
-    return avatarPreviewUrl.value || '/images/avatar_placeholder.png';
+    return avatarPreviewUrl.value || avatarPlaceholder;
   };
 
   const selectImage = () => {

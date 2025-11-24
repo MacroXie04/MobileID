@@ -9,8 +9,8 @@
   </div>
 
   <!-- Based on user groups -->
-  <HomeSchool v-else-if="groups.includes('School')" />
-  <HomeUser v-else-if="groups.includes('User')" />
+  <HomeSchoolView v-else-if="groups.includes('School')" />
+  <HomeUserView v-else-if="groups.includes('User')" />
   <div v-else class="error-page md-flex md-items-center md-justify-center md-p-6">
     <div class="error-content md-card md-rounded-xl md-p-8 md-text-center md-max-w-lg">
       <div class="error-icon-wrapper md-flex md-justify-center md-mb-6">
@@ -62,8 +62,8 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import HomeSchool from './HomeSchool.vue';
-import HomeUser from './HomeUser.vue';
+import HomeSchoolView from './HomeSchoolView.vue';
+import HomeUserView from './HomeUserView.vue';
 import '@/assets/styles/home/home-merged.css';
 
 const loading = ref(true);

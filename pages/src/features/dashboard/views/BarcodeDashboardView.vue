@@ -144,7 +144,7 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
-import { formatDate, formatRelativeTime } from '@shared/utils/dateUtils';
+import { formatDate, formatRelativeTime } from '@shared/utils/common/dateUtils';
 import SettingsCard from '@dashboard/components/SettingsCard.vue';
 import BarcodesListCard from '@dashboard/components/BarcodesListCard.vue';
 import AddBarcodeCard from '@dashboard/components/AddBarcodeCard.vue';

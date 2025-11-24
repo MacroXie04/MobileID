@@ -5,7 +5,7 @@ import { useUserInfo } from '@user/composables/useUserInfo';
 import { useToken } from '@auth/composables/useToken';
 import { useApi } from '@shared/composables/useApi';
 import { usePdf417 } from '@dashboard/composables/barcode/usePdf417';
-import { animateBarcodeSequence } from '@shared/utils/jQueryAnimations.js';
+import { animateBarcodeSequence } from '@shared/utils/common/jQueryAnimations.js';
 
 export function useHomeSchoolLogic() {
   const route = useRoute();

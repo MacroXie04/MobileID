@@ -7,6 +7,7 @@ import { useImageCropper } from '@user/composables/useImageCropper.js';
 import { usePasskeyRegistration } from '@auth/composables/usePasskeyRegistration.js';
 import { useAutoSave } from '@shared/composables/useAutoSave.js';
 import { fileToBase64, validateImageFile } from '@user/utils/imageUtils.js';
+import avatarPlaceholder from '@/assets/images/user/avatar_placeholder.png';
 
 export function useProfileEditLogic() {
   const router = useRouter();
@@ -104,7 +105,7 @@ export function useProfileEditLogic() {
 
   // Methods
   const getAvatarSrc = () => {
-    return avatarPreviewUrl.value || '/images/avatar_placeholder.png';
+    return avatarPreviewUrl.value || avatarPlaceholder;
   };
 
   const selectImage = () => {
