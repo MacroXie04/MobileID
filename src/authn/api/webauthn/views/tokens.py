@@ -71,8 +71,9 @@ class CookieTokenRefreshView(TokenRefreshView):
                 response = super().post(request, *args, **kwargs)
             except InvalidToken as e:
                 # Handle invalid token errors
+                # Optionally log the exception info here using logging (not shown)
                 return Response(
-                    {"detail": str(e)}, status=400
+                    {"detail": "Invalid token."}, status=400
                 )
 
         # Ensure tokens are returned in response body (for localStorage usage)
