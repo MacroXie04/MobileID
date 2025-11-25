@@ -1,5 +1,6 @@
 name: Django Tests
 
+# Trigger only after backend lint (Lint Ruff) succeeds so CI runs sequentially.
 on:
   workflow_run:
     workflows:

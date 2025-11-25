@@ -1,8 +1,10 @@
 name: Deploy to Cloud Run
 
+# Deploy only after the full backend pipeline (Lint Ruff -> Django Tests ->
+# Database Migrations) succeeds by chaining to the migrations workflow.
 on:
   workflow_run:
-    workflows: ["Django Tests"]
+    workflows: ["Database Migrations"]
     branches: [main]
     types:
       - completed

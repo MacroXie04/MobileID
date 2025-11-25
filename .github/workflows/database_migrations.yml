@@ -1,5 +1,6 @@
 name: Database Migrations
 
+# Runs after Django Tests succeed, ensuring migrations only run on tested code.
 on:
   workflow_run:
     workflows:

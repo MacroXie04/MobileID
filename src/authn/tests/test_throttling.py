@@ -12,7 +12,8 @@ from authn.throttling import (
 
 class ThrottleFallbackTests(SimpleTestCase):
     """
-    Ensure custom throttles keep working even if scopes are missing from settings.
+    Ensure custom throttles keep working even if scopes are missing from
+    settings.
     """
 
     def _rest_without_scope(self, scope):
@@ -26,17 +27,25 @@ class ThrottleFallbackTests(SimpleTestCase):
         rest = self._rest_without_scope("login")
         with override_settings(REST_FRAMEWORK=rest):
             throttle = LoginRateThrottle()
-            self.assertEqual(throttle.get_rate(), LoginRateThrottle.fallback_rate)
+            self.assertEqual(
+                throttle.get_rate(),
+                LoginRateThrottle.fallback_rate,
+            )
 
     def test_username_scope_fallback_rate_used(self):
         rest = self._rest_without_scope("login_username")
         with override_settings(REST_FRAMEWORK=rest):
             throttle = UsernameRateThrottle()
-            self.assertEqual(throttle.get_rate(), UsernameRateThrottle.fallback_rate)
+            self.assertEqual(
+                throttle.get_rate(),
+                UsernameRateThrottle.fallback_rate,
+            )
 
     def test_admin_scope_fallback_rate_used(self):
         rest = self._rest_without_scope("admin_login")
         with override_settings(REST_FRAMEWORK=rest):
             throttle = AdminLoginThrottle()
-            self.assertEqual(throttle.get_rate(), AdminLoginThrottle.fallback_rate)
-
+            self.assertEqual(
+                throttle.get_rate(),
+                AdminLoginThrottle.fallback_rate,
+            )
