@@ -60,6 +60,7 @@ DB_PASSWORD=rootpassword
 ```
 
 **Important:**
+
 - All browser-visible origins must use `http://localhost` (NOT `127.0.0.1`).
 - The API listens on `http://localhost:8000`.
 
@@ -97,6 +98,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 `src/core/settings/` contains the settings configuration. `base.py` is shared, while `dev.py` and `prod.py` handle environment-specifics.
 
 Database defaults to MySQL with:
+
 - `DB_HOST=host.docker.internal` to reach host MySQL from the container
 
 ## Installation
@@ -181,30 +183,32 @@ The application uses environment variables for configuration. Create a `.env` fi
 
 #### Core Settings
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `SECRET_KEY` | Django secret key | `dev-secret` | Yes (Production) |
-| `DEBUG` | Enable debug mode | `False` | No |
-| `TESTING` | Enable test mode | `False` | No |
-| `TIME_ZONE` | Application timezone | `America/Los_Angeles` | No |
+| Variable     | Description          | Default               | Required         |
+| ------------ | -------------------- | --------------------- | ---------------- |
+| `SECRET_KEY` | Django secret key    | `dev-secret`          | Yes (Production) |
+| `DEBUG`      | Enable debug mode    | `False`               | No               |
+| `TESTING`    | Enable test mode     | `False`               | No               |
+| `TIME_ZONE`  | Application timezone | `America/Los_Angeles` | No               |
 
 #### Database Configuration
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `DB_PROFILE` | Database profile (`local`/`gcp`) | `local` | No |
-| `DATABASE_URL_LOCAL` | Connection string for local | | No |
-| `DATABASE_URL_GCP` | Connection string for GCP | | No |
+| Variable             | Description                      | Default | Required |
+| -------------------- | -------------------------------- | ------- | -------- |
+| `DB_PROFILE`         | Database profile (`local`/`gcp`) | `local` | No       |
+| `DATABASE_URL_LOCAL` | Connection string for local      |         | No       |
+| `DATABASE_URL_GCP`   | Connection string for GCP        |         | No       |
 
 ## API Endpoints
 
 ### Authentication
+
 - `POST /authn/login/` - User login (RSA encrypted)
 - `POST /authn/register/` - User registration
 - `POST /authn/logout/` - User logout
 - `GET /authn/user-info/` - Get current user information
 
 ### Barcode Management
+
 - `POST /generate_barcode/` - Generate new barcode
 - `GET /active_profile/` - Get active barcode profile
 - `GET /barcode_dashboard/` - Get barcode dashboard data

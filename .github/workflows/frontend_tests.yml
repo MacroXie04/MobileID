@@ -1,0 +1,52 @@
+name: Frontend Tests
+
+on:
+  workflow_run:
+    workflows:
+      - Lint ESLint
+    types:
+      - completed
+
+jobs:
+  unit-and-e2e:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+          cache-dependency-path: pages/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./pages
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: ./pages
+        run: npm run test:unit
+
+      - name: Install Playwright browsers
+        working-directory: ./pages
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright E2E tests
+        working-directory: ./pages
+        env:
+          CI: "true"
+        run: npm run test:e2e:ci
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: pages/playwright-report
+          if-no-files-found: ignore

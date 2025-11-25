@@ -1,0 +1,140 @@
+/* UserProfile.vue (School) Specific Styles */
+.profile-section {
+  text-align: center;
+  margin-top: 2em;
+}
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4);
+  transition: transform 0.3s ease-in-out;
+}
+.profile-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 36px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.profile-name {
+  margin-top: 0.5em;
+  color: white !important;
+}
+.profile-info-id {
+  color: white !important;
+  display: none;
+}
+.profile-button-container {
+  margin-top: 1em;
+} /* buttom */
+#show-info-button:hover {
+  transform: translateY(-2px);
+  transition: transform 0.3s ease-in-out;
+} /* BarcodeDisplay.vue (School) Specific Styles */
+.barcode-section {
+  text-align: center;
+} /* Containers are hidden by default using inline styles */
+.pdf417 {
+  background: #fff;
+  image-rendering: pixelated;
+  border: 1px solid #dee2e6;
+  max-width: 100%;
+  height: auto;
+  margin: 10px auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: block;
+}
+#qrcode-code {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 60px;
+}
+.progress {
+  width: 90%;
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 10px auto 0 auto;
+}
+.progress-bar-white {
+  background-color: #ffc107;
+  height: 100%;
+}
+.progress-container {
+  width: 100%;
+  max-width: 300px;
+  margin: 15px auto 0;
+} /* Header.vue (School) Specific Styles */
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  position: relative;
+}
+.header-left,
+.header-right {
+  flex: 1;
+}
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-image {
+  height: 60px;
+}
+.header-border {
+  border-top: 1px solid white;
+  margin: 0 20px;
+} /* GridMenu.vue (School) Specific Styles */ /* Container that centers the whole grid */
+.grid-wrapper {
+  margin: auto;
+  max-width: 320px;
+} /* 3 × 3 grid */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 16px; /* keep borders/padding inside the 320 px box */
+  box-sizing: border-box;
+  overflow: hidden;
+} /* Grid buttons */
+.btn-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 20px 10px;
+  min-height: 80px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  transition: all 0.3s ease; /* keep borders/padding inside their grid cell */
+  box-sizing: border-box;
+} /* Icon colour */
+.btn-grid i {
+  margin-bottom: 8px;
+  color: #bf9c44;
+} /* Label text */
+.btn-grid p {
+  margin: 0;
+  font-size: 12px;
+  text-align: center;
+  color: #bf9c44;
+}

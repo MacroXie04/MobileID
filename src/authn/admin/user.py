@@ -2,7 +2,7 @@ import uuid
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth.models import User, Group
 from authn.models import UserProfile
 from index.models import UserBarcodeSettings, Barcode
@@ -12,7 +12,7 @@ from index.services.transactions import TransactionService
 # ──────────────────────────────────────────────────────────────
 #  User Admin Customization (Group Filter + is_staff sync)
 # ──────────────────────────────────────────────────────────────
-class LimitedGroupUserChangeForm(forms.ModelForm):
+class LimitedGroupUserChangeForm(UserChangeForm):
     group = forms.ModelChoiceField(
         queryset=Group.objects.none(),
         required=True,
@@ -20,9 +20,31 @@ class LimitedGroupUserChangeForm(forms.ModelForm):
         help_text="Select the user's group (only one allowed)",
     )
 
+    new_password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput,
+        label="New Password",
+        help_text="Leave blank to keep current password.",
+    )
+    confirm_password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput,
+        label="Confirm New Password",
+    )
+
     class Meta:
         model = User
         fields = "__all__"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get("new_password")
+        confirm_password = cleaned_data.get("confirm_password")
+
+        if new_password or confirm_password:
+            if new_password != confirm_password:
+                raise forms.ValidationError("Passwords do not match.")
+        return cleaned_data
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,6 +65,13 @@ class LimitedGroupUserChangeForm(forms.ModelForm):
     def save(self, commit=True):
         # Just save the user, let the admin handle group assignment
         user = super().save(commit=commit)
+
+        new_password = self.cleaned_data.get("new_password")
+        if new_password:
+            user.set_password(new_password)
+            if commit:
+                user.save()
+
         return user
 
 
@@ -84,7 +113,10 @@ class LimitedGroupUserAdmin(UserAdmin):
 
     # Custom fieldsets that exclude 'groups' and include our 'group' field
     fieldsets = (
-        (None, {"fields": ("username", "password")}),
+        (
+            None,
+            {"fields": ("username", "password", "new_password", "confirm_password")},
+        ),
         ("Personal info", {"fields": ("first_name", "last_name", "email")}),
         ("Group Assignment", {"fields": ("group",)}),
         (
