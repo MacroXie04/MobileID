@@ -20,8 +20,10 @@ if not env("DISABLE_THROTTLES"):
 
 # Guarantee login username throttling is configured in production even if a
 # downstream import accidentally wipes the scope (breaks Cloud Run login).
-REST_FRAMEWORK.setdefault("DEFAULT_THROTTLE_RATES", {})
-REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"].setdefault("login_username", "5/minute")
+REST_FRAMEWORK.setdefault("DEFAULT_THROTTLE_RATES", {})  # noqa: F405
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"].setdefault(
+    "login_username", "5/minute"
+)  # noqa: F405
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # Production MUST set SECRET_KEY via environment variable
