@@ -1,21 +1,52 @@
+from django.conf import settings
 from django.utils.encoding import force_str
 from rest_framework.throttling import ScopedRateThrottle, SimpleRateThrottle
 
 
-class LoginRateThrottle(ScopedRateThrottle):
+def _get_rate_for_scope(scope: str):
+    """
+    Return the configured throttle rate for a given scope, if any.
+    """
+
+    rest_framework_cfg = getattr(settings, "REST_FRAMEWORK", {}) or {}
+    rates = rest_framework_cfg.get("DEFAULT_THROTTLE_RATES") or {}
+    return rates.get(scope)
+
+
+class _ScopeRateFallbackMixin:
+    """
+    Provide a resilient get_rate implementation that falls back to defaults.
+
+    DRF raises ImproperlyConfigured if a scope is missing from
+    DEFAULT_THROTTLE_RATES. This mixin lets project-specific throttles keep
+    working even if downstream settings overrides accidentally remove a scope.
+    """
+
+    fallback_rate: str | None = None
+
+    def get_rate(self):
+        configured = _get_rate_for_scope(getattr(self, "scope", None))
+        if configured:
+            return configured
+        return self.fallback_rate
+
+
+class LoginRateThrottle(_ScopeRateFallbackMixin, ScopedRateThrottle):
     """
     Scoped throttle for overall login attempts per client/IP.
     """
 
     scope = "login"
+    fallback_rate = "5/minute"
 
 
-class UsernameRateThrottle(SimpleRateThrottle):
+class UsernameRateThrottle(_ScopeRateFallbackMixin, SimpleRateThrottle):
     """
     Throttle login attempts per username to limit credential stuffing.
     """
 
     scope = "login_username"
+    fallback_rate = "5/minute"
 
     def get_cache_key(self, request, view):
         if request.method != "POST":
@@ -44,7 +75,7 @@ class UsernameRateThrottle(SimpleRateThrottle):
         return data.get("username") or data.get("email")
 
 
-class AdminLoginThrottle(SimpleRateThrottle):
+class AdminLoginThrottle(_ScopeRateFallbackMixin, SimpleRateThrottle):
     """
     Throttle admin login attempts per client/IP.
 
@@ -53,6 +84,7 @@ class AdminLoginThrottle(SimpleRateThrottle):
     """
 
     scope = "admin_login"
+    fallback_rate = "5/15min"
 
     def get_cache_key(self, request, view):
         """
