@@ -17,14 +17,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: yarn
+          cache-dependency-path: pages/yarn.lock
 
       - name: Install Dependencies
         working-directory: ./pages
-        run: npm ci
+        run: yarn install --frozen-lockfile
 
       - name: Build Project
         working-directory: ./pages
-        run: npm run build
+        run: yarn build
 
       - name: Publish to Cloudflare Pages
         uses: cloudflare/pages-action@v1
