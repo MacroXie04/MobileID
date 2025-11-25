@@ -21,7 +21,7 @@ if not env("DISABLE_THROTTLES"):
 # Guarantee login username throttling is configured in production even if a
 # downstream import accidentally wipes the scope (breaks Cloud Run login).
 REST_FRAMEWORK.setdefault("DEFAULT_THROTTLE_RATES", {})  # noqa: F405
-REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"].setdefault(
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"].setdefault(  # noqa: F405
     "login_username", "5/minute"
 )  # noqa: F405
 
