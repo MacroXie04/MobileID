@@ -133,9 +133,9 @@ python manage.py createsuperuser
 
 ```bash
 cd pages/
+yarn install          # preferred; matches the repo's packageManager
+# or, if you must use npm (package-lock generation is disabled):
 npm install
-# or
-yarn install
 ```
 
 ## Development
@@ -156,9 +156,9 @@ The Django API will be available at `http://localhost:8000` (use localhost, not 
 
 ```bash
 cd pages/
-npm run dev
-# or
 yarn dev
+# or
+npm run dev
 ```
 
 The Vue.js application will be available at `http://localhost:5173`.
@@ -169,8 +169,8 @@ The Vue.js application will be available at `http://localhost:5173`.
 
 ```bash
 cd pages/
-npm run lint        # Check for linting errors
-npm run format      # Format code with Prettier
+yarn lint           # Check for linting errors
+yarn format         # Format code with Prettier
 ```
 
 ## Configuration

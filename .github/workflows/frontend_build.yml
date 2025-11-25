@@ -24,16 +24,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'npm'
-          cache-dependency-path: pages/package-lock.json
+          cache: 'yarn'
+          cache-dependency-path: pages/yarn.lock
       
       - name: Install dependencies
         working-directory: ./pages
-        run: npm install
+        run: yarn install --frozen-lockfile
       
       - name: Build frontend
         working-directory: ./pages
-        run: npm run build
+        run: yarn build
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

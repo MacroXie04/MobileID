@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint --ext .js,.vue src",
     "format": "prettier --write .",
-    "test": "vitest"
+    "test": "vitest",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@fontsource/material-symbols-outlined": "^5.2.18",
