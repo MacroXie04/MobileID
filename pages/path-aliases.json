@@ -1,0 +1,9 @@
+{
+  "@": "./src",
+  "@auth": "./src/features/auth",
+  "@dashboard": "./src/features/dashboard",
+  "@home": "./src/features/home",
+  "@school": "./src/features/school",
+  "@user": "./src/features/user",
+  "@shared": "./src/shared"
+}

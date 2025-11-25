@@ -1,24 +1,47 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { userInfo } from '@/api/auth';
-import { refreshToken } from '@/utils/auth/tokenRefresh';
+import { userInfo } from '@shared/api/auth';
+import { refreshToken } from '@auth/utils/tokenRefresh';
 
-const Login = () => import('@/views/authn/Login.vue');
-const Home = () => import('@/views/home/Home.vue');
-const ProfileEdit = () => import('@/views/ProfileEdit.vue');
-const Register = () => import('@/views/authn/Register.vue');
-const BarcodeDashboard = () => import('@/views/BarcodeDashboard.vue');
+const routes = [
+  {
+    path: '/login',
+    name: 'auth-login',
+    component: () => import('@auth/views/LoginView.vue'),
+    meta: { feature: 'auth' },
+  },
+  {
+    path: '/register',
+    name: 'auth-register',
+    component: () => import('@auth/views/RegisterView.vue'),
+    meta: { feature: 'auth' },
+  },
+  {
+    path: '/',
+    name: 'home',
+    component: () => import('@home/views/HomeView.vue'),
+    meta: { requiresAuth: true, feature: 'home' },
+  },
+  {
+    path: '/profile/edit',
+    name: 'user-profile-edit',
+    component: () => import('@user/views/ProfileEditView.vue'),
+    meta: { requiresAuth: true, feature: 'user' },
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('@dashboard/views/BarcodeDashboardView.vue'),
+    meta: { requiresAuth: true, feature: 'dashboard' },
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: (_to) => ({ path: '/' }),
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes: [
-    { path: '/login', component: Login },
-    { path: '/register', component: Register },
-    { path: '/', component: Home, meta: { requiresAuth: true } },
-    { path: '/profile/edit', component: ProfileEdit, meta: { requiresAuth: true } },
-    { path: '/dashboard', component: BarcodeDashboard, meta: { requiresAuth: true } },
-    // Catch-all 404: redirect authenticated users to home, others to login
-    { path: '/:pathMatch(.*)*', redirect: (_to) => ({ path: '/' }) },
-  ],
+  routes,
 });
 
 // Global auth guard: checks meta.requiresAuth and caches user info in a single place

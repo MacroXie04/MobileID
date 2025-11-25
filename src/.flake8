@@ -1,4 +1,24 @@
 [flake8]
 max-line-length = 88
 extend-ignore = E203
+max-complexity = 21
 
+# Exclude directories and files from checking
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    env,
+    .env,
+    *.pyc,
+    migrations,
+    .pytest_cache,
+    .mypy_cache,
+    .ruff_cache
+
+# Per-file ignores for specific patterns
+per-file-ignores =
+    */migrations/*:E501
+    */tests/*:F401
+    */admin/*:F401

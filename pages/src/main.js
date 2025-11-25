@@ -6,7 +6,7 @@ import router from './router';
 import { baseURL } from './config';
 
 // Global Material 3 Styles
-import '@/styles/global.css';
+import '@/assets/styles/shared/tokens.css';
 
 // Cropper.js
 import 'cropperjs/dist/cropper.css';

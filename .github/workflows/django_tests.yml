@@ -1,31 +1,29 @@
 name: Django Tests
 
 on:
-  push:
-    branches: ['**']
-    paths:
-      - 'src/**'
-      - '.github/workflows/django_tests.yml'
-  pull_request:
-    branches: ['**']
-    paths:
-      - 'src/**'
-      - '.github/workflows/django_tests.yml'
+  workflow_run:
+    workflows:
+      - Lint Ruff
+    types:
+      - completed
 
 jobs:
   test:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
-      
+          python-version: "3.12"
+          cache: "pip"
+
       - name: Install dependencies
         working-directory: ./src
         run: |
@@ -35,16 +33,15 @@ jobs:
       - name: Run Django tests with coverage
         working-directory: ./src
         env:
-          TESTING: 'True'
-          DJANGO_SETTINGS_MODULE: 'core.settings.dev'
+          TESTING: "True"
+          DJANGO_SETTINGS_MODULE: "core.settings.dev"
         run: |
           python -m coverage run manage.py test -v 2
           python -m coverage xml -o coverage.xml
-      
+
       - name: Upload coverage XML
         uses: actions/upload-artifact@v4
         with:
           name: coverage-xml
           path: src/coverage.xml
           retention-days: 30
-
