@@ -18,6 +18,11 @@ if not env("DISABLE_THROTTLES"):
     DISABLE_THROTTLES = False
     THROTTLES_ENABLED = True
 
+# Guarantee login username throttling is configured in production even if a
+# downstream import accidentally wipes the scope (breaks Cloud Run login).
+REST_FRAMEWORK.setdefault("DEFAULT_THROTTLE_RATES", {})
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"].setdefault("login_username", "5/minute")
+
 # SECURITY WARNING: keep the secret key used in production secret!
 # Production MUST set SECRET_KEY via environment variable
 SECRET_KEY = env("SECRET_KEY")

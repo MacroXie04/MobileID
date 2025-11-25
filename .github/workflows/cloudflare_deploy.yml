@@ -1,4 +1,4 @@
-name: Deploy Frontend to Cloudflare Pages (Auto Create, Wrangler v4+)
+name: Deploy Frontend to Cloudflare Pages
 
 on:
   push:

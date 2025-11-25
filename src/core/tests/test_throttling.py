@@ -17,6 +17,7 @@ class ThrottlingConfigurationTest(APITestCase):
             "anon",
             "user",
             "login",
+            "login_username",
             "registration",
             "barcode_generation",
             "barcode_management",
@@ -25,6 +26,8 @@ class ThrottlingConfigurationTest(APITestCase):
 
         for rate in expected_rates:
             self.assertIn(rate, throttle_rates)
+
+        self.assertEqual(throttle_rates["login_username"], "5/minute")
 
     def test_throttling_classes_configured(self):
         """Test that throttling classes are configured"""
