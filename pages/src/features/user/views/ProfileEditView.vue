@@ -119,27 +119,6 @@
             </div>
           </div>
 
-          <md-divider></md-divider>
-
-          <!-- Passkey Management Section -->
-          <div class="info-section md-mt-8">
-            <h2 class="md-typescale-headline-small section-title md-mb-6">Passkey</h2>
-            <div class="md-flex md-items-center md-justify-between md-gap-4">
-              <div class="md-typescale-body-medium">
-                <md-icon class="md-mr-2">{{ hasPasskey ? 'key' : 'key_off' }}</md-icon>
-                {{ hasPasskey ? 'Passkey registered' : 'No passkey registered' }}
-              </div>
-              <md-filled-button :disabled="passkeyBusy" type="button" @click="registerPasskey">
-                <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
-                <md-icon v-if="!passkeyBusy" slot="icon">{{ hasPasskey ? 'sync' : 'key' }}</md-icon>
-                {{ hasPasskey ? 'Replace Passkey' : 'Register Passkey' }}
-              </md-filled-button>
-            </div>
-            <p class="md-typescale-body-small md-text-on-surface-variant md-mt-2">
-              Passkeys let you sign in without a password using your device or security key.
-            </p>
-          </div>
-
           <!-- Auto-save Status Indicator -->
           <div class="auto-save-status md-mt-4 md-p-3 md-rounded-lg md-bg-surface-container-low">
             <div class="md-flex md-items-center md-gap-2">
@@ -215,10 +194,8 @@ const {
   formData,
   errors,
   successMessage,
-  hasPasskey,
   cropperImage,
   showCropper,
-  passkeyBusy,
   autoSaving,
   lastSaved,
   autoSaveStatus,
@@ -231,7 +208,6 @@ const {
   handleDialogClose,
   handleFieldChange,
   handleSubmit,
-  registerPasskey,
   resetCrop,
 } = useProfileEditLogic();
 </script>

@@ -60,16 +60,6 @@
             <md-icon v-if="!loading" slot="icon">login</md-icon>
             {{ loading ? 'Signing in...' : 'Sign In' }}
           </md-filled-button>
-          <md-text-button
-            :disabled="passkeyBusy"
-            class="submit-button"
-            type="button"
-            @click="signInWithPasskey"
-          >
-            <md-circular-progress v-if="passkeyBusy" indeterminate></md-circular-progress>
-            <md-icon v-if="!passkeyBusy" slot="icon">key</md-icon>
-            {{ passkeyBusy ? 'Waiting for device...' : 'Sign in with passkey' }}
-          </md-text-button>
         </form>
 
         <!-- Register Link -->
@@ -95,10 +85,8 @@ const {
   showPassword,
   submitBtn,
   errors,
-  passkeyBusy,
   clearError,
   validateField,
   handleSubmit,
-  signInWithPasskey,
 } = useLoginLogic();
 </script>

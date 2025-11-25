@@ -4,7 +4,6 @@ import { getUserProfile, updateUserProfile } from '@shared/api/auth';
 import { baseURL } from '@/config';
 import { getAccessToken } from '@shared/api/axios';
 import { useImageCropper } from '@user/composables/useImageCropper.js';
-import { usePasskeyRegistration } from '@auth/composables/usePasskeyRegistration.js';
 import { useAutoSave } from '@shared/composables/useAutoSave.js';
 import { fileToBase64, validateImageFile } from '@user/utils/imageUtils.js';
 import avatarPlaceholder from '@/assets/images/user/avatar_placeholder.png';
@@ -26,7 +25,6 @@ export function useProfileEditLogic() {
   const avatarPreviewUrl = ref('');
   const errors = ref({});
   const successMessage = ref('');
-  const hasPasskey = ref(false);
   const originalData = ref({});
 
   // Image cropper composable (simple version without advanced controls)
@@ -43,13 +41,6 @@ export function useProfileEditLogic() {
     quality: 0.9,
     enableAdvancedControls: false,
   });
-
-  // Passkey registration composable
-  const {
-    passkeyBusy,
-    error: passkeyError,
-    registerPasskey: registerPasskeyBase,
-  } = usePasskeyRegistration();
 
   // Auto-save changes function
   async function autoSaveChanges() {
@@ -243,10 +234,6 @@ export function useProfileEditLogic() {
       const response = await getUserProfile();
       if (response.success) {
         formData.value = { ...response.data };
-        if (typeof response.data.has_passkey !== 'undefined') {
-          hasPasskey.value = !!response.data.has_passkey;
-        }
-
         // Initialize original data for auto-save comparison
         originalData.value = {
           name: response.data.name || '',
@@ -274,18 +261,6 @@ export function useProfileEditLogic() {
     }
   };
 
-  // Passkey registration wrapper
-  async function registerPasskey() {
-    const success = await registerPasskeyBase();
-    if (success) {
-      hasPasskey.value = true;
-      successMessage.value = 'Passkey registered successfully!';
-      setTimeout(() => (successMessage.value = ''), 3000);
-    } else if (passkeyError.value) {
-      errors.value.general = passkeyError.value;
-    }
-  }
-
   // Lifecycle
   onMounted(() => {
     loadProfile();
@@ -305,10 +280,8 @@ export function useProfileEditLogic() {
     formData,
     errors,
     successMessage,
-    hasPasskey,
     cropperImage,
     showCropper,
-    passkeyBusy,
     autoSaving,
     lastSaved,
     autoSaveStatus,
@@ -321,7 +294,6 @@ export function useProfileEditLogic() {
     handleDialogClose,
     handleFieldChange,
     handleSubmit,
-    registerPasskey,
     resetCrop,
   };
 }

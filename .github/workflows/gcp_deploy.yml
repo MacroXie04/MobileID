@@ -9,7 +9,7 @@ on:
 
 env:
   PROJECT_ID: mobileid-478800
-  REGION: us-west1 # 与 Cloud SQL 区域一致
+  REGION: us-west1
   SERVICE_NAME: mobileid
 
 jobs:

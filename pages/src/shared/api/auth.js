@@ -84,32 +84,6 @@ export async function updateUserProfile(profileData) {
   });
 }
 
-// Passkeys APIs
-export async function passkeyRegisterOptions() {
-  return apiRequest('/authn/passkeys/register/options/');
-}
-
-export async function passkeyRegisterVerify(credential) {
-  return apiRequest('/authn/passkeys/register/verify/', {
-    method: 'POST',
-    body: credential,
-  });
-}
-
-export async function passkeyAuthOptions(username) {
-  return apiRequest('/authn/passkeys/auth/options/', {
-    method: 'POST',
-    body: { username },
-  });
-}
-
-export async function passkeyAuthVerify(credential) {
-  return apiRequest('/authn/passkeys/auth/verify/', {
-    method: 'POST',
-    body: credential,
-  });
-}
-
 // register
 export async function register(userData) {
   try {

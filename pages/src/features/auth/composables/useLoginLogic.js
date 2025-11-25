@@ -3,7 +3,6 @@ import { useRouter } from 'vue-router';
 import { login, userInfo } from '@shared/api/auth.js';
 import { ApiError } from '@shared/api/client.js';
 import { useLoginValidation } from '@auth/composables/useLoginValidation.js';
-import { usePasskeyAuth } from '@auth/composables/usePasskeyAuth.js';
 
 export function useLoginLogic() {
   const router = useRouter();
@@ -23,9 +22,6 @@ export function useLoginLogic() {
     validateForm,
     setGeneralError,
   } = useLoginValidation();
-
-  // Use passkey authentication composable
-  const { passkeyBusy, error: passkeyError, signInWithPasskey: passkeySignIn } = usePasskeyAuth();
 
   // Setup DOM elements on mounted
   onMounted(() => {
@@ -78,15 +74,6 @@ export function useLoginLogic() {
     }
   }
 
-  async function signInWithPasskey() {
-    const success = await passkeySignIn(formData.username);
-    if (success) {
-      await router.push('/');
-    } else if (passkeyError.value) {
-      setGeneralError(passkeyError.value);
-    }
-  }
-
   return {
     formData,
     loading,
@@ -94,10 +81,8 @@ export function useLoginLogic() {
     iconBtn,
     submitBtn,
     errors,
-    passkeyBusy,
     clearError,
     validateField,
     handleSubmit,
-    signInWithPasskey,
   };
 }
