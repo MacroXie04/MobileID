@@ -2,10 +2,10 @@
   <section class="dashboard-card camera-settings-card md-mb-6">
     <div class="card-header">
       <div class="header-icon-wrapper">
-        <md-icon>videocam</md-icon>
+        <md-icon>sensors</md-icon>
       </div>
       <div class="header-text">
-        <h2 class="md-typescale-headline-small">Camera Settings</h2>
+        <h2 class="md-typescale-headline-small">Scanner Detection</h2>
         <p class="md-typescale-body-small header-subtitle">
           Configure scanner detection and camera preferences
         </p>

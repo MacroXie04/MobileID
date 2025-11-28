@@ -43,8 +43,8 @@
         </div>
         <div class="chip-wrapper" @click="setTab('Camera')">
           <md-filter-chip :selected="activeTab === 'Camera'">
-            <md-icon slot="icon">videocam</md-icon>
-            Camera
+            <md-icon slot="icon">sensors</md-icon>
+            Scanner Detection
           </md-filter-chip>
         </div>
         <div class="chip-wrapper" @click="setTab('Barcodes')">
