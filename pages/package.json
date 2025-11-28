@@ -10,7 +10,9 @@
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint --ext .js,.vue src",
     "format": "prettier --write .",
     "test": "vitest",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ci": "playwright test --reporter=list"
   },
   "dependencies": {
     "@fontsource/material-symbols-outlined": "^5.2.18",
@@ -30,6 +32,7 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "@types/node": "^24.0.15",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/test-utils": "^2.4.6",
