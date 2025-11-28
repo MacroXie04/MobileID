@@ -76,8 +76,7 @@
 </template>
 
 <script setup>
-import { useLoginLogic } from '@auth/composables/useLoginLogic.js';
-import '@/assets/styles/auth/auth-merged.css';
+import { useLoginViewSetup } from './LoginView.setup.js';
 
 const {
   formData,
@@ -88,5 +87,5 @@ const {
   clearError,
   validateField,
   handleSubmit,
-} = useLoginLogic();
+} = useLoginViewSetup();
 </script>

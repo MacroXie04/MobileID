@@ -13,26 +13,31 @@
     />
 
     <!-- Barcode Display Component -->
-    <BarcodeDisplay ref="barcodeDisplayRef" />
+    <BarcodeDisplay
+      ref="barcodeDisplayRef"
+      :scanner-detection-enabled="scannerDetectionEnabled"
+      :prefer-front-camera="preferFrontCamera"
+      @generate="handleGenerate"
+    />
 
     <!-- Grid Menu Component -->
-    <GridMenu :server-status="serverStatus" />
+    <GridMenu
+      :server-status="serverStatus"
+      :scanner-detection-enabled="scannerDetectionEnabled"
+      :is-detection-active="isDetectionActive"
+      :scanner-detected="scannerDetected"
+    />
   </div>
 </template>
 
 <script setup>
-import { useHomeSchoolLogic } from '@home/composables/useHomeSchoolLogic.js';
-
-// CSS Imports
-import '@/assets/styles/home/HomeSchool.css';
-// Import Font Awesome for this page (needed for GridMenu component)
-import '@fortawesome/fontawesome-free/css/all.min.css';
-
-// Components
-import Header from '@school/components/Header.vue';
-import UserProfile from '@school/components/UserProfile.vue';
-import BarcodeDisplay from '@school/components/BarcodeDisplay.vue';
-import GridMenu from '@school/components/GridMenu.vue';
+import {
+  Header,
+  UserProfile,
+  BarcodeDisplay,
+  GridMenu,
+  useHomeSchoolViewSetup,
+} from './HomeSchoolView.setup.js';
 
 const {
   profile,
@@ -41,6 +46,10 @@ const {
   serverStatus,
   barcodeDisplayRef,
   isRefreshingToken,
+  scannerDetectionEnabled,
+  preferFrontCamera,
   handleGenerate,
-} = useHomeSchoolLogic();
+  isDetectionActive,
+  scannerDetected,
+} = useHomeSchoolViewSetup();
 </script>

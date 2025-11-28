@@ -240,38 +240,28 @@
 </template>
 
 <script setup>
-import { useRegisterLogic } from '@auth/composables/useRegisterLogic.js';
-import '@/assets/styles/auth/auth-merged.css';
+import { useRegisterViewSetup } from './RegisterView.setup.js';
 
 const {
-  // Refs
   fileInput,
   cropperDialog,
   cropperImage,
   cropperPreview,
-
-  // State
   loading,
   formData,
   showPassword1,
   showPassword2,
   errors,
-
-  // Cropper state
   showCropper,
   cropperLoading,
   applyingCrop,
   zoomLevel,
-
-  // Methods
   getAvatarSrc,
   selectImage,
   handleFileSelect,
   clearError,
   validateField,
   handleSubmit,
-
-  // Cropper methods
   zoomIn,
   zoomOut,
   handleZoomChange,
@@ -279,5 +269,5 @@ const {
   cancelCrop,
   resetCrop,
   handleDialogClose,
-} = useRegisterLogic();
+} = useRegisterViewSetup();
 </script>

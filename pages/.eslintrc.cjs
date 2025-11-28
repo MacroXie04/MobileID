@@ -36,4 +36,17 @@ module.exports = {
     ],
     'import/no-unresolved': 'error',
   },
+  overrides: [
+    {
+      files: ['**/*.setup.js'],
+      globals: {
+        defineProps: 'readonly',
+        defineEmits: 'readonly',
+        defineExpose: 'readonly',
+      },
+      rules: {
+        'no-unused-vars': 'off',
+      },
+    },
+  ],
 };

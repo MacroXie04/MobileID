@@ -36,13 +36,28 @@
       <!-- Tabs Navigation -->
       <div class="tabs-bar md-flex md-gap-2 md-items-center md-mb-6">
         <div class="chip-wrapper" @click="setTab('Overview')">
-          <md-filter-chip :selected="activeTab === 'Overview'"> Overview </md-filter-chip>
+          <md-filter-chip :selected="activeTab === 'Overview'">
+            <md-icon slot="icon">tune</md-icon>
+            Overview
+          </md-filter-chip>
+        </div>
+        <div class="chip-wrapper" @click="setTab('Camera')">
+          <md-filter-chip :selected="activeTab === 'Camera'">
+            <md-icon slot="icon">videocam</md-icon>
+            Camera
+          </md-filter-chip>
         </div>
         <div class="chip-wrapper" @click="setTab('Barcodes')">
-          <md-filter-chip :selected="activeTab === 'Barcodes'"> Available Barcodes </md-filter-chip>
+          <md-filter-chip :selected="activeTab === 'Barcodes'">
+            <md-icon slot="icon">inventory_2</md-icon>
+            Available Barcodes
+          </md-filter-chip>
         </div>
         <div class="chip-wrapper" @click="setTab('Add')">
-          <md-filter-chip :selected="activeTab === 'Add'"> Transfer & Add Barcode </md-filter-chip>
+          <md-filter-chip :selected="activeTab === 'Add'">
+            <md-icon slot="icon">add_circle</md-icon>
+            Transfer & Add
+          </md-filter-chip>
         </div>
       </div>
 
@@ -84,6 +99,26 @@
         @update-gender-setting="
           (val) => {
             pullSettings.gender_setting = val;
+            onSettingChange();
+          }
+        "
+      />
+
+      <!-- Camera/Scanner Detection Settings -->
+      <CameraSettingsCard
+        v-show="activeTab === 'Camera'"
+        :scanner-detection-enabled="Boolean(settings.scanner_detection_enabled)"
+        :prefer-front-camera="Boolean(settings.prefer_front_camera)"
+        :is-saving="isSaving"
+        @update-scanner-detection="
+          (val) => {
+            settings.scanner_detection_enabled = val;
+            onSettingChange();
+          }
+        "
+        @update-prefer-front-camera="
+          (val) => {
+            settings.prefer_front_camera = val;
             onSettingChange();
           }
         "
@@ -143,18 +178,18 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router';
-import { formatDate, formatRelativeTime } from '@shared/utils/common/dateUtils';
-import SettingsCard from '@dashboard/components/SettingsCard.vue';
-import BarcodesListCard from '@dashboard/components/BarcodesListCard.vue';
-import AddBarcodeCard from '@dashboard/components/AddBarcodeCard.vue';
-import { useDashboardLogic } from '@dashboard/composables/useDashboardLogic.js';
-import '@/assets/styles/dashboard/BarcodeDashboard.css';
-
-// Router
-const router = useRouter();
+import {
+  SettingsCard,
+  CameraSettingsCard,
+  BarcodesListCard,
+  AddBarcodeCard,
+  useBarcodeDashboardViewSetup,
+} from './BarcodeDashboardView.setup.js';
 
 const {
+  router,
+  formatDate,
+  formatRelativeTime,
   message,
   messageType,
   errors,
@@ -167,8 +202,6 @@ const {
   filterType,
   ownedOnly,
   showConfirmDialog,
-
-  // Computed
   isDynamicSelected,
   currentBarcodeHasProfile,
   selectedBarcode,
@@ -176,8 +209,6 @@ const {
   hasActiveFilters,
   currentBarcodeInfo,
   updatingLimit,
-
-  // Methods
   loadDashboard,
   onSettingChange,
   setActiveBarcode,
@@ -189,12 +220,10 @@ const {
   goToAddTab,
   setTab,
   showMessage,
-
-  // Daily Limit methods
   updateDailyLimit,
   incrementDailyLimit,
   decrementDailyLimit,
   toggleUnlimitedSwitch,
   applyLimitPreset,
-} = useDashboardLogic();
+} = useBarcodeDashboardViewSetup();
 </script>

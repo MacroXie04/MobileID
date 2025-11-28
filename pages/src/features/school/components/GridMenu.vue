@@ -45,65 +45,29 @@
         <p>Log out</p>
       </a>
     </div>
+
+    <!-- Scanner Detection Status -->
+    <transition name="fade">
+      <div
+        v-if="scannerDetectionEnabled && (isDetectionActive || scannerDetected)"
+        class="detection-status"
+        :class="{ detected: scannerDetected }"
+      >
+        <md-icon>{{ scannerDetected ? 'check_circle' : 'sensors' }}</md-icon>
+        <span>{{ scannerDetected ? 'Scanner detected!' : 'Scanner detection active' }}</span>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { toRefs } from 'vue';
-import { useRouter } from 'vue-router';
-import { logout } from '@shared/api/auth';
-import { clearAuthCookies, clearAuthStorage } from '@auth/utils/cookie';
+import { propsDefinition, useGridMenuSetup } from './GridMenu.setup.js';
 
-// CSS
-import '@/assets/styles/school/school-merged.css';
+const props = defineProps(propsDefinition);
 
-const router = useRouter();
-
-// Props
-const props = defineProps({
-  serverStatus: {
-    type: String,
-    default: 'Emergency',
-  },
+const { serverStatus, handleEditProfile, handleBarcodeDashboard, handleLogout } = useGridMenuSetup({
+  props,
 });
-
-// Destructure props for reactivity
-const { serverStatus } = toRefs(props);
-
-// Functions
-function handleEditProfile() {
-  router.push('/profile/edit');
-}
-
-function handleBarcodeDashboard() {
-  router.push('/dashboard');
-}
-
-async function handleLogout() {
-  try {
-    // Call logout API
-    await logout();
-
-    // Clear authentication data
-    clearAuthCookies();
-    clearAuthStorage();
-
-    // Clear user profile cache
-    try {
-      const { clearUserProfile } = await import('@user/composables/useUserInfo');
-      clearUserProfile();
-    } catch (error) {
-      console.warn('Could not clear user profile cache:', error);
-    }
-
-    // Redirect to login page
-    router.push('/login');
-  } catch (error) {
-    console.error('Logout failed:', error);
-    // Even if API call fails, still clear local data and redirect
-    clearAuthCookies();
-    clearAuthStorage();
-    router.push('/login');
-  }
-}
 </script>
+
+<!-- Styles imported via GridMenu.setup.js from school-merged.css -->

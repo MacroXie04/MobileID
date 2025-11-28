@@ -181,13 +181,10 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router';
-import { useProfileEditLogic } from '@user/composables/useProfileEditLogic.js';
-import '@/assets/styles/auth/auth-merged.css';
-
-const router = useRouter();
+import { useProfileEditViewSetup } from './ProfileEditView.setup.js';
 
 const {
+  router,
   fileInput,
   cropperDialog,
   loading,
@@ -209,5 +206,5 @@ const {
   handleFieldChange,
   handleSubmit,
   resetCrop,
-} = useProfileEditLogic();
+} = useProfileEditViewSetup();
 </script>

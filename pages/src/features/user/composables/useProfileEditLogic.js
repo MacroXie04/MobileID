@@ -1,7 +1,7 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getUserProfile, updateUserProfile } from '@shared/api/auth';
-import { baseURL } from '@/config';
+import { baseURL } from '@app/config/config';
 import { getAccessToken } from '@shared/api/axios';
 import { useImageCropper } from '@user/composables/useImageCropper.js';
 import { useAutoSave } from '@shared/composables/useAutoSave.js';

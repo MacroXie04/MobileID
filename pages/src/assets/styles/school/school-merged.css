@@ -99,19 +99,36 @@
 .header-border {
   border-top: 1px solid white;
   margin: 0 20px;
-} /* GridMenu.vue (School) Specific Styles */ /* Container that centers the whole grid */
+} /* BarcodeDisplay.vue - Hidden elements for background scanner detection */
+.hidden-video,
+.hidden-canvas {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* GridMenu.vue (School) Specific Styles */
+
+/* Container that centers the whole grid */
 .grid-wrapper {
   margin: auto;
   max-width: 320px;
-} /* 3 × 3 grid */
+}
+
+/* 3 × 3 grid */
 .grid-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  padding: 16px; /* keep borders/padding inside the 320 px box */
+  padding: 16px;
   box-sizing: border-box;
   overflow: hidden;
-} /* Grid buttons */
+}
+
+/* Grid buttons */
 .btn-grid {
   display: flex;
   flex-direction: column;
@@ -125,16 +142,84 @@
   color: inherit;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
-  transition: all 0.3s ease; /* keep borders/padding inside their grid cell */
+  transition: all 0.3s ease;
   box-sizing: border-box;
-} /* Icon colour */
+}
+
+/* Icon colour */
 .btn-grid i {
   margin-bottom: 8px;
   color: #bf9c44;
-} /* Label text */
+}
+
+/* Label text */
 .btn-grid p {
   margin: 0;
   font-size: 12px;
   text-align: center;
   color: #bf9c44;
+}
+
+/* Scanner Detection Status */
+.detection-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 12px 20px;
+  border-radius: 24px;
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+  font-size: 13px;
+  font-weight: 500;
+  animation: pulse-bg 2s ease-in-out infinite;
+}
+
+.detection-status md-icon {
+  font-size: 18px;
+  --md-icon-size: 18px;
+  color: inherit;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.detection-status.detected {
+  background: rgba(33, 150, 243, 0.2);
+  color: #2196f3;
+  animation: none;
+}
+
+.detection-status.detected md-icon {
+  animation: none;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes pulse-bg {
+  0%,
+  100% {
+    background: rgba(76, 175, 80, 0.15);
+  }
+  50% {
+    background: rgba(76, 175, 80, 0.25);
+  }
+}
+
+/* Fade transition for scanner status */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }

@@ -1,10 +1,12 @@
-import { getCookie } from '@auth/utils/cookie';
+import { getCookie } from '@shared/utils/cookie';
 import { useToken } from '@auth/composables/useToken';
 import { getAccessToken } from '@shared/api/axios';
-import { baseURL } from '@/config';
+import { baseURL } from '@app/config/config';
+import { useServerWakeup } from '@shared/composables/useServerWakeup';
 
 export function useApi() {
   const { checkAuthenticationError, refreshToken, handleTokenExpired } = useToken();
+  const { triggerWakeup } = useServerWakeup();
 
   /**
    * Make API calls with automatic token refresh on authentication errors
@@ -88,6 +90,15 @@ export function useApi() {
         }
       }
 
+      // Check for server unavailable errors (502, 503, 504)
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        console.log(
+          'Server error detected (status: ' + res.status + '), triggering wakeup overlay'
+        );
+        triggerWakeup();
+        throw new Error('Server unavailable - wakeup triggered');
+      }
+
       if (!res.ok) {
         // Create error with full response data for better error handling
         const error = new Error(
@@ -106,6 +117,27 @@ export function useApi() {
 
       return data;
     } catch (error) {
+      clearTimeout(id);
+
+      // Detect server unavailable errors
+      const isServerUnavailable =
+        error?.name === 'AbortError' ||
+        error === 'timeout' ||
+        error?.message?.includes('Failed to fetch') ||
+        error?.message?.includes('NetworkError') ||
+        error?.message?.includes('Network request failed') ||
+        error?.message?.includes('ECONNREFUSED') ||
+        error?.message?.includes('ERR_CONNECTION_REFUSED');
+
+      // HTTP 502/503/504 errors indicate server is unavailable
+      const isServerError = error?.status === 502 || error?.status === 503 || error?.status === 504;
+
+      if (isServerUnavailable || isServerError) {
+        console.log('Server unavailable detected, triggering wakeup overlay');
+        triggerWakeup();
+        throw new Error('Server unavailable - wakeup triggered');
+      }
+
       if (error?.name === 'AbortError' || error === 'timeout') {
         throw new Error('Network error: request_timeout');
       }

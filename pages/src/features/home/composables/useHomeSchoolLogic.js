@@ -15,10 +15,14 @@ export function useHomeSchoolLogic() {
   const serverStatus = ref('Emergency');
   const barcodeDisplayRef = ref(null);
 
+  // Scanner detection settings (fetched from backend)
+  const scannerDetectionEnabled = ref(false);
+  const preferFrontCamera = ref(true);
+
   // Use composables
   const { profile, avatarSrc: defaultAvatarSrc, loadAvatar, loadUserProfile } = useUserInfo();
   const { isRefreshingToken } = useToken();
-  const { apiGenerateBarcode, apiGetActiveProfile } = useApi();
+  const { apiGenerateBarcode, apiGetActiveProfile, apiGetBarcodeDashboard } = useApi();
   const { drawPdf417 } = usePdf417();
 
   // Create a new ref for avatarSrc that can be overridden
@@ -157,9 +161,31 @@ export function useHomeSchoolLogic() {
     }
   }
 
+  /**
+   * Load scanner detection settings from backend
+   */
+  async function loadScannerSettings() {
+    try {
+      const data = await apiGetBarcodeDashboard();
+      if (data && data.settings) {
+        scannerDetectionEnabled.value = Boolean(data.settings.scanner_detection_enabled);
+        preferFrontCamera.value =
+          data.settings.prefer_front_camera !== undefined
+            ? Boolean(data.settings.prefer_front_camera)
+            : true;
+        console.log('HomeSchool: Scanner detection settings loaded:', {
+          enabled: scannerDetectionEnabled.value,
+          preferFront: preferFrontCamera.value,
+        });
+      }
+    } catch (error) {
+      console.error('HomeSchool: Failed to load scanner settings:', error);
+    }
+  }
+
   /* ── lifecycle ──────────────────────────────────────────────────────────── */
   onMounted(async () => {
-    await refreshProfileData();
+    await Promise.all([refreshProfileData(), loadScannerSettings()]);
   });
 
   // Watch for route changes to refresh when returning from edit page
@@ -182,6 +208,8 @@ export function useHomeSchoolLogic() {
     barcodeDisplayRef,
     isRefreshingToken,
     userInfoLoading: false, // exposed but not separately tracked here, reusing loading or just passing false if not needed
+    scannerDetectionEnabled,
+    preferFrontCamera,
     handleGenerate,
   };
 }

@@ -1,10 +1,10 @@
 <template>
-  <section class="settings-card md-card md-mb-6">
-    <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
+  <section class="dashboard-card md-mb-6">
+    <div class="card-header">
       <div class="header-icon-wrapper">
         <md-icon>tune</md-icon>
       </div>
-      <h2 class="md-typescale-headline-small md-m-0">Barcode Settings</h2>
+      <h2 class="md-typescale-headline-small">Barcode Settings</h2>
       <transition name="fade">
         <div v-if="isSaving" class="save-indicator md-flex md-items-center md-gap-2 md-ml-auto">
           <md-circular-progress indeterminate></md-circular-progress>
@@ -76,13 +76,55 @@
         </div>
       </div>
 
-      <transition name="scale-fade">
-        <!--current settings barcode display-->
-        <div v-if="currentBarcodeInfo" class="settings-section md-mb-6">
-          <div class="active-barcode-header">
-            <md-icon class="active-icon pulse">verified</md-icon>
-            <span class="md-typescale-label-medium">CURRENTLY ACTIVE</span>
-          </div>
+      <!--dynamic barcode settings-->
+      <div v-if="isDynamicSelected" class="settings-section md-mb-6">
+        <div class="active-barcode-header">
+          <md-icon class="active-icon">qr_code_2</md-icon>
+          <span class="md-typescale-label-medium">Dynamic Barcode Settings</span>
+        </div>
+        <md-list>
+          <md-list-item :class="{ 'disabled-item': !currentBarcodeHasProfile }">
+            <md-icon slot="start">person_pin</md-icon>
+            <div slot="headline">Profile Association</div>
+            <div slot="supporting-text">
+              {{
+                currentBarcodeHasProfile
+                  ? 'Use profile data from the ID server'
+                  : 'Requires barcode with profile data'
+              }}
+            </div>
+            <div slot="end">
+              <md-switch
+                :disabled="isUserGroup || !currentBarcodeHasProfile"
+                :selected="associateUserProfileWithBarcode"
+                @change="(e) => $emit('update-associate', e.target.selected)"
+              ></md-switch>
+            </div>
+          </md-list-item>
+
+          <md-divider inset></md-divider>
+
+          <md-list-item>
+            <md-icon slot="start">security</md-icon>
+            <div slot="headline">Server Verification</div>
+            <div slot="supporting-text">Validate on server (may take longer or fail)</div>
+            <div slot="end">
+              <md-switch
+                :selected="serverVerification"
+                @change="(e) => $emit('update-server', e.target.selected)"
+              ></md-switch>
+            </div>
+          </md-list-item>
+        </md-list>
+      </div>
+
+      <!--current settings barcode display-->
+      <div v-if="currentBarcodeInfo" class="settings-section md-mb-6">
+        <div class="active-barcode-header">
+          <md-icon class="active-icon">verified</md-icon>
+          <span class="md-typescale-label-medium">CURRENTLY ACTIVE</span>
+        </div>
+        <div class="active-barcode-info-wrapper">
           <div class="active-barcode-info">
             <div class="barcode-type-badge">
               <md-icon>
@@ -103,7 +145,7 @@
             </div>
           </div>
         </div>
-      </transition>
+      </div>
 
       <!--barcode usage statistics-->
       <div
@@ -169,53 +211,6 @@
         </div>
       </div>
 
-      <!--dynamic barcode settings-->
-      <div v-if="isDynamicSelected && currentBarcodeHasProfile" class="settings-section md-mb-6">
-        <div class="active-barcode-header">
-          <md-icon class="active-icon pulse">qr_code_2</md-icon>
-          <span class="md-typescale-label-medium">Dynamic Barcode Settings</span>
-        </div>
-        <md-list>
-          <md-list-item>
-            <md-icon slot="start">person_pin</md-icon>
-            <div slot="headline">Profile Association</div>
-            <div slot="supporting-text">Use profile data from the ID server</div>
-            <div slot="end">
-              <md-switch
-                :disabled="isUserGroup"
-                :selected="associateUserProfileWithBarcode"
-                @change="(e) => $emit('update-associate', e.target.selected)"
-              ></md-switch>
-            </div>
-          </md-list-item>
-
-          <md-divider inset></md-divider>
-
-          <md-list-item>
-            <md-icon slot="start">security</md-icon>
-            <div slot="headline">Server Verification</div>
-            <div slot="supporting-text">Validate on server (may take longer or fail)</div>
-            <div slot="end">
-              <md-switch
-                :selected="serverVerification"
-                @change="(e) => $emit('update-server', e.target.selected)"
-              ></md-switch>
-            </div>
-          </md-list-item>
-        </md-list>
-      </div>
-
-      <div v-if="isDynamicSelected && !currentBarcodeHasProfile" class="info-banner md-mt-4">
-        <md-icon>info</md-icon>
-        <div class="info-content">
-          <h4 class="md-typescale-label-large md-m-0">Profile Settings Unavailable</h4>
-          <p class="md-typescale-body-medium md-m-0 md-mt-1">
-            Profile settings are only available for barcodes with attached profile data. Transfer a
-            barcode with profile information to access these settings.
-          </p>
-        </div>
-      </div>
-
       <div v-if="hasErrors" class="md-banner md-banner-error md-mt-4">
         <md-icon>error</md-icon>
         <div class="error-messages">
@@ -229,41 +224,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { emitsDefinition, propsDefinition, useSettingsCardSetup } from './SettingsCard.setup.js';
 
-// CSS
-import '@/assets/styles/dashboard/dashboard-merged.css';
+const props = defineProps(propsDefinition);
+defineEmits(emitsDefinition);
 
-const props = defineProps({
-  isSaving: { type: Boolean, default: false },
-  currentBarcodeInfo: { type: String, default: '' },
-  selectedBarcode: { type: Object, default: null },
-  barcodeChoices: { type: Array, default: () => [] },
-  settings: { type: Object, default: () => ({}) },
-  pullSettings: {
-    type: Object,
-    default: () => ({ pull_setting: 'Disable', gender_setting: 'Unknow' }),
-  },
-  isUserGroup: { type: Boolean, default: false },
-  isDynamicSelected: { type: Boolean, default: false },
-  currentBarcodeHasProfile: { type: Boolean, default: false },
-  errors: { type: Object, default: () => ({}) },
-  associateUserProfileWithBarcode: { type: Boolean, default: false },
-  serverVerification: { type: Boolean, default: false },
-  formatRelativeTime: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
-});
-
-defineEmits(['update-associate', 'update-server', 'update-pull-setting', 'update-gender-setting']);
-
-const hasErrors = computed(() => Object.keys(props.errors || {}).length > 0);
-
-const activeIcon = computed(() => {
-  const id = props.settings?.barcode ? Number(props.settings.barcode) : null;
-  const current = (props.barcodeChoices || []).find((c) => Number(c.id) === id);
-  if (!current) return 'barcode';
-  if (current.barcode_type === 'DynamicBarcode') return 'qr_code_2';
-  if (current.barcode_type === 'Identification') return 'badge';
-  return 'barcode';
-});
+const { hasErrors, activeIcon } = useSettingsCardSetup({ props });
 </script>

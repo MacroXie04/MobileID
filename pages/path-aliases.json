@@ -1,5 +1,6 @@
 {
   "@": "./src",
+  "@app": "./src/app",
   "@auth": "./src/features/auth",
   "@dashboard": "./src/features/dashboard",
   "@home": "./src/features/home",

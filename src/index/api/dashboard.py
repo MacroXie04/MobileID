@@ -51,6 +51,8 @@ class BarcodeDashboardAPIView(APIView):
                 "barcode": None,
                 "server_verification": False,
                 "associate_user_profile_with_barcode": False,
+                "scanner_detection_enabled": False,
+                "prefer_front_camera": True,
             },
         )
 

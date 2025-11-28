@@ -1,6 +1,6 @@
 import { computed, ref, watch, toRefs } from 'vue';
 import defaultAvatar from '@/assets/images/user/avatar_placeholder.png';
-import { getInitials, handleAvatarError } from '@user/utils/profileUtils.js';
+import { getInitials, handleAvatarError } from '@shared/utils/profileUtils.js';
 
 export function useUserProfileComponentLogic(props) {
   const { avatarSrc, profile } = toRefs(props);

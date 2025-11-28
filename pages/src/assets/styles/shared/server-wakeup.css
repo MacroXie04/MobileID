@@ -1,0 +1,286 @@
+/* Server Wakeup Overlay Styles - Google Style */
+
+.server-wakeup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.wakeup-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 24px;
+  max-width: 400px;
+  width: 90%;
+}
+
+/* Google Cloud Run Icon Container */
+.wakeup-icon-container {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.google-cloud-logo {
+  width: 80px;
+  height: 65px;
+  animation: gentle-bounce 2s ease-in-out infinite;
+  z-index: 2;
+}
+
+/* Pulse ring animations - Google Cloud colors */
+.pulse-ring {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: google-pulse 2.5s ease-out infinite;
+}
+
+.pulse-ring-1 {
+  background: rgba(66, 133, 244, 0.15);
+  animation-delay: 0s;
+}
+
+.pulse-ring-2 {
+  background: rgba(234, 67, 53, 0.12);
+  animation-delay: 0.8s;
+}
+
+.pulse-ring-3 {
+  background: rgba(52, 168, 83, 0.12);
+  animation-delay: 1.6s;
+}
+
+/* Title and subtitle - Google typography */
+.wakeup-title {
+  margin: 0 0 12px 0;
+  color: #202124;
+  font-family: 'Google Sans', 'Roboto', sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 32px;
+  letter-spacing: 0;
+}
+
+.wakeup-subtitle {
+  margin: 0 0 32px 0;
+  color: #5f6368;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+/* Progress bar - Google style */
+.wakeup-progress {
+  width: 100%;
+  max-width: 240px;
+  margin-bottom: 16px;
+}
+
+.wakeup-progress md-linear-progress {
+  --md-linear-progress-active-indicator-color: #4285f4;
+  --md-linear-progress-track-color: #e8f0fe;
+  --md-linear-progress-track-height: 4px;
+  --md-linear-progress-active-indicator-height: 4px;
+  border-radius: 2px;
+}
+
+/* Elapsed time */
+.wakeup-elapsed {
+  margin: 0 0 24px 0;
+  color: #80868b;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+/* Error message - Google style */
+.wakeup-error {
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 320px;
+  background: #fce8e6;
+  color: #c5221f;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.wakeup-error md-icon {
+  color: #c5221f;
+  font-size: 20px;
+}
+
+/* Retry button - Google style */
+.wakeup-retry-btn {
+  --md-filled-tonal-button-container-color: #e8f0fe;
+  --md-filled-tonal-button-label-text-color: #1a73e8;
+  --md-filled-tonal-button-hover-state-layer-color: #1a73e8;
+  --md-filled-tonal-button-pressed-state-layer-color: #1a73e8;
+  --md-filled-tonal-button-container-shape: 20px;
+  margin-bottom: 32px;
+  font-family: 'Google Sans', 'Roboto', sans-serif;
+  font-weight: 500;
+}
+
+.wakeup-retry-btn md-icon {
+  color: #1a73e8;
+}
+
+/* Info text */
+.wakeup-info {
+  margin: 0;
+  color: #9aa0a6;
+  font-family: 'Roboto', sans-serif;
+  font-size: 12px;
+  line-height: 18px;
+  max-width: 280px;
+}
+
+/* Google-style loading dots (alternative) */
+.google-dots {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.google-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: google-dot-bounce 1.4s ease-in-out infinite;
+}
+
+.google-dots span:nth-child(1) {
+  background: #4285f4;
+  animation-delay: 0s;
+}
+
+.google-dots span:nth-child(2) {
+  background: #ea4335;
+  animation-delay: 0.2s;
+}
+
+.google-dots span:nth-child(3) {
+  background: #fbbc04;
+  animation-delay: 0.4s;
+}
+
+.google-dots span:nth-child(4) {
+  background: #34a853;
+  animation-delay: 0.6s;
+}
+
+/* Animations */
+@keyframes gentle-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes google-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes google-dot-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.3);
+  }
+}
+
+/* Transition animations */
+.wakeup-fade-enter-active {
+  transition: opacity 0.2s ease-out;
+}
+
+.wakeup-fade-leave-active {
+  transition: opacity 0.3s ease-in;
+}
+
+.wakeup-fade-enter-from,
+.wakeup-fade-leave-to {
+  opacity: 0;
+}
+
+.error-fade-enter-active,
+.error-fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.error-fade-enter-from,
+.error-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 599px) {
+  .wakeup-content {
+    padding: 32px 20px;
+  }
+
+  .wakeup-icon-container {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 24px;
+  }
+
+  .google-cloud-logo {
+    width: 64px;
+    height: 52px;
+  }
+
+  .pulse-ring {
+    width: 84px;
+    height: 84px;
+  }
+
+  .wakeup-title {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  .wakeup-subtitle {
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  .wakeup-progress {
+    max-width: 200px;
+  }
+}

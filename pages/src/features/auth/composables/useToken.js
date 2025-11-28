@@ -1,10 +1,10 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { clearAuthCookies, clearAuthStorage } from '@auth/utils/cookie';
+import { clearAuthCookies, clearAuthStorage } from '@shared/utils/cookie';
 import {
   checkAuthenticationError as sharedCheckAuthenticationError,
   refreshToken as sharedRefreshToken,
-} from '@auth/utils/tokenRefresh';
+} from '@shared/utils/tokenRefresh';
 
 const isRefreshingToken = ref(false);
 

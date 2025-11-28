@@ -1,13 +1,15 @@
 <template>
-  <section ref="addSectionLocal" class="md-card">
-    <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
-      <md-icon>add_circle</md-icon>
-      <h2 class="md-typescale-headline-small md-m-0">Add New Barcode</h2>
+  <section ref="addSectionLocal" class="dashboard-card">
+    <div class="card-header">
+      <div class="header-icon-wrapper">
+        <md-icon>add_circle</md-icon>
+      </div>
+      <h2 class="md-typescale-headline-small">Add New Barcode</h2>
     </div>
 
     <!-- Transfer Barcode (moved from TransferBarcode.vue) -->
     <div class="md-mb-6">
-      <div class="card-header md-flex md-items-center md-gap-3 md-mb-4">
+      <div class="subsection-header md-flex md-items-center md-gap-3 md-mb-4">
         <md-icon>cookie</md-icon>
         <h3 class="md-typescale-title-medium md-m-0">Transfer Barcode</h3>
         <transition name="fade">
@@ -134,13 +136,14 @@
 </template>
 
 <script setup>
-import { useAddBarcodeLogic } from '@dashboard/composables/useAddBarcodeLogic.js';
+import {
+  emitsDefinition,
+  propsDefinition,
+  useAddBarcodeCardSetup,
+} from './AddBarcodeCard.setup.js';
 
-const emit = defineEmits(['added', 'message']);
-
-defineProps({
-  activeTab: { type: String, default: 'Add' },
-});
+defineProps(propsDefinition);
+const emit = defineEmits(emitsDefinition);
 
 const {
   addSectionLocal,
@@ -163,5 +166,5 @@ const {
   addBarcode,
   clearTransferError,
   requestTransferCode,
-} = useAddBarcodeLogic(emit);
+} = useAddBarcodeCardSetup({ emit });
 </script>

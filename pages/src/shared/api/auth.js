@@ -1,5 +1,5 @@
 import { ApiError, apiRequest } from './client';
-import { clearPublicKeyCache, encryptPassword } from '@auth/utils/encryption';
+import { clearPublicKeyCache, encryptPassword } from '@shared/utils/encryption';
 import { setAuthTokens, clearAuthTokens } from './axios';
 
 export async function fetchLoginChallenge() {
