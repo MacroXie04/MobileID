@@ -1,7 +1,14 @@
 name: Deploy to Cloud Run
 
-# Trigger after database migrations pipeline completes successfully
 on:
+  # Trigger on push to main when backend or workflow files change
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - ".github/workflows/gcp_deploy.yml"
+
+  # Also trigger after database migrations pipeline completes
   workflow_run:
     workflows: ["Database Migrations"]
     branches: [main]
@@ -16,7 +23,8 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Run on push events, or on workflow_run only if it succeeded
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
 
     environment:
       name: MobileID Backend (Production)
@@ -31,7 +39,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          # Use workflow_run's head_sha if triggered by workflow_run, otherwise use default
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Google Auth
         uses: google-github-actions/auth@v2
@@ -48,7 +57,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           environment: MobileID Backend (Production)
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           description: "Deploying MobileID Backend to Google Cloud Run"
           auto-merge: false
 
