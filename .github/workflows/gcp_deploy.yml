@@ -44,13 +44,13 @@ jobs:
       # ---------- Create Deployment Record ----------
       - name: Create GitHub Deployment
         id: create_deploy
-        uses: actions/create-deployment@v2
+        uses: chrnorm/deployment-action@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           environment: MobileID Backend (Production)
           ref: ${{ github.event.workflow_run.head_sha }}
           description: "Deploying MobileID Backend to Google Cloud Run"
-          auto_merge: false
-          transient_environment: false
+          auto-merge: false
 
       # ---------- Build and Deploy ----------
       - name: Build and Push Container
@@ -78,7 +78,6 @@ jobs:
             DJANGO_SUPERUSER_PASSWORD=${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
 
             SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
-            SELENIUM_ENABLED=${{ secrets.SELENIUM_ENABLED }}
 
             ALLOWED_HOSTS=*
             DB_PROFILE=gcp
@@ -95,18 +94,20 @@ jobs:
 
       - name: Mark Deployment Success
         if: success()
-        uses: actions/create-deployment-status@v2
+        uses: chrnorm/deployment-status@v2
         with:
-          deployment_id: ${{ steps.create_deploy.outputs.deployment_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          deployment-id: ${{ steps.create_deploy.outputs.deployment_id }}
           state: success
-          environment_url: https://${{ env.SERVICE_NAME }}-${{ env.REGION }}.a.run.app
+          environment-url: https://${{ env.SERVICE_NAME }}-${{ env.REGION }}.a.run.app
           description: "MobileID Backend successfully deployed to Cloud Run"
 
       - name: Mark Deployment Failure
         if: failure()
-        uses: actions/create-deployment-status@v2
+        uses: chrnorm/deployment-status@v2
         with:
-          deployment_id: ${{ steps.create_deploy.outputs.deployment_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          deployment-id: ${{ steps.create_deploy.outputs.deployment_id }}
           state: failure
           description: "Deployment failed or Cloud Run verification error"
 

@@ -53,18 +53,9 @@ jobs:
             echo "Cloudflare Pages project 'mobileid' already exists."
           fi
 
-      # ---------- Create GitHub Deployment ----------
-      - name: Create GitHub Deployment Record
-        id: create_deploy
-        uses: actions/create-deployment@v2
-        with:
-          environment: MobileID Frontend (Production)
-          ref: ${{ github.ref }}
-          description: "Deploying MobileID Frontend to Cloudflare Pages"
-          auto_merge: false
-          transient_environment: false
-
       # ---------- Deploy to Cloudflare Pages ----------
+      # Note: cloudflare/pages-action automatically creates GitHub deployment
+      # records when gitHubToken is provided
       - name: Deploy to Cloudflare Pages
         id: deploy_pages
         uses: cloudflare/pages-action@v1
@@ -74,21 +65,3 @@ jobs:
           projectName: mobileid
           directory: ./pages/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-
-      # ---------- Report Deployment Status ----------
-      - name: Mark Deployment Success
-        if: success()
-        uses: actions/create-deployment-status@v2
-        with:
-          deployment_id: ${{ steps.create_deploy.outputs.deployment_id }}
-          state: success
-          environment_url: https://mobileid.pages.dev
-          description: "MobileID Frontend successfully deployed to Cloudflare Pages"
-
-      - name: Mark Deployment Failure
-        if: failure()
-        uses: actions/create-deployment-status@v2
-        with:
-          deployment_id: ${{ steps.create_deploy.outputs.deployment_id }}
-          state: failure
-          description: "Cloudflare Pages deployment failed"
