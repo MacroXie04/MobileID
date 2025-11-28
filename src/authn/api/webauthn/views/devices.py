@@ -25,8 +25,9 @@ def _get_current_session_iat(request):
     """
     Get the 'iat' (issued-at) timestamp of the current session from the access token.
 
-    Since access tokens and refresh tokens are created together, they share the same 'iat'.
-    We use this to match the current session with OutstandingToken records.
+    Since access tokens and refresh tokens are created together, they share the
+    same 'iat'. We use this to match the current session with OutstandingToken
+    records.
 
     Returns None if no valid iat is found.
     """
@@ -182,9 +183,7 @@ def list_devices(request):
         # Check if this is the current session by comparing iat timestamps
         # Access token and refresh token share the same iat when created together
         token_iat = int(token.created_at.timestamp())
-        is_current = (
-            current_iat is not None and abs(token_iat - int(current_iat)) <= 2
-        )
+        is_current = current_iat is not None and abs(token_iat - int(current_iat)) <= 2
 
         devices.append(
             {
@@ -221,13 +220,13 @@ def _blacklist_session_access_tokens(user, session_created_at):
     from datetime import timedelta
 
     # Calculate access token expiry time
-    access_lifetime = getattr(
-        settings, "SIMPLE_JWT", {}
-    ).get("ACCESS_TOKEN_LIFETIME", timedelta(days=1))
+    access_lifetime = getattr(settings, "SIMPLE_JWT", {}).get(
+        "ACCESS_TOKEN_LIFETIME", timedelta(days=1)
+    )
 
     # Blacklist entry expires when the access token would have expired
     expires_at = session_created_at + access_lifetime
-    
+
     # Create session key using timestamp - matches the JWT's iat claim
     session_ts = int(session_created_at.timestamp())
     session_key = f"session_{user.id}_{session_ts}"

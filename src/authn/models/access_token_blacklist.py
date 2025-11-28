@@ -72,4 +72,3 @@ class AccessTokenBlacklist(models.Model):
         Should be run periodically via management command or celery task.
         """
         return cls.objects.filter(expires_at__lt=timezone.now()).delete()
-

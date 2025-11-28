@@ -68,21 +68,21 @@ class CookieJWTAuthentication(JWTAuthentication):
                 raise exceptions.AuthenticationFailed("Session has been revoked")
 
             user = self.get_user(validated_token)
-            
-            # Check if this session has been revoked by matching user + token issued time
+
+            # Check if session has been revoked by matching user + token time
             iat = validated_token.get("iat")
             if user and iat:
                 token_iat = int(iat)
-                
+
                 # Check all revoked sessions for this user
                 revoked_sessions = AccessTokenBlacklist.objects.filter(
-                    user=user,
-                    jti__startswith=f"session_{user.id}_"
+                    user=user, jti__startswith=f"session_{user.id}_"
                 )
-                
+
                 for entry in revoked_sessions:
                     try:
-                        # Extract timestamp from session key: session_{user_id}_{timestamp}
+                        # Extract timestamp from session key:
+                        # session_{user_id}_{timestamp}
                         stored_ts = int(entry.jti.split("_")[-1])
                         diff = abs(stored_ts - token_iat)
                         # Allow 10-second window for timestamp matching

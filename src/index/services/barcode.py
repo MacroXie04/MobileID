@@ -10,7 +10,6 @@ from index.models import (
     Barcode,
     BarcodeUsage,
     UserBarcodeSettings,
-    BarcodeUserProfile,
     UserBarcodePullSettings,
     Transaction,
 )

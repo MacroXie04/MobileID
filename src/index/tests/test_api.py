@@ -539,4 +539,3 @@ class ActiveProfileAPITest(APITestCase):
         self.assertTrue(
             resp.data["profile_info"]["avatar_data"].startswith("data:image")
         )
-
