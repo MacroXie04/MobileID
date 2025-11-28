@@ -1,10 +1,74 @@
-/* Page-specific styles for BarcodeDashboard.vue - minimal overrides only */ /* Material 3 card defaults for this page */
+/* Page-specific styles for BarcodeDashboard.vue - minimal overrides only */
+
+/* ============================================
+   Unified Dashboard Card Styles
+   ============================================ */
+
+/* Base card styling */
 .md-card {
   background: var(--md-sys-color-surface-container-low);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-sys-shape-corner-large);
   box-shadow: var(--md-elevation-1);
-} /* Message Toast positioning */
+}
+
+/* Dashboard card - unified style for all settings cards */
+.dashboard-card {
+  background: var(--md-sys-color-surface-container);
+  border-radius: var(--md-sys-shape-corner-large);
+  padding: var(--md-sys-spacing-5);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  overflow: visible;
+}
+
+/* Unified card header */
+.dashboard-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-3);
+  margin-bottom: var(--md-sys-spacing-4);
+}
+
+.dashboard-card .card-header .header-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  background: var(--md-sys-color-primary-container);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dashboard-card .card-header .header-icon-wrapper md-icon {
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.dashboard-card .card-header h2 {
+  margin: 0;
+}
+
+.dashboard-card .card-header .header-text {
+  flex: 1;
+}
+
+.dashboard-card .card-header .header-subtitle {
+  margin: 4px 0 0;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Subsection header (for nested sections like Transfer Barcode) */
+.subsection-header {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-3);
+}
+
+.subsection-header md-icon {
+  color: var(--md-sys-color-primary);
+}
+
+/* Message Toast positioning */
 .message-toast {
   position: fixed;
   top: 88px;
@@ -76,30 +140,7 @@
 }
 .action-icon.tertiary {
   color: var(--md-sys-color-tertiary);
-} /* Settings Section */
-.settings-card {
-  overflow: visible;
-}
-.header-icon-wrapper {
-  width: 40px;
-  height: 40px;
-  background: var(--md-sys-color-primary-container);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.header-icon-wrapper md-icon {
-  color: var(--md-sys-color-on-primary-container);
 } /* Active Barcode Card */
-.settings-card {
-  background: var(--md-sys-color-surface-container);
-  border-radius: var(--md-sys-shape-corner-large);
-  padding: var(--md-sys-spacing-5);
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--md-sys-color-outline-variant);
-} /* decorative overlay removed for visual consistency */
 .active-barcode-header {
   display: flex;
   align-items: center;
@@ -110,6 +151,14 @@
   color: var(--md-sys-color-primary);
   font-size: 20px;
 }
+.active-barcode-info-wrapper {
+  background: var(--md-sys-color-surface);
+  border-radius: var(--md-sys-shape-corner-large);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  padding: var(--md-sys-spacing-4);
+  overflow: hidden;
+}
+
 .active-barcode-info {
   display: flex;
   align-items: center;
@@ -256,17 +305,21 @@
 }
 .sort-select {
   min-width: 150px;
-} /* Keep all chips on a single row with horizontal scroll */
+} /* Keep all chips on a single row with horizontal scroll only */
 .filter-controls {
   flex-wrap: nowrap;
   overflow-x: auto;
+  overflow-y: hidden;
   width: 100%;
   gap: var(--md-sys-spacing-2);
   padding-bottom: var(--md-sys-spacing-1);
-  -webkit-overflow-scrolling: touch; /* hide scrollbar cross-browser */
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+*/
-} /* WebKit-based browsers */
+  -ms-overflow-style: none; /* IE 10+ */
+  overscroll-behavior-y: none; /* Prevent vertical overscroll */
+}
+
+/* WebKit-based browsers */
 .filter-controls::-webkit-scrollbar {
   display: none;
   width: 0;
@@ -277,38 +330,272 @@
 }
 .chip-wrapper md-filter-chip {
   pointer-events: none;
-} /* Barcode Items */
-.barcode-item {
-  transition: all 0.2s ease;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-}
-.barcode-item.is-active {
-  background: var(--md-sys-color-surface-container);
+} /* ============================================
+   Barcode Card - Redesigned Layout
+   ============================================ */
+
+.barcode-card {
+  background: var(--md-sys-color-surface);
+  border-radius: var(--md-sys-shape-corner-large);
   border: 1px solid var(--md-sys-color-outline-variant);
-}
-.barcode-item.is-shared {
-  background: var(--md-sys-color-surface-container-low);
-}
-.barcode-type-icon {
-  width: 56px;
-  height: 56px;
-  background: var(--md-sys-color-surface-container-highest);
-}
-.barcode-type-icon md-icon {
-  font-size: 24px;
-  color: var(--md-sys-color-primary);
-}
-.barcode-content {
+  padding: var(--md-sys-spacing-4);
   display: flex;
   flex-direction: column;
-  gap: var(--md-sys-spacing-2);
+  gap: var(--md-sys-spacing-3);
+  transition: all 0.2s ease;
 }
+
+.barcode-card:hover {
+  box-shadow: var(--md-elevation-1);
+}
+
+.barcode-card.is-active {
+  border-color: var(--md-sys-color-primary);
+  background: color-mix(in srgb, var(--md-sys-color-primary-container) 25%, var(--md-sys-color-surface) 75%);
+}
+
+.barcode-card.is-active .barcode-type-icon {
+  background: var(--md-sys-color-primary);
+}
+
+.barcode-card.is-active .barcode-type-icon md-icon {
+  color: var(--md-sys-color-on-primary);
+}
+
+.barcode-card.is-shared {
+  background: var(--md-sys-color-surface-container-low);
+}
+
+/* Card Header */
+.barcode-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--md-sys-spacing-3);
+}
+
+.barcode-type-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--md-sys-color-primary-container);
+  border-radius: var(--md-sys-shape-corner-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.barcode-type-icon md-icon {
+  font-size: 24px;
+  --md-icon-size: 24px;
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.barcode-header-content {
+  flex: 1;
+  min-width: 0;
+}
+
 .barcode-title-row {
   display: flex;
   align-items: center;
-  gap: var(--md-sys-spacing-3);
+  gap: var(--md-sys-spacing-2);
   flex-wrap: wrap;
+}
+
+.barcode-title {
+  margin: 0;
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  color: var(--md-sys-color-on-surface);
+}
+
+.barcode-type-label {
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: 500;
+  color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.barcode-id {
+  margin: 4px 0 0;
+  font-family: 'Roboto Mono', monospace;
+  font-size: var(--md-sys-typescale-body-small-size);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.active-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.active-badge md-icon {
+  font-size: 14px;
+  --md-icon-size: 14px;
+}
+
+/* Barcode Meta (Owner, Shared, Profile) */
+.barcode-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  flex-wrap: wrap;
+}
+
+/* Stats Row */
+.barcode-stats-row {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-4);
+  padding: var(--md-sys-spacing-3);
+  background: var(--md-sys-color-surface-container-low);
+  border-radius: var(--md-sys-shape-corner-medium);
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+}
+
+.stat-item md-icon {
+  font-size: 16px;
+  --md-icon-size: 16px;
+  color: var(--md-sys-color-primary);
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+}
+
+.stat-label {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Daily Limit Section */
+.barcode-limit-section {
+  background: var(--md-sys-color-surface-container-low);
+  border-radius: var(--md-sys-shape-corner-medium);
+  padding: var(--md-sys-spacing-3);
+}
+
+.limit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.limit-label {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  color: var(--md-sys-color-on-surface);
+}
+
+.limit-label md-icon {
+  font-size: 18px;
+  --md-icon-size: 18px;
+  color: var(--md-sys-color-primary);
+}
+
+.limit-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+}
+
+.toggle-label {
+  font-size: var(--md-sys-typescale-body-small-size);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.limit-controls-row {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  margin-top: var(--md-sys-spacing-3);
+  padding-top: var(--md-sys-spacing-3);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.limit-controls-row .limit-input {
+  width: 100px;
+  --md-outlined-text-field-container-shape: var(--md-sys-shape-corner-small);
+}
+
+.limit-presets {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-1);
+  margin-left: auto;
+}
+
+/* Card Actions */
+.barcode-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  padding-top: var(--md-sys-spacing-3);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* Barcodes Grid */
+.barcodes-grid {
+  display: grid;
+  gap: var(--md-sys-spacing-4);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .barcode-card-header {
+    flex-wrap: wrap;
+  }
+
+  .active-badge {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: var(--md-sys-spacing-2);
+  }
+
+  .barcode-stats-row {
+    flex-wrap: wrap;
+    gap: var(--md-sys-spacing-3);
+  }
+
+  .limit-controls-row {
+    flex-wrap: wrap;
+  }
+
+  .limit-presets {
+    width: 100%;
+    margin-left: 0;
+    margin-top: var(--md-sys-spacing-2);
+    justify-content: center;
+  }
+
+  .barcode-card-actions {
+    flex-wrap: wrap;
+  }
+
+  .barcode-card-actions md-filled-tonal-button,
+  .barcode-card-actions md-outlined-button {
+    flex: 1;
+  }
 } /* Badge overrides */
 .badge-active {
   background: var(--md-sys-color-primary);
@@ -391,6 +678,16 @@
 } /* Camera select */
 .camera-select {
   min-width: 200px;
+}
+
+.camera-select-inline {
+  min-width: 180px;
+  max-width: 220px;
+}
+
+.no-camera-text {
+  font-size: var(--md-sys-typescale-body-small-size);
+  color: var(--md-sys-color-on-surface-variant);
 } /* Transitions */
 .list-enter-active,
 .list-leave-active,
@@ -511,6 +808,7 @@
     gap: var(--md-sys-spacing-3);
   }
 }
+
 .tx-dot {
   color: var(--md-sys-color-on-surface-variant);
 }
@@ -538,4 +836,357 @@
 }
 .limit-support {
   color: var(--md-sys-color-on-surface-variant);
+}
+
+/* ============================================
+   Camera Settings Card Styles
+   ============================================ */
+
+/* Camera Preview Section */
+.camera-preview-section {
+  margin-bottom: var(--md-sys-spacing-4);
+  padding: var(--md-sys-spacing-4);
+  background: var(--md-sys-color-surface-container-low);
+  border-radius: var(--md-sys-shape-corner-medium);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  margin-bottom: var(--md-sys-spacing-3);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  color: var(--md-sys-color-on-surface);
+}
+
+.section-header md-icon {
+  font-size: 18px;
+  --md-icon-size: 18px;
+  color: var(--md-sys-color-primary);
+}
+
+/* Permission States */
+.permission-request,
+.permission-loading,
+.permission-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--md-sys-spacing-5);
+  text-align: center;
+}
+
+.permission-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--md-sys-color-primary-container);
+  margin-bottom: var(--md-sys-spacing-3);
+}
+
+.permission-icon md-icon {
+  font-size: 24px;
+  --md-icon-size: 24px;
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.permission-icon.denied {
+  background: var(--md-sys-color-error-container);
+}
+
+.permission-icon.denied md-icon {
+  color: var(--md-sys-color-on-error-container);
+}
+
+.permission-title {
+  margin: 0 0 4px;
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  color: var(--md-sys-color-on-surface);
+}
+
+.permission-desc {
+  margin: 0 0 var(--md-sys-spacing-4);
+  font-size: var(--md-sys-typescale-body-small-size);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.permission-loading {
+  gap: var(--md-sys-spacing-3);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+}
+
+/* Camera Preview Wrapper */
+.camera-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  border-radius: var(--md-sys-shape-corner-medium);
+  overflow: hidden;
+  background: #000;
+  border: 2px solid var(--md-sys-color-outline-variant);
+  transition: all 0.3s ease;
+}
+
+.camera-wrapper.active {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: var(--md-elevation-2);
+}
+
+.camera-video {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: scaleX(-1);
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.detection-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: scaleX(-1);
+}
+
+.status-overlay {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--md-sys-shape-corner-small);
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  backdrop-filter: blur(4px);
+}
+
+.status-badge.loading {
+  background: rgba(255, 152, 0, 0.85);
+}
+
+.status-badge.active {
+  background: rgba(76, 175, 80, 0.85);
+}
+
+.status-badge md-icon {
+  font-size: 12px;
+  --md-icon-size: 12px;
+}
+
+.detected-list {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.detected-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(76, 175, 80, 0.9);
+  color: white;
+}
+
+.detected-tag md-icon {
+  font-size: 10px;
+  --md-icon-size: 10px;
+}
+
+/* Camera Controls */
+.camera-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-sys-spacing-2);
+  margin-top: var(--md-sys-spacing-3);
+  flex-wrap: wrap;
+}
+
+.model-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-sys-spacing-2);
+  padding: var(--md-sys-spacing-3);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+}
+
+/* Info Hint */
+.info-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  margin-top: var(--md-sys-spacing-3);
+  padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+  background: var(--md-sys-color-surface-container);
+  border-radius: var(--md-sys-shape-corner-small);
+  font-size: var(--md-sys-typescale-body-small-size);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.info-hint md-icon {
+  font-size: 14px;
+  --md-icon-size: 14px;
+  color: var(--md-sys-color-outline);
+}
+
+/* ============================================
+   Camera Permission Banner
+   ============================================ */
+
+.permission-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-3);
+  padding: var(--md-sys-spacing-3) var(--md-sys-spacing-4);
+  background: var(--md-sys-color-error-container);
+  border-radius: var(--md-sys-shape-corner-large);
+  margin-bottom: var(--md-sys-spacing-4);
+}
+
+.permission-banner-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--md-sys-color-error);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.permission-banner-icon md-icon {
+  color: var(--md-sys-color-on-error);
+  font-size: 20px;
+  --md-icon-size: 20px;
+}
+
+.permission-banner-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.permission-banner-title {
+  font-size: var(--md-sys-typescale-title-small-size);
+  font-weight: var(--md-sys-typescale-title-small-weight);
+  color: var(--md-sys-color-on-error-container);
+}
+
+.permission-banner-desc {
+  font-size: var(--md-sys-typescale-body-small-size);
+  color: var(--md-sys-color-on-error-container);
+  opacity: 0.8;
+}
+
+/* Disabled list item styling */
+.disabled-item {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.disabled-item md-switch {
+  pointer-events: auto;
+}
+
+/* ============================================
+   Rounded List Container
+   ============================================ */
+
+.dashboard-card md-list {
+  background: var(--md-sys-color-surface);
+  border-radius: var(--md-sys-shape-corner-large);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  overflow: hidden;
+}
+
+.dashboard-card md-list md-list-item {
+  --md-list-item-container-color: transparent;
+  --md-list-item-supporting-text-color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Fix text truncation on small screens */
+@media (max-width: 480px) {
+  .dashboard-card md-list-item [slot='end'] md-outlined-select {
+    min-width: 120px;
+    max-width: 130px;
+  }
+}
+
+.dashboard-card md-list md-divider {
+  --md-divider-color: var(--md-sys-color-outline-variant);
+}
+
+/* ============================================
+   Custom Switch Styling - Modern Pill Shape
+   ============================================ */
+
+md-switch {
+  /* Track shape - rounded pill */
+  --md-switch-track-shape: 16px;
+  --md-switch-track-height: 32px;
+  --md-switch-track-width: 52px;
+
+  /* Handle (thumb) styling */
+  --md-switch-handle-shape: 50%;
+  --md-switch-handle-height: 24px;
+  --md-switch-handle-width: 24px;
+  --md-switch-pressed-handle-height: 26px;
+  --md-switch-pressed-handle-width: 26px;
+
+  /* Unselected state colors */
+  --md-switch-track-color: var(--md-sys-color-surface-container-highest);
+  --md-switch-track-outline-color: var(--md-sys-color-outline);
+  --md-switch-handle-color: var(--md-sys-color-outline);
+
+  /* Selected state colors */
+  --md-switch-selected-track-color: var(--md-sys-color-primary);
+  --md-switch-selected-handle-color: var(--md-sys-color-on-primary);
+
+  /* Hover states */
+  --md-switch-hover-handle-color: var(--md-sys-color-on-surface-variant);
+  --md-switch-selected-hover-handle-color: var(--md-sys-color-primary-container);
+
+  /* Focus states */
+  --md-switch-focus-handle-color: var(--md-sys-color-on-surface-variant);
+  --md-switch-selected-focus-handle-color: var(--md-sys-color-primary-container);
+
+  /* Pressed states */
+  --md-switch-pressed-handle-color: var(--md-sys-color-on-surface-variant);
+  --md-switch-selected-pressed-handle-color: var(--md-sys-color-primary-container);
+
+  /* Disabled state */
+  --md-switch-disabled-track-color: var(--md-sys-color-surface-container-highest);
+  --md-switch-disabled-track-opacity: 0.38;
+  --md-switch-disabled-handle-color: var(--md-sys-color-on-surface);
+  --md-switch-disabled-handle-opacity: 0.38;
+  --md-switch-disabled-selected-track-color: var(--md-sys-color-on-surface);
+  --md-switch-disabled-selected-handle-color: var(--md-sys-color-surface);
 }

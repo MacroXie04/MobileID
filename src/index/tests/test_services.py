@@ -1,7 +1,9 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth.models import User, Group
 from django.test import TestCase
+from django.utils import timezone
 from index.models import (
     Barcode,
     BarcodeUsage,
@@ -112,6 +114,90 @@ class BarcodeServiceTest(TestCase):
 
         usage = BarcodeUsage.objects.get(barcode=barcode)
         self.assertEqual(usage.total_usage, 6)
+
+    def test_touch_barcode_usage_duplicate_within_5_minutes(self):
+        """Test that duplicate usage within 5 minutes is not recorded"""
+        barcode = Barcode.objects.create(
+            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        )
+
+        # First usage - should record transaction and update usage
+        _touch_barcode_usage(barcode, request_user=self.user)
+
+        usage = BarcodeUsage.objects.get(barcode=barcode)
+        self.assertEqual(usage.total_usage, 1)
+        self.assertEqual(Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 1)
+
+        # Second usage within 5 minutes - should NOT record anything
+        _touch_barcode_usage(barcode, request_user=self.user)
+
+        usage.refresh_from_db()
+        self.assertEqual(usage.total_usage, 1)  # Still 1, not incremented
+        self.assertEqual(Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 1)
+
+    def test_touch_barcode_usage_after_5_minutes(self):
+        """Test that usage after 5 minutes is recorded"""
+        barcode = Barcode.objects.create(
+            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        )
+
+        # First usage
+        _touch_barcode_usage(barcode, request_user=self.user)
+
+        # Simulate transaction created 6 minutes ago
+        old_time = timezone.now() - timedelta(minutes=6)
+        Transaction.objects.filter(user=self.user, barcode_used=barcode).update(
+            time_created=old_time
+        )
+
+        usage = BarcodeUsage.objects.get(barcode=barcode)
+        self.assertEqual(usage.total_usage, 1)
+
+        # Second usage after 5 minutes - should record new transaction
+        _touch_barcode_usage(barcode, request_user=self.user)
+
+        usage.refresh_from_db()
+        self.assertEqual(usage.total_usage, 2)  # Now 2
+        self.assertEqual(Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 2)
+
+    def test_touch_barcode_usage_different_users_within_5_minutes(self):
+        """Test that different users can use the same barcode within 5 minutes"""
+        barcode = Barcode.objects.create(
+            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        )
+
+        # First user uses barcode
+        _touch_barcode_usage(barcode, request_user=self.user)
+
+        usage = BarcodeUsage.objects.get(barcode=barcode)
+        self.assertEqual(usage.total_usage, 1)
+        self.assertEqual(Transaction.objects.filter(barcode_used=barcode).count(), 1)
+
+        # Different user uses same barcode within 5 minutes - should record
+        _touch_barcode_usage(barcode, request_user=self.school_user)
+
+        usage.refresh_from_db()
+        self.assertEqual(usage.total_usage, 2)  # Should be 2
+        self.assertEqual(Transaction.objects.filter(barcode_used=barcode).count(), 2)
+
+    def test_touch_barcode_usage_no_request_user(self):
+        """Test that usage without request_user still updates BarcodeUsage but no Transaction"""
+        barcode = Barcode.objects.create(
+            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        )
+
+        # Usage without request_user - should update BarcodeUsage but not create Transaction
+        _touch_barcode_usage(barcode, request_user=None)
+
+        usage = BarcodeUsage.objects.get(barcode=barcode)
+        self.assertEqual(usage.total_usage, 1)
+        self.assertEqual(Transaction.objects.filter(barcode_used=barcode).count(), 0)
+
+        # Second call without request_user - should still update (no 5-min check applies)
+        _touch_barcode_usage(barcode, request_user=None)
+
+        usage.refresh_from_db()
+        self.assertEqual(usage.total_usage, 2)
 
     def test_generate_barcode_staff_user(self):
         """Test barcode generation for staff user (should fail)"""

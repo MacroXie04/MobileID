@@ -25,9 +25,7 @@
 </template>
 
 <script setup>
-import ucmLogo from '@/assets/images/school/ucm3.png';
-import mobileIdLogo from '@/assets/images/shared/mobileid_logo.png';
+import { useSchoolHeaderSetup } from './Header.setup.js';
 
-// CSS
-import '@/assets/styles/school/school-merged.css';
+const { ucmLogo, mobileIdLogo } = useSchoolHeaderSetup();
 </script>

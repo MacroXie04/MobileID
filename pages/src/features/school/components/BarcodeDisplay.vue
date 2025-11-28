@@ -1,16 +1,30 @@
 <template>
   <!-- Barcode + Progress Section -->
   <div id="qrcode" class="barcode-section">
-    <div id="qrcode-div" class="barcode-canvas-container" style="display: none">
+    <!-- Hidden video element for background detection -->
+    <video
+      v-if="scannerDetectionEnabled"
+      ref="videoElement"
+      class="hidden-video"
+      autoplay
+      playsinline
+      muted
+    ></video>
+    <canvas v-if="scannerDetectionEnabled" ref="detectionCanvas" class="hidden-canvas"></canvas>
+
+    <!-- Barcode Display -->
+    <div id="qrcode-div" class="barcode-canvas-container" :style="{ display: showBarcode ? 'block' : 'none' }">
       <canvas ref="barcodeCanvas" class="pdf417"></canvas>
     </div>
-    <div id="qrcode-code" class="barcode-progress-container" style="display: none">
+
+    <!-- Progress Bar -->
+    <div id="qrcode-code" class="barcode-progress-container" :style="{ display: showBarcode ? 'block' : 'none' }">
       <div class="progress">
         <div
           id="progress-bar"
           class="progress-bar progress-bar-white"
           role="progressbar"
-          style="width: 100%"
+          :style="{ width: progressPercent + '%' }"
         ></div>
       </div>
     </div>
@@ -18,19 +32,25 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import {
+  propsDefinition,
+  emitsDefinition,
+  useSchoolBarcodeDisplaySetup,
+} from './BarcodeDisplay.setup.js';
 
-import '@material/web/icon/icon';
-import '@material/web/button/filled-button.js';
+const props = defineProps(propsDefinition);
+const emit = defineEmits(emitsDefinition);
 
-// CSS
-import '@/assets/styles/school/school-merged.css';
-
-// Template refs
-const barcodeCanvas = ref(null);
-
-// Expose canvas ref to parent component
-defineExpose({
+const {
   barcodeCanvas,
-});
+  videoElement,
+  detectionCanvas,
+  showBarcode,
+  progressPercent,
+  exposeBindings,
+} = useSchoolBarcodeDisplaySetup({ props, emit });
+
+defineExpose(exposeBindings || {});
 </script>
+
+<!-- Styles imported via BarcodeDisplay.setup.js from school-merged.css -->

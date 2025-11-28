@@ -37,32 +37,15 @@
 </template>
 
 <script setup>
-import { useSchoolProfileLogic } from '@school/composables/useSchoolProfileLogic.js';
-import '@/assets/styles/school/school-merged.css';
+import {
+  emitsDefinition,
+  propsDefinition,
+  useSchoolUserProfileSetup,
+} from './UserProfile.setup.js';
 
-const props = defineProps({
-  profile: {
-    type: Object,
-    required: true,
-  },
-  avatarSrc: {
-    type: String,
-    required: true,
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-  isRefreshingToken: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = defineProps(propsDefinition);
+const emit = defineEmits(emitsDefinition);
 
-const emit = defineEmits(['generate']);
-
-const { shouldShowAvatar, getInitials, handleImageError, handleGenerate } = useSchoolProfileLogic(
-  props,
-  emit
-);
+const { shouldShowAvatar, getInitials, handleImageError, handleGenerate } =
+  useSchoolUserProfileSetup({ props, emit });
 </script>

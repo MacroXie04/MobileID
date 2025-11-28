@@ -37,7 +37,13 @@ def csv_env(key, default_list=None):
 SECRET_KEY = env("SECRET_KEY", "dev-secret")
 
 # Test environment detection
+# Check environment variable first, then fall back to sys.argv check
 TESTING = os.getenv("TESTING", "False").lower() == "true"
+if not TESTING:
+    # Also detect if running via Django test command
+    import sys
+
+    TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 
 INSTALLED_APPS = [
     # index app
@@ -338,17 +344,19 @@ SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on each request
 # Default to disabling throttles in development (when DEBUG=True) unless testing.
 # Can be overridden with DISABLE_THROTTLES environment variable.
 # Production overrides this in prod.py.
-throttle_setting = env("DISABLE_THROTTLES")
-if throttle_setting not in (None, ""):
-    DISABLE_THROTTLES = throttle_setting.lower() == "true"
-elif TESTING:
-    # Always keep throttles enabled when running tests so security behavior
-    # remains covered.
+# Note: TESTING takes precedence - when running tests, throttles are always enabled
+# to ensure security behavior is properly covered.
+if TESTING:
+    # Always keep throttles enabled when running tests
     DISABLE_THROTTLES = False
 else:
-    # Default to True (disable throttles) for development
-    # Production should override this in prod.py
-    DISABLE_THROTTLES = True
+    throttle_setting = env("DISABLE_THROTTLES")
+    if throttle_setting not in (None, ""):
+        DISABLE_THROTTLES = throttle_setting.lower() == "true"
+    else:
+        # Default to True (disable throttles) for development
+        # Production should override this in prod.py
+        DISABLE_THROTTLES = True
 THROTTLES_ENABLED = not DISABLE_THROTTLES
 
 # CORS settings

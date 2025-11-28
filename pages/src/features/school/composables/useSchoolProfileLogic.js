@@ -1,5 +1,5 @@
 import { computed, ref, toRefs } from 'vue';
-import { getInitials } from '@user/utils/profileUtils.js';
+import { getInitials } from '@shared/utils/profileUtils.js';
 
 export function useSchoolProfileLogic(props, emit) {
   const { avatarSrc } = toRefs(props);

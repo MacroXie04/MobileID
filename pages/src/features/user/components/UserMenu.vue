@@ -16,25 +16,9 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router';
+import { emitsDefinition, useUserMenuSetup } from './UserMenu.setup.js';
 
-// Material Web Components
-import '@material/web/icon/icon.js';
-import '@material/web/list/list.js';
-import '@material/web/list/list-item.js';
-import '@material/web/divider/divider.js';
+const emit = defineEmits(emitsDefinition);
 
-// CSS
-import '@/assets/styles/user/user-merged.css';
-
-const router = useRouter();
-const emit = defineEmits(['logout']);
-
-function handleEditProfile() {
-  router.push('/profile/edit');
-}
-
-function handleLogout() {
-  emit('logout');
-}
+const { handleEditProfile, handleLogout } = useUserMenuSetup({ emit });
 </script>

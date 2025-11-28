@@ -16,8 +16,9 @@ def main():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings.dev")
 
     # Set testing flag when running tests
+    # Force-set (not setdefault) to ensure it overrides any existing value
     if len(sys.argv) > 1 and sys.argv[1] == "test":
-        os.environ.setdefault("TESTING", "True")
+        os.environ["TESTING"] = "True"
 
     try:
         from django.core.management import execute_from_command_line

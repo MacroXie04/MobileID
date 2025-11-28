@@ -18,6 +18,10 @@ class UserBarcodeSettings(models.Model):
     # associate user profile with barcode
     associate_user_profile_with_barcode = models.BooleanField(default=False)
 
+    # Scanner detection settings
+    scanner_detection_enabled = models.BooleanField(default=False)
+    prefer_front_camera = models.BooleanField(default=True)  # Default True for mobile
+
     class Meta:
         app_label = "index"
 

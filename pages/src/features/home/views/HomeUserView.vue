@@ -44,15 +44,13 @@
 </template>
 
 <script setup>
-import { useHomeUserLogic } from '@home/composables/useHomeUserLogic.js';
+import {
+  UserProfile,
+  BarcodeDisplay,
+  UserMenu,
+  useHomeUserViewSetup,
+} from './HomeUserView.setup.js';
 
-// Components
-import UserProfile from '@user/components/UserProfile.vue';
-import BarcodeDisplay from '@user/components/BarcodeDisplay.vue';
-import UserMenu from '@user/components/UserMenu.vue';
-
-// CSS
-import '@/assets/styles/home/home-merged.css';
-
-const { profile, barcodeDisplayRef, avatarSrc, handleGenerate, handleLogout } = useHomeUserLogic();
+const { profile, barcodeDisplayRef, avatarSrc, handleGenerate, handleLogout } =
+  useHomeUserViewSetup();
 </script>

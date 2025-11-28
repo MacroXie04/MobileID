@@ -29,23 +29,9 @@
 </template>
 
 <script setup>
-import { useUserProfileComponentLogic } from '@user/composables/useUserProfileComponentLogic.js';
+import { propsDefinition, useUserProfileSetup } from './UserProfile.setup.js';
 
-// CSS
-import '@/assets/styles/user/user-merged.css';
+const props = defineProps(propsDefinition);
 
-// Props
-const props = defineProps({
-  profile: {
-    type: Object,
-    default: () => ({}),
-  },
-  avatarSrc: {
-    type: String,
-    default: '',
-  },
-});
-
-const { showInitials, avatarUrl, getInitials, handleImageError } =
-  useUserProfileComponentLogic(props);
+const { showInitials, avatarUrl, getInitials, handleImageError } = useUserProfileSetup({ props });
 </script>

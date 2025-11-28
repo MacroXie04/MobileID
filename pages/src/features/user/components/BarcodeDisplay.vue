@@ -47,22 +47,10 @@
 </template>
 
 <script setup>
-import '@material/web/button/elevated-button.js';
-import '@material/web/icon/icon.js';
-import '@material/web/progress/circular-progress.js';
-import '@material/web/progress/linear-progress.js';
-import '@material/web/ripple/ripple.js';
+import { emitsDefinition, useUserBarcodeDisplaySetup } from './BarcodeDisplay.setup.js';
 
-import { useBarcodeDisplay } from '@dashboard/composables/barcode/useBarcodeDisplay.js';
-import { usePdf417 } from '@dashboard/composables/barcode/usePdf417.js';
+const emit = defineEmits(emitsDefinition);
 
-// CSS
-import '@/assets/styles/user/user-merged.css';
-
-// Emits
-const emit = defineEmits(['generate']);
-
-// Use composables
 const {
   isProcessing,
   successMessage,
@@ -73,34 +61,9 @@ const {
   showProgressBar,
   buttonIcon,
   clearBarcodeContainer,
-  resetUI,
-  startProcessing,
-  showSuccess,
-  showError,
-} = useBarcodeDisplay();
+  handleGenerate,
+  exposeBindings,
+} = useUserBarcodeDisplaySetup({ emit });
 
-const { drawPdf417ToContainer } = usePdf417();
-
-// Handle generate button click
-function handleGenerate() {
-  if (isProcessing.value) return;
-  emit('generate');
-}
-
-// Draw PDF417 barcode
-function drawPDF417(data) {
-  drawPdf417ToContainer('barcode-container', data, {
-    moduleWidth: 2.5,
-    moduleHeight: 1,
-  });
-}
-
-// Expose to parent
-defineExpose({
-  startProcessing,
-  showSuccess,
-  showError,
-  drawPDF417,
-  resetUI,
-});
+defineExpose(exposeBindings || {});
 </script>

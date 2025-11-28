@@ -31,6 +31,8 @@ export function useDashboardLogic() {
   const settings = ref({
     associate_user_profile_with_barcode: false,
     server_verification: false,
+    scanner_detection_enabled: false,
+    prefer_front_camera: true,
     barcode: null,
   });
   const pullSettings = ref({
@@ -172,6 +174,8 @@ export function useDashboardLogic() {
       settings.value = {
         associate_user_profile_with_barcode: false,
         server_verification: false,
+        scanner_detection_enabled: false,
+        prefer_front_camera: true,
         barcode: null,
       };
       pullSettings.value = {
@@ -191,6 +195,11 @@ export function useDashboardLogic() {
           data.settings.associate_user_profile_with_barcode
         ),
         server_verification: Boolean(data.settings.server_verification),
+        scanner_detection_enabled: Boolean(data.settings.scanner_detection_enabled),
+        prefer_front_camera:
+          data.settings.prefer_front_camera !== undefined
+            ? Boolean(data.settings.prefer_front_camera)
+            : true,
         barcode: data.settings.barcode ? Number(data.settings.barcode) : null,
       };
 
@@ -251,6 +260,15 @@ export function useDashboardLogic() {
           settings.value.associate_user_profile_with_barcode = Boolean(
             response.settings.associate_user_profile_with_barcode
           );
+        }
+        // Update scanner detection settings from backend
+        if (response.settings && response.settings.scanner_detection_enabled !== undefined) {
+          settings.value.scanner_detection_enabled = Boolean(
+            response.settings.scanner_detection_enabled
+          );
+        }
+        if (response.settings && response.settings.prefer_front_camera !== undefined) {
+          settings.value.prefer_front_camera = Boolean(response.settings.prefer_front_camera);
         }
         // Update pull settings from backend
         if (response.pull_settings) {
