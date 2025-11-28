@@ -1,5 +1,28 @@
 /* Page-specific styles for BarcodeDashboard.vue - minimal overrides only */
 
+/* Prevent horizontal scroll on the dashboard page */
+.md-layout-container {
+  overflow-x: hidden;
+}
+
+.md-content {
+  overflow-x: hidden;
+}
+
+/* Allow horizontal scroll only on tabs bar */
+.tabs-bar {
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ============================================
    Unified Dashboard Card Styles
    ============================================ */
