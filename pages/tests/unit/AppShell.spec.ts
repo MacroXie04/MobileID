@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
-import App from '@/App.vue';
+import App from '@/app/App.vue';
 
 describe('App shell', () => {
   it('renders the router outlet shell', () => {
