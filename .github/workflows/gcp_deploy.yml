@@ -99,7 +99,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           deployment-id: ${{ steps.create_deploy.outputs.deployment_id }}
           state: success
-          environment-url: https://${{ env.SERVICE_NAME }}-${{ env.REGION }}.a.run.app
+          environment-url: ${{ steps.deploy_cloudrun.outputs.url }}
           description: "MobileID Backend successfully deployed to Cloud Run"
 
       - name: Mark Deployment Failure
