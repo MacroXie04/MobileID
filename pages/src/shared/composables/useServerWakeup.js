@@ -241,4 +241,3 @@ export function useServerWakeup() {
     triggerWakeup,
   };
 }
-

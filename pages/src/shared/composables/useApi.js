@@ -92,7 +92,9 @@ export function useApi() {
 
       // Check for server unavailable errors (502, 503, 504)
       if (res.status === 502 || res.status === 503 || res.status === 504) {
-        console.log('Server error detected (status: ' + res.status + '), triggering wakeup overlay');
+        console.log(
+          'Server error detected (status: ' + res.status + '), triggering wakeup overlay'
+        );
         triggerWakeup();
         throw new Error('Server unavailable - wakeup triggered');
       }
@@ -128,8 +130,7 @@ export function useApi() {
         error?.message?.includes('ERR_CONNECTION_REFUSED');
 
       // HTTP 502/503/504 errors indicate server is unavailable
-      const isServerError =
-        error?.status === 502 || error?.status === 503 || error?.status === 504;
+      const isServerError = error?.status === 502 || error?.status === 503 || error?.status === 504;
 
       if (isServerUnavailable || isServerError) {
         console.log('Server unavailable detected, triggering wakeup overlay');

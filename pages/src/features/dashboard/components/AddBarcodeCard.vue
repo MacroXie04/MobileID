@@ -2,7 +2,7 @@
   <section ref="addSectionLocal" class="dashboard-card">
     <div class="card-header">
       <div class="header-icon-wrapper">
-      <md-icon>add_circle</md-icon>
+        <md-icon>add_circle</md-icon>
       </div>
       <h2 class="md-typescale-headline-small">Add New Barcode</h2>
     </div>

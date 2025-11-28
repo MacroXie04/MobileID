@@ -13,12 +13,20 @@
     <canvas v-if="scannerDetectionEnabled" ref="detectionCanvas" class="hidden-canvas"></canvas>
 
     <!-- Barcode Display -->
-    <div id="qrcode-div" class="barcode-canvas-container" :style="{ display: showBarcode ? 'block' : 'none' }">
+    <div
+      id="qrcode-div"
+      class="barcode-canvas-container"
+      :style="{ display: showBarcode ? 'block' : 'none' }"
+    >
       <canvas ref="barcodeCanvas" class="pdf417"></canvas>
     </div>
 
     <!-- Progress Bar -->
-    <div id="qrcode-code" class="barcode-progress-container" :style="{ display: showBarcode ? 'block' : 'none' }">
+    <div
+      id="qrcode-code"
+      class="barcode-progress-container"
+      :style="{ display: showBarcode ? 'block' : 'none' }"
+    >
       <div class="progress">
         <div
           id="progress-bar"

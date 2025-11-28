@@ -351,7 +351,11 @@
 
 .barcode-card.is-active {
   border-color: var(--md-sys-color-primary);
-  background: color-mix(in srgb, var(--md-sys-color-primary-container) 25%, var(--md-sys-color-surface) 75%);
+  background: color-mix(
+    in srgb,
+    var(--md-sys-color-primary-container) 25%,
+    var(--md-sys-color-surface) 75%
+  );
 }
 
 .barcode-card.is-active .barcode-type-icon {

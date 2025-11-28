@@ -20,10 +20,14 @@
         </div>
         <div class="permission-banner-content">
           <span class="permission-banner-title">Camera Permission Required</span>
-          <span class="permission-banner-desc">Grant camera access to enable scanner detection</span>
+          <span class="permission-banner-desc"
+            >Grant camera access to enable scanner detection</span
+          >
         </div>
         <md-filled-tonal-button @click="requestCameraPermission" :disabled="isRequestingPermission">
-          <md-icon slot="icon">{{ isRequestingPermission ? 'hourglass_empty' : 'videocam' }}</md-icon>
+          <md-icon slot="icon">{{
+            isRequestingPermission ? 'hourglass_empty' : 'videocam'
+          }}</md-icon>
           {{ isRequestingPermission ? 'Requesting...' : 'Allow' }}
         </md-filled-tonal-button>
       </div>
@@ -41,9 +45,7 @@
             <md-icon>videocam</md-icon>
           </div>
           <h3 class="permission-title">Camera Access Required</h3>
-          <p class="permission-desc">
-            Allow camera access to test scanner detection.
-          </p>
+          <p class="permission-desc">Allow camera access to test scanner detection.</p>
           <md-filled-button @click="requestCameraPermission">
             <md-icon slot="icon">check</md-icon>
             Allow Camera
@@ -62,9 +64,7 @@
             <md-icon>videocam_off</md-icon>
           </div>
           <h3 class="permission-title">Access Denied</h3>
-          <p class="permission-desc">
-            Enable camera in browser settings.
-          </p>
+          <p class="permission-desc">Enable camera in browser settings.</p>
           <md-outlined-button @click="requestCameraPermission">
             <md-icon slot="icon">refresh</md-icon>
             Retry
@@ -74,13 +74,7 @@
         <!-- Camera Preview -->
         <template v-else>
           <div class="camera-wrapper" :class="{ active: isDetectionActive }">
-            <video
-              ref="videoElement"
-              class="camera-video"
-              autoplay
-              playsinline
-              muted
-            ></video>
+            <video ref="videoElement" class="camera-video" autoplay playsinline muted></video>
             <canvas ref="detectionCanvas" class="detection-canvas"></canvas>
 
             <!-- Status Badge -->
@@ -102,10 +96,7 @@
 
           <!-- Controls -->
           <div class="camera-controls">
-            <md-filled-tonal-button
-              :disabled="isModelLoading"
-              @click="toggleDetection"
-            >
+            <md-filled-tonal-button :disabled="isModelLoading" @click="toggleDetection">
               <md-icon slot="icon">{{ isDetectionActive ? 'stop' : 'play_arrow' }}</md-icon>
               {{ isDetectionActive ? 'Stop' : 'Start Test' }}
             </md-filled-tonal-button>
@@ -131,7 +122,11 @@
           <md-icon slot="start">sensors</md-icon>
           <div slot="headline">Enable Scanner Detection</div>
           <div slot="supporting-text">
-            {{ hasCameraPermission ? 'Auto-display barcode when scanner is detected' : 'Camera permission required to enable this feature' }}
+            {{
+              hasCameraPermission
+                ? 'Auto-display barcode when scanner is detected'
+                : 'Camera permission required to enable this feature'
+            }}
           </div>
           <div slot="end">
             <md-switch
@@ -144,11 +139,17 @@
 
         <md-divider inset></md-divider>
 
-        <md-list-item :class="{ 'disabled-item': !scannerDetectionEnabled || !hasCameraPermission }">
+        <md-list-item
+          :class="{ 'disabled-item': !scannerDetectionEnabled || !hasCameraPermission }"
+        >
           <md-icon slot="start">videocam</md-icon>
           <div slot="headline">Default Camera</div>
           <div slot="supporting-text">
-            {{ cameras.length > 0 ? 'Select which camera to use for detection' : 'No cameras available' }}
+            {{
+              cameras.length > 0
+                ? 'Select which camera to use for detection'
+                : 'No cameras available'
+            }}
           </div>
           <div slot="end">
             <md-outlined-select

@@ -4,7 +4,7 @@ Tests for API throttling configuration.
 
 from django.conf import settings
 from django.core.cache import cache
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from rest_framework.test import APITestCase
 
 
@@ -126,7 +126,7 @@ class ThrottleCacheTest(TestCase):
         cache.set(key, 0, timeout=60)
 
         # Simulate throttle count increment
-        for i in range(5):
+        for _ in range(5):
             current = cache.get(key, 0)
             cache.set(key, current + 1, timeout=60)
 

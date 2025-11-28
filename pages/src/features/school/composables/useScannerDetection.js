@@ -172,8 +172,7 @@ export function useScannerDetection(options = {}) {
         // Use environment camera or first available
         const backCamera = videoDevices.find(
           (d) =>
-            d.label.toLowerCase().includes('back') ||
-            d.label.toLowerCase().includes('environment')
+            d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment')
         );
         selectedCameraId.value = backCamera?.deviceId || videoDevices[0].deviceId;
       }
@@ -449,4 +448,3 @@ export function useScannerDetection(options = {}) {
     ensureCameraPermission,
   };
 }
-

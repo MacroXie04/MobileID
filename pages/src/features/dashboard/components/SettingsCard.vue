@@ -87,7 +87,11 @@
             <md-icon slot="start">person_pin</md-icon>
             <div slot="headline">Profile Association</div>
             <div slot="supporting-text">
-              {{ currentBarcodeHasProfile ? 'Use profile data from the ID server' : 'Requires barcode with profile data' }}
+              {{
+                currentBarcodeHasProfile
+                  ? 'Use profile data from the ID server'
+                  : 'Requires barcode with profile data'
+              }}
             </div>
             <div slot="end">
               <md-switch
@@ -220,11 +224,7 @@
 </template>
 
 <script setup>
-import {
-  emitsDefinition,
-  propsDefinition,
-  useSettingsCardSetup,
-} from './SettingsCard.setup.js';
+import { emitsDefinition, propsDefinition, useSettingsCardSetup } from './SettingsCard.setup.js';
 
 const props = defineProps(propsDefinition);
 defineEmits(emitsDefinition);

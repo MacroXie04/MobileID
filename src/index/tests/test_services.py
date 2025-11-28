@@ -126,14 +126,18 @@ class BarcodeServiceTest(TestCase):
 
         usage = BarcodeUsage.objects.get(barcode=barcode)
         self.assertEqual(usage.total_usage, 1)
-        self.assertEqual(Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 1)
+        self.assertEqual(
+            Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 1
+        )
 
         # Second usage within 5 minutes - should NOT record anything
         _touch_barcode_usage(barcode, request_user=self.user)
 
         usage.refresh_from_db()
         self.assertEqual(usage.total_usage, 1)  # Still 1, not incremented
-        self.assertEqual(Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 1)
+        self.assertEqual(
+            Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 1
+        )
 
     def test_touch_barcode_usage_after_5_minutes(self):
         """Test that usage after 5 minutes is recorded"""
@@ -158,7 +162,9 @@ class BarcodeServiceTest(TestCase):
 
         usage.refresh_from_db()
         self.assertEqual(usage.total_usage, 2)  # Now 2
-        self.assertEqual(Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 2)
+        self.assertEqual(
+            Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 2
+        )
 
     def test_touch_barcode_usage_different_users_within_5_minutes(self):
         """Test that different users can use the same barcode within 5 minutes"""
@@ -181,19 +187,19 @@ class BarcodeServiceTest(TestCase):
         self.assertEqual(Transaction.objects.filter(barcode_used=barcode).count(), 2)
 
     def test_touch_barcode_usage_no_request_user(self):
-        """Test that usage without request_user still updates BarcodeUsage but no Transaction"""
+        """Test usage without request_user updates BarcodeUsage but no Transaction"""
         barcode = Barcode.objects.create(
             user=self.user, barcode="1234567890123456", barcode_type="Others"
         )
 
-        # Usage without request_user - should update BarcodeUsage but not create Transaction
+        # Usage without request_user - updates BarcodeUsage, no Transaction
         _touch_barcode_usage(barcode, request_user=None)
 
         usage = BarcodeUsage.objects.get(barcode=barcode)
         self.assertEqual(usage.total_usage, 1)
         self.assertEqual(Transaction.objects.filter(barcode_used=barcode).count(), 0)
 
-        # Second call without request_user - should still update (no 5-min check applies)
+        # Second call without request_user - still updates (no 5-min check)
         _touch_barcode_usage(barcode, request_user=None)
 
         usage.refresh_from_db()

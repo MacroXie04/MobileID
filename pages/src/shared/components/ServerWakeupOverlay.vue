@@ -5,11 +5,7 @@
         <div class="wakeup-content">
           <!-- Google Cloud Logo -->
           <div class="wakeup-icon-container">
-            <svg
-              class="google-cloud-logo"
-              viewBox="0 0 256 206"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+            <svg class="google-cloud-logo" viewBox="0 0 256 206" xmlns="http://www.w3.org/2000/svg">
               <!-- Google Cloud hexagon logo -->
               <path
                 d="M170.252 56.819l22.253-22.253 1.483-9.37C153.437-11.677 88.976-7.496 52.42 33.92 42.267 45.427 34.39 58.837 29.253 73.37l7.96-1.107 44.505-7.34 3.436-3.513c19.795-21.742 52.145-24.791 75.098-6.59z"
@@ -70,9 +66,7 @@
           </md-filled-tonal-button>
 
           <!-- Info Text -->
-          <p class="wakeup-info">
-            Cloud Run scales to zero when idle to save resources.
-          </p>
+          <p class="wakeup-info">Cloud Run scales to zero when idle to save resources.</p>
         </div>
       </div>
     </Transition>

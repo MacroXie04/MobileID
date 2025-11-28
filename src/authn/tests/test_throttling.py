@@ -2,7 +2,6 @@ import copy
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
-from django.http import HttpRequest
 from django.test import SimpleTestCase, TestCase, override_settings
 
 from authn.throttling import (
