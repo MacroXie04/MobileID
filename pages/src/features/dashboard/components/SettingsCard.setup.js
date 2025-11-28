@@ -22,11 +22,7 @@ export const propsDefinition = {
   formatDate: { type: Function, required: true },
 };
 
-export const emitsDefinition = [
-  'update-associate',
-  'update-pull-setting',
-  'update-gender-setting',
-];
+export const emitsDefinition = ['update-associate', 'update-pull-setting', 'update-gender-setting'];
 
 export function useSettingsCardSetup({ props } = {}) {
   const componentProps = props ?? {};

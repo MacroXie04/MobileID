@@ -17,20 +17,20 @@
       <div v-if="!hasCameraPermission && !scannerDetectionEnabled" class="permission-banner">
         <div class="permission-banner-icon">
           <md-icon>videocam_off</md-icon>
-          </div>
+        </div>
         <div class="permission-banner-content">
           <span class="permission-banner-title">Camera Permission Required</span>
           <span class="permission-banner-desc"
             >Grant camera access to enable scanner detection</span
           >
-          </div>
+        </div>
         <md-filled-tonal-button :disabled="isRequestingPermission" @click="requestCameraPermission">
           <md-icon slot="icon">{{
             isRequestingPermission ? 'hourglass_empty' : 'videocam'
           }}</md-icon>
           {{ isRequestingPermission ? 'Requesting...' : 'Allow' }}
         </md-filled-tonal-button>
-          </div>
+      </div>
 
       <!-- Camera Preview Section (moved above settings) -->
       <div v-if="scannerDetectionEnabled" class="camera-preview-section">

@@ -12,10 +12,7 @@
         </p>
       </div>
       <transition name="fade">
-        <div
-          v-if="dynamicLoading"
-          class="save-indicator md-flex md-items-center md-gap-2"
-        >
+        <div v-if="dynamicLoading" class="save-indicator md-flex md-items-center md-gap-2">
           <md-circular-progress indeterminate></md-circular-progress>
           <span class="md-typescale-body-small">Processing...</span>
         </div>
@@ -34,10 +31,7 @@
             >Enable camera access to scan barcodes with camera</span
           >
         </div>
-        <md-filled-tonal-button
-          :disabled="isRequestingPermission"
-          @click="requestCameraPermission"
-        >
+        <md-filled-tonal-button :disabled="isRequestingPermission" @click="requestCameraPermission">
           <md-icon slot="icon">{{
             isRequestingPermission ? 'hourglass_empty' : 'videocam'
           }}</md-icon>
@@ -187,9 +181,7 @@
                 </div>
 
                 <div class="md-mt-4">
-                  <label class="md-typescale-body-small select-label"
-                    >Avatar (optional)</label
-                  >
+                  <label class="md-typescale-body-small select-label">Avatar (optional)</label>
                   <textarea
                     v-model="dynamicAvatar"
                     :class="['avatar-textarea', { 'has-error': !!dynamicErrors.avatar }]"
@@ -201,16 +193,14 @@
                     dynamicErrors.avatar
                   }}</span>
                   <span v-else class="helper-text"
-                    >Paste the full img src value (data:image/jpeg;base64,... or data:image/png;base64,...)</span
+                    >Paste the full img src value (data:image/jpeg;base64,... or
+                    data:image/png;base64,...)</span
                   >
                 </div>
               </div>
 
               <div class="form-actions md-flex md-gap-3 md-mt-4">
-                <md-filled-button
-                  :disabled="dynamicLoading"
-                  type="submit"
-                >
+                <md-filled-button :disabled="dynamicLoading" type="submit">
                   <md-icon slot="icon">add</md-icon>
                   Create Dynamic Barcode
                 </md-filled-button>

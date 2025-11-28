@@ -58,6 +58,5 @@
 <script setup>
 import { useServerWakeupOverlaySetup } from './ServerWakeupOverlay.setup.js';
 
-const { isWakingUp, elapsedMs, errorMessage, formatElapsedTime } =
-  useServerWakeupOverlaySetup();
+const { isWakingUp, elapsedMs, errorMessage, formatElapsedTime } = useServerWakeupOverlaySetup();
 </script>

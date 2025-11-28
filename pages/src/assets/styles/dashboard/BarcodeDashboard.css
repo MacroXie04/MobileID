@@ -601,11 +601,11 @@
 
   .barcode-stats-row {
     flex-wrap: wrap;
-  gap: var(--md-sys-spacing-3);
+    gap: var(--md-sys-spacing-3);
   }
 
   .limit-controls-row {
-  flex-wrap: wrap;
+    flex-wrap: wrap;
   }
 
   .limit-presets {

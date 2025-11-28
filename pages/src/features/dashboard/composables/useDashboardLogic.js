@@ -193,7 +193,6 @@ export function useDashboardLogic() {
       barcodes.value = data.barcodes || [];
       isUserGroup.value = Boolean(data.is_user_group);
       isSchoolGroup.value = Boolean(data.is_school_group);
-
     } catch (error) {
       showMessage('Failed to load dashboard: ' + error.message, 'danger');
     } finally {
