@@ -30,7 +30,10 @@ export function useApi() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch(url, {
+      // Prepend baseURL if url doesn't start with http
+      const fullUrl = url.startsWith('http') ? url : `${baseURL}${url}`;
+
+      const res = await fetch(fullUrl, {
         credentials: 'include',
         headers,
         signal: controller.signal,
@@ -51,7 +54,7 @@ export function useApi() {
 
       if (import.meta.env?.MODE !== 'production') {
         // Avoid logging sensitive payloads; show status only in dev.
-        console.debug(`API ${res.status} ${url}`);
+        console.debug(`API ${res.status} ${fullUrl}`);
       }
 
       // Check if it is an authentication error
@@ -223,16 +226,12 @@ export function useApi() {
   }
 
   /**
-   * Transfer CatCard API call
+   * Create dynamic barcode with profile information
    */
-  async function apiTransferCatCard(cookies) {
-    return await apiCallWithAutoRefresh(`${baseURL}/transfer/`, {
+  async function apiCreateDynamicBarcodeWithProfile(data) {
+    return await apiCallWithAutoRefresh(`${baseURL}/dynamic_barcode/`, {
       method: 'POST',
-      body: JSON.stringify({
-        cookies: cookies,
-        page: 'https://icatcard.ucmerced.edu/mobileid/',
-        ts: Date.now(),
-      }),
+      body: JSON.stringify(data),
     });
   }
 
@@ -244,8 +243,8 @@ export function useApi() {
     apiUpdateBarcodeSettings,
     apiCreateBarcode,
     apiDeleteBarcode,
-    apiTransferCatCard,
     apiUpdateBarcodeShare,
     apiUpdateBarcodeDailyLimit,
+    apiCreateDynamicBarcodeWithProfile,
   };
 }

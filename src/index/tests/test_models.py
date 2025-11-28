@@ -130,13 +130,11 @@ class UserBarcodeSettingsModelTest(TestCase):
         settings = UserBarcodeSettings.objects.create(
             user=self.user,
             barcode=self.barcode,
-            server_verification=True,
             associate_user_profile_with_barcode=True,
         )
 
         self.assertEqual(settings.user, self.user)
         self.assertEqual(settings.barcode, self.barcode)
-        self.assertTrue(settings.server_verification)
         self.assertTrue(settings.associate_user_profile_with_barcode)
 
     def test_user_barcode_settings_str_representation(self):
@@ -152,7 +150,6 @@ class UserBarcodeSettingsModelTest(TestCase):
         """Test default values for UserBarcodeSettings"""
         settings = UserBarcodeSettings.objects.create(user=self.user)
 
-        self.assertFalse(settings.server_verification)
         self.assertFalse(settings.associate_user_profile_with_barcode)
         self.assertIsNone(settings.barcode)
 

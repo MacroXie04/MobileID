@@ -101,20 +101,6 @@
               ></md-switch>
             </div>
           </md-list-item>
-
-          <md-divider inset></md-divider>
-
-          <md-list-item>
-            <md-icon slot="start">security</md-icon>
-            <div slot="headline">Server Verification</div>
-            <div slot="supporting-text">Validate on server (may take longer or fail)</div>
-            <div slot="end">
-              <md-switch
-                :selected="serverVerification"
-                @change="(e) => $emit('update-server', e.target.selected)"
-              ></md-switch>
-            </div>
-          </md-list-item>
         </md-list>
       </div>
 

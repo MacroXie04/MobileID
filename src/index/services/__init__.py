@@ -6,7 +6,6 @@ from .barcode import (
     generate_barcode,
     generate_unique_identification_barcode,
 )
-from .cookie import ProcessedCookie, process_user_cookie
 
 __all__ = [
     # Barcode constants
@@ -17,7 +16,4 @@ __all__ = [
     # Barcode functions
     "generate_barcode",
     "generate_unique_identification_barcode",
-    # Cookie classes and functions
-    "ProcessedCookie",
-    "process_user_cookie",
 ]

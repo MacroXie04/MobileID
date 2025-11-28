@@ -18,14 +18,12 @@ export const propsDefinition = {
   currentBarcodeHasProfile: { type: Boolean, default: false },
   errors: { type: Object, default: () => ({}) },
   associateUserProfileWithBarcode: { type: Boolean, default: false },
-  serverVerification: { type: Boolean, default: false },
   formatRelativeTime: { type: Function, required: true },
   formatDate: { type: Function, required: true },
 };
 
 export const emitsDefinition = [
   'update-associate',
-  'update-server',
   'update-pull-setting',
   'update-gender-setting',
 ];

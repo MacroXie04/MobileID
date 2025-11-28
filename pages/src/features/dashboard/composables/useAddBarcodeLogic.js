@@ -3,12 +3,16 @@ import { useApi } from '@shared/composables/useApi';
 import { useBarcodeScanner } from '@dashboard/composables/barcode/useBarcodeScanner.js';
 
 export function useAddBarcodeLogic(emit) {
-  const { apiCreateBarcode, apiTransferCatCard } = useApi();
+  const { apiCreateBarcode, apiCreateDynamicBarcodeWithProfile } = useApi();
 
   // Barcode state
   const addSectionLocal = ref(null);
   const newBarcode = ref('');
   const errors = ref({});
+
+  // Permission state
+  const isRequestingPermission = ref(false);
+  const permissionDenied = ref(false);
 
   // Scanner composable
   const {
@@ -19,6 +23,8 @@ export function useAddBarcodeLogic(emit) {
     cameras,
     selectedCameraId,
     toggleScanner,
+    hasCameraPermission,
+    ensureCameraPermission,
   } = useBarcodeScanner({
     onScan: (code) => {
       newBarcode.value = code;
@@ -29,13 +35,34 @@ export function useAddBarcodeLogic(emit) {
     },
   });
 
-  // Transfer state
-  const transferCookie = ref('');
-  const transferLoading = ref(false);
-  const transferSuccess = ref(false);
-  const transferSuccessMessage = ref('');
-  const transferError = ref('');
-  const transferErrors = ref({});
+  // Request camera permission
+  async function requestCameraPermission() {
+    isRequestingPermission.value = true;
+    permissionDenied.value = false;
+    try {
+      const granted = await ensureCameraPermission();
+      if (!granted) {
+        permissionDenied.value = true;
+      }
+    } catch (error) {
+      console.error('Permission request error:', error);
+      permissionDenied.value = true;
+    } finally {
+      isRequestingPermission.value = false;
+    }
+  }
+
+  // Dynamic barcode with profile state
+  const dynamicBarcode = ref('');
+  const dynamicName = ref('');
+  const dynamicInformationId = ref('');
+  const dynamicGender = ref('Unknow');
+  const dynamicAvatar = ref('');
+  const dynamicLoading = ref(false);
+  const dynamicSuccess = ref(false);
+  const dynamicSuccessMessage = ref('');
+  const dynamicError = ref('');
+  const dynamicErrors = ref({});
 
   function clearError(field) {
     delete errors.value[field];
@@ -73,46 +100,111 @@ export function useAddBarcodeLogic(emit) {
     }
   }
 
-  function clearTransferError(field) {
-    delete transferErrors.value[field];
-    transferError.value = '';
-    transferSuccess.value = false;
-    transferSuccessMessage.value = '';
+  function clearDynamicError(field) {
+    delete dynamicErrors.value[field];
+    dynamicError.value = '';
+    dynamicSuccess.value = false;
+    dynamicSuccessMessage.value = '';
   }
 
-  async function requestTransferCode() {
+  async function createDynamicBarcode() {
     try {
-      transferError.value = '';
-      transferSuccess.value = false;
-      transferSuccessMessage.value = '';
-      transferErrors.value = {};
+      dynamicError.value = '';
+      dynamicSuccess.value = false;
+      dynamicSuccessMessage.value = '';
+      dynamicErrors.value = {};
 
-      if (!transferCookie.value || !transferCookie.value.trim()) {
-        transferErrors.value.cookie = 'Cookie is required';
-        return;
+      // Validate required fields
+      let hasError = false;
+      if (!dynamicBarcode.value || !dynamicBarcode.value.trim()) {
+        dynamicErrors.value.barcode = 'Barcode is required';
+        hasError = true;
+      } else {
+        const barcodeValue = dynamicBarcode.value.trim();
+        if (!/^\d+$/.test(barcodeValue)) {
+          dynamicErrors.value.barcode = 'Barcode must contain only digits';
+          hasError = true;
+        } else if (barcodeValue.length !== 14) {
+          dynamicErrors.value.barcode = 'Barcode must be exactly 14 digits';
+          hasError = true;
+        }
       }
 
-      transferLoading.value = true;
+      if (!dynamicName.value || !dynamicName.value.trim()) {
+        dynamicErrors.value.name = 'Name is required';
+        hasError = true;
+      }
 
-      const data = await apiTransferCatCard(transferCookie.value);
+      if (!dynamicInformationId.value || !dynamicInformationId.value.trim()) {
+        dynamicErrors.value.information_id = 'Student ID is required';
+        hasError = true;
+      }
 
-      if (data && data.success) {
-        transferSuccess.value = true;
-        transferSuccessMessage.value = data.message || 'Barcode data stored successfully!';
-        transferCookie.value = '';
-        emit('message', transferSuccessMessage.value, 'success');
+      if (hasError) return;
+
+      dynamicLoading.value = true;
+
+      // Build request data
+      const requestData = {
+        barcode: dynamicBarcode.value.trim(),
+        name: dynamicName.value.trim(),
+        information_id: dynamicInformationId.value.trim(),
+        gender: dynamicGender.value,
+      };
+
+      // Include avatar if provided
+      if (dynamicAvatar.value && dynamicAvatar.value.trim()) {
+        requestData.avatar = dynamicAvatar.value.trim();
+      }
+
+      const data = await apiCreateDynamicBarcodeWithProfile(requestData);
+
+      if (data && data.status === 'success') {
+        dynamicSuccess.value = true;
+        dynamicSuccessMessage.value =
+          data.message || 'Dynamic barcode with profile created successfully!';
+        // Clear form
+        dynamicBarcode.value = '';
+        dynamicName.value = '';
+        dynamicInformationId.value = '';
+        dynamicGender.value = 'Unknow';
+        dynamicAvatar.value = '';
+        emit('message', dynamicSuccessMessage.value, 'success');
         emit('added');
       } else {
-        transferError.value = data?.error || 'Transfer failed.';
+        dynamicError.value = data?.message || 'Failed to create dynamic barcode';
       }
     } catch (error) {
       if (error.status === 400 && error.errors) {
-        transferError.value = error.message || 'Invalid request';
+        // Handle field-specific errors
+        if (error.errors.barcode) {
+          dynamicErrors.value.barcode = Array.isArray(error.errors.barcode)
+            ? error.errors.barcode[0]
+            : error.errors.barcode;
+        }
+        if (error.errors.name) {
+          dynamicErrors.value.name = Array.isArray(error.errors.name)
+            ? error.errors.name[0]
+            : error.errors.name;
+        }
+        if (error.errors.information_id) {
+          dynamicErrors.value.information_id = Array.isArray(error.errors.information_id)
+            ? error.errors.information_id[0]
+            : error.errors.information_id;
+        }
+        if (error.errors.avatar) {
+          dynamicErrors.value.avatar = Array.isArray(error.errors.avatar)
+            ? error.errors.avatar[0]
+            : error.errors.avatar;
+        }
+        dynamicError.value = error.message || 'Invalid request';
+      } else if (error.status === 403) {
+        dynamicError.value = 'Only School group users can create dynamic barcodes';
       } else {
-        transferError.value = error.message || 'Network error occurred';
+        dynamicError.value = error.message || 'Network error occurred';
       }
     } finally {
-      transferLoading.value = false;
+      dynamicLoading.value = false;
     }
   }
 
@@ -120,12 +212,18 @@ export function useAddBarcodeLogic(emit) {
     addSectionLocal,
     newBarcode,
     errors,
-    transferCookie,
-    transferLoading,
-    transferSuccess,
-    transferSuccessMessage,
-    transferError,
-    transferErrors,
+    // Dynamic barcode with profile
+    dynamicBarcode,
+    dynamicName,
+    dynamicInformationId,
+    dynamicGender,
+    dynamicAvatar,
+    dynamicLoading,
+    dynamicSuccess,
+    dynamicSuccessMessage,
+    dynamicError,
+    dynamicErrors,
+    // Scanner
     showScanner,
     scanning,
     scannerStatus,
@@ -133,9 +231,15 @@ export function useAddBarcodeLogic(emit) {
     cameras,
     selectedCameraId,
     toggleScanner,
+    // Camera permission
+    hasCameraPermission,
+    isRequestingPermission,
+    permissionDenied,
+    requestCameraPermission,
+    // Methods
     clearError,
     addBarcode,
-    clearTransferError,
-    requestTransferCode,
+    clearDynamicError,
+    createDynamicBarcode,
   };
 }

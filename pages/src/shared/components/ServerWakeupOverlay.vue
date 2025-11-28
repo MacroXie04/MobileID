@@ -24,28 +24,23 @@
                 fill="#FBBC05"
               />
             </svg>
-            <!-- Pulse rings -->
+            <!-- Google four-color pulse rings -->
             <div class="pulse-ring pulse-ring-1"></div>
             <div class="pulse-ring pulse-ring-2"></div>
             <div class="pulse-ring pulse-ring-3"></div>
+            <div class="pulse-ring pulse-ring-4"></div>
           </div>
 
           <!-- Status Text -->
           <h2 class="wakeup-title">Connecting to Google Cloud Run</h2>
-          <p class="wakeup-subtitle">
-            Google Cloud Run is connecting. This usually takes a few seconds.
-          </p>
 
-          <!-- Google-style colored dots -->
-          <div class="google-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
+          <!-- Google-style progress bar -->
+          <div class="google-progress-container">
+            <div class="google-progress-bar"></div>
           </div>
 
           <!-- Elapsed Time -->
-          <p class="wakeup-elapsed">{{ formatElapsedTime(elapsedSeconds) }}</p>
+          <p class="wakeup-elapsed">{{ formatElapsedTime(elapsedMs) }}</p>
 
           <!-- Error Message -->
           <Transition name="error-fade">
@@ -54,19 +49,6 @@
               <span>{{ errorMessage }}</span>
             </div>
           </Transition>
-
-          <!-- Retry Button -->
-          <md-filled-tonal-button
-            class="wakeup-retry-btn"
-            :disabled="isChecking"
-            @click="handleRetry"
-          >
-            <md-icon slot="icon">refresh</md-icon>
-            {{ isChecking ? 'Connecting...' : 'Try again' }}
-          </md-filled-tonal-button>
-
-          <!-- Info Text -->
-          <p class="wakeup-info">Cloud Run scales to zero when idle to save resources.</p>
         </div>
       </div>
     </Transition>
@@ -76,6 +58,6 @@
 <script setup>
 import { useServerWakeupOverlaySetup } from './ServerWakeupOverlay.setup.js';
 
-const { isWakingUp, isChecking, elapsedSeconds, errorMessage, formatElapsedTime, handleRetry } =
+const { isWakingUp, isChecking, elapsedMs, errorMessage, formatElapsedTime, handleRetry } =
   useServerWakeupOverlaySetup();
 </script>

@@ -4,7 +4,7 @@
     <header class="md-top-app-bar">
       <div class="md-top-app-bar-content">
         <div class="header-title">
-          <h3 class="md-typescale-title-medium md-m-0">Barcode Dashboard</h3>
+          <h3 class="md-typescale-title-medium md-m-0">MobileID Dashboard</h3>
         </div>
         <md-filled-tonal-button @click="router.push('/')">
           <md-icon slot="icon">arrow_back</md-icon>
@@ -53,10 +53,16 @@
             Available Barcodes
           </md-filter-chip>
         </div>
+        <div class="chip-wrapper" @click="setTab('Devices')">
+          <md-filter-chip :selected="activeTab === 'Devices'">
+            <md-icon slot="icon">devices</md-icon>
+            Devices Management
+          </md-filter-chip>
+        </div>
         <div class="chip-wrapper" @click="setTab('Add')">
           <md-filter-chip :selected="activeTab === 'Add'">
             <md-icon slot="icon">add_circle</md-icon>
-            Transfer & Add
+            Add Barcode
           </md-filter-chip>
         </div>
       </div>
@@ -76,17 +82,10 @@
         :is-user-group="isUserGroup"
         :pull-settings="pullSettings"
         :selected-barcode="selectedBarcode"
-        :server-verification="Boolean(settings.server_verification)"
         :settings="settings"
         @update-associate="
           (val) => {
             settings.associate_user_profile_with_barcode = val;
-            onSettingChange();
-          }
-        "
-        @update-server="
-          (val) => {
-            settings.server_verification = val;
             onSettingChange();
           }
         "
@@ -154,11 +153,9 @@
         @added="loadDashboard"
         @message="showMessage"
       />
-      <!-- Floating Action Button to Add -->
-      <md-fab style="position: fixed; right: 24px; bottom: 24px; z-index: 10" @click="goToAddTab">
-        <md-icon slot="icon">add</md-icon>
-        <div slot="label">Add Barcode</div>
-      </md-fab>
+
+      <!-- Devices Section -->
+      <DevicesCard v-show="activeTab === 'Devices'" />
     </main>
 
     <!-- Delete Confirmation Dialog -->
@@ -183,6 +180,7 @@ import {
   CameraSettingsCard,
   BarcodesListCard,
   AddBarcodeCard,
+  DevicesCard,
   useBarcodeDashboardViewSetup,
 } from './BarcodeDashboardView.setup.js';
 
@@ -217,7 +215,6 @@ const {
   toggleShare,
   onFilterChange,
   toggleOwned,
-  goToAddTab,
   setTab,
   showMessage,
   updateDailyLimit,

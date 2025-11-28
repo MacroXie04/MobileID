@@ -28,7 +28,6 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
         fields = [
             "barcode",
             "associate_user_profile_with_barcode",
-            "server_verification",
             "scanner_detection_enabled",
             "prefer_front_camera",
             "barcode_choices",

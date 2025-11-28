@@ -2,16 +2,17 @@ import { useServerWakeup } from '@shared/composables/useServerWakeup';
 import '@/assets/styles/shared/server-wakeup.css';
 
 export function useServerWakeupOverlaySetup() {
-  const { isWakingUp, isChecking, elapsedSeconds, errorMessage, retryHealthCheck } =
-    useServerWakeup();
+  const { isWakingUp, isChecking, elapsedMs, errorMessage, retryHealthCheck } = useServerWakeup();
 
   /**
-   * Format elapsed seconds to mm:ss format
+   * Format elapsed milliseconds to mm:ss.cc format (centiseconds)
    */
-  function formatElapsedTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  function formatElapsedTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    const centiseconds = Math.floor((ms % 1000) / 10);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
   }
 
   /**
@@ -24,7 +25,7 @@ export function useServerWakeupOverlaySetup() {
   return {
     isWakingUp,
     isChecking,
-    elapsedSeconds,
+    elapsedMs,
     errorMessage,
     formatElapsedTime,
     handleRetry,

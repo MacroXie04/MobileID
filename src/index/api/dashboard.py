@@ -7,6 +7,7 @@ from index.models import (
 from index.serializers import (
     BarcodeSerializer,
     BarcodeCreateSerializer,
+    DynamicBarcodeWithProfileSerializer,
     UserBarcodeSettingsSerializer,
     UserBarcodePullSettingsSerializer,
 )
@@ -49,7 +50,6 @@ class BarcodeDashboardAPIView(APIView):
             user=user,
             defaults={
                 "barcode": None,
-                "server_verification": False,
                 "associate_user_profile_with_barcode": False,
                 "scanner_detection_enabled": False,
                 "prefer_front_camera": True,
@@ -415,4 +415,52 @@ class BarcodeDashboardAPIView(APIView):
 
         return Response(
             {"status": "success", "message": "Barcode deleted successfully"}
+        )
+
+
+class DynamicBarcodeCreateAPIView(APIView):
+    """
+    API endpoint for creating dynamic barcodes with profile information.
+    Only School group users can use this endpoint.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """Create a new dynamic barcode with profile data"""
+        # Check if user is in School group
+        if not request.user.groups.filter(name="School").exists():
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Only School group users can create dynamic barcodes",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = DynamicBarcodeWithProfileSerializer(
+            data=request.data, context={"request": request}
+        )
+
+        if serializer.is_valid():
+            barcode = serializer.save()
+            # Record a transaction for barcode creation
+            from index.services.transactions import TransactionService
+
+            TransactionService.create_transaction(user=request.user, barcode=barcode)
+
+            return Response(
+                {
+                    "status": "success",
+                    "message": "Dynamic barcode with profile created successfully",
+                    "barcode": BarcodeSerializer(
+                        barcode, context={"request": request}
+                    ).data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(
+            {"status": "error", "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
         )

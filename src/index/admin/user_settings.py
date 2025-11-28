@@ -10,12 +10,14 @@ class UserBarcodeSettingsAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "barcode",
-        "server_verification",
         "associate_user_profile_with_barcode",
+        "scanner_detection_enabled",
+        "prefer_front_camera",
     )
     list_filter = (
-        "server_verification",
         "associate_user_profile_with_barcode",
+        "scanner_detection_enabled",
+        "prefer_front_camera",
     )
     search_fields = ("user__username", "barcode__barcode")
     ordering = ("user__username",)
@@ -28,12 +30,20 @@ class UserBarcodeSettingsAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("user",)}),
         (
-            "Settings",
+            "Barcode Settings",
             {
                 "fields": (
                     "barcode",
-                    "server_verification",
                     "associate_user_profile_with_barcode",
+                )
+            },
+        ),
+        (
+            "Camera Settings",
+            {
+                "fields": (
+                    "scanner_detection_enabled",
+                    "prefer_front_camera",
                 )
             },
         ),

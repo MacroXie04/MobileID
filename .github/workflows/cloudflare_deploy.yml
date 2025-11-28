@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy Frontend to Cloudflare Pages
 
+    environment:
+      name: MobileID Frontend (Production)
+      url: https://mobileid.pages.dev
+
     env:
       VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -49,7 +53,20 @@ jobs:
             echo "Cloudflare Pages project 'mobileid' already exists."
           fi
 
+      # ---------- Create GitHub Deployment ----------
+      - name: Create GitHub Deployment Record
+        id: create_deploy
+        uses: actions/create-deployment@v2
+        with:
+          environment: MobileID Frontend (Production)
+          ref: ${{ github.ref }}
+          description: "Deploying MobileID Frontend to Cloudflare Pages"
+          auto_merge: false
+          transient_environment: false
+
+      # ---------- Deploy to Cloudflare Pages ----------
       - name: Deploy to Cloudflare Pages
+        id: deploy_pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -57,3 +74,21 @@ jobs:
           projectName: mobileid
           directory: ./pages/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------- Report Deployment Status ----------
+      - name: Mark Deployment Success
+        if: success()
+        uses: actions/create-deployment-status@v2
+        with:
+          deployment_id: ${{ steps.create_deploy.outputs.deployment_id }}
+          state: success
+          environment_url: https://mobileid.pages.dev
+          description: "MobileID Frontend successfully deployed to Cloudflare Pages"
+
+      - name: Mark Deployment Failure
+        if: failure()
+        uses: actions/create-deployment-status@v2
+        with:
+          deployment_id: ${{ steps.create_deploy.outputs.deployment_id }}
+          state: failure
+          description: "Cloudflare Pages deployment failed"

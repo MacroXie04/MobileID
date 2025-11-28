@@ -1,6 +1,3 @@
-from types import SimpleNamespace
-from unittest.mock import patch, Mock
-
 from authn.models import UserProfile
 from authn.services.webauthn import create_user_profile
 from django.contrib.auth.models import User, Group
@@ -139,7 +136,6 @@ class BarcodeDashboardAPITest(APITestCase):
         url = reverse("index:api_barcode_dashboard")
         data = {
             "barcode": barcode.id,
-            "server_verification": True,
             "associate_user_profile_with_barcode": False,
         }
 
@@ -151,7 +147,6 @@ class BarcodeDashboardAPITest(APITestCase):
         # Check settings were updated
         settings = UserBarcodeSettings.objects.get(user=self.school_user)
         self.assertEqual(settings.barcode, barcode)
-        self.assertTrue(settings.server_verification)
 
     def test_dashboard_put_create_barcode(self):
         """Test creating new barcode"""
@@ -410,7 +405,7 @@ class BarcodeDashboardAPITest(APITestCase):
         )
 
         url = reverse("index:api_barcode_dashboard")
-        data = {"barcode": barcode.id, "server_verification": True}
+        data = {"barcode": barcode.id}
 
         response = self.client.post(url, data, format="json")
 
@@ -420,7 +415,6 @@ class BarcodeDashboardAPITest(APITestCase):
         # Check settings were updated
         settings = UserBarcodeSettings.objects.get(user=self.school_user)
         self.assertEqual(settings.barcode, barcode)
-        self.assertTrue(settings.server_verification)
 
     def test_dashboard_post_auto_clear_barcode_when_pull_enabled(self):
         """Test that barcode is automatically cleared when pull_setting is enabled"""  # noqa: E501
@@ -433,7 +427,7 @@ class BarcodeDashboardAPITest(APITestCase):
             barcode_type="DynamicBarcode",
         )
         settings = UserBarcodeSettings.objects.create(
-            user=self.school_user, barcode=barcode, server_verification=True
+            user=self.school_user, barcode=barcode
         )
 
         url = reverse("index:api_barcode_dashboard")
@@ -444,7 +438,6 @@ class BarcodeDashboardAPITest(APITestCase):
                 "gender_setting": "Male",
             },
             "barcode": barcode.id,
-            "server_verification": True,
         }
 
         response = self.client.post(url, data, format="json")
@@ -547,63 +540,3 @@ class ActiveProfileAPITest(APITestCase):
             resp.data["profile_info"]["avatar_data"].startswith("data:image")
         )
 
-
-class TransferCatCardAPITest(APITestCase):
-    """Tests for TransferCatCardAPIView"""
-
-    def setUp(self):
-        self.client = APIClient()
-        self.user = User.objects.create_user(
-            username="xferuser", password="testpass123"
-        )
-        group = Group.objects.create(name="School")
-        self.user.groups.add(group)
-        refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
-
-    def test_missing_cookies_returns_400(self):
-        url = reverse("index:api_catcard_transfer")
-        resp = self.client.post(url, {}, format="json")
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-
-    @patch("index.api.transfer.process_user_cookie")
-    def test_warning_for_missing_required_cookie_returns_400(self, mock_process):
-        mock_process.return_value = SimpleNamespace(
-            header_value="Cookie: a=b",
-            warnings=["Missing required cookie session"],
-        )
-        url = reverse("index:api_catcard_transfer")
-        resp = self.client.post(url, {"cookies": "a=b"}, format="json")
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-
-    @patch("index.api.transfer.TransferBarcode")
-    @patch("index.api.transfer.process_user_cookie")
-    def test_success_transfer(self, mock_process, mock_transfer_cls):
-        mock_process.return_value = SimpleNamespace(
-            header_value="Cookie: good", warnings=[]
-        )
-        mock_instance = Mock()
-        mock_instance.transfer_barcode.return_value = SimpleNamespace(
-            status="success", response="ok"
-        )
-        mock_transfer_cls.return_value = mock_instance
-        url = reverse("index:api_catcard_transfer")
-        resp = self.client.post(url, {"cookies": "good"}, format="json")
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertTrue(resp.data["success"])
-
-    @patch("index.api.transfer.TransferBarcode")
-    @patch("index.api.transfer.process_user_cookie")
-    def test_failure_transfer(self, mock_process, mock_transfer_cls):
-        mock_process.return_value = SimpleNamespace(
-            header_value="Cookie: good", warnings=[]
-        )
-        mock_instance = Mock()
-        mock_instance.transfer_barcode.return_value = SimpleNamespace(
-            status="error", error="boom"
-        )
-        mock_transfer_cls.return_value = mock_instance
-        url = reverse("index:api_catcard_transfer")
-        resp = self.client.post(url, {"cookies": "good"}, format="json")
-        self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertFalse(resp.data["success"])

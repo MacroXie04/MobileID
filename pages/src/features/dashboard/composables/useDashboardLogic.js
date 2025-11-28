@@ -12,7 +12,6 @@ export function useDashboardLogic() {
     apiGetBarcodeDashboard,
     apiUpdateBarcodeSettings,
     apiDeleteBarcode,
-    apiGetActiveProfile,
     apiUpdateBarcodeShare,
     apiUpdateBarcodeDailyLimit,
   } = useApi();
@@ -30,7 +29,6 @@ export function useDashboardLogic() {
   // Dashboard data
   const settings = ref({
     associate_user_profile_with_barcode: false,
-    server_verification: false,
     scanner_detection_enabled: false,
     prefer_front_camera: true,
     barcode: null,
@@ -148,23 +146,6 @@ export function useDashboardLogic() {
   });
 
   // Methods
-  async function checkActiveProfile() {
-    try {
-      console.log('Dashboard: Checking active profile...');
-      const response = await apiGetActiveProfile();
-      console.log('Dashboard: Active profile response:', response);
-
-      if (response && response.profile_info) {
-        console.log('Dashboard: Active profile found, updating page title and info');
-        showMessage(`Profile Association Active: ${response.profile_info.name}`, 'success');
-      } else {
-        console.log('Dashboard: No active profile association');
-      }
-    } catch (error) {
-      console.error('Dashboard: Failed to check active profile:', error);
-    }
-  }
-
   async function loadDashboard() {
     try {
       loading.value = true;
@@ -173,7 +154,6 @@ export function useDashboardLogic() {
       // Clear previous state
       settings.value = {
         associate_user_profile_with_barcode: false,
-        server_verification: false,
         scanner_detection_enabled: false,
         prefer_front_camera: true,
         barcode: null,
@@ -194,7 +174,6 @@ export function useDashboardLogic() {
         associate_user_profile_with_barcode: Boolean(
           data.settings.associate_user_profile_with_barcode
         ),
-        server_verification: Boolean(data.settings.server_verification),
         scanner_detection_enabled: Boolean(data.settings.scanner_detection_enabled),
         prefer_front_camera:
           data.settings.prefer_front_camera !== undefined
@@ -215,8 +194,6 @@ export function useDashboardLogic() {
       isUserGroup.value = Boolean(data.is_user_group);
       isSchoolGroup.value = Boolean(data.is_school_group);
 
-      // Check for active profile (for School users with barcode profile association)
-      await checkActiveProfile();
     } catch (error) {
       showMessage('Failed to load dashboard: ' + error.message, 'danger');
     } finally {
@@ -400,9 +377,9 @@ export function useDashboardLogic() {
 
   // Lifecycle
   onMounted(() => {
-    // Initialize tab from URL (?tab=Overview|Barcodes|Add)
+    // Initialize tab from URL (?tab=Overview|Camera|Barcodes|Add|Devices)
     const initialTab = route.query.tab || 'Overview';
-    if (['Overview', 'Barcodes', 'Add'].includes(initialTab)) {
+    if (['Overview', 'Camera', 'Barcodes', 'Add', 'Devices'].includes(initialTab)) {
       activeTab.value = initialTab;
     }
     loadDashboard();

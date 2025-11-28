@@ -221,7 +221,6 @@ class LimitedGroupUserAdmin(UserAdmin):
                     UserBarcodeSettings.objects.create(
                         user=user,
                         barcode=None,
-                        server_verification=False,
                         # Default to False for new users
                         associate_user_profile_with_barcode=False,
                     )
@@ -279,7 +278,6 @@ class LimitedGroupUserAdmin(UserAdmin):
                         UserBarcodeSettings.objects.create(
                             user=user,
                             barcode=ident_barcode,
-                            server_verification=False,
                             associate_user_profile_with_barcode=False,
                         )
 
