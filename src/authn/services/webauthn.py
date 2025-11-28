@@ -46,7 +46,6 @@ def create_user_profile(
     UserBarcodeSettings.objects.create(
         user=user,
         barcode=ident_barcode,
-        server_verification=False,
         associate_user_profile_with_barcode=False,
     )
 

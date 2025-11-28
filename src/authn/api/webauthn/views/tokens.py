@@ -9,6 +9,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -19,6 +20,36 @@ from ..serializers import (
     EncryptedTokenObtainPairSerializer,
     RSAEncryptedLoginSerializer,
 )
+
+
+def _ensure_outstanding_token(refresh_token_str):
+    """
+    Ensure the refresh token is tracked in OutstandingToken table.
+    This is needed for device management functionality.
+    """
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+
+    try:
+        token = RefreshToken(refresh_token_str)
+        jti = token.get("jti")
+        user_id = token.get("user_id")
+
+        # Check if already exists
+        if not OutstandingToken.objects.filter(jti=jti).exists():
+            user = User.objects.get(id=user_id)
+            OutstandingToken.objects.create(
+                user=user,
+                jti=jti,
+                token=str(token),
+                created_at=token.current_time,
+                expires_at=token.current_time + token.lifetime,
+            )
+    except Exception:
+        # Silently fail - don't break login if tracking fails
+        pass
+
 
 if getattr(settings, "THROTTLES_ENABLED", True):
     LOGIN_VIEW_THROTTLES = (LoginRateThrottle, UsernameRateThrottle)
@@ -44,6 +75,8 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 set_auth_cookies(response, access, refresh, request=request)
                 # Force CSRF cookie to be set/rotated so frontend can read it
                 get_token(request)
+                # Track the refresh token for device management
+                _ensure_outstanding_token(refresh)
         return response
 
 
@@ -137,6 +170,8 @@ class RSALoginView(TokenObtainPairView):
             refresh = response.data.get("refresh")
             if access and refresh:
                 set_auth_cookies(response, access, refresh, request=request)
+                # Track the refresh token for device management
+                _ensure_outstanding_token(refresh)
                 response.data = {
                     "message": "Login successful",
                     "access": access,

@@ -296,8 +296,8 @@ class BarcodeServiceTest(TestCase):
         self.assertEqual(result["barcode"], "static123456789")
         self.assertIn("Barcode ending with 6789", result["message"])
 
-    def test_generate_barcode_dynamic_with_server_verification_disabled(self):
-        """Test dynamic barcode generation with server verification disabled"""
+    def test_generate_barcode_dynamic(self):
+        """Test dynamic barcode generation"""
         dynamic_barcode = Barcode.objects.create(
             user=self.school_user,
             barcode="12345678901234",
@@ -307,7 +307,6 @@ class BarcodeServiceTest(TestCase):
         UserBarcodeSettings.objects.create(
             user=self.school_user,
             barcode=dynamic_barcode,
-            server_verification=False,  # Disabled to avoid session attribute error  # noqa: E501
         )
 
         with patch("index.services.barcode._timestamp", return_value="20231201120000"):

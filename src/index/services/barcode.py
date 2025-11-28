@@ -10,13 +10,11 @@ from index.models import (
     Barcode,
     BarcodeUsage,
     UserBarcodeSettings,
-    BarcodeUserProfile,
     UserBarcodePullSettings,
     Transaction,
 )
 from datetime import timedelta
 from django.db.models import Q
-from index.project_code.dynamic_barcode import auto_send_code
 from index.services.transactions import TransactionService
 from index.services.usage_limit import UsageLimitService
 
@@ -157,7 +155,6 @@ def generate_barcode(user) -> dict:
             user=user,
             defaults={
                 "barcode": None,
-                "server_verification": False,
                 "associate_user_profile_with_barcode": False,
             },
         )
@@ -287,20 +284,10 @@ def generate_barcode(user) -> dict:
             # Update usage stats
             _touch_barcode_usage(selected, request_user=user)
 
-            # Optional server verification
-            server_note = ""
-            if settings.server_verification:
-                profile = BarcodeUserProfile.objects.filter(
-                    linked_barcode=selected
-                ).first()
-                cookies = profile.user_cookies if profile else None
-                srv = auto_send_code(cookies) if cookies else None
-                server_note = f" Server: {srv['code']}" if srv else ""
-
             full = f"{_timestamp()}{selected.barcode}"
             result.update(
                 status="success",
-                message=f"Dynamic: {selected.barcode[-4:]}{server_note}",
+                message=f"Dynamic: {selected.barcode[-4:]}",
                 barcode_type=BARCODE_DYNAMIC,
                 barcode=full,
             )

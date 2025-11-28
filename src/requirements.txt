@@ -11,8 +11,6 @@ python-dotenv>=1.0
 Pillow>=10.0,<11.0
 # WebAuthn
 webauthn>=1.11,<2.0
-# Optional browser automation used by dynamic barcode code (safe even if disabled)
-selenium>=4.0,<5.0
 # Useful dev utilities referenced in settings
 django-extensions>=3.2,<4.0
 django-widget-tweaks>=1.5,<2.0
@@ -29,9 +27,6 @@ psycopg2-binary>=2.9
 
 # ASGI worker for Gunicorn in prod override
 uvicorn[standard]>=0.30,<1.0
-
-# Selenium driver helper for ChromeDriver
-webdriver-manager>=4.0,<5.0
 
 # Strong password hashing
 argon2-cffi>=23.1.0,<24.0

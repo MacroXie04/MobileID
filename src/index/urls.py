@@ -3,8 +3,7 @@
 from django.urls import path
 
 from index.api.barcode import GenerateBarcodeAPIView, ActiveProfileAPIView
-from index.api.dashboard import BarcodeDashboardAPIView
-from index.api.transfer import TransferCatCardAPIView
+from index.api.dashboard import BarcodeDashboardAPIView, DynamicBarcodeCreateAPIView
 
 app_name = "index"
 
@@ -27,10 +26,10 @@ urlpatterns = [
         BarcodeDashboardAPIView.as_view(),
         name="api_barcode_dashboard",
     ),
-    # transfer card endpoint
+    # create dynamic barcode with profile
     path(
-        "transfer/",
-        TransferCatCardAPIView.as_view(),
-        name="api_catcard_transfer",
+        "dynamic_barcode/",
+        DynamicBarcodeCreateAPIView.as_view(),
+        name="api_dynamic_barcode_create",
     ),
 ]

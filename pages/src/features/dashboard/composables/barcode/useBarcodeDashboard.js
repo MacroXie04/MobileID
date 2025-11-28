@@ -9,8 +9,6 @@ export default function useBarcodeDashboard() {
     apiUpdateBarcodeSettings,
     apiCreateBarcode,
     apiDeleteBarcode,
-    apiTransferCatCard,
-    apiGetActiveProfile,
     apiUpdateBarcodeShare,
     apiUpdateBarcodeDailyLimit,
   } = useApi();
@@ -25,7 +23,6 @@ export default function useBarcodeDashboard() {
   // Dashboard data
   const settings = ref({
     associate_user_profile_with_barcode: false,
-    server_verification: false,
     barcode: null,
   });
   const barcodes = ref([]);
@@ -76,23 +73,8 @@ export default function useBarcodeDashboard() {
   // Template refs
   const addSection = ref(null);
 
-  // Transfer state
-  const transferCookie = ref('');
-  const transferLoading = ref(false);
-  const transferSuccess = ref(false);
-  const transferSuccessMessage = ref('');
-  const transferError = ref('');
-  const transferErrors = ref({});
-
   function clearError(field) {
     delete errors.value[field];
-  }
-
-  function clearTransferError(field) {
-    delete transferErrors.value[field];
-    transferError.value = '';
-    transferSuccess.value = false;
-    transferSuccessMessage.value = '';
   }
 
   function showMessage(msg, type = 'success') {
@@ -103,43 +85,6 @@ export default function useBarcodeDashboard() {
     }, 5000);
   }
 
-  async function requestTransferCode() {
-    try {
-      transferError.value = '';
-      transferSuccess.value = false;
-      transferSuccessMessage.value = '';
-      transferErrors.value = {};
-
-      if (!transferCookie.value || !transferCookie.value.trim()) {
-        transferErrors.value.cookie = 'Cookie is required';
-        return;
-      }
-
-      transferLoading.value = true;
-
-      const data = await apiTransferCatCard(transferCookie.value);
-
-      if (data && data.success) {
-        transferSuccess.value = true;
-        transferSuccessMessage.value = data.message || 'Barcode data stored successfully!';
-        transferCookie.value = '';
-        setTimeout(() => {
-          loadDashboard();
-        }, 1000);
-      } else {
-        transferError.value = data?.error || 'Transfer failed.';
-      }
-    } catch (error) {
-      if (error?.status === 400 && error?.errors) {
-        transferError.value = error.message || 'Invalid request';
-      } else {
-        transferError.value = error?.message || 'Network error occurred';
-      }
-    } finally {
-      transferLoading.value = false;
-    }
-  }
-
   async function loadDashboard() {
     try {
       loading.value = true;
@@ -148,7 +93,6 @@ export default function useBarcodeDashboard() {
       // Reset then set
       settings.value = {
         associate_user_profile_with_barcode: false,
-        server_verification: false,
         barcode: null,
       };
       barcodeChoices.value = [];
@@ -162,30 +106,16 @@ export default function useBarcodeDashboard() {
         associate_user_profile_with_barcode: Boolean(
           data.settings.associate_user_profile_with_barcode
         ),
-        server_verification: Boolean(data.settings.server_verification),
         barcode: data.settings.barcode ? Number(data.settings.barcode) : null,
       };
 
       barcodes.value = data.barcodes || [];
       isUserGroup.value = Boolean(data.is_user_group);
       isSchoolGroup.value = Boolean(data.is_school_group);
-
-      await checkActiveProfile();
     } catch (error) {
       showMessage('Failed to load dashboard: ' + (error?.message || 'Unknown error'), 'danger');
     } finally {
       loading.value = false;
-    }
-  }
-
-  async function checkActiveProfile() {
-    try {
-      const response = await apiGetActiveProfile();
-      if (response && response.profile_info) {
-        showMessage(`Profile Association Active: ${response.profile_info.name}`, 'success');
-      }
-    } catch (_error) {
-      // Silently ignore; non-critical
     }
   }
 
@@ -650,13 +580,6 @@ export default function useBarcodeDashboard() {
     selectedCameraId,
     // dialog
     showConfirmDialog,
-    // transfer
-    transferCookie,
-    transferLoading,
-    transferSuccess,
-    transferSuccessMessage,
-    transferError,
-    transferErrors,
     // refs
     addSection,
     // computeds
@@ -668,8 +591,6 @@ export default function useBarcodeDashboard() {
     ownedOnly,
     // methods
     clearError,
-    clearTransferError,
-    requestTransferCode,
     loadDashboard,
     onFilterChange,
     resetFilters,

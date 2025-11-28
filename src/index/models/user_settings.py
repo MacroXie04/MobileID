@@ -12,9 +12,6 @@ class UserBarcodeSettings(models.Model):
         "Barcode", on_delete=models.SET_NULL, blank=True, null=True
     )
 
-    # server verification settings
-    server_verification = models.BooleanField(default=False)
-
     # associate user profile with barcode
     associate_user_profile_with_barcode = models.BooleanField(default=False)
 

@@ -4,6 +4,7 @@ from authn.api.webauthn import (
     CookieTokenRefreshView,
     RSALoginView,
     api_logout,
+    list_devices,
     login_challenge,
     user_info,
     api_register,
@@ -14,6 +15,8 @@ from authn.api.webauthn import (
     passkey_register_verify,
     passkey_auth_options,
     passkey_auth_verify,
+    revoke_all_other_devices,
+    revoke_device,
 )
 from django.urls import path
 
@@ -47,6 +50,12 @@ urlpatterns = [
     # profile management
     path("profile/", api_profile, name="api_profile"),
     path("profile/avatar/", api_avatar_upload, name="api_avatar_upload"),
+    # Device management
+    path("devices/", list_devices, name="api_devices_list"),
+    path("devices/<int:token_id>/", revoke_device, name="api_device_revoke"),
+    path(
+        "devices/revoke-all/", revoke_all_other_devices, name="api_devices_revoke_all"
+    ),
     # Passkeys
     path(
         "passkeys/register/options/",

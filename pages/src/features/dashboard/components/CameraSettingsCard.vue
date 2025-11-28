@@ -24,7 +24,7 @@
             >Grant camera access to enable scanner detection</span
           >
         </div>
-        <md-filled-tonal-button @click="requestCameraPermission" :disabled="isRequestingPermission">
+        <md-filled-tonal-button :disabled="isRequestingPermission" @click="requestCameraPermission">
           <md-icon slot="icon">{{
             isRequestingPermission ? 'hourglass_empty' : 'videocam'
           }}</md-icon>

@@ -5,13 +5,12 @@ import { baseURL } from '@app/config/config';
 const isWakingUp = ref(false);
 const isServerReady = ref(false);
 const isChecking = ref(false);
-const elapsedSeconds = ref(0);
+const elapsedMs = ref(0);
 const errorMessage = ref('');
 
 // Configuration
 const HEALTH_CHECK_TIMEOUT_MS = 3000; // 3 seconds initial timeout
 const POLL_INTERVAL_MS = 2000; // Poll every 2 seconds
-const MAX_RETRIES = 30; // Max 60 seconds of waiting
 
 let pollingTimer = null;
 let elapsedTimer = null;
@@ -57,13 +56,13 @@ async function checkServerHealth(timeoutMs = HEALTH_CHECK_TIMEOUT_MS) {
 }
 
 /**
- * Start the elapsed time counter
+ * Start the elapsed time counter (updates every 10ms)
  */
 function startElapsedTimer() {
-  elapsedSeconds.value = 0;
+  elapsedMs.value = 0;
   elapsedTimer = setInterval(() => {
-    elapsedSeconds.value += 1;
-  }, 1000);
+    elapsedMs.value += 10;
+  }, 10);
 }
 
 /**
@@ -93,17 +92,8 @@ function stopPolling() {
  * @returns {Promise<boolean>} - True if server became ready
  */
 async function pollUntilReady(shouldRefresh = false) {
-  let retries = 0;
-
   return new Promise((resolve) => {
     const poll = async () => {
-      if (retries >= MAX_RETRIES) {
-        errorMessage.value = 'Server is taking too long to respond. Please try again later.';
-        isWakingUp.value = false;
-        resolve(false);
-        return;
-      }
-
       const isHealthy = await checkServerHealth(5000); // Use longer timeout during polling
 
       if (isHealthy) {
@@ -121,7 +111,6 @@ async function pollUntilReady(shouldRefresh = false) {
         return;
       }
 
-      retries++;
       pollingTimer = setTimeout(poll, POLL_INTERVAL_MS);
     };
 
@@ -198,7 +187,7 @@ function resetState() {
   isWakingUp.value = false;
   isServerReady.value = false;
   isChecking.value = false;
-  elapsedSeconds.value = 0;
+  elapsedMs.value = 0;
   errorMessage.value = '';
 }
 
@@ -230,7 +219,7 @@ export function useServerWakeup() {
     isWakingUp: readonly(isWakingUp),
     isServerReady: readonly(isServerReady),
     isChecking: readonly(isChecking),
-    elapsedSeconds: readonly(elapsedSeconds),
+    elapsedMs: readonly(elapsedMs),
     errorMessage: readonly(errorMessage),
 
     // Methods

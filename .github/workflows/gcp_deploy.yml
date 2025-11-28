@@ -1,7 +1,6 @@
 name: Deploy to Cloud Run
 
-# Deploy only after the full backend pipeline (Lint Ruff -> Django Tests ->
-# Database Migrations) succeeds by chaining to the migrations workflow.
+# Trigger after database migrations pipeline completes successfully
 on:
   workflow_run:
     workflows: ["Database Migrations"]
@@ -19,9 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
+    environment:
+      name: MobileID Backend (Production)
+      url: https://${{ env.SERVICE_NAME }}-${{ env.REGION }}.a.run.app
+
     permissions:
       contents: "read"
       id-token: "write"
+      deployments: "write"
 
     steps:
       - name: Checkout
@@ -37,11 +41,24 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      # ---------- Create Deployment Record ----------
+      - name: Create GitHub Deployment
+        id: create_deploy
+        uses: actions/create-deployment@v2
+        with:
+          environment: MobileID Backend (Production)
+          ref: ${{ github.event.workflow_run.head_sha }}
+          description: "Deploying MobileID Backend to Google Cloud Run"
+          auto_merge: false
+          transient_environment: false
+
+      # ---------- Build and Deploy ----------
       - name: Build and Push Container
         run: |-
           gcloud builds submit src --tag gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
 
       - name: Deploy to Cloud Run
+        id: deploy_cloudrun
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ env.SERVICE_NAME }}
@@ -72,9 +89,28 @@ jobs:
             CSRF_TRUSTED_ORIGINS=https://*.run.app
             ADMIN_URL_PATH=${{ secrets.ADMIN_URL_PATH }}
 
+      # ---------- Verify and Report ----------
       - name: Verify Deployment
         run: gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }}
 
+      - name: Mark Deployment Success
+        if: success()
+        uses: actions/create-deployment-status@v2
+        with:
+          deployment_id: ${{ steps.create_deploy.outputs.deployment_id }}
+          state: success
+          environment_url: https://${{ env.SERVICE_NAME }}-${{ env.REGION }}.a.run.app
+          description: "MobileID Backend successfully deployed to Cloud Run"
+
+      - name: Mark Deployment Failure
+        if: failure()
+        uses: actions/create-deployment-status@v2
+        with:
+          deployment_id: ${{ steps.create_deploy.outputs.deployment_id }}
+          state: failure
+          description: "Deployment failed or Cloud Run verification error"
+
+      # ---------- Rollback Logic ----------
       - name: Rollback on Failure
         if: failure()
         run: |-

@@ -1,5 +1,6 @@
 from .avatar import api_avatar_upload, user_img
 from .challenge import login_challenge
+from .devices import list_devices, revoke_all_other_devices, revoke_device
 from .passkeys import (
     passkey_auth_options,
     passkey_auth_verify,
@@ -22,11 +23,14 @@ __all__ = [
     "api_register",
     "CookieTokenObtainPairView",
     "CookieTokenRefreshView",
+    "list_devices",
     "login_challenge",
     "passkey_auth_options",
     "passkey_auth_verify",
     "passkey_register_options",
     "passkey_register_verify",
+    "revoke_all_other_devices",
+    "revoke_device",
     "RSALoginView",
     "user_img",
     "user_info",
