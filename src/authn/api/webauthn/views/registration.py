@@ -1,6 +1,7 @@
 import logging
 
 from authn.api.utils import set_auth_cookies
+from authn.throttling import _ScopeRateFallbackMixin
 from django.conf import settings
 from django.contrib.auth import login
 from rest_framework.decorators import api_view, permission_classes
@@ -12,8 +13,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from ..forms import UserRegisterForm
 
 
-class RegisterThrottle(AnonRateThrottle):
+class RegisterThrottle(_ScopeRateFallbackMixin, AnonRateThrottle):
     scope = "registration"
+    fallback_rate = "5/day"
 
 
 @api_view(["POST"])
