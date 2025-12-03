@@ -12,6 +12,11 @@ on:
       - 'pages/**'
       - '.github/workflows/lint_prettier.yml'
 
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   prettier:
     runs-on: ubuntu-latest

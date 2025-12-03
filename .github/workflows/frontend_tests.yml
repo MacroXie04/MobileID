@@ -1,6 +1,18 @@
 name: Frontend Tests
 
+# Trigger on push/PR (all branches) after lint checks pass.
+# Also triggers via workflow_run on default branch after lint workflows complete.
 on:
+  push:
+    branches: ["**"]
+    paths:
+      - "pages/**"
+      - ".github/workflows/frontend_tests.yml"
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "pages/**"
+      - ".github/workflows/frontend_tests.yml"
   workflow_run:
     workflows:
       - Lint ESLint
@@ -8,17 +20,54 @@ on:
     types:
       - completed
 
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # Run lint checks first (only for push/PR triggers)
+  lint-check:
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile
+
+      - name: Run ESLint
+        working-directory: ./pages
+        run: yarn lint
+
+      - name: Run Prettier check
+        working-directory: ./pages
+        run: npx prettier --check src
+
   unit-and-e2e:
-    # Only run if the triggering lint workflow succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Run after lint-check for push/PR, or when workflow_run succeeds
+    needs: [lint-check]
+    if: |
+      always() && 
+      (needs.lint-check.result == 'success' || 
+       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          # Use workflow_run head_sha for workflow_run events, otherwise use default
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
