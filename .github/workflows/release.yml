@@ -16,6 +16,11 @@ on:
         type: boolean
         default: false
 
+# Only allow one release at a time
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: read
@@ -29,6 +34,7 @@ jobs:
   prepare:
     name: Prepare Release
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
@@ -72,6 +78,7 @@ jobs:
   changelog:
     name: Generate Changelog
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: prepare
     outputs:
       changelog: ${{ steps.changelog.outputs.changelog }}
@@ -165,6 +172,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: prepare
 
     steps:
@@ -193,7 +201,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: "20"
           cache: "yarn"
           cache-dependency-path: pages/yarn.lock
 
@@ -209,6 +217,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [prepare, changelog, test]
 
     steps:

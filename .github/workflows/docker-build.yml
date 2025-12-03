@@ -31,6 +31,7 @@ jobs:
       (github.event_name == 'push' || github.event_name == 'pull_request') ||
       (github.event.workflow_run.conclusion == 'success' && contains(fromJSON('["main","master","google-cloud"]'), github.event.workflow_run.head_branch))
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

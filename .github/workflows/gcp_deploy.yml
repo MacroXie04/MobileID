@@ -1,17 +1,10 @@
 name: Deploy to Cloud Run
 
 on:
-  # Push only on main branch (for direct commits and merge commits)
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/gcp_deploy.yml"
-  # Pull request on all branches (for PR checks / validation)
-  pull_request:
-    paths:
-      - ".github/workflows/gcp_deploy.yml"
-  # Trigger only after database migrations pipeline completes
-  # This ensures migrations are applied before deployment and avoids duplicate deployments
+  # Allow manual deployment trigger (main branch only enforced in job condition)
+  workflow_dispatch:
+  # Trigger only after database migrations pipeline completes on main branch
+  # This ensures migrations are applied before deployment
   workflow_run:
     workflows: ["Database Migrations"]
     branches: [main]
@@ -29,31 +22,15 @@ env:
   SERVICE_NAME: mobileid
 
 jobs:
-  # Validate workflow syntax when file changes (for push/PR events)
-  validate:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Validate workflow syntax
-        run: |
-          echo "Validating gcp_deploy.yml workflow syntax..."
-          # Check YAML syntax using yq
-          if command -v yq &> /dev/null; then
-            yq e '.' .github/workflows/gcp_deploy.yml > /dev/null
-          fi
-          echo "[PASS] Workflow file syntax is valid"
-
   deploy:
     runs-on: ubuntu-latest
-    # Only run if Database Migrations workflow succeeded AND triggered from main branch
-    # Skip for push/PR events (those are handled by validate job)
-    if: >-
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main'
+    timeout-minutes: 30
+    # Only deploy from main branch when:
+    # 1. Manual trigger on main branch
+    # 2. Database Migrations workflow succeeded on main branch
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
 
     environment:
       name: MobileID Backend (Google Cloud - Production)
@@ -130,35 +107,23 @@ jobs:
       - name: Wait for deployment to stabilize
         run: sleep 30
 
-      - name: Health Check - API Root
+      - name: Health Check
         id: health_check
         run: |
           SERVICE_URL="${{ steps.deploy_cloudrun.outputs.url }}"
-          echo "Checking health at: $SERVICE_URL"
+          echo "Checking health at: $SERVICE_URL/health/"
 
-          # Check API root endpoint
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/" || echo "000")
-          echo "API Root Response: $HTTP_CODE"
+          # Check health endpoint (primary health check)
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/health/" || echo "000")
+          RESPONSE=$(curl -s "$SERVICE_URL/health/" || echo "{}")
+          echo "Health Endpoint Response: $HTTP_CODE"
+          echo "Response Body: $RESPONSE"
 
-          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 400 ]; then
-            echo "::error::Health check failed: API root returned $HTTP_CODE"
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "::error::Health check failed: /health/ returned $HTTP_CODE"
             exit 1
           fi
-          echo "[PASS] API root is responding"
-
-      - name: Health Check - Health Endpoint
-        run: |
-          SERVICE_URL="${{ steps.deploy_cloudrun.outputs.url }}"
-
-          # Check health endpoint
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/health/" || echo "000")
-          echo "Health Endpoint Response: $HTTP_CODE"
-
-          if [ "$HTTP_CODE" -eq 200 ]; then
-            echo "[PASS] Health endpoint is healthy"
-          else
-            echo "[WARN] Health endpoint returned $HTTP_CODE (endpoint may not exist)"
-          fi
+          echo "[PASS] Health endpoint is responding correctly"
 
       - name: Smoke Test - API Endpoints
         run: |

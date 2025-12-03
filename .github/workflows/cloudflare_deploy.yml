@@ -6,6 +6,19 @@ on:
     paths:
       - "pages/**"
       - ".github/workflows/cloudflare_deploy.yml"
+  # Allow manual deployment trigger
+  workflow_dispatch:
+  # Trigger after Frontend Tests succeed (ensures tested code is deployed)
+  workflow_run:
+    workflows: ["Frontend Tests"]
+    branches: [main]
+    types:
+      - completed
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -15,6 +28,15 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Build and Deploy Frontend to Cloudflare Pages
+    timeout-minutes: 15
+    # Only deploy from main branch when:
+    # 1. Manual trigger on main branch
+    # 2. Frontend Tests workflow succeeded on main branch
+    # 3. Direct push to main
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
 
     environment:
       name: MobileID Frontend (Cloudflare - Production)
@@ -32,6 +54,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          # Use workflow_run's head_sha for workflow_run events, otherwise use default
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
