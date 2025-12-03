@@ -156,6 +156,13 @@
 
       <!-- Devices Section -->
       <DevicesCard v-show="activeTab === 'Devices'" />
+
+      <!-- Footer -->
+      <footer class="dashboard-footer">
+        <p class="md-typescale-body-small">
+          <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="privacy-link-text">Privacy Policy</a>
+        </p>
+      </footer>
     </main>
 
     <!-- Delete Confirmation Dialog -->

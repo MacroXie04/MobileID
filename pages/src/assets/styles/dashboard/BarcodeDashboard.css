@@ -1487,3 +1487,27 @@ md-switch {
     margin-left: 0;
   }
 }
+
+/* Dashboard Footer */
+.dashboard-footer {
+  margin-top: var(--md-sys-spacing-8);
+  padding-top: var(--md-sys-spacing-4);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  text-align: center;
+}
+
+.dashboard-footer p {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.dashboard-footer .privacy-link-text {
+  color: var(--md-sys-color-on-surface-variant);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.dashboard-footer .privacy-link-text:hover {
+  color: var(--md-sys-color-primary);
+  text-decoration: underline;
+}

@@ -169,6 +169,18 @@
   margin: 0;
   color: var(--md-sys-color-on-surface-variant);
 }
+.privacy-link {
+  margin-top: var(--md-sys-spacing-4);
+}
+.privacy-link-text {
+  color: var(--md-sys-color-on-surface-variant);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.privacy-link-text:hover {
+  color: var(--md-sys-color-primary);
+  text-decoration: underline;
+}
 @media (max-width: 599px) {
   .auth-container {
     padding: var(--md-sys-spacing-4);
