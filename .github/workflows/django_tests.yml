@@ -1,7 +1,7 @@
 name: Django Tests
 
-# Trigger on push/PR (all branches) after lint checks pass.
-# Also triggers via workflow_run on default branch after lint workflows complete.
+# Trigger on push to main and PRs
+# The lint-check job handles lint validation before running tests
 on:
   # Push only on main branch (for direct commits and merge commits)
   push:
@@ -14,13 +14,6 @@ on:
     paths:
       - "src/**"
       - ".github/workflows/django_tests.yml"
-  workflow_run:
-    workflows:
-      - Lint Ruff
-      - Lint Black
-      - Lint Flake8
-    types:
-      - completed
 
 # Cancel in-progress runs for the same branch
 # Use head_ref for PRs (source branch), ref_name for push events
@@ -29,9 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Run lint checks first (only for push/PR triggers)
+  # Run lint checks first
   lint-check:
-    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -60,21 +52,14 @@ jobs:
         run: flake8 .
 
   test:
-    # Run after lint-check for push/PR, or when workflow_run succeeds
+    # Run after lint-check succeeds
     needs: [lint-check]
-    if: |
-      always() && 
-      (needs.lint-check.result == 'success' || 
-       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          # Use workflow_run head_sha for workflow_run events, otherwise use default
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
