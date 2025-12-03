@@ -150,6 +150,10 @@ export function useApi() {
       ) {
         throw error; // re-throw authentication related errors
       }
+      // Re-throw API errors with status/errors intact (e.g., 400 validation errors)
+      if (error?.status && error?.errors) {
+        throw error;
+      }
       if (import.meta.env?.MODE !== 'production') {
         console.error(`API request failed (${url}):`, error);
       }
@@ -235,6 +239,16 @@ export function useApi() {
     });
   }
 
+  /**
+   * Transfer dynamic barcode from HTML content
+   */
+  async function apiTransferDynamicBarcode(htmlContent) {
+    return await apiCallWithAutoRefresh(`${baseURL}/transfer_dynamic_barcode/`, {
+      method: 'POST',
+      body: JSON.stringify({ html: htmlContent }),
+    });
+  }
+
   return {
     apiCallWithAutoRefresh,
     apiGenerateBarcode,
@@ -246,5 +260,6 @@ export function useApi() {
     apiUpdateBarcodeShare,
     apiUpdateBarcodeDailyLimit,
     apiCreateDynamicBarcodeWithProfile,
+    apiTransferDynamicBarcode,
   };
 }

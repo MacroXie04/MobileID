@@ -3,7 +3,8 @@ import { useApi } from '@shared/composables/useApi';
 import { useBarcodeScanner } from '@dashboard/composables/barcode/useBarcodeScanner.js';
 
 export function useAddBarcodeLogic(emit) {
-  const { apiCreateBarcode, apiCreateDynamicBarcodeWithProfile } = useApi();
+  const { apiCreateBarcode, apiCreateDynamicBarcodeWithProfile, apiTransferDynamicBarcode } =
+    useApi();
 
   // Barcode state
   const addSectionLocal = ref(null);
@@ -40,7 +41,10 @@ export function useAddBarcodeLogic(emit) {
     isRequestingPermission.value = true;
     permissionDenied.value = false;
     try {
-      const granted = await ensureCameraPermission();
+      const { granted } = await ensureCameraPermission({
+        facingMode: 'environment',
+        stopStream: true,
+      });
       if (!granted) {
         permissionDenied.value = true;
       }
@@ -63,6 +67,14 @@ export function useAddBarcodeLogic(emit) {
   const dynamicSuccessMessage = ref('');
   const dynamicError = ref('');
   const dynamicErrors = ref({});
+
+  // Transfer dynamic barcode state
+  const transferHtml = ref('');
+  const transferLoading = ref(false);
+  const transferSuccess = ref(false);
+  const transferSuccessMessage = ref('');
+  const transferError = ref('');
+  const transferErrors = ref({});
 
   function clearError(field) {
     delete errors.value[field];
@@ -176,28 +188,37 @@ export function useAddBarcodeLogic(emit) {
       }
     } catch (error) {
       if (error.status === 400 && error.errors) {
-        // Handle field-specific errors
+        // Handle field-specific errors and build detailed message
+        const fieldErrors = [];
         if (error.errors.barcode) {
-          dynamicErrors.value.barcode = Array.isArray(error.errors.barcode)
+          const msg = Array.isArray(error.errors.barcode)
             ? error.errors.barcode[0]
             : error.errors.barcode;
+          dynamicErrors.value.barcode = msg;
+          fieldErrors.push(`Barcode: ${msg}`);
         }
         if (error.errors.name) {
-          dynamicErrors.value.name = Array.isArray(error.errors.name)
-            ? error.errors.name[0]
-            : error.errors.name;
+          const msg = Array.isArray(error.errors.name) ? error.errors.name[0] : error.errors.name;
+          dynamicErrors.value.name = msg;
+          fieldErrors.push(`Name: ${msg}`);
         }
         if (error.errors.information_id) {
-          dynamicErrors.value.information_id = Array.isArray(error.errors.information_id)
+          const msg = Array.isArray(error.errors.information_id)
             ? error.errors.information_id[0]
             : error.errors.information_id;
+          dynamicErrors.value.information_id = msg;
+          fieldErrors.push(`Student ID: ${msg}`);
         }
         if (error.errors.avatar) {
-          dynamicErrors.value.avatar = Array.isArray(error.errors.avatar)
+          const msg = Array.isArray(error.errors.avatar)
             ? error.errors.avatar[0]
             : error.errors.avatar;
+          dynamicErrors.value.avatar = msg;
+          fieldErrors.push(`Avatar: ${msg}`);
         }
-        dynamicError.value = error.message || 'Invalid request';
+        // Show specific field errors if available, otherwise show generic message
+        dynamicError.value =
+          fieldErrors.length > 0 ? fieldErrors.join('; ') : error.message || 'Invalid request';
       } else if (error.status === 403) {
         dynamicError.value = 'Only School group users can create dynamic barcodes';
       } else {
@@ -205,6 +226,81 @@ export function useAddBarcodeLogic(emit) {
       }
     } finally {
       dynamicLoading.value = false;
+    }
+  }
+
+  function clearTransferError() {
+    transferErrors.value = {};
+    transferError.value = '';
+    transferSuccess.value = false;
+    transferSuccessMessage.value = '';
+  }
+
+  async function transferDynamicBarcode() {
+    try {
+      transferError.value = '';
+      transferSuccess.value = false;
+      transferSuccessMessage.value = '';
+      transferErrors.value = {};
+
+      // Validate HTML content
+      if (!transferHtml.value || !transferHtml.value.trim()) {
+        transferErrors.value.html = 'HTML content is required';
+        return;
+      }
+
+      transferLoading.value = true;
+
+      const data = await apiTransferDynamicBarcode(transferHtml.value);
+
+      if (data && data.status === 'success') {
+        transferSuccess.value = true;
+        transferSuccessMessage.value = data.message || 'Dynamic barcode transferred successfully!';
+        // Clear form
+        transferHtml.value = '';
+        emit('message', transferSuccessMessage.value, 'success');
+        emit('added');
+      } else {
+        transferError.value = data?.message || 'Failed to transfer dynamic barcode';
+      }
+    } catch (error) {
+      if (error.status === 400 && error.errors) {
+        // Handle field-specific errors and build detailed message
+        const fieldErrors = [];
+        if (error.errors.html) {
+          const msg = Array.isArray(error.errors.html) ? error.errors.html[0] : error.errors.html;
+          transferErrors.value.html = msg;
+          fieldErrors.push(msg);
+        }
+        if (error.errors.barcode) {
+          const msg = Array.isArray(error.errors.barcode)
+            ? error.errors.barcode[0]
+            : error.errors.barcode;
+          transferErrors.value.barcode = msg;
+          fieldErrors.push(`Barcode: ${msg}`);
+        }
+        if (error.errors.name) {
+          const msg = Array.isArray(error.errors.name) ? error.errors.name[0] : error.errors.name;
+          transferErrors.value.name = msg;
+          fieldErrors.push(`Name: ${msg}`);
+        }
+        if (error.errors.information_id) {
+          const msg = Array.isArray(error.errors.information_id)
+            ? error.errors.information_id[0]
+            : error.errors.information_id;
+          transferErrors.value.information_id = msg;
+          fieldErrors.push(`Student ID: ${msg}`);
+        }
+        // Show specific field errors if available, otherwise show generic message
+        transferError.value =
+          fieldErrors.length > 0 ? fieldErrors.join('; ') : 'Could not parse HTML content';
+      } else if (error.status === 403) {
+        transferError.value = 'Only School group users can transfer dynamic barcodes';
+      } else {
+        transferError.value = error.message || 'Network error occurred';
+      }
+    } finally {
+      transferLoading.value = false;
     }
   }
 
@@ -223,6 +319,13 @@ export function useAddBarcodeLogic(emit) {
     dynamicSuccessMessage,
     dynamicError,
     dynamicErrors,
+    // Transfer dynamic barcode
+    transferHtml,
+    transferLoading,
+    transferSuccess,
+    transferSuccessMessage,
+    transferError,
+    transferErrors,
     // Scanner
     showScanner,
     scanning,
@@ -241,5 +344,7 @@ export function useAddBarcodeLogic(emit) {
     addBarcode,
     clearDynamicError,
     createDynamicBarcode,
+    clearTransferError,
+    transferDynamicBarcode,
   };
 }

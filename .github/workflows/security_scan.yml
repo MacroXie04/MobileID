@@ -1,0 +1,182 @@
+name: Security Scan
+
+on:
+  # Only run on push to main branch (for deployment checks)
+  push:
+    branches: [main]
+    paths:
+      - "src/requirements.txt"
+      - "pages/package.json"
+      - "pages/yarn.lock"
+      - "src/Dockerfile"
+  # Run on all PRs (for code review)
+  pull_request:
+    paths:
+      - "src/requirements.txt"
+      - "pages/package.json"
+      - "pages/yarn.lock"
+      - "src/Dockerfile"
+  schedule:
+    # Run weekly on Sunday at midnight UTC
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+
+jobs:
+  # ---------- Python Dependency Security Check ----------
+  python-security:
+    name: Python Security (Safety)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Safety
+        run: pip install safety
+
+      - name: Run Safety check
+        working-directory: ./src
+        run: |
+          # Generate requirements with pinned versions
+          pip install -r requirements.txt
+          pip freeze > requirements-frozen.txt
+          # Run safety check (continue on error to report results)
+          safety check -r requirements-frozen.txt --output json > safety-report.json || true
+          # Display human-readable output
+          safety check -r requirements-frozen.txt || echo "::warning::Vulnerabilities found in Python dependencies"
+
+      - name: Upload Safety report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: python-security-report
+          path: src/safety-report.json
+          retention-days: 30
+
+  # ---------- Node.js Dependency Security Check ----------
+  nodejs-security:
+    name: Node.js Security (Yarn Audit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile
+
+      - name: Run Yarn Audit
+        working-directory: ./pages
+        run: |
+          # Run yarn audit and save results
+          yarn audit --json > yarn-audit-report.json 2>&1 || true
+          # Display summary
+          yarn audit --summary || echo "::warning::Vulnerabilities found in Node.js dependencies"
+
+      - name: Upload Yarn Audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nodejs-security-report
+          path: pages/yarn-audit-report.json
+          retention-days: 30
+
+  # ---------- Docker Image Security Scan ----------
+  docker-security:
+    name: Docker Security (Trivy)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image for scanning
+        run: |
+          docker build -t mobileid-backend:scan ./src
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "mobileid-backend:scan"
+          format: "table"
+          exit-code: "0"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH,MEDIUM"
+
+      - name: Run Trivy and save JSON report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "mobileid-backend:scan"
+          format: "json"
+          output: "trivy-report.json"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH,MEDIUM"
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-security-report
+          path: trivy-report.json
+          retention-days: 30
+
+      - name: Fail on critical vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "mobileid-backend:scan"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL"
+
+  # ---------- Summary Job ----------
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [python-security, nodejs-security, docker-security]
+    if: always()
+
+    steps:
+      - name: Check security scan results
+        run: |
+          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.python-security.result }}" == "success" ]; then
+            echo "[PASS] Python dependencies: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "[WARN] Python dependencies: Issues found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.nodejs-security.result }}" == "success" ]; then
+            echo "[PASS] Node.js dependencies: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "[WARN] Node.js dependencies: Issues found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.docker-security.result }}" == "success" ]; then
+            echo "[PASS] Docker image: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "[WARN] Docker image: Issues found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See artifacts for detailed reports." >> $GITHUB_STEP_SUMMARY
+

@@ -6,17 +6,19 @@ Uses simplejwt's OutstandingToken model to track active refresh tokens,
 combined with LoginAuditLog for device metadata.
 """
 
+from datetime import timedelta
+
 from django.utils import timezone
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
     OutstandingToken,
 )
 from rest_framework_simplejwt.tokens import UntypedToken
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from authn.models import AccessTokenBlacklist, LoginAuditLog
 
@@ -164,17 +166,38 @@ def list_devices(request):
 
     devices = []
     for token in tokens:
-        # Find the most recent successful login audit log entry
-        # that occurred at or before the token creation time
+        # Find the closest successful login audit log entry to the token creation time.
+        # We use a time window approach: first look for an audit within ±5 seconds,
+        # then fallback to just before the token if nothing found.
+        # This prevents matching the wrong session when multiple logins occur.
+        time_window = timedelta(seconds=5)
+        window_start = token.created_at - time_window
+        window_end = token.created_at + time_window
+
+        # First, try to find an audit log within the time window around token creation
         audit = (
             LoginAuditLog.objects.filter(
                 user=request.user,
                 success=True,
-                created_at__lte=token.created_at,
+                created_at__gte=window_start,
+                created_at__lte=window_end,
             )
             .order_by("-created_at")
             .first()
         )
+
+        # Fallback: if no audit in the tight window, find the closest one before token
+        # This handles edge cases where audit logging was slightly delayed
+        if audit is None:
+            audit = (
+                LoginAuditLog.objects.filter(
+                    user=request.user,
+                    success=True,
+                    created_at__lte=token.created_at,
+                )
+                .order_by("-created_at")
+                .first()
+            )
 
         # Parse device info from user agent
         user_agent = audit.user_agent if audit else ""

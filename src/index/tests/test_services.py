@@ -18,6 +18,7 @@ from index.services.barcode import (
     _random_digits,
 )
 from index.services.usage_limit import UsageLimitService
+from index.services.transfer_barcode import TransferBarcodeParser
 
 
 class BarcodeServiceTest(TestCase):
@@ -386,3 +387,128 @@ class UsageLimitServiceTest(TestCase):
         self.assertEqual(stats["daily_remaining"], 4)
         self.assertEqual(stats["total_used"], 7)
         self.assertEqual(stats["total_remaining"], 3)
+
+
+class TransferBarcodeParserTest(TestCase):
+    """Unit tests for TransferBarcodeParser"""
+
+    def setUp(self):
+        self.parser = TransferBarcodeParser()
+
+    def test_parse_complete_html(self):
+        """Test parsing HTML with all fields present"""
+        html = """
+        <html>
+        <h4 class="white-h4" style="margin-top: 10px;">John Doe</h4>
+        <h4 id="student-id">12345</h4>
+        <img src="data:image/jpeg;base64,dGVzdGltYWdl" />
+        <script>
+        var formattedTimestamp + "12345678901234"
+        </script>
+        </html>
+        """
+
+        result = self.parser.parse(html)
+
+        self.assertEqual(result["name"], "John Doe")
+        self.assertEqual(result["information_id"], "12345")
+        self.assertEqual(result["img_base64"], "dGVzdGltYWdl")
+        self.assertEqual(result["barcode"], "12345678901234")
+
+    def test_parse_missing_name(self):
+        """Test parsing HTML without name field"""
+        html = """
+        <html>
+        <h4 id="student-id">12345</h4>
+        <img src="data:image/jpeg;base64,dGVzdGltYWdl" />
+        <script>
+        var formattedTimestamp + "12345678901234"
+        </script>
+        </html>
+        """
+
+        result = self.parser.parse(html)
+
+        self.assertIsNone(result["name"])
+        self.assertEqual(result["information_id"], "12345")
+        self.assertEqual(result["barcode"], "12345678901234")
+
+    def test_parse_missing_student_id(self):
+        """Test parsing HTML without student ID field"""
+        html = """
+        <html>
+        <h4 class="white-h4" style="margin-top: 10px;">John Doe</h4>
+        <img src="data:image/jpeg;base64,dGVzdGltYWdl" />
+        <script>
+        var formattedTimestamp + "12345678901234"
+        </script>
+        </html>
+        """
+
+        result = self.parser.parse(html)
+
+        self.assertEqual(result["name"], "John Doe")
+        self.assertIsNone(result["information_id"])
+        self.assertEqual(result["barcode"], "12345678901234")
+
+    def test_parse_missing_image(self):
+        """Test parsing HTML without image field"""
+        html = """
+        <html>
+        <h4 class="white-h4" style="margin-top: 10px;">John Doe</h4>
+        <h4 id="student-id">12345</h4>
+        <script>
+        var formattedTimestamp + "12345678901234"
+        </script>
+        </html>
+        """
+
+        result = self.parser.parse(html)
+
+        self.assertEqual(result["name"], "John Doe")
+        self.assertEqual(result["information_id"], "12345")
+        self.assertIsNone(result["img_base64"])
+        self.assertEqual(result["barcode"], "12345678901234")
+
+    def test_parse_missing_barcode(self):
+        """Test parsing HTML without barcode field"""
+        html = """
+        <html>
+        <h4 class="white-h4" style="margin-top: 10px;">John Doe</h4>
+        <h4 id="student-id">12345</h4>
+        <img src="data:image/jpeg;base64,dGVzdGltYWdl" />
+        </html>
+        """
+
+        result = self.parser.parse(html)
+
+        self.assertEqual(result["name"], "John Doe")
+        self.assertEqual(result["information_id"], "12345")
+        self.assertEqual(result["img_base64"], "dGVzdGltYWdl")
+        self.assertIsNone(result["barcode"])
+
+    def test_parse_empty_html(self):
+        """Test parsing empty HTML"""
+        html = "<html><body></body></html>"
+
+        result = self.parser.parse(html)
+
+        self.assertIsNone(result["name"])
+        self.assertIsNone(result["information_id"])
+        self.assertIsNone(result["img_base64"])
+        self.assertIsNone(result["barcode"])
+
+    def test_parse_trims_whitespace(self):
+        """Test that parsed values have whitespace trimmed"""
+        html = """
+        <h4 class="white-h4" style="margin-top: 10px;">  John Doe  </h4>
+        <h4 id="student-id">  12345  </h4>
+        <script>
+        formattedTimestamp + "12345678901234"
+        </script>
+        """
+
+        result = self.parser.parse(html)
+
+        self.assertEqual(result["name"], "John Doe")
+        self.assertEqual(result["information_id"], "12345")

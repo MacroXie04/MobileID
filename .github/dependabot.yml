@@ -1,0 +1,103 @@
+# Dependabot configuration for automated dependency updates
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+
+updates:
+  # Python dependencies (backend)
+  - package-ecosystem: "pip"
+    directory: "/src"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(python)"
+    labels:
+      - "dependencies"
+      - "python"
+    reviewers:
+      - "hongzhe"
+    groups:
+      django:
+        patterns:
+          - "django*"
+          - "djangorestframework*"
+      security:
+        patterns:
+          - "webauthn*"
+          - "argon2*"
+      development:
+        patterns:
+          - "black"
+          - "ruff"
+          - "flake8"
+          - "coverage"
+
+  # Node.js dependencies (frontend)
+  - package-ecosystem: "npm"
+    directory: "/pages"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(node)"
+    labels:
+      - "dependencies"
+      - "javascript"
+    reviewers:
+      - "hongzhe"
+    groups:
+      vue:
+        patterns:
+          - "vue*"
+          - "@vitejs/*"
+      testing:
+        patterns:
+          - "@playwright/*"
+          - "vitest"
+          - "@vue/test-utils"
+      linting:
+        patterns:
+          - "eslint*"
+          - "prettier"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps(actions)"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    reviewers:
+      - "hongzhe"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/src"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "deps(docker)"
+    labels:
+      - "dependencies"
+      - "docker"
+    reviewers:
+      - "hongzhe"
+

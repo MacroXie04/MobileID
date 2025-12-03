@@ -1,23 +1,76 @@
 name: Django Tests
 
-# Trigger only after backend lint (Lint Ruff) succeeds so CI runs sequentially.
+# Trigger on push/PR (all branches) after lint checks pass.
+# Also triggers via workflow_run on default branch after lint workflows complete.
 on:
+  push:
+    branches: ["**"]
+    paths:
+      - "src/**"
+      - ".github/workflows/django_tests.yml"
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "src/**"
+      - ".github/workflows/django_tests.yml"
   workflow_run:
     workflows:
       - Lint Ruff
+      - Lint Black
+      - Lint Flake8
     types:
       - completed
 
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # Run lint checks first (only for push/PR triggers)
+  lint-check:
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install lint tools
+        run: pip install black ruff flake8
+
+      - name: Run Black check
+        working-directory: ./src
+        run: black --check .
+
+      - name: Run Ruff check
+        working-directory: ./src
+        run: ruff check .
+
+      - name: Run Flake8 check
+        working-directory: ./src
+        run: flake8 .
+
   test:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Run after lint-check for push/PR, or when workflow_run succeeds
+    needs: [lint-check]
+    if: |
+      always() && 
+      (needs.lint-check.result == 'success' || 
+       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          # Use workflow_run head_sha for workflow_run events, otherwise use default
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5

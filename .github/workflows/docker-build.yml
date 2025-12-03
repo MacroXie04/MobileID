@@ -9,6 +9,8 @@ on:
 
 jobs:
   build:
+    # Only build Docker images for specific branches to reduce resource consumption
+    # and ensure only production-ready code gets containerized
     if: ${{ github.event.workflow_run.conclusion == 'success' && contains(fromJSON('["main","master","google-cloud"]'), github.event.workflow_run.head_branch) }}
     runs-on: ubuntu-latest
     steps:

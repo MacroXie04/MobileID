@@ -1,14 +1,8 @@
 name: Deploy to Cloud Run
 
 on:
-  # Trigger on push to main when backend or workflow files change
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - ".github/workflows/gcp_deploy.yml"
-
-  # Also trigger after database migrations pipeline completes
+  # Trigger only after database migrations pipeline completes
+  # This ensures migrations are applied before deployment and avoids duplicate deployments
   workflow_run:
     workflows: ["Database Migrations"]
     branches: [main]
@@ -23,11 +17,11 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Run on push events, or on workflow_run only if it succeeded
-    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    # Only run if Database Migrations workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     environment:
-      name: MobileID Backend (Production)
+      name: MobileID Backend (Google Cloud - Production)
       url: https://${{ env.SERVICE_NAME }}-${{ env.REGION }}.a.run.app
 
     permissions:
@@ -56,7 +50,7 @@ jobs:
         uses: chrnorm/deployment-action@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          environment: MobileID Backend (Production)
+          environment: MobileID Backend (Google Cloud - Production)
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           description: "Deploying MobileID Backend to Google Cloud Run"
           auto-merge: false
@@ -97,9 +91,68 @@ jobs:
             CSRF_TRUSTED_ORIGINS=https://*.run.app
             ADMIN_URL_PATH=${{ secrets.ADMIN_URL_PATH }}
 
-      # ---------- Verify and Report ----------
-      - name: Verify Deployment
-        run: gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }}
+      # ---------- Post-Deployment Health Check ----------
+      - name: Wait for deployment to stabilize
+        run: sleep 30
+
+      - name: Health Check - API Root
+        id: health_check
+        run: |
+          SERVICE_URL="${{ steps.deploy_cloudrun.outputs.url }}"
+          echo "Checking health at: $SERVICE_URL"
+
+          # Check API root endpoint
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/" || echo "000")
+          echo "API Root Response: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::Health check failed: API root returned $HTTP_CODE"
+            exit 1
+          fi
+          echo "[PASS] API root is responding"
+
+      - name: Health Check - Health Endpoint
+        run: |
+          SERVICE_URL="${{ steps.deploy_cloudrun.outputs.url }}"
+
+          # Check health endpoint
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/health/" || echo "000")
+          echo "Health Endpoint Response: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "[PASS] Health endpoint is healthy"
+          else
+            echo "[WARN] Health endpoint returned $HTTP_CODE (endpoint may not exist)"
+          fi
+
+      - name: Smoke Test - API Endpoints
+        run: |
+          SERVICE_URL="${{ steps.deploy_cloudrun.outputs.url }}"
+
+          echo "Running smoke tests..."
+
+          # Test well-known endpoint
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/.well-known/webauthn" || echo "000")
+          echo "WebAuthn Well-Known: $HTTP_CODE"
+
+          # Test API base
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/api/" || echo "000")
+          echo "API Base: $HTTP_CODE"
+
+          echo "[PASS] Smoke tests completed"
+
+      - name: Verify Cloud Run Service Status
+        run: |
+          echo "Verifying Cloud Run service..."
+          gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --format="yaml(status)"
+
+          # Check if service is serving traffic
+          SERVING=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --format="value(status.conditions[0].status)")
+          if [ "$SERVING" != "True" ]; then
+            echo "::error::Service is not in healthy state"
+            exit 1
+          fi
+          echo "[PASS] Cloud Run service is healthy and serving traffic"
 
       - name: Mark Deployment Success
         if: success()

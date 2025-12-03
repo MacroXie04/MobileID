@@ -14,6 +14,11 @@ on:
       - "src/.flake8"
       - ".github/workflows/lint_flake8.yml"
 
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   flake8:
     runs-on: ubuntu-latest

@@ -76,7 +76,7 @@ export function useCameraSettingsCardSetup({ props } = {}) {
     permissionDenied.value = false;
 
     try {
-      const granted = await ensureCameraPermission();
+      const { granted } = await ensureCameraPermission();
       if (!granted) {
         permissionDenied.value = true;
       }

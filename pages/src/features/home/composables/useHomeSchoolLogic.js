@@ -140,6 +140,15 @@ export function useHomeSchoolLogic() {
 
         // Reset server status back to Emergency after animation completes
         serverStatus.value = 'Emergency';
+
+        // Resume scanner detection if enabled
+        if (scannerDetectionEnabled.value && barcodeDisplayRef.value) {
+          // Access the startDetection method from the component's exposeBindings
+          const startDetection = barcodeDisplayRef.value?.startDetection;
+          if (typeof startDetection === 'function') {
+            startDetection();
+          }
+        }
       }
     } catch (err) {
       // Handle different types of errors
