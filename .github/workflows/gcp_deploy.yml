@@ -56,18 +56,8 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # ---------- Create Deployment Record ----------
-      - name: Create GitHub Deployment
-        id: create_deploy
-        uses: chrnorm/deployment-action@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          environment: MobileID Backend (Google Cloud - Production)
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-          description: "Deploying MobileID Backend to Google Cloud Run"
-          auto-merge: false
-
       # ---------- Build and Deploy ----------
+      # Note: GitHub Deployment record is automatically created by the job-level 'environment' setting
       - name: Build and Push Container
         run: |-
           gcloud builds submit src --tag gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
@@ -154,24 +144,8 @@ jobs:
           fi
           echo "[PASS] Cloud Run service is healthy and serving traffic"
 
-      - name: Mark Deployment Success
-        if: success()
-        uses: chrnorm/deployment-status@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          deployment-id: ${{ steps.create_deploy.outputs.deployment_id }}
-          state: success
-          environment-url: ${{ steps.deploy_cloudrun.outputs.url }}
-          description: "MobileID Backend successfully deployed to Cloud Run"
-
-      - name: Mark Deployment Failure
-        if: failure()
-        uses: chrnorm/deployment-status@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          deployment-id: ${{ steps.create_deploy.outputs.deployment_id }}
-          state: failure
-          description: "Deployment failed or Cloud Run verification error"
+      # Note: Deployment status is automatically updated by GitHub Actions based on job result
+      # The job-level 'environment' setting handles deployment record creation and status updates
 
       # ---------- Rollback Logic ----------
       - name: Rollback on Failure
