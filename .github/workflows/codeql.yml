@@ -1,25 +1,15 @@
 name: CodeQL Security Analysis
 
 on:
-  # Push only on main branch (for direct commits and merge commits)
+  # Run on push to main branch
   push:
     branches: [main]
-    paths:
-      - ".github/workflows/codeql.yml"
-  # Pull request on all branches (for PR checks / validation)
+  # Run on PRs to main branch
   pull_request:
-    paths:
-      - ".github/workflows/codeql.yml"
+    branches: [main]
+  # Run weekly on Sunday at midnight UTC
   schedule:
-    - cron: "0 0 * * 0" # Weekly on Sunday - scans all branches
-  workflow_run:
-    workflows:
-      - Lint Ruff
-    # No branch restriction - scans all branches after Lint Ruff completes
-    # Note: This may increase resource consumption. If needed, add branch restrictions
-    # back (e.g., branches: [main, master]) to limit scans to specific branches.
-    types:
-      - completed
+    - cron: "0 0 * * 0"
 
 # Cancel in-progress runs for the same branch
 concurrency:
@@ -29,7 +19,6 @@ concurrency:
 jobs:
   analyze:
     name: Analyze
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -45,16 +34,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
