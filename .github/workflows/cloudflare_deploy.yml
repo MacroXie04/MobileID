@@ -1,14 +1,10 @@
 name: Deploy Frontend to Cloudflare Pages
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "pages/**"
-      - ".github/workflows/cloudflare_deploy.yml"
   # Allow manual deployment trigger
   workflow_dispatch:
   # Trigger after Frontend Tests succeed (ensures tested code is deployed)
+  # This prevents deployment of untested code
   workflow_run:
     workflows: ["Frontend Tests"]
     branches: [main]
@@ -32,11 +28,9 @@ jobs:
     # Only deploy from main branch when:
     # 1. Manual trigger on main branch
     # 2. Frontend Tests workflow succeeded on main branch
-    # 3. Direct push to main
     if: |
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
 
     environment:
       name: MobileID Frontend (Cloudflare - Production)
