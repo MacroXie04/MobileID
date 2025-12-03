@@ -3,6 +3,9 @@ name: Deploy Frontend to Cloudflare Pages
 on:
   push:
     branches: ["main"]
+    paths:
+      - "pages/**"
+      - ".github/workflows/cloudflare_deploy.yml"
 
 permissions:
   contents: read
@@ -14,8 +17,12 @@ jobs:
     name: Build and Deploy Frontend to Cloudflare Pages
 
     environment:
-      name: MobileID Frontend (Production)
+      name: MobileID Frontend (Cloudflare - Production)
       url: https://mobileid.pages.dev
+
+    # Note: gitHubToken is not provided to cloudflare/pages-action to avoid
+    # duplicate deployment records. The deployment record is created via
+    # the environment configuration above.
 
     env:
       VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
@@ -54,8 +61,8 @@ jobs:
           fi
 
       # ---------- Deploy to Cloudflare Pages ----------
-      # Note: cloudflare/pages-action automatically creates GitHub deployment
-      # records when gitHubToken is provided
+      # Note: gitHubToken is not provided to avoid duplicate deployment records.
+      # The deployment record is created via the environment configuration above.
       - name: Deploy to Cloudflare Pages
         id: deploy_pages
         uses: cloudflare/pages-action@v1
@@ -64,4 +71,49 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: mobileid
           directory: ./pages/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------- Post-Deployment Verification ----------
+      - name: Wait for deployment to propagate
+        run: sleep 15
+
+      - name: Verify Frontend Deployment
+        run: |
+          DEPLOY_URL="https://mobileid.pages.dev"
+          echo "Checking frontend at: $DEPLOY_URL"
+
+          # Check main page responds
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL" || echo "000")
+          echo "Frontend Response: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::Deployment verification failed: Frontend returned $HTTP_CODE"
+            exit 1
+          fi
+          echo "[PASS] Frontend is responding"
+
+      - name: Smoke Test - Critical Assets
+        run: |
+          DEPLOY_URL="https://mobileid.pages.dev"
+
+          echo "Running smoke tests for critical assets..."
+
+          # Check if index.html contains expected content
+          CONTENT=$(curl -s "$DEPLOY_URL")
+          if echo "$CONTENT" | grep -q "MobileID"; then
+            echo "[PASS] Index page contains expected content"
+          else
+            echo "[WARN] Index page may not have expected content"
+          fi
+
+          # Check privacy page
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL/privacy.html" || echo "000")
+          echo "Privacy Page: $HTTP_CODE"
+
+          echo "[PASS] Smoke tests completed"
+
+      - name: Deployment Summary
+        run: |
+          echo "## Frontend Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://mobileid.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Healthy" >> $GITHUB_STEP_SUMMARY

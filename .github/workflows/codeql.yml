@@ -2,13 +2,13 @@ name: CodeQL Security Analysis
 
 on:
   schedule:
-    - cron: "0 0 * * 0" # Weekly on Sunday
+    - cron: "0 0 * * 0" # Weekly on Sunday - scans all branches
   workflow_run:
     workflows:
       - Lint Ruff
-    branches:
-      - main
-      - master
+    # No branch restriction - scans all branches after Lint Ruff completes
+    # Note: This may increase resource consumption. If needed, add branch restrictions
+    # back (e.g., branches: [main, master]) to limit scans to specific branches.
     types:
       - completed
 

@@ -1,0 +1,239 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., v1.2.3)"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+env:
+  PROJECT_ID: mobileid-478800
+  SERVICE_NAME: mobileid
+
+jobs:
+  # ---------- Validate and Prepare Release ----------
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            IS_PRERELEASE="${{ github.event.inputs.prerelease }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+            # Check if version contains pre-release identifiers
+            if [[ "$VERSION" =~ (alpha|beta|rc|dev) ]]; then
+              IS_PRERELEASE="true"
+            else
+              IS_PRERELEASE="false"
+            fi
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION (prerelease: $IS_PRERELEASE)"
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "::error::Invalid version format: $VERSION"
+            echo "Expected format: v1.2.3 or v1.2.3-beta.1"
+            exit 1
+          fi
+
+  # ---------- Generate Changelog ----------
+  changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    needs: prepare
+    outputs:
+      changelog: ${{ steps.changelog.outputs.changelog }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          # Get the previous tag (excluding current)
+          CURRENT_TAG="${{ needs.prepare.outputs.version }}"
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^$CURRENT_TAG$" | head -n 1)
+          if [ -z "$PREV_TAG" ]; then
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+            echo "No previous tag found, using initial commit"
+          fi
+          echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          echo "Previous tag: $PREV_TAG"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG="${{ steps.prev_tag.outputs.prev_tag }}"
+          CURRENT_TAG="${{ needs.prepare.outputs.version }}"
+
+          echo "Generating changelog from $PREV_TAG to HEAD..."
+
+          # Generate changelog content
+          {
+            echo "## What's Changed"
+            echo ""
+
+            # Features
+            FEATURES=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" -i)
+            if [ -n "$FEATURES" ]; then
+              echo "### Features"
+              echo "$FEATURES"
+              echo ""
+            fi
+
+            # Bug Fixes
+            FIXES=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --grep="^fix" -i)
+            if [ -n "$FIXES" ]; then
+              echo "### Bug Fixes"
+              echo "$FIXES"
+              echo ""
+            fi
+
+            # Dependencies
+            DEPS=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --grep="^deps" -i)
+            if [ -n "$DEPS" ]; then
+              echo "### Dependencies"
+              echo "$DEPS"
+              echo ""
+            fi
+
+            # Other changes
+            OTHER=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^feature" --grep="^fix" --grep="^deps" -i | head -20)
+            if [ -n "$OTHER" ]; then
+              echo "### Other Changes"
+              echo "$OTHER"
+              echo ""
+            fi
+
+            echo "---"
+            echo ""
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$CURRENT_TAG"
+          } > CHANGELOG_CONTENT.md
+
+          # Store changelog for later use
+          cat CHANGELOG_CONTENT.md
+
+          # Set output (escape newlines for GitHub Actions)
+          CHANGELOG=$(cat CHANGELOG_CONTENT.md)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload changelog artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: CHANGELOG_CONTENT.md
+          retention-days: 7
+
+  # ---------- Run Tests Before Release ----------
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: prepare
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        working-directory: ./src
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Django tests
+        working-directory: ./src
+        env:
+          TESTING: "True"
+          DJANGO_SETTINGS_MODULE: "core.settings.dev"
+        run: python manage.py test -v 2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install Node dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile
+
+      - name: Run frontend tests
+        working-directory: ./pages
+        run: yarn test:unit
+
+  # ---------- Create GitHub Release ----------
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [prepare, changelog, test]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.version }}
+          name: Release ${{ needs.prepare.outputs.version }}
+          body: ${{ needs.changelog.outputs.changelog }}
+          draft: false
+          prerelease: ${{ needs.prepare.outputs.is_prerelease == 'true' }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release summary
+        run: |
+          echo "## Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Pre-release:** ${{ needs.prepare.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Changelog" >> $GITHUB_STEP_SUMMARY
+          echo "${{ needs.changelog.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY
+

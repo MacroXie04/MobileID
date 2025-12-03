@@ -1,15 +1,22 @@
 name: Django Tests
 
-# Trigger only after backend lint (Lint Ruff) succeeds so CI runs sequentially.
+# Trigger after any backend lint workflow completes.
+# The job will only run if the triggering lint workflow succeeded.
+# Note: All lint workflows (Ruff, Black, Flake8) run in parallel,
+# and tests will run after each completes successfully.
+# Tests run on all branches for CI purposes.
 on:
   workflow_run:
     workflows:
       - Lint Ruff
+      - Lint Black
+      - Lint Flake8
     types:
       - completed
 
 jobs:
   test:
+    # Only run if the triggering lint workflow succeeded
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
