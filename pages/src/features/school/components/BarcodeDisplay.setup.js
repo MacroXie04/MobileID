@@ -52,10 +52,10 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
     stopDetection();
 
     autoDisplayed.value = true;
-    showBarcode.value = true;
-    startProgressBar();
 
     emitFn('scanner-detected', objects);
+    // Emit 'generate' event to trigger parent's handleGenerate()
+    // The parent will handle barcode generation and animation consistently
     emitFn('generate');
 
     // Clear auto-display notice after 3 seconds
@@ -100,11 +100,7 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
         progressPercent.value = 0;
         clearInterval(progressInterval);
         showBarcode.value = false;
-
-        // Resume detection after barcode display ends
-        if (componentProps.scannerDetectionEnabled) {
-          startDetection();
-        }
+        // Note: Resume detection is handled by parent's handleGenerate()
       }
     }, interval);
   }
@@ -113,6 +109,7 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
   async function initDetection() {
     if (componentProps.scannerDetectionEnabled) {
       // Request permission and start detection automatically
+      // ensureCameraPermission from useScannerDetection returns boolean
       const granted = await ensureCameraPermission();
       if (granted) {
         await startDetection();
@@ -170,6 +167,7 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
     startProgressBar,
     isDetectionActive,
     scannerDetected: autoDisplayed,
+    startDetection,
   };
 
   return {

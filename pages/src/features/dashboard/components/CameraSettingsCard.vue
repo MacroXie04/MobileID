@@ -14,7 +14,7 @@
 
     <div class="settings-content">
       <!-- Camera Permission Required Banner -->
-      <div v-if="!hasCameraPermission && !scannerDetectionEnabled" class="permission-banner">
+      <div v-if="!hasCameraPermission" class="permission-banner">
         <div class="permission-banner-icon">
           <md-icon>videocam_off</md-icon>
         </div>
@@ -33,81 +33,47 @@
       </div>
 
       <!-- Camera Preview Section (moved above settings) -->
-      <div v-if="scannerDetectionEnabled" class="camera-preview-section">
+      <div v-if="scannerDetectionEnabled && hasCameraPermission" class="camera-preview-section">
         <div class="section-header">
           <md-icon>preview</md-icon>
           <span>Detection</span>
         </div>
 
-        <!-- Permission Request -->
-        <div v-if="!hasCameraPermission && !isRequestingPermission" class="permission-request">
-          <div class="permission-icon">
-            <md-icon>videocam</md-icon>
-          </div>
-          <h3 class="permission-title">Camera Access Required</h3>
-          <p class="permission-desc">Allow camera access to test scanner detection.</p>
-          <md-filled-button @click="requestCameraPermission">
-            <md-icon slot="icon">check</md-icon>
-            Allow Camera
-          </md-filled-button>
-        </div>
-
-        <!-- Permission Requesting -->
-        <div v-else-if="isRequestingPermission" class="permission-loading">
-          <md-circular-progress indeterminate></md-circular-progress>
-          <span>Requesting access...</span>
-        </div>
-
-        <!-- Permission Denied -->
-        <div v-else-if="permissionDenied" class="permission-denied">
-          <div class="permission-icon denied">
-            <md-icon>videocam_off</md-icon>
-          </div>
-          <h3 class="permission-title">Access Denied</h3>
-          <p class="permission-desc">Enable camera in browser settings.</p>
-          <md-outlined-button @click="requestCameraPermission">
-            <md-icon slot="icon">refresh</md-icon>
-            Retry
-          </md-outlined-button>
-        </div>
-
         <!-- Camera Preview -->
-        <template v-else>
-          <div class="camera-wrapper" :class="{ active: isDetectionActive }">
-            <video ref="videoElement" class="camera-video" autoplay playsinline muted></video>
-            <canvas ref="detectionCanvas" class="detection-canvas"></canvas>
+        <div class="camera-wrapper" :class="{ active: isDetectionActive }">
+          <video ref="videoElement" class="camera-video" autoplay playsinline muted></video>
+          <canvas ref="detectionCanvas" class="detection-canvas"></canvas>
 
-            <!-- Status Badge -->
-            <div class="status-overlay">
-              <div class="status-badge" :class="statusClass">
-                <md-icon>{{ statusIcon }}</md-icon>
-                <span>{{ detectionStatus }}</span>
-              </div>
-            </div>
-
-            <!-- Detected Objects -->
-            <div v-if="detectedObjects.length > 0" class="detected-list">
-              <div v-for="obj in detectedObjects" :key="obj.class" class="detected-tag">
-                <md-icon>sensors</md-icon>
-                <span>{{ obj.class }} {{ Math.round(obj.score * 100) }}%</span>
-              </div>
+          <!-- Status Badge -->
+          <div class="status-overlay">
+            <div class="status-badge" :class="statusClass">
+              <md-icon>{{ statusIcon }}</md-icon>
+              <span>{{ detectionStatus }}</span>
             </div>
           </div>
 
-          <!-- Controls -->
-          <div class="camera-controls">
-            <md-filled-tonal-button :disabled="isModelLoading" @click="toggleDetection">
-              <md-icon slot="icon">{{ isDetectionActive ? 'stop' : 'play_arrow' }}</md-icon>
-              {{ isDetectionActive ? 'Stop' : 'Start Test' }}
-            </md-filled-tonal-button>
+          <!-- Detected Objects -->
+          <div v-if="detectedObjects.length > 0" class="detected-list">
+            <div v-for="obj in detectedObjects" :key="obj.class" class="detected-tag">
+              <md-icon>sensors</md-icon>
+              <span>{{ obj.class }} {{ Math.round(obj.score * 100) }}%</span>
+            </div>
           </div>
+        </div>
 
-          <!-- Loading -->
-          <div v-if="isModelLoading" class="model-loading">
-            <md-circular-progress indeterminate></md-circular-progress>
-            <span>Loading AI model...</span>
-          </div>
-        </template>
+        <!-- Controls -->
+        <div class="camera-controls">
+          <md-filled-tonal-button :disabled="isModelLoading" @click="toggleDetection">
+            <md-icon slot="icon">{{ isDetectionActive ? 'stop' : 'play_arrow' }}</md-icon>
+            {{ isDetectionActive ? 'Stop' : 'Start Test' }}
+          </md-filled-tonal-button>
+        </div>
+
+        <!-- Loading -->
+        <div v-if="isModelLoading" class="model-loading">
+          <md-circular-progress indeterminate></md-circular-progress>
+          <span>Loading AI model...</span>
+        </div>
 
         <!-- Info Hint -->
         <div class="info-hint">
@@ -189,7 +155,6 @@ const {
   videoElement,
   detectionCanvas,
   isRequestingPermission,
-  permissionDenied,
   isDetectionActive,
   isModelLoading,
   detectionStatus,

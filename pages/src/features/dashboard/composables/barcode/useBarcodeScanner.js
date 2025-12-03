@@ -1,4 +1,5 @@
 import { nextTick, onUnmounted, ref, watch } from 'vue';
+import { useCameraPermission } from '@shared/composables/useCameraPermission.js';
 
 /**
  * Composable for handling barcode/QR code scanning functionality
@@ -11,6 +12,9 @@ import { nextTick, onUnmounted, ref, watch } from 'vue';
 export function useBarcodeScanner(options = {}) {
   const { onScan, onError } = options;
 
+  // Shared camera permission state and methods
+  const { hasCameraPermission, ensureCameraPermission } = useCameraPermission();
+
   // State
   const showScanner = ref(false);
   const scanning = ref(false);
@@ -18,37 +22,9 @@ export function useBarcodeScanner(options = {}) {
   const videoRef = ref(null);
   const cameras = ref([]);
   const selectedCameraId = ref(null);
-  const hasCameraPermission = ref(false);
 
   // Internal state
   let codeReader = null;
-
-  /**
-   * Check and request camera permission
-   * @returns {Promise<boolean>} True if permission granted
-   */
-  async function ensureCameraPermission() {
-    try {
-      if (!navigator?.mediaDevices?.getUserMedia) {
-        scannerStatus.value = 'Camera is not supported in this browser.';
-        return false;
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      });
-
-      // Stop the stream immediately after getting permission
-      stream.getTracks().forEach((t) => t.stop());
-      hasCameraPermission.value = true;
-      return true;
-    } catch (err) {
-      console.error('Camera permission error:', err);
-      hasCameraPermission.value = false;
-      scannerStatus.value = 'Camera permission denied.';
-      return false;
-    }
-  }
 
   /**
    * Initialize and start the scanner
@@ -64,9 +40,9 @@ export function useBarcodeScanner(options = {}) {
 
       // Request camera permission if not already granted
       if (!hasCameraPermission.value) {
-        const granted = await ensureCameraPermission();
+        const { granted, error } = await ensureCameraPermission({ facingMode: 'environment' });
         if (!granted) {
-          scannerStatus.value = 'Camera permission denied.';
+          scannerStatus.value = error || 'Camera permission denied.';
           scanning.value = false;
           if (onError) {
             onError(new Error('Camera permission denied'));
@@ -146,10 +122,10 @@ export function useBarcodeScanner(options = {}) {
     } else {
       showScanner.value = true;
       await nextTick();
-      const granted = await ensureCameraPermission();
+      const { granted, error } = await ensureCameraPermission({ facingMode: 'environment' });
       if (!granted) {
         scanning.value = false;
-        scannerStatus.value = 'Camera permission is required to use the scanner.';
+        scannerStatus.value = error || 'Camera permission is required to use the scanner.';
         if (onError) {
           onError(new Error('Camera permission required'));
         }

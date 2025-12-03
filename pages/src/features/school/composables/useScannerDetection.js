@@ -1,4 +1,5 @@
 import { nextTick, onUnmounted, ref, watch } from 'vue';
+import { useCameraPermission } from '@shared/composables/useCameraPermission.js';
 
 /**
  * Composable for scanner detection using TensorFlow.js COCO-SSD model
@@ -20,6 +21,9 @@ export function useScannerDetection(options = {}) {
     canvasRef: externalCanvasRef,
   } = options;
 
+  // Shared camera permission state and methods
+  const { hasCameraPermission, ensureCameraPermission: requestPermission } = useCameraPermission();
+
   // State
   const isDetectionActive = ref(false);
   const isModelLoading = ref(false);
@@ -29,7 +33,6 @@ export function useScannerDetection(options = {}) {
   const canvasRef = externalCanvasRef || ref(null);
   const cameras = ref([]);
   const selectedCameraId = ref(null);
-  const hasCameraPermission = ref(false);
   const detectedObjects = ref([]);
   const lastDetectionTime = ref(null);
 
@@ -39,36 +42,24 @@ export function useScannerDetection(options = {}) {
   let animationFrameId = null;
   let detectionCooldown = false;
 
-  // Detection configuration
-  const DETECTION_COOLDOWN_MS = 2000; // Cooldown between detections to prevent spam
-  const CONFIDENCE_THRESHOLD = 0.5; // Minimum confidence for detection
+  // Detection configuration - balanced settings for good success rate
+  const DETECTION_COOLDOWN_MS = 2500; // Cooldown between detections
+  const CONFIDENCE_THRESHOLD = 0.55; // Lower threshold (55%) for better detection rate
+  const CONSECUTIVE_DETECTIONS_REQUIRED = 2; // Only need 2 consecutive frames
+  const MIN_OBJECT_SIZE_RATIO = 0.02; // Minimum 2% of video area
+  const MAX_OBJECT_SIZE_RATIO = 0.6; // Maximum 60% of video area
 
-  // Objects that might indicate a scanner is present
-  // COCO-SSD can detect: person, cell phone, remote, etc.
-  const SCANNER_RELATED_OBJECTS = ['cell phone', 'remote', 'mouse', 'keyboard'];
+  // Aspect ratio validation - only filter very thin objects like lighters
+  // Lighters typically have aspect ratio < 0.2 (very thin)
+  const MIN_ASPECT_RATIO = 0.2; // Filter out very thin objects
+  const MAX_ASPECT_RATIO = 5.0; // Allow wide range for different phone orientations
 
-  /**
-   * Check if camera permission was already granted
-   */
-  async function checkExistingPermission() {
-    try {
-      // Use Permissions API to check camera status
-      if (navigator.permissions && navigator.permissions.query) {
-        const result = await navigator.permissions.query({ name: 'camera' });
-        if (result.state === 'granted') {
-          hasCameraPermission.value = true;
-          return true;
-        }
-      }
-    } catch (_err) {
-      // Permissions API may not be supported, that's ok
-      console.log('Permissions API not supported, will check on request');
-    }
-    return false;
-  }
+  // Only respond to cell phone (closest match to barcode scanner in COCO-SSD)
+  const SCANNER_RELATED_OBJECTS = ['cell phone'];
 
-  // Check permission on init
-  checkExistingPermission();
+  // Track consecutive detections for stability
+  let consecutiveDetectionCount = 0;
+  let lastDetectedClass = null;
 
   /**
    * Load the COCO-SSD model
@@ -114,30 +105,22 @@ export function useScannerDetection(options = {}) {
    * @returns {Promise<boolean>} True if permission granted
    */
   async function ensureCameraPermission() {
-    try {
-      if (!navigator?.mediaDevices?.getUserMedia) {
-        detectionStatus.value = 'Camera is not supported in this browser';
-        return false;
-      }
+    const {
+      granted,
+      stream: permissionStream,
+      error,
+    } = await requestPermission({
+      facingMode: preferFrontCamera ? 'user' : 'environment',
+    });
 
-      // Request camera access with preference for front camera on mobile
-      const constraints = {
-        video: {
-          facingMode: preferFrontCamera ? 'user' : 'environment',
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-        },
-      };
-
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      hasCameraPermission.value = true;
-      return true;
-    } catch (err) {
-      console.error('Camera permission error:', err);
-      hasCameraPermission.value = false;
-      detectionStatus.value = 'Camera permission denied';
+    if (!granted) {
+      detectionStatus.value = error || 'Camera permission denied';
       return false;
     }
+
+    // Store the stream for later use
+    stream = permissionStream;
+    return true;
   }
 
   /**
@@ -216,6 +199,36 @@ export function useScannerDetection(options = {}) {
   }
 
   /**
+   * Validate object size and shape to filter out noise and false positives
+   * @param {Object} detection - Detection object with bbox
+   * @param {HTMLVideoElement} video - Video element
+   * @returns {boolean} True if object passes all validation criteria
+   */
+  function isValidObject(detection, video) {
+    const [, , width, height] = detection.bbox;
+    const videoArea = video.videoWidth * video.videoHeight;
+    const objectArea = width * height;
+    const sizeRatio = objectArea / videoArea;
+
+    // Check size constraints
+    if (sizeRatio < MIN_OBJECT_SIZE_RATIO || sizeRatio > MAX_OBJECT_SIZE_RATIO) {
+      return false;
+    }
+
+    // Check aspect ratio - phones/scanners have specific proportions
+    // Lighters are typically very thin, so they'll fail this check
+    const aspectRatio = width / height;
+    if (aspectRatio < MIN_ASPECT_RATIO || aspectRatio > MAX_ASPECT_RATIO) {
+      console.log(
+        `Object rejected: aspect ratio ${aspectRatio.toFixed(2)} out of range [${MIN_ASPECT_RATIO}, ${MAX_ASPECT_RATIO}]`
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
    * Run object detection on current video frame
    */
   async function detectFrame() {
@@ -233,9 +246,15 @@ export function useScannerDetection(options = {}) {
       // Run detection
       const predictions = await model.detect(video);
 
-      // Filter relevant objects
+      // Filter relevant objects with multiple validation criteria:
+      // 1. Confidence threshold (75%)
+      // 2. Object class (only cell phone for scanner detection)
+      // 3. Valid object size and aspect ratio
       const relevantObjects = predictions.filter(
-        (p) => p.score >= CONFIDENCE_THRESHOLD && SCANNER_RELATED_OBJECTS.includes(p.class)
+        (p) =>
+          p.score >= CONFIDENCE_THRESHOLD &&
+          SCANNER_RELATED_OBJECTS.includes(p.class) &&
+          isValidObject(p, video)
       );
 
       detectedObjects.value = relevantObjects;
@@ -245,15 +264,50 @@ export function useScannerDetection(options = {}) {
         drawDetections(relevantObjects);
       }
 
-      // Trigger callback if scanner-related object detected and not in cooldown
-      if (relevantObjects.length > 0 && !detectionCooldown) {
+      // Update consecutive detection tracking
+      if (relevantObjects.length > 0) {
+        const bestMatch = relevantObjects.reduce((a, b) => (a.score > b.score ? a : b));
+        const currentClass = bestMatch.class;
+
+        if (currentClass === lastDetectedClass) {
+          consecutiveDetectionCount++;
+        } else {
+          consecutiveDetectionCount = 1;
+          lastDetectedClass = currentClass;
+        }
+      } else {
+        // Reset if no detection in this frame
+        consecutiveDetectionCount = 0;
+        lastDetectedClass = null;
+      }
+
+      // Trigger callback only if:
+      // 1. Scanner-related object detected
+      // 2. Not in cooldown
+      // 3. Consecutive detections threshold met (stability check)
+      if (
+        relevantObjects.length > 0 &&
+        !detectionCooldown &&
+        consecutiveDetectionCount >= CONSECUTIVE_DETECTIONS_REQUIRED
+      ) {
         detectionCooldown = true;
         lastDetectionTime.value = Date.now();
-        detectionStatus.value = `Detected: ${relevantObjects.map((o) => o.class).join(', ')}`;
+        const bestMatch = relevantObjects.reduce((a, b) => (a.score > b.score ? a : b));
+        detectionStatus.value = `Scanner detected (${Math.round(bestMatch.score * 100)}% confidence)`;
+
+        console.log('Scanner detection triggered:', {
+          class: bestMatch.class,
+          confidence: bestMatch.score,
+          consecutiveFrames: consecutiveDetectionCount,
+        });
 
         if (onDetected) {
           onDetected(relevantObjects);
         }
+
+        // Reset consecutive count after trigger
+        consecutiveDetectionCount = 0;
+        lastDetectedClass = null;
 
         // Reset cooldown after delay
         setTimeout(() => {
@@ -384,7 +438,10 @@ export function useScannerDetection(options = {}) {
       videoRef.value.srcObject = null;
     }
 
+    // Reset detection tracking
     detectedObjects.value = [];
+    consecutiveDetectionCount = 0;
+    lastDetectedClass = null;
     detectionStatus.value = 'Detection stopped';
   }
 

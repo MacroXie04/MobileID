@@ -3,7 +3,11 @@
 from django.urls import path
 
 from index.api.barcode import GenerateBarcodeAPIView, ActiveProfileAPIView
-from index.api.dashboard import BarcodeDashboardAPIView, DynamicBarcodeCreateAPIView
+from index.api.dashboard import (
+    BarcodeDashboardAPIView,
+    DynamicBarcodeCreateAPIView,
+    TransferDynamicBarcodeAPIView,
+)
 
 app_name = "index"
 
@@ -31,5 +35,11 @@ urlpatterns = [
         "dynamic_barcode/",
         DynamicBarcodeCreateAPIView.as_view(),
         name="api_dynamic_barcode_create",
+    ),
+    # transfer dynamic barcode from HTML
+    path(
+        "transfer_dynamic_barcode/",
+        TransferDynamicBarcodeAPIView.as_view(),
+        name="api_transfer_dynamic_barcode",
     ),
 ]

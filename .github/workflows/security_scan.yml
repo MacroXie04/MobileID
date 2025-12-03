@@ -9,7 +9,6 @@ on:
       - "pages/package.json"
       - "pages/yarn.lock"
       - "src/Dockerfile"
-      - ".github/workflows/security_scan.yml"
   # Run on all PRs (for code review)
   pull_request:
     paths:
@@ -17,7 +16,6 @@ on:
       - "pages/package.json"
       - "pages/yarn.lock"
       - "src/Dockerfile"
-      - ".github/workflows/security_scan.yml"
   schedule:
     # Run weekly on Sunday at midnight UTC
     - cron: "0 0 * * 0"

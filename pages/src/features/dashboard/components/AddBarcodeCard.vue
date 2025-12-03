@@ -12,7 +12,10 @@
         </p>
       </div>
       <transition name="fade">
-        <div v-if="dynamicLoading" class="save-indicator md-flex md-items-center md-gap-2">
+        <div
+          v-if="dynamicLoading || transferLoading"
+          class="save-indicator md-flex md-items-center md-gap-2"
+        >
           <md-circular-progress indeterminate></md-circular-progress>
           <span class="md-typescale-body-small">Processing...</span>
         </div>
@@ -225,6 +228,65 @@
           </form>
         </div>
       </div>
+
+      <!-- Transfer Dynamic Barcode Section -->
+      <div class="settings-section md-mt-6">
+        <div class="active-barcode-header">
+          <md-icon class="active-icon">swap_horiz</md-icon>
+          <span class="md-typescale-label-medium">Transfer Dynamic Barcode</span>
+        </div>
+
+        <div class="active-barcode-info-wrapper">
+          <form class="md-form" @submit.prevent="transferDynamicBarcode">
+            <div class="transfer-form md-p-4">
+              <div class="form-grid">
+                <div>
+                  <label class="md-typescale-body-small select-label">HTML Content</label>
+                  <textarea
+                    v-model="transferHtml"
+                    :class="['transfer-textarea', { 'has-error': !!transferErrors.html }]"
+                    placeholder="Paste the raw HTML from your ID card page..."
+                    rows="6"
+                    @input="clearTransferError"
+                  ></textarea>
+                  <span v-if="transferErrors.html" class="error-text">{{
+                    transferErrors.html
+                  }}</span>
+                  <span v-else class="helper-text"
+                    >Paste the complete HTML source of your ID card page. The system will
+                    automatically extract barcode, name, student ID, and avatar.</span
+                  >
+                </div>
+              </div>
+
+              <div class="form-actions md-flex md-gap-3 md-mt-4">
+                <md-filled-button :disabled="transferLoading || !transferHtml.trim()" type="submit">
+                  <md-icon slot="icon">{{
+                    transferLoading ? 'hourglass_empty' : 'upload'
+                  }}</md-icon>
+                  {{ transferLoading ? 'Transferring...' : 'Transfer Barcode' }}
+                </md-filled-button>
+              </div>
+            </div>
+
+            <transition name="fade">
+              <div v-if="transferSuccess" class="md-banner md-banner-success md-mx-4 md-mb-4">
+                <md-icon>check_circle</md-icon>
+                <span class="md-typescale-body-medium">
+                  {{ transferSuccessMessage || 'Dynamic barcode transferred successfully!' }}
+                </span>
+              </div>
+            </transition>
+
+            <transition name="fade">
+              <div v-if="transferError" class="md-banner md-banner-error md-mx-4 md-mb-4">
+                <md-icon>error</md-icon>
+                <span class="md-typescale-body-medium">{{ transferError }}</span>
+              </div>
+            </transition>
+          </form>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -254,6 +316,13 @@ const {
   dynamicSuccessMessage,
   dynamicError,
   dynamicErrors,
+  // Transfer dynamic barcode
+  transferHtml,
+  transferLoading,
+  transferSuccess,
+  transferSuccessMessage,
+  transferError,
+  transferErrors,
   // Scanner
   showScanner,
   scanning,
@@ -271,5 +340,7 @@ const {
   addBarcode,
   clearDynamicError,
   createDynamicBarcode,
+  clearTransferError,
+  transferDynamicBarcode,
 } = useAddBarcodeCardSetup({ emit });
 </script>
