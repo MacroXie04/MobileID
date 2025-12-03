@@ -17,8 +17,10 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Only run if Database Migrations workflow succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Only run if Database Migrations workflow succeeded AND triggered from main branch
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
 
     environment:
       name: MobileID Backend (Google Cloud - Production)
