@@ -1,23 +1,42 @@
 name: Docker Build
 
 on:
+  # Push only on main branch (for direct commits and merge commits)
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/docker-build.yml"
+  # Pull request on all branches (for PR checks / validation)
+  pull_request:
+    paths:
+      - ".github/workflows/docker-build.yml"
+  # Trigger after Django Tests succeed
   workflow_run:
     workflows:
       - Django Tests
     types:
       - completed
 
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    # Only build Docker images for specific branches to reduce resource consumption
-    # and ensure only production-ready code gets containerized
-    if: ${{ github.event.workflow_run.conclusion == 'success' && contains(fromJSON('["main","master","google-cloud"]'), github.event.workflow_run.head_branch) }}
+    # Only build Docker images for:
+    # 1. Specific branches after Django Tests succeed (for production-ready code)
+    # 2. Any branch when workflow file changes (for validation)
+    if: |
+      (github.event_name == 'push' || github.event_name == 'pull_request') ||
+      (github.event.workflow_run.conclusion == 'success' && contains(fromJSON('["main","master","google-cloud"]'), github.event.workflow_run.head_branch))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          # Use workflow_run's head_sha for workflow_run events, otherwise use default
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

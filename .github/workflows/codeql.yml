@@ -1,6 +1,15 @@
 name: CodeQL Security Analysis
 
 on:
+  # Push only on main branch (for direct commits and merge commits)
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/codeql.yml"
+  # Pull request on all branches (for PR checks / validation)
+  pull_request:
+    paths:
+      - ".github/workflows/codeql.yml"
   schedule:
     - cron: "0 0 * * 0" # Weekly on Sunday - scans all branches
   workflow_run:
@@ -11,6 +20,11 @@ on:
     # back (e.g., branches: [main, master]) to limit scans to specific branches.
     types:
       - completed
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   analyze:

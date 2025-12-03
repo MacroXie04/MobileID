@@ -9,6 +9,7 @@ on:
       - "pages/package.json"
       - "pages/yarn.lock"
       - "src/Dockerfile"
+      - ".github/workflows/security_scan.yml"
   # Run on all PRs (for code review)
   pull_request:
     paths:
@@ -16,10 +17,16 @@ on:
       - "pages/package.json"
       - "pages/yarn.lock"
       - "src/Dockerfile"
+      - ".github/workflows/security_scan.yml"
   schedule:
     # Run weekly on Sunday at midnight UTC
     - cron: "0 0 * * 0"
   workflow_dispatch:
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   # ---------- Python Dependency Security Check ----------

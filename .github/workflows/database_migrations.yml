@@ -3,22 +3,43 @@ name: Database Migrations
 # Runs after Django Tests succeed, ensuring migrations only run on tested code.
 # Runs on all branches to verify migrations are valid before merging.
 on:
+  # Push only on main branch (for direct commits and merge commits)
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/database_migrations.yml"
+  # Pull request on all branches (for PR checks / validation)
+  pull_request:
+    paths:
+      - ".github/workflows/database_migrations.yml"
   workflow_run:
     workflows:
       - Django Tests
     types:
       - completed
 
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   test-migrations:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Run when:
+    # 1. Workflow file changes (push/PR) - for validation
+    # 2. Django Tests workflow succeeds
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          # Use workflow_run's head_sha for workflow_run events, otherwise use default
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5

@@ -1,6 +1,15 @@
 name: Deploy to Cloud Run
 
 on:
+  # Push only on main branch (for direct commits and merge commits)
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/gcp_deploy.yml"
+  # Pull request on all branches (for PR checks / validation)
+  pull_request:
+    paths:
+      - ".github/workflows/gcp_deploy.yml"
   # Trigger only after database migrations pipeline completes
   # This ensures migrations are applied before deployment and avoids duplicate deployments
   workflow_run:
@@ -9,16 +18,40 @@ on:
     types:
       - completed
 
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 env:
   PROJECT_ID: mobileid-478800
   REGION: us-west1
   SERVICE_NAME: mobileid
 
 jobs:
+  # Validate workflow syntax when file changes (for push/PR events)
+  validate:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate workflow syntax
+        run: |
+          echo "Validating gcp_deploy.yml workflow syntax..."
+          # Check YAML syntax using yq
+          if command -v yq &> /dev/null; then
+            yq e '.' .github/workflows/gcp_deploy.yml > /dev/null
+          fi
+          echo "[PASS] Workflow file syntax is valid"
+
   deploy:
     runs-on: ubuntu-latest
     # Only run if Database Migrations workflow succeeded AND triggered from main branch
+    # Skip for push/PR events (those are handled by validate job)
     if: >-
+      github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'
 

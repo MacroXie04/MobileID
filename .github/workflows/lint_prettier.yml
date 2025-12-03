@@ -1,20 +1,21 @@
 name: Lint Prettier
 
 on:
+  # Push only on main branch (for direct commits and merge commits)
   push:
-    branches: ['**']
+    branches: [main]
     paths:
       - 'pages/**'
       - '.github/workflows/lint_prettier.yml'
+  # Pull request on all branches (for PR checks)
   pull_request:
-    branches: ['**']
     paths:
       - 'pages/**'
       - '.github/workflows/lint_prettier.yml'
 
-# Cancel in-progress runs for the same branch/PR
+# Cancel in-progress runs for the same branch
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
