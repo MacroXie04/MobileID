@@ -25,12 +25,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # Only deploy from main branch when:
+    # Only deploy when:
     # 1. Manual trigger on main branch
-    # 2. Database Migrations workflow succeeded on main branch
+    # 2. Database Migrations workflow succeeded (branches filter already ensures main branch)
     if: |
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
 
     environment:
       name: MobileID Backend (Google Cloud - Production)
