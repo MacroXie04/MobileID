@@ -1,16 +1,17 @@
 name: Security Scan
 
 on:
+  # Only run on push to main branch (for deployment checks)
   push:
-    branches: ["**"]
+    branches: [main]
     paths:
       - "src/requirements.txt"
       - "pages/package.json"
       - "pages/yarn.lock"
       - "src/Dockerfile"
       - ".github/workflows/security_scan.yml"
+  # Run on all PRs (for code review)
   pull_request:
-    branches: ["**"]
     paths:
       - "src/requirements.txt"
       - "pages/package.json"
