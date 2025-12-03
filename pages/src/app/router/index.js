@@ -16,6 +16,16 @@ const routes = [
     meta: { feature: 'auth' },
   },
   {
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('@auth/views/PrivacyView.vue'),
+    meta: { feature: 'auth' },
+  },
+  {
+    path: '/privacy.html',
+    redirect: '/privacy',
+  },
+  {
     path: '/',
     name: 'home',
     component: () => import('@home/views/HomeView.vue'),
