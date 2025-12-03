@@ -146,7 +146,13 @@
             <router-link class="auth-link" to="/login">Sign in instead</router-link>
           </p>
           <p class="md-typescale-body-small footer-text privacy-link">
-            <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="privacy-link-text">Privacy Policy</a>
+            <a
+              href="/privacy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="privacy-link-text"
+              >Privacy Policy</a
+            >
           </p>
         </div>
       </div>
