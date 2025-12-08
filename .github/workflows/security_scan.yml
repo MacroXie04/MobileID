@@ -60,7 +60,7 @@ jobs:
           safety check -r requirements-frozen.txt || echo "::warning::Vulnerabilities found in Python dependencies"
 
       - name: Upload Safety report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: python-security-report
@@ -97,7 +97,7 @@ jobs:
           yarn audit --summary || echo "::warning::Vulnerabilities found in Node.js dependencies"
 
       - name: Upload Yarn Audit report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: nodejs-security-report
@@ -139,7 +139,7 @@ jobs:
           severity: "CRITICAL,HIGH,MEDIUM"
 
       - name: Upload Trivy report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: docker-security-report
