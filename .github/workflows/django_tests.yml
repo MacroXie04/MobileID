@@ -83,7 +83,7 @@ jobs:
           python -m coverage xml -o coverage.xml
 
       - name: Upload coverage XML
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-xml
           path: src/coverage.xml
