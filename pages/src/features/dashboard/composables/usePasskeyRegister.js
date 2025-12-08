@@ -1,9 +1,5 @@
 import { onMounted, ref } from 'vue';
-import {
-  passkeyRegisterOptions,
-  passkeyRegisterVerify,
-  getUserProfile,
-} from '@shared/api/auth.js';
+import { passkeyRegisterOptions, passkeyRegisterVerify, getUserProfile } from '@shared/api/auth.js';
 import { ApiError } from '@shared/api/client.js';
 
 export function usePasskeyRegister() {

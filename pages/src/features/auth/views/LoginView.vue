@@ -55,7 +55,12 @@
           </transition>
 
           <!-- Submit Button -->
-          <md-filled-button ref="submitBtn" :disabled="loading || passkeyLoading" class="submit-button" type="submit">
+          <md-filled-button
+            ref="submitBtn"
+            :disabled="loading || passkeyLoading"
+            class="submit-button"
+            type="submit"
+          >
             <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
             <md-icon v-if="!loading" slot="icon">login</md-icon>
             {{ loading ? 'Signing in...' : 'Sign In' }}
@@ -76,7 +81,11 @@
 
           <!-- Passkey Error Message -->
           <transition name="slide-up">
-            <div v-if="passkeyError" class="md-banner md-banner-error passkey-error" @click="clearPasskeyError">
+            <div
+              v-if="passkeyError"
+              class="md-banner md-banner-error passkey-error"
+              @click="clearPasskeyError"
+            >
               <md-icon>error_outline</md-icon>
               <span class="md-typescale-body-medium">{{ passkeyError }}</span>
             </div>

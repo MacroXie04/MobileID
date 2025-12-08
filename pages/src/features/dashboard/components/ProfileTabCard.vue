@@ -138,7 +138,9 @@
         <div ref="cropperContainer" class="cropper-container md-rounded-lg">
           <img ref="cropperImage" alt="Image to crop" class="cropper-image" />
         </div>
-        <div class="cropper-tips md-typescale-body-small md-p-4 md-mt-4 md-rounded-lg md-text-center">
+        <div
+          class="cropper-tips md-typescale-body-small md-p-4 md-mt-4 md-rounded-lg md-text-center"
+        >
           Drag to reposition • Scroll to zoom • Double-click to reset
         </div>
       </form>
@@ -325,4 +327,3 @@ const {
   }
 }
 </style>
-

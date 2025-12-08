@@ -151,7 +151,8 @@ export function usePasskeyLogin() {
       if (err.name === 'NotAllowedError') {
         passkeyError.value = 'Authentication was cancelled or not allowed.';
       } else if (err.name === 'SecurityError') {
-        passkeyError.value = 'Security error during authentication. Please ensure you are on a secure connection.';
+        passkeyError.value =
+          'Security error during authentication. Please ensure you are on a secure connection.';
       } else if (err.name === 'NotSupportedError') {
         passkeyError.value = 'Passkeys are not supported on this device.';
       } else if (err instanceof ApiError) {

@@ -17,9 +17,7 @@ export async function apiRequest(endpoint, options = {}) {
       headers: options.headers || {},
       data: options.body, // axios uses 'data' for body
       withCredentials:
-        typeof options.withCredentials === 'boolean'
-          ? options.withCredentials
-          : undefined,
+        typeof options.withCredentials === 'boolean' ? options.withCredentials : undefined,
       ...options,
     };
 

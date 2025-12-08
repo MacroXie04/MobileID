@@ -378,15 +378,7 @@ export function useDashboardLogic() {
   onMounted(() => {
     // Initialize tab from URL (?tab=Overview|Profile|Camera|Barcodes|Add|Devices)
     const initialTab = route.query.tab || 'Overview';
-    const allowedTabs = [
-      'Overview',
-      'Profile',
-      'Camera',
-      'Barcodes',
-      'Add',
-      'Devices',
-      'Passkeys',
-    ];
+    const allowedTabs = ['Overview', 'Profile', 'Camera', 'Barcodes', 'Add', 'Devices', 'Passkeys'];
     if (allowedTabs.includes(initialTab)) {
       activeTab.value = initialTab;
     }

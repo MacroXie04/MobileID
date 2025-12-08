@@ -142,7 +142,11 @@ describe('usePasskeyLogin', () => {
     it('handles NotAllowedError correctly', async () => {
       Object.defineProperty(navigator, 'credentials', {
         value: {
-          get: vi.fn().mockRejectedValue(Object.assign(new Error('User cancelled'), { name: 'NotAllowedError' })),
+          get: vi
+            .fn()
+            .mockRejectedValue(
+              Object.assign(new Error('User cancelled'), { name: 'NotAllowedError' })
+            ),
         },
         writable: true,
         configurable: true,
