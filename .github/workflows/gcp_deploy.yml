@@ -142,7 +142,7 @@ jobs:
             echo "::error::Service is not in healthy state"
             exit 1
           fi
-          echo "[PASS] Cloud Run service is healthy and serving traffic"
+          echo "[PASS] Cloud Run service is healthy"
 
       # Note: Deployment status is automatically updated by GitHub Actions based on job result
       # The job-level 'environment' setting handles deployment record creation and status updates
