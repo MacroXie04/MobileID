@@ -7,9 +7,6 @@
       </div>
       <div class="header-text">
         <h2 class="md-typescale-headline-small">Logged-in Devices</h2>
-        <p class="md-typescale-body-small header-subtitle">
-          Manage your active sessions across devices
-        </p>
       </div>
       <md-icon-button v-if="!loading" class="refresh-button" @click="fetchDevices">
         <md-icon>refresh</md-icon>

@@ -8,7 +8,8 @@ import { useAutoSave } from '@shared/composables/useAutoSave.js';
 import { fileToBase64, validateImageFile } from '@user/utils/imageUtils.js';
 import avatarPlaceholder from '@/assets/images/user/avatar_placeholder.png';
 
-export function useProfileEditLogic() {
+export function useProfileEditLogic(options = {}) {
+  const { redirectOnSubmit = true, redirectPath = '/' } = options;
   const router = useRouter();
 
   // Refs
@@ -206,7 +207,7 @@ export function useProfileEditLogic() {
         return;
       }
 
-      // Success - show message then redirect
+      // Success - show message then redirect (optional)
       successMessage.value = 'Profile updated successfully!';
 
       // Update original data to match current data
@@ -218,9 +219,16 @@ export function useProfileEditLogic() {
       // Clear cached user info to force refresh on home page
       window.userInfo = null;
 
-      setTimeout(() => {
-        router.push('/');
-      }, 1500);
+      if (redirectOnSubmit) {
+        setTimeout(() => {
+          router.push(redirectPath);
+        }, 1500);
+      } else {
+        // Automatically dismiss success message to avoid lingering UI in embedded contexts
+        setTimeout(() => {
+          successMessage.value = '';
+        }, 3000);
+      }
     } catch (error) {
       console.error('Update error:', error);
       errors.value.general = 'Network error. Please try again.';

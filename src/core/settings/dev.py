@@ -40,9 +40,11 @@ CSRF_TRUSTED_ORIGINS = csv_env(
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
 CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
-# Cookies - Development: insecure cookies allowed
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"
+# Cookies - Development: allow cross-origin for localhost
+# SameSite=None allows cookies on cross-origin requests (needed for passkey flow)
+# Browsers allow SameSite=None without Secure on localhost
+SESSION_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False

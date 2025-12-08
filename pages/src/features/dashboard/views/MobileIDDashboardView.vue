@@ -41,6 +41,12 @@
             Overview
           </md-filter-chip>
         </div>
+        <div class="chip-wrapper" @click="setTab('Profile')">
+          <md-filter-chip :selected="activeTab === 'Profile'">
+            <md-icon slot="icon">account_circle</md-icon>
+            Profile
+          </md-filter-chip>
+        </div>
         <div class="chip-wrapper" @click="setTab('Camera')">
           <md-filter-chip :selected="activeTab === 'Camera'">
             <md-icon slot="icon">sensors</md-icon>
@@ -57,6 +63,12 @@
           <md-filter-chip :selected="activeTab === 'Devices'">
             <md-icon slot="icon">devices</md-icon>
             Devices Management
+          </md-filter-chip>
+        </div>
+        <div class="chip-wrapper" @click="setTab('Passkeys')">
+          <md-filter-chip :selected="activeTab === 'Passkeys'">
+            <md-icon slot="icon">passkey</md-icon>
+            Passkeys
           </md-filter-chip>
         </div>
         <div class="chip-wrapper" @click="setTab('Add')">
@@ -146,6 +158,9 @@
         @apply-limit-preset="applyLimitPreset"
       />
 
+      <!-- Profile Settings -->
+      <ProfileTabCard v-show="activeTab === 'Profile'" />
+
       <!-- Add Barcode Section -->
       <AddBarcodeCard
         v-show="activeTab === 'Add'"
@@ -156,6 +171,9 @@
 
       <!-- Devices Section -->
       <DevicesCard v-show="activeTab === 'Devices'" />
+
+      <!-- Passkeys Section -->
+      <PasskeysCard v-show="activeTab === 'Passkeys'" />
 
       <!-- Footer -->
       <footer class="dashboard-footer">
@@ -188,8 +206,10 @@ import {
   BarcodesListCard,
   AddBarcodeCard,
   DevicesCard,
+  ProfileTabCard,
+  PasskeysCard,
   useBarcodeDashboardViewSetup,
-} from './BarcodeDashboardView.setup.js';
+} from './MobileIDDashboardView.setup.js';
 
 const {
   router,

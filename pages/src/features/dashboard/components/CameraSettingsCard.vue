@@ -6,9 +6,6 @@
       </div>
       <div class="header-text">
         <h2 class="md-typescale-headline-small">Scanner Detection</h2>
-        <p class="md-typescale-body-small header-subtitle">
-          Configure scanner detection and camera preferences
-        </p>
       </div>
     </div>
 

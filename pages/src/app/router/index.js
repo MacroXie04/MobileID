@@ -32,15 +32,9 @@ const routes = [
     meta: { requiresAuth: true, feature: 'home' },
   },
   {
-    path: '/profile/edit',
-    name: 'user-profile-edit',
-    component: () => import('@user/views/ProfileEditView.vue'),
-    meta: { requiresAuth: true, feature: 'user' },
-  },
-  {
     path: '/dashboard',
     name: 'dashboard',
-    component: () => import('@dashboard/views/BarcodeDashboardView.vue'),
+    component: () => import('@dashboard/views/MobileIDDashboardView.vue'),
     meta: { requiresAuth: true, feature: 'dashboard' },
   },
   {

@@ -16,6 +16,10 @@ export async function apiRequest(endpoint, options = {}) {
       method: options.method || 'GET',
       headers: options.headers || {},
       data: options.body, // axios uses 'data' for body
+      withCredentials:
+        typeof options.withCredentials === 'boolean'
+          ? options.withCredentials
+          : undefined,
       ...options,
     };
 

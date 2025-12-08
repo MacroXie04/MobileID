@@ -376,9 +376,18 @@ export function useDashboardLogic() {
 
   // Lifecycle
   onMounted(() => {
-    // Initialize tab from URL (?tab=Overview|Camera|Barcodes|Add|Devices)
+    // Initialize tab from URL (?tab=Overview|Profile|Camera|Barcodes|Add|Devices)
     const initialTab = route.query.tab || 'Overview';
-    if (['Overview', 'Camera', 'Barcodes', 'Add', 'Devices'].includes(initialTab)) {
+    const allowedTabs = [
+      'Overview',
+      'Profile',
+      'Camera',
+      'Barcodes',
+      'Add',
+      'Devices',
+      'Passkeys',
+    ];
+    if (allowedTabs.includes(initialTab)) {
       activeTab.value = initialTab;
     }
     loadDashboard();

@@ -7,9 +7,6 @@
       </div>
       <div class="header-text">
         <h2 class="md-typescale-headline-small">Add New Barcode</h2>
-        <p class="md-typescale-body-small header-subtitle">
-          Add UC Merced dynamic barcode or static barcode
-        </p>
       </div>
       <transition name="fade">
         <div

@@ -43,7 +43,7 @@
 
       <footer class="privacy-footer">
         <p>
-          <router-link to="/login">← Back to catcard.online</router-link>
+          <a href="/" @click.prevent="goBack">← Back to catcard.online</a>
         </p>
         <p>© 2025 catcard.online. All rights reserved.</p>
       </footer>
@@ -52,7 +52,18 @@
 </template>
 
 <script setup>
-// No script needed, this is a static page
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+const goBack = () => {
+  // If there's history, go back; otherwise fall back to home
+  if (window.history.length > 1) {
+    router.back();
+  } else {
+    router.push('/');
+  }
+};
 </script>
 
 <style scoped>

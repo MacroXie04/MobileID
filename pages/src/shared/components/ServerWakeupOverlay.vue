@@ -24,11 +24,6 @@
                 fill="#FBBC05"
               />
             </svg>
-            <!-- Google four-color pulse rings -->
-            <div class="pulse-ring pulse-ring-1"></div>
-            <div class="pulse-ring pulse-ring-2"></div>
-            <div class="pulse-ring pulse-ring-3"></div>
-            <div class="pulse-ring pulse-ring-4"></div>
           </div>
 
           <!-- Status Text -->

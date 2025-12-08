@@ -100,7 +100,9 @@ def build_registration_options(user: User, exclude_existing: bool = True) -> dic
     options = generate_registration_options(
         rp_id=_rp_id(),
         rp_name="MobileID",
-        user_id=str(user.pk).encode("utf-8"),
+        # The library encodes the user_id internally; pass a string to avoid
+        # calling .encode on an already-bytes value.
+        user_id=str(user.pk),
         user_name=user.username,
         user_display_name=getattr(
             getattr(user, "userprofile", None), "name", user.username
