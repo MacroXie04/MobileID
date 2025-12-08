@@ -43,7 +43,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # Use workflow_run's head_sha if triggered by workflow_run, otherwise use default
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
