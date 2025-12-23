@@ -29,13 +29,13 @@
     "cropperjs": "^1.6.1",
     "jquery": "^3.7.1",
     "jwt-decode": "^4.0.0",
-    "vue": "^3.5.17",
-    "vue-router": "^4.5.1"
+    "vue": "^3.5.26",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
     "@types/node": "^24.0.15",
-    "@vitejs/plugin-vue": "^6.0.0",
+    "@vitejs/plugin-vue": "^6.0.3",
     "@vue/test-utils": "^2.4.6",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^9.1.0",
