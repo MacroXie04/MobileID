@@ -3,20 +3,17 @@ name: Database Migrations
 # Runs after Django Tests succeed, ensuring migrations only run on tested code.
 # Runs on all branches to verify migrations are valid before merging.
 on:
-  # Push only on main branch (for direct commits and merge commits)
   push:
     branches: [main]
-    paths:
-      - ".github/workflows/database_migrations.yml"
-  # Pull request on all branches (for PR checks / validation)
   pull_request:
-    paths:
-      - ".github/workflows/database_migrations.yml"
+    branches: [ main ]
   workflow_run:
     workflows:
       - Django Tests
+    branches: [ main ]
     types:
       - completed
+  workflow_dispatch:
 
 # Cancel in-progress runs for the same branch
 concurrency:
@@ -25,13 +22,12 @@ concurrency:
 
 jobs:
   test-migrations:
-    # Run when:
-    # 1. Workflow file changes (push/PR) - for validation
-    # 2. Django Tests workflow succeeds
+    # Run when manual, push/pull_request, or Django Tests succeed on main
     if: |
+      github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
       github.event_name == 'pull_request' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

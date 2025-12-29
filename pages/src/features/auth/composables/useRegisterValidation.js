@@ -41,12 +41,6 @@ export function useRegisterValidation() {
         }
         break;
 
-      case 'information_id':
-        if (!formData.information_id.trim()) {
-          errors.information_id = 'Information ID is required';
-        }
-        break;
-
       case 'password1':
         if (!formData.password1) {
           errors.password1 = 'Password is required';
@@ -73,7 +67,7 @@ export function useRegisterValidation() {
     Object.keys(errors).forEach((key) => delete errors[key]);
 
     // Validate each field
-    const fields = ['username', 'name', 'information_id', 'password1', 'password2'];
+    const fields = ['username', 'name', 'password1', 'password2'];
     fields.forEach((field) => {
       validateField(field, formData);
     });

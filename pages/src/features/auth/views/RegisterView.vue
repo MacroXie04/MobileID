@@ -70,18 +70,6 @@
             </md-outlined-text-field>
 
             <md-outlined-text-field
-              v-model="formData.information_id"
-              :error="!!errors.information_id"
-              :error-text="errors.information_id"
-              label="Information ID"
-              @blur="validateField('information_id')"
-              @input="clearError('information_id')"
-              @keyup.enter="!loading && handleSubmit()"
-            >
-              <md-icon slot="leading-icon">fingerprint</md-icon>
-            </md-outlined-text-field>
-
-            <md-outlined-text-field
               v-model="formData.password1"
               :error="!!errors.password1"
               :error-text="errors.password1"

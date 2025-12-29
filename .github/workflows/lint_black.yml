@@ -1,17 +1,17 @@
 name: Lint Black
 
 on:
-  # Push only on main branch (for direct commits and merge commits)
   push:
     branches: [main]
     paths:
       - "src/**"
       - ".github/workflows/lint_black.yml"
-  # Pull request on all branches (for PR checks)
   pull_request:
+    branches: [ main ]
     paths:
       - "src/**"
       - ".github/workflows/lint_black.yml"
+  workflow_dispatch:
 
 # Cancel in-progress runs for the same branch
 concurrency:
