@@ -13,7 +13,7 @@ def generate_unique_information_id(length: int = 9) -> str:
         raise ValueError("length must be at least 1")
 
     lower = 10 ** (length - 1)
-    upper = (10 ** length) - 1
+    upper = (10**length) - 1
 
     while True:
         info_id = str(random.randint(lower, upper))
@@ -29,7 +29,7 @@ def generate_unique_identification_barcode():
 
 
 def create_user_profile(
-        user, name: str, information_id: str | None, user_profile_img: str | None
+    user, name: str, information_id: str | None, user_profile_img: str | None
 ):
     # Profile
     info_id = information_id or generate_unique_information_id()

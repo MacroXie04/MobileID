@@ -84,7 +84,9 @@ class UserRegisterForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit)
         name = self.cleaned_data["name"]
-        info_id = self.cleaned_data.get("information_id") or generate_unique_information_id()
+        info_id = (
+            self.cleaned_data.get("information_id") or generate_unique_information_id()
+        )
 
         # check if there is a pre-cropped Base64
         avatar_b64 = self.cleaned_data.get("user_profile_img_base64", "")
