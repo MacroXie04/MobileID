@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 
 
 class Command(BaseCommand):
-    help = "Creates a superuser from env vars if it does not exist."
+    help = "Creates or updates a superuser from environment variables."
 
     def handle(self, *args, **options):
         User = get_user_model()
@@ -12,6 +12,11 @@ class Command(BaseCommand):
         username = os.environ.get("DJANGO_SUPERUSER_USERNAME")
         email = os.environ.get("DJANGO_SUPERUSER_EMAIL")
         password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
+
+        # Debugging - REMOVE AFTER DEBUGGING
+        self.stdout.write(f"DEBUG - Username: {username}")
+        self.stdout.write(f"DEBUG - Email: {email}")
+        self.stdout.write(f"DEBUG - Password: {password}")
 
         if not username or not email or not password:
             self.stdout.write(
@@ -24,14 +29,21 @@ class Command(BaseCommand):
 
         if User.objects.filter(username=username).exists():
             self.stdout.write(
-                f'Superuser "{username}" already exists. Updating password...'
+                f'Superuser "{username}" already exists. Updating credentials...'
             )
             user = User.objects.get(username=username)
             user.set_password(password)
             user.email = email
+            # Ensure superuser privileges are set
+            user.is_staff = True
+            user.is_superuser = True
+            user.is_active = True
             user.save()
             self.stdout.write(
-                self.style.SUCCESS(f'Superuser "{username}" password updated.')
+                self.style.SUCCESS(
+                    f'Superuser "{username}" updated '
+                    f"(password, email, is_staff=True, is_superuser=True)."
+                )
             )
         else:
             self.stdout.write(f'Creating superuser "{username}"...')
