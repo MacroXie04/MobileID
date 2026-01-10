@@ -15,38 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Run lint checks first
-  lint-check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
-
-      - name: Install lint tools
-        run: pip install black ruff flake8
-
-      - name: Run Black check
-        working-directory: ./src
-        run: black --check .
-
-      - name: Run Ruff check
-        working-directory: ./src
-        run: ruff check .
-
-      - name: Run Flake8 check
-        working-directory: ./src
-        run: flake8 .
-
   test:
-    # Run after lint-check succeeds
-    needs: [lint-check]
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

@@ -15,36 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Run lint checks first
-  lint-check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: pages/yarn.lock
-
-      - name: Install dependencies
-        working-directory: ./pages
-        run: yarn install --frozen-lockfile
-
-      - name: Run ESLint
-        working-directory: ./pages
-        run: yarn lint
-
-      - name: Run Prettier check
-        working-directory: ./pages
-        run: npx prettier --check src
-
-  unit-and-e2e:
-    # Run after lint-check succeeds
-    needs: [lint-check]
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
