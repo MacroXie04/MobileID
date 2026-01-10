@@ -20,9 +20,6 @@ permissions:
   contents: read
   deployments: write
 
-env:
-  ALLOWED_DEPLOY_USERS: '["hongzhe","MacroXie04"]'
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -31,18 +28,19 @@ jobs:
     # Only deploy when:
     # 1. Manual trigger on main branch by allowlisted user
     # 2. Frontend Tests workflow on this repo/main succeeded by allowlisted user
+    # Allowed users: hongzhe, MacroXie04
     if: |
       (
         github.event_name == 'workflow_dispatch' &&
         github.ref == 'refs/heads/main' &&
-        contains(fromJSON(env.ALLOWED_DEPLOY_USERS), github.actor)
+        (github.actor == 'hongzhe' || github.actor == 'MacroXie04')
       ) ||
       (
         github.event_name == 'workflow_run' &&
         github.event.workflow_run.conclusion == 'success' &&
         github.event.workflow_run.head_branch == 'main' &&
         github.event.workflow_run.head_repository.full_name == github.repository &&
-        contains(fromJSON(env.ALLOWED_DEPLOY_USERS), github.event.workflow_run.actor)
+        (github.event.workflow_run.actor.login == 'hongzhe' || github.event.workflow_run.actor.login == 'MacroXie04')
       )
 
     environment:
