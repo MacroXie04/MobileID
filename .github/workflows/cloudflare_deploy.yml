@@ -63,6 +63,17 @@ jobs:
           # Use workflow_run's head_sha for workflow_run events, otherwise use default
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
+      - name: Print deployment info
+        run: |
+          echo "## Deployment Info" >> $GITHUB_STEP_SUMMARY
+          echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit SHA:** $(git rev-parse HEAD)" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit Message:** $(git log -1 --pretty=%B)" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo ""
+          echo "Deploying commit: $(git rev-parse HEAD)"
+          echo "Commit message: $(git log -1 --pretty=%B)"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -101,6 +112,13 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: mobileid
           directory: ./pages/dist
+          branch: main
+
+      - name: Print deployment URL
+        run: |
+          echo "Deployment URL: ${{ steps.deploy_pages.outputs.url }}"
+          echo "Deployment ID: ${{ steps.deploy_pages.outputs.id }}"
+          echo "Deployment Environment: ${{ steps.deploy_pages.outputs.environment }}"
 
       # ---------- Post-Deployment Verification ----------
       - name: Wait for deployment to propagate
@@ -108,22 +126,32 @@ jobs:
 
       - name: Verify Frontend Deployment
         run: |
-          DEPLOY_URL="https://mobileid.pages.dev"
-          echo "Checking frontend at: $DEPLOY_URL"
-
-          # Check main page responds
+          # Use the actual deployment URL from the action output
+          DEPLOY_URL="${{ steps.deploy_pages.outputs.url }}"
+          PROD_URL="https://mobileid.pages.dev"
+          
+          echo "Deployment URL: $DEPLOY_URL"
+          echo "Production URL: $PROD_URL"
+          
+          # Check deployment URL responds
+          echo "Checking deployment URL..."
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL" || echo "000")
-          echo "Frontend Response: $HTTP_CODE"
+          echo "Deployment URL Response: $HTTP_CODE"
+
+          # Also check production URL
+          echo "Checking production URL..."
+          HTTP_CODE_PROD=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL" || echo "000")
+          echo "Production URL Response: $HTTP_CODE_PROD"
 
           if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 400 ]; then
-            echo "::error::Deployment verification failed: Frontend returned $HTTP_CODE"
+            echo "::error::Deployment verification failed: Deployment URL returned $HTTP_CODE"
             exit 1
           fi
           echo "[PASS] Frontend is responding"
 
       - name: Smoke Test - Critical Assets
         run: |
-          DEPLOY_URL="https://mobileid.pages.dev"
+          DEPLOY_URL="${{ steps.deploy_pages.outputs.url }}"
 
           echo "Running smoke tests for critical assets..."
 
@@ -145,5 +173,7 @@ jobs:
         run: |
           echo "## Frontend Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** https://mobileid.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment URL:** ${{ steps.deploy_pages.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Production URL:** https://mobileid.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ steps.deploy_pages.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** Healthy" >> $GITHUB_STEP_SUMMARY
