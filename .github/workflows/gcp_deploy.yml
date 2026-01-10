@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      ALLOWED_DEPLOY_USERS: '["MacroXie04"]'
+      ALLOWED_DEPLOY_USERS: '["hongzhe","MacroXie04"]'
     # Only deploy when:
     # 1. Manual trigger on main branch by allowlisted user
     # 2. Database Migrations workflow on this repo/main succeeded by allowlisted user
