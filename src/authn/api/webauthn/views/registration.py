@@ -1,7 +1,5 @@
 import logging
 
-from authn.api.utils import set_auth_cookies
-from authn.throttling import _ScopeRateFallbackMixin
 from django.conf import settings
 from django.contrib.auth import login
 from rest_framework.decorators import api_view, permission_classes
@@ -9,6 +7,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from authn.api.utils import set_auth_cookies
+from authn.services.webauthn import generate_unique_information_id
+from authn.throttling import _ScopeRateFallbackMixin
 
 from ..forms import UserRegisterForm
 
@@ -43,7 +45,6 @@ def api_register(request):
             "password1",
             "password2",
             "name",
-            "information_id",
         ]
         missing_fields = [
             field for field in required_fields if not request.data.get(field)
@@ -67,7 +68,7 @@ def api_register(request):
             "password1": request.data.get("password1"),
             "password2": request.data.get("password2"),
             "name": request.data.get("name"),
-            "information_id": request.data.get("information_id"),
+            "information_id": generate_unique_information_id(),
             "user_profile_img_base64": request.data.get("user_profile_img_base64", ""),
         }
 

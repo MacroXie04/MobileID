@@ -1,17 +1,17 @@
 name: Lint Prettier
 
 on:
-  # Push only on main branch (for direct commits and merge commits)
   push:
     branches: [main]
     paths:
       - 'pages/**'
       - '.github/workflows/lint_prettier.yml'
-  # Pull request on all branches (for PR checks)
   pull_request:
+    branches: [ main ]
     paths:
       - 'pages/**'
       - '.github/workflows/lint_prettier.yml'
+  workflow_dispatch:
 
 # Cancel in-progress runs for the same branch
 concurrency:

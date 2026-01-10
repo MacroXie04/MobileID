@@ -1,0 +1,114 @@
+/* Custom Django Admin Styles for MobileID */
+
+/* ============================================
+   DISABLE DARK MODE - Force Light Theme
+   ============================================ */
+
+/* Override CSS color-scheme to prevent dark mode */
+:root {
+    color-scheme: light only;
+}
+
+/* Force light mode colors even if system prefers dark */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary: #417690;
+        --secondary: #447e9b;
+        --accent: #f5dd5d;
+        --primary-fg: #fff;
+        --body-fg: #333;
+        --body-bg: #fff;
+        --body-quiet-color: #666;
+        --body-loud-color: #000;
+        --header-color: #ffc;
+        --header-branding-color: #c9643b;
+        --header-bg: #417690;
+        --header-link-color: #fff;
+        --breadcrumbs-fg: #c4dce8;
+        --breadcrumbs-link-fg: #fff;
+        --breadcrumbs-bg: #264b5d;
+        --link-fg: #447e9b;
+        --link-hover-color: #036;
+        --link-selected-fg: #5b80b2;
+        --hairline-color: #e8e8e8;
+        --border-color: #ccc;
+        --error-fg: #ba2121;
+        --message-success-bg: #dfd;
+        --message-warning-bg: #ffc;
+        --message-error-bg: #ffefef;
+        --darkened-bg: #f8f8f8;
+        --selected-bg: #e4e4e4;
+        --selected-row: #ffc;
+        --button-fg: #fff;
+        --button-bg: #417690;
+        --button-hover-bg: #205067;
+        --default-button-bg: #417690;
+        --default-button-hover-bg: #205067;
+        --close-button-bg: #888;
+        --close-button-hover-bg: #747474;
+        --delete-button-bg: #ba2121;
+        --delete-button-hover-bg: #a41515;
+        --object-tools-fg: #888;
+        --object-tools-bg: #f8f8f8;
+        --object-tools-hover-bg: #fff;
+    }
+}
+
+/* ============================================
+   LOGO STYLES
+   ============================================ */
+
+/* Header branding container */
+#branding {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Logo styling */
+#branding .admin-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+/* Site title styling */
+#branding h1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 0 15px;
+}
+
+#branding h1 a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ============================================
+   ADDITIONAL CUSTOMIZATIONS
+   ============================================ */
+
+/* Ensure header has proper contrast in light mode */
+#header {
+    background: var(--header-bg, #417690);
+    color: var(--header-link-color, #fff);
+}
+
+/* Module headers */
+.module h2, .module caption, .inline-group h2 {
+    background: var(--primary, #417690);
+}
+
+/* Submit row buttons */
+.submit-row input {
+    background: var(--button-bg, #417690);
+}
+
+.submit-row input:hover {
+    background: var(--button-hover-bg, #205067);
+}

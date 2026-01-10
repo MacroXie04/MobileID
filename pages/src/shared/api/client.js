@@ -1,4 +1,5 @@
 import api from './axios';
+import { ensureCsrfToken } from './csrf';
 
 export class ApiError extends Error {
   constructor(message, status, data) {
@@ -11,13 +12,19 @@ export class ApiError extends Error {
 
 export async function apiRequest(endpoint, options = {}) {
   try {
+    const method = (options.method || 'GET').toUpperCase();
+    const needsCsrf = !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method);
+    if (needsCsrf) {
+      await ensureCsrfToken();
+    }
+
     const config = {
       url: endpoint,
-      method: options.method || 'GET',
+      method,
       headers: options.headers || {},
       data: options.body, // axios uses 'data' for body
       withCredentials:
-        typeof options.withCredentials === 'boolean' ? options.withCredentials : undefined,
+        typeof options.withCredentials === 'boolean' ? options.withCredentials : true,
       ...options,
     };
 

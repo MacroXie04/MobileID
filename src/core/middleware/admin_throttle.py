@@ -1,7 +1,7 @@
 """
-Admin login throttling middleware.
+ login throttling middleware.
 
-Applies rate limiting to Django admin login POST requests to prevent brute
+Applies rate limiting to Django  login POST requests to prevent brute
 force attacks.
 """
 

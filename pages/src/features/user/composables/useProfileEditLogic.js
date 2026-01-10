@@ -61,7 +61,7 @@ export function useProfileEditLogic(options = {}) {
 
     // Only auto-save if data has actually changed
     if (!textFieldsChanged && !avatarFile.value) {
-      return { success: false };
+      return { skipped: true };
     }
 
     const response = await updateUserProfile(profileData);
@@ -172,6 +172,12 @@ export function useProfileEditLogic(options = {}) {
 
   const handleFieldChange = (field) => {
     clearError(field);
+
+    // Avoid scheduling auto-save if we haven't loaded baseline data yet, or if the value matches baseline.
+    const baseline = originalData.value || {};
+    if (!(field in baseline)) return;
+    if (formData.value[field] === baseline[field]) return;
+
     triggerAutoSave();
   };
 

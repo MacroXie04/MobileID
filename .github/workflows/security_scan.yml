@@ -1,23 +1,10 @@
 name: Security Scan
 
 on:
-  # Only run on push to main branch (for deployment checks)
   push:
     branches: [main]
-    paths:
-      - "src/requirements.txt"
-      - "pages/package.json"
-      - "pages/yarn.lock"
-      - "src/Dockerfile"
-      - ".github/workflows/security_scan.yml"
-  # Run on all PRs (for code review)
   pull_request:
-    paths:
-      - "src/requirements.txt"
-      - "pages/package.json"
-      - "pages/yarn.lock"
-      - "src/Dockerfile"
-      - ".github/workflows/security_scan.yml"
+    branches: [ main ]
   schedule:
     # Run weekly on Sunday at midnight UTC
     - cron: "0 0 * * 0"

@@ -2,12 +2,16 @@ import base64
 from io import BytesIO
 
 from PIL import Image
-from authn.services.webauthn import create_user_profile
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator
+
+from authn.services.webauthn import (
+    create_user_profile,
+    generate_unique_information_id,
+)
 
 from .helpers import _clean_base64
 
@@ -15,7 +19,9 @@ from .helpers import _clean_base64
 class UserRegisterForm(UserCreationForm):
     # extra fields
     name = forms.CharField(max_length=100, label="Name")
-    information_id = forms.CharField(max_length=100, label="Information ID")
+    information_id = forms.CharField(
+        max_length=100, label="Information ID", required=False
+    )
 
     # original file (hidden input, file selection is handled by JS)
     user_profile_img = forms.ImageField(required=False, label="")
@@ -78,7 +84,9 @@ class UserRegisterForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit)
         name = self.cleaned_data["name"]
-        info_id = self.cleaned_data["information_id"]
+        info_id = (
+            self.cleaned_data.get("information_id") or generate_unique_information_id()
+        )
 
         # check if there is a pre-cropped Base64
         avatar_b64 = self.cleaned_data.get("user_profile_img_base64", "")

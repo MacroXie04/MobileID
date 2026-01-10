@@ -1,21 +1,17 @@
 name: Docker Build
 
 on:
-  # Push only on main branch (for direct commits and merge commits)
   push:
     branches: [main]
-    paths:
-      - ".github/workflows/docker-build.yml"
-  # Pull request on all branches (for PR checks / validation)
   pull_request:
-    paths:
-      - ".github/workflows/docker-build.yml"
-  # Trigger after Django Tests succeed
+    branches: [ main ]
   workflow_run:
     workflows:
       - Django Tests
+    branches: [ main ]
     types:
       - completed
+  workflow_dispatch:
 
 # Cancel in-progress runs for the same branch
 concurrency:
@@ -24,12 +20,12 @@ concurrency:
 
 jobs:
   build:
-    # Only build Docker images for:
-    # 1. Specific branches after Django Tests succeed (for production-ready code)
-    # 2. Any branch when workflow file changes (for validation)
+    # Build for main push/PR, manual, or successful Django Tests on main
     if: |
-      (github.event_name == 'push' || github.event_name == 'pull_request') ||
-      (github.event.workflow_run.conclusion == 'success' && contains(fromJSON('["main","master","google-cloud"]'), github.event.workflow_run.head_branch))
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

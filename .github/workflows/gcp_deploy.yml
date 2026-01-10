@@ -25,12 +25,24 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      ALLOWED_DEPLOY_USERS: '["MacroXie04"]'
     # Only deploy when:
-    # 1. Manual trigger on main branch
-    # 2. Database Migrations workflow succeeded (branches filter already ensures main branch)
+    # 1. Manual trigger on main branch by allowlisted user
+    # 2. Database Migrations workflow on this repo/main succeeded by allowlisted user
     if: |
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.ref == 'refs/heads/main' &&
+        contains(fromJSON(env.ALLOWED_DEPLOY_USERS), github.actor)
+      ) ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        contains(fromJSON(env.ALLOWED_DEPLOY_USERS), github.event.workflow_run.actor)
+      )
 
     environment:
       name: MobileID Backend (Google Cloud - Production)
@@ -78,7 +90,6 @@ jobs:
             GCP_PROJECT_ID=${{ env.PROJECT_ID }}
             DJANGO_SETTINGS_MODULE=core.settings.prod
 
-            DJANGO_SUPERUSER_USERNAME=${{ secrets.DJANGO_SUPERUSER_USERNAME }}
             DJANGO_SUPERUSER_EMAIL=${{ secrets.DJANGO_SUPERUSER_EMAIL }}
             DJANGO_SUPERUSER_PASSWORD=${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
 

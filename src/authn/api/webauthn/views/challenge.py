@@ -32,3 +32,14 @@ def login_challenge(request):
         )
     get_token(request)
     return Response(payload)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@ensure_csrf_cookie
+def csrf_token(request):
+    """
+    Lightweight endpoint to issue a CSRF cookie for SPA clients.
+    """
+    token = get_token(request)
+    return Response({"csrfToken": token})

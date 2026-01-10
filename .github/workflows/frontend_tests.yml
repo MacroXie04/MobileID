@@ -1,19 +1,12 @@
 name: Frontend Tests
 
-# Trigger on push to main and PRs
-# The lint-check job handles lint validation before running tests
+# Standard CI trigger set: push/pull_request on main, plus manual
 on:
-  # Push only on main branch (for direct commits and merge commits)
   push:
     branches: [main]
-    paths:
-      - "pages/**"
-      - ".github/workflows/frontend_tests.yml"
-  # Pull request on all branches (for PR checks)
   pull_request:
-    paths:
-      - "pages/**"
-      - ".github/workflows/frontend_tests.yml"
+    branches: [ main ]
+  workflow_dispatch:
 
 # Cancel in-progress runs for the same branch
 # Use head_ref for PRs (source branch), ref_name for push events

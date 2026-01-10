@@ -1,6 +1,7 @@
 import { onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { register, userInfo } from '@shared/api/auth.js';
+import { ApiError } from '@shared/api/client';
 import { useRegisterValidation } from '@auth/composables/useRegisterValidation.js';
 import { useImageCropper } from '@user/composables/useImageCropper.js';
 import { validateImageFile } from '@user/utils/imageUtils.js';
@@ -18,7 +19,6 @@ export function useRegisterLogic() {
   const formData = ref({
     username: '',
     name: '',
-    information_id: '',
     password1: '',
     password2: '',
     user_profile_img_base64: '',
@@ -175,18 +175,59 @@ export function useRegisterLogic() {
     } catch (error) {
       console.error('Registration error:', error);
 
-      // Try to parse error message for API errors
+      // Prefer structured API errors so field-level feedback shows on the form
+      if (error instanceof ApiError) {
+        const apiData = error.data || {};
+        const apiErrors = apiData.errors || apiData;
+
+        // Extract general error messages if present
+        const generalMessages = [];
+        if (apiData.detail) generalMessages.push(apiData.detail);
+        if (apiData.message) generalMessages.push(apiData.message);
+        if (apiErrors.non_field_errors) {
+          generalMessages.push(
+            Array.isArray(apiErrors.non_field_errors)
+              ? apiErrors.non_field_errors.join(' ')
+              : apiErrors.non_field_errors
+          );
+        }
+
+        // Field-level errors
+        const fieldErrors =
+          apiErrors && typeof apiErrors === 'object' ? { ...apiErrors } : undefined;
+        if (fieldErrors) {
+          delete fieldErrors.non_field_errors;
+          delete fieldErrors.detail;
+          delete fieldErrors.message;
+          if (Object.keys(fieldErrors).length > 0) {
+            setServerErrors(fieldErrors);
+          }
+        }
+
+        if (generalMessages.length) {
+          setGeneralError(generalMessages.join(' '));
+        } else if (!fieldErrors || Object.keys(fieldErrors).length === 0) {
+          setGeneralError('Registration failed. Please try again.');
+        }
+        return;
+      }
+
+      // Fallback: try parsing a JSON payload from the error message
       try {
         const errorData = JSON.parse(error.message);
         if (errorData.message) {
           setGeneralError(errorData.message);
         } else if (errorData.errors) {
           setServerErrors(errorData.errors);
+        } else if (errorData && typeof errorData === 'object') {
+          setServerErrors(errorData);
         } else {
           setGeneralError('Registration failed. Please try again.');
         }
       } catch (_parseError) {
-        setGeneralError('Network error. Please check your connection and try again.');
+        setGeneralError(
+          error?.message || 'Network error. Please check your connection and try again.'
+        );
       }
     } finally {
       loading.value = false;

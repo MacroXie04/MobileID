@@ -16,7 +16,6 @@ class UserRegistrationAPITest(APITestCase):
             "password1": "newpass123",
             "password2": "newpass123",
             "name": "New User",
-            "information_id": "NEW123",
         }
 
     def test_registration_success(self):
@@ -31,12 +30,15 @@ class UserRegistrationAPITest(APITestCase):
         user = User.objects.get(username="newuser")
         self.assertTrue(hasattr(user, "userprofile"))
         self.assertEqual(user.userprofile.name, "New User")
+        self.assertEqual(len(user.userprofile.information_id), 9)
+        self.assertTrue(user.userprofile.information_id.isdigit())
         self.assertIn("access_token", response.cookies)
         self.assertIn("refresh_token", response.cookies)
 
     def test_registration_with_avatar(self):
         cache.clear()
         data = self.registration_data.copy()
+        data["username"] = "newuser-avatar"
         data["user_profile_img_base64"] = (
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+"
             "hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
@@ -46,8 +48,23 @@ class UserRegistrationAPITest(APITestCase):
         response = self.client.post(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        user = User.objects.get(username="newuser")
+        user = User.objects.get(username="newuser-avatar")
         self.assertIsNotNone(user.userprofile.user_profile_img)
+
+    def test_information_id_generated_server_side(self):
+        cache.clear()
+        data = self.registration_data.copy()
+        data["username"] = "client-supplied-id"
+        data["information_id"] = "CLIENT123"  # should be ignored by server
+
+        url = reverse("authn:api_register")
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user = User.objects.get(username="client-supplied-id")
+        self.assertNotEqual(user.userprofile.information_id, "CLIENT123")
+        self.assertEqual(len(user.userprofile.information_id), 9)
+        self.assertTrue(user.userprofile.information_id.isdigit())
 
     def test_registration_missing_fields(self):
         data = {"username": "newuser", "password1": "newpass123"}
@@ -58,6 +75,8 @@ class UserRegistrationAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(response.data["success"])
         self.assertIn("errors", response.data)
+        self.assertIn("name", response.data["errors"])
+        self.assertIn("password2", response.data["errors"])
 
     def test_registration_password_mismatch(self):
         data = self.registration_data.copy()
