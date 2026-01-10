@@ -6,6 +6,7 @@ from authn.api.webauthn import (
     api_logout,
     list_devices,
     login_challenge,
+    csrf_token,
     user_info,
     api_register,
     user_img,
@@ -26,6 +27,7 @@ urlpatterns = [
     # RSA public key endpoint (must be before token endpoint for proper
     # routing)
     path("public-key/", get_public_key, name="api_public_key"),
+    path("csrf/", csrf_token, name="api_csrf_token"),
     # JWT authentication endpoints
     path("login-challenge/", login_challenge, name="api_login_challenge"),
     path(

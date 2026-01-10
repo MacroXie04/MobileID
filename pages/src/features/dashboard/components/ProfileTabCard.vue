@@ -98,29 +98,12 @@
         </div>
       </div>
 
-      <div class="profile-footer md-flex md-items-center md-gap-3 md-mt-4">
-        <div class="save-indicator md-flex md-items-center md-gap-2">
-          <template v-if="autoSaving">
-            <md-circular-progress indeterminate></md-circular-progress>
-          </template>
-          <template v-else-if="lastSaved">
-            <md-icon class="auto-save-icon md-text-primary">check_circle</md-icon>
-          </template>
-          <template v-else>
-            <md-icon class="auto-save-icon md-text-on-surface-variant">schedule</md-icon>
-          </template>
-          <span class="md-typescale-body-small">
-            {{ getAutoSaveStatusText() }}
-          </span>
+      <transition name="fade">
+        <div v-if="errors.general" class="md-banner md-banner-error profile-error-banner md-mt-4">
+          <md-icon>error_outline</md-icon>
+          <span class="md-typescale-body-medium">{{ errors.general }}</span>
         </div>
-
-        <transition name="fade">
-          <div v-if="errors.general" class="md-banner md-banner-error profile-error-banner">
-            <md-icon>error_outline</md-icon>
-            <span class="md-typescale-body-medium">{{ errors.general }}</span>
-          </div>
-        </transition>
-      </div>
+      </transition>
     </form>
 
     <!-- Cropper Dialog -->
@@ -172,8 +155,6 @@ const {
   cropperImage,
   showCropper,
   autoSaving,
-  lastSaved,
-  getAutoSaveStatusText,
   getAvatarSrc,
   selectImage,
   handleFileSelect,

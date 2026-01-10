@@ -22,6 +22,7 @@ export function useAutoSave(saveFunction, options = {}) {
   const autoSaving = ref(false);
   const lastSaved = ref(false);
   const hasChanges = ref(false);
+  const queuedSave = ref(false);
   const autoSaveTimer = ref(null);
   const lastSavedTimer = ref(null);
   const toastTimer = ref(null);
@@ -46,6 +47,7 @@ export function useAutoSave(saveFunction, options = {}) {
 
     // Set new timer
     autoSaveTimer.value = setTimeout(() => {
+      autoSaveTimer.value = null;
       performAutoSave();
     }, debounceMs);
   }
@@ -54,12 +56,23 @@ export function useAutoSave(saveFunction, options = {}) {
    * Perform the actual auto-save operation
    */
   async function performAutoSave() {
-    if (!hasChanges.value || autoSaving.value) return;
+    if (!hasChanges.value) return;
+    if (autoSaving.value) {
+      queuedSave.value = true;
+      return;
+    }
 
     autoSaving.value = true;
 
     try {
       const result = await saveFunction();
+
+      if (result?.skipped) {
+        // Nothing to save (e.g. user reverted changes) - clear pending state silently.
+        hasChanges.value = false;
+        lastSaved.value = false;
+        return;
+      }
 
       if (result && result.success !== false) {
         hasChanges.value = false;
@@ -84,6 +97,14 @@ export function useAutoSave(saveFunction, options = {}) {
       showToast('error', error.message || 'Auto-save failed: Network error');
     } finally {
       autoSaving.value = false;
+
+      // If changes came in while we were saving, schedule another debounced save.
+      if (queuedSave.value && hasChanges.value) {
+        queuedSave.value = false;
+        triggerAutoSave();
+      } else {
+        queuedSave.value = false;
+      }
     }
   }
 

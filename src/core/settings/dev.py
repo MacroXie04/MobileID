@@ -30,21 +30,24 @@ FRONTEND_ORIGINS_DEV = csv_env(
 )
 
 FRONTEND_ORIGINS = FRONTEND_ORIGINS_DEV
+BACKEND_ORIGINS_DEV = [
+    BACKEND_ORIGIN,
+    "http://127.0.0.1:8000",
+]
 
 # Django 5 requires scheme://host[:port]
 CSRF_TRUSTED_ORIGINS = csv_env(
-    "CSRF_TRUSTED_ORIGINS", [BACKEND_ORIGIN, *FRONTEND_ORIGINS]
+    "CSRF_TRUSTED_ORIGINS", [*BACKEND_ORIGINS_DEV, *FRONTEND_ORIGINS]
 )
 
 # If using django-cors-headers:
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
 CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
-# Cookies - Development: allow cross-origin for localhost
-# SameSite=None allows cookies on cross-origin requests (needed for passkey flow)
-# Browsers allow SameSite=None without Secure on localhost
-SESSION_COOKIE_SAMESITE = "None"
-CSRF_COOKIE_SAMESITE = "None"
+# Cookies - Development: Lax is sufficient for same-origin admin login
+# SameSite=None requires Secure=True (HTTPS) which breaks local HTTP dev
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False

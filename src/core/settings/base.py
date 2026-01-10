@@ -90,8 +90,7 @@ STORAGES = {
 # Additional locations to look for static files during development
 # Note: STATICFILES_DIRS should NOT include STATIC_ROOT
 STATICFILES_DIRS = [
-    # Add paths to additional static files directories here
-    # Example: BASE_DIR / "assets",
+    BASE_DIR / "core" / "static",
 ]
 
 # Static files finders
@@ -126,7 +125,7 @@ ROOT_URLCONF = "core.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "core" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

@@ -3,6 +3,7 @@ import { useToken } from '@auth/composables/useToken';
 import { getAccessToken } from '@shared/api/axios';
 import { baseURL } from '@app/config/config';
 import { useServerWakeup } from '@shared/composables/useServerWakeup';
+import { ensureCsrfToken } from '@shared/api/csrf';
 
 export function useApi() {
   const { checkAuthenticationError, refreshToken, handleTokenExpired } = useToken();
@@ -19,10 +20,17 @@ export function useApi() {
     const id = setTimeout(() => controller.abort('timeout'), timeoutMs);
 
     try {
+      const method = (options.method || 'GET').toUpperCase();
+      const needsCsrf = !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method);
+      let csrfToken = getCookie('csrftoken');
+      if (needsCsrf && !csrfToken) {
+        csrfToken = await ensureCsrfToken();
+      }
+
       // Get access token and add Authorization header
       const token = getAccessToken();
       const headers = {
-        'X-CSRFToken': getCookie('csrftoken'),
+        ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
         'Content-Type': 'application/json',
         ...options.headers,
       };

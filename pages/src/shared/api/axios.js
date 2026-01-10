@@ -4,7 +4,9 @@ import { baseURL } from '@app/config/config';
 const api = axios.create({
   baseURL: baseURL,
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: false, // JWT typically doesn't need cookies, but depends on backend. User example says false.
+  withCredentials: true,
+  xsrfCookieName: 'csrftoken',
+  xsrfHeaderName: 'X-CSRFToken',
 });
 
 // Save tokens after login/register
