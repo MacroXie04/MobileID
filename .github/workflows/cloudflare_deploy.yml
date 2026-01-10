@@ -20,13 +20,14 @@ permissions:
   contents: read
   deployments: write
 
+env:
+  ALLOWED_DEPLOY_USERS: '["hongzhe","MacroXie04"]'
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Build and Deploy Frontend to Cloudflare Pages
     timeout-minutes: 15
-    env:
-      ALLOWED_DEPLOY_USERS: '["hongzhe","MacroXie04"]'
     # Only deploy when:
     # 1. Manual trigger on main branch by allowlisted user
     # 2. Frontend Tests workflow on this repo/main succeeded by allowlisted user
