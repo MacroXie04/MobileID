@@ -2,6 +2,11 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { passkeyAuthOptions, passkeyAuthVerify, userInfo } from '@shared/api/auth.js';
 import { ApiError } from '@shared/api/client.js';
+import {
+  isWebAuthnSupported,
+  preparePublicKeyOptions,
+  serializeCredential,
+} from '@shared/utils/webauthn.js';
 
 /**
  * Composable for handling passkey-based authentication
@@ -11,90 +16,6 @@ export function usePasskeyLogin() {
   const passkeyLoading = ref(false);
   const passkeyError = ref('');
   const passkeySupported = ref(isWebAuthnSupported());
-
-  /**
-   * Check if WebAuthn is supported in this browser
-   */
-  function isWebAuthnSupported() {
-    return !!(
-      window.PublicKeyCredential &&
-      typeof window.PublicKeyCredential === 'function' &&
-      navigator.credentials &&
-      typeof navigator.credentials.get === 'function'
-    );
-  }
-
-  /**
-   * Convert a base64url string to an ArrayBuffer
-   */
-  function base64urlToBuffer(base64url) {
-    // Replace URL-safe chars with standard base64 chars
-    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-    // Add padding if needed
-    const padLen = (4 - (base64.length % 4)) % 4;
-    const padded = base64 + '='.repeat(padLen);
-    const binary = atob(padded);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes.buffer;
-  }
-
-  /**
-   * Convert an ArrayBuffer to a base64url string
-   */
-  function bufferToBase64url(buffer) {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    const base64 = btoa(binary);
-    // Convert to base64url
-    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-
-  /**
-   * Prepare publicKey options for navigator.credentials.get
-   */
-  function preparePublicKeyOptions(publicKey) {
-    const options = { ...publicKey };
-
-    // Convert challenge from base64url to ArrayBuffer
-    if (typeof options.challenge === 'string') {
-      options.challenge = base64urlToBuffer(options.challenge);
-    }
-
-    // Convert allowCredentials ids from base64url to ArrayBuffer
-    if (options.allowCredentials) {
-      options.allowCredentials = options.allowCredentials.map((cred) => ({
-        ...cred,
-        id: typeof cred.id === 'string' ? base64urlToBuffer(cred.id) : cred.id,
-      }));
-    }
-
-    return options;
-  }
-
-  /**
-   * Serialize credential for sending to server
-   */
-  function serializeCredential(credential) {
-    const response = credential.response;
-
-    return {
-      id: credential.id,
-      rawId: bufferToBase64url(credential.rawId),
-      type: credential.type,
-      response: {
-        clientDataJSON: bufferToBase64url(response.clientDataJSON),
-        authenticatorData: bufferToBase64url(response.authenticatorData),
-        signature: bufferToBase64url(response.signature),
-        userHandle: response.userHandle ? bufferToBase64url(response.userHandle) : null,
-      },
-    };
-  }
 
   /**
    * Handle passkey login flow

@@ -1,129 +1,25 @@
-from __future__ import annotations
-
-import random
-from typing import Final
+from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import F
-from django.utils import timezone
-from index.models import (
-    Barcode,
-    BarcodeUsage,
-    UserBarcodeSettings,
-    UserBarcodePullSettings,
-    Transaction,
-)
-from datetime import timedelta
 from django.db.models import Q
-from index.services.transactions import TransactionService
+from django.utils import timezone
+
+from index.models import Barcode, UserBarcodePullSettings, UserBarcodeSettings, Transaction
 from index.services.usage_limit import UsageLimitService
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
-BARCODE_IDENTIFICATION: Final[str] = "Identification"
-BARCODE_DYNAMIC: Final[str] = "DynamicBarcode"
-BARCODE_OTHERS: Final[str] = "Others"
-
-RESULT_TEMPLATE = {
-    "status": "error",  # overwritten on success
-    "message": "Unexpected error",
-    "barcode_type": None,
-    "barcode": None,
-}
+from .constants import (
+    BARCODE_DYNAMIC,
+    BARCODE_IDENTIFICATION,
+    BARCODE_OTHERS,
+    RESULT_TEMPLATE,
+)
+from .identification import _create_identification_barcode
+from .usage import _touch_barcode_usage
+from .utils import _timestamp
 
 
-# ---------------------------------------------------------------------------
-# Helper functions
-# ---------------------------------------------------------------------------
-def _random_digits(length: int) -> str:
-    """Return a random string of *length* numeric digits."""
-    return "".join(str(random.randint(0, 9)) for _ in range(length))
-
-
-def generate_unique_identification_barcode(max_attempts: int = 50) -> str:
-    """Return a unique 28-digit Identification barcode.
-
-    Retries up to *max_attempts* before raising an exception.
-    """
-    for _ in range(max_attempts):
-        code = _random_digits(28)
-        if not Barcode.objects.filter(barcode=code).exists():
-            return code
-    raise RuntimeError(
-        f"Unable to generate unique Identification barcode after "
-        f"{max_attempts} attempts."
-    )
-
-
-def _create_identification_barcode(user) -> Barcode:
-    """Delete prior Identification barcodes for *user* and create a fresh
-    one."""
-    Barcode.objects.filter(user=user, barcode_type=BARCODE_IDENTIFICATION).delete()
-    return Barcode.objects.create(
-        user=user,
-        barcode_type=BARCODE_IDENTIFICATION,
-        barcode=generate_unique_identification_barcode(),
-    )
-
-
-def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
-    """Increment usage counters for *barcode* atomically.
-
-    If the same user has used this barcode within the last 5 minutes,
-    we skip recording a new transaction and do not increment usage counters.
-
-    If a barcode is being used by someone other than its owner, we still
-    update the `BarcodeUsage` counters but we do NOT create a `Transaction`.
-    """
-    now = timezone.now()
-
-    # Check for duplicate usage within 5 minutes for the same user and barcode
-    if request_user is not None:
-        cutoff_5m = now - timedelta(minutes=5)
-        recent_usage = Transaction.objects.filter(
-            user=request_user,
-            barcode_used=barcode,
-            time_created__gte=cutoff_5m,
-        ).exists()
-
-        if recent_usage:
-            # Skip recording - user already used this barcode within 5 minutes
-            return
-
-    # Skip BarcodeUsage tracking for Identification barcodes since they
-    # regenerate each time
-    # But still log transactions for audit purposes
-    if barcode.barcode_type != BARCODE_IDENTIFICATION:
-        # Try to update existing record first
-        updated = BarcodeUsage.objects.filter(barcode=barcode).update(
-            total_usage=F("total_usage") + 1, last_used=now
-        )
-
-        # If no rows were updated, create a new record
-        if not updated:
-            BarcodeUsage.objects.create(barcode=barcode, total_usage=1, last_used=now)
-
-    if request_user is not None:
-        TransactionService.create_transaction(
-            user=request_user,
-            barcode=barcode,
-            time_created=now,
-            save=True,
-        )
-
-
-def _timestamp() -> str:
-    """Return a timestamp string for dynamic barcodes."""
-    return timezone.now().strftime("%Y%m%d%H%M%S")
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
 def generate_barcode(user) -> dict:
-    """Generate or refresh a barcode for *user* based on their group
-    membership."""
+    """Generate or refresh a barcode for *user* based on their group membership."""
     result = RESULT_TEMPLATE.copy()
 
     # Determine account type via groups

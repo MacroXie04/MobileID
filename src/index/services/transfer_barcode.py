@@ -39,17 +39,17 @@ class TransferBarcodeParser:
 
 
 # only for testing
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    import os
+#     import os
 
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    html_path = os.path.join(BASE_DIR, "test.html")
+#     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+#     html_path = os.path.join(BASE_DIR, "test.html")
 
-    parser = TransferBarcodeParser()
+#     parser = TransferBarcodeParser()
 
-    with open(html_path, "r", encoding="utf-8") as f:
-        html = f.read()
-    parser.parse(html)
+#     with open(html_path, "r", encoding="utf-8") as f:
+#         html = f.read()
+#     parser.parse(html)
 
-    print("Done")
+#     print("Done")

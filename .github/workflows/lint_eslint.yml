@@ -22,6 +22,12 @@ jobs:
   eslint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      NPM_CONFIG_FETCH_RETRIES: 5
+      NPM_CONFIG_FETCH_RETRY_FACTOR: 2
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: 20000
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 120000
+      YARN_NETWORK_TIMEOUT: 120000
 
     steps:
       - name: Checkout code
@@ -36,7 +42,7 @@ jobs:
       
       - name: Install dependencies
         working-directory: ./pages
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --network-timeout 120000
       
       - name: Run ESLint
         working-directory: ./pages

@@ -6,19 +6,19 @@ const routes = [
   {
     path: '/login',
     name: 'auth-login',
-    component: () => import('@auth/views/LoginView.vue'),
+    component: () => import('@auth/views/login/LoginView.vue'),
     meta: { feature: 'auth' },
   },
   {
     path: '/register',
     name: 'auth-register',
-    component: () => import('@auth/views/RegisterView.vue'),
+    component: () => import('@auth/views/register/RegisterView.vue'),
     meta: { feature: 'auth' },
   },
   {
     path: '/privacy',
     name: 'privacy',
-    component: () => import('@auth/views/PrivacyView.vue'),
+    component: () => import('@auth/views/privacy/PrivacyView.vue'),
     meta: { feature: 'auth' },
   },
   {
