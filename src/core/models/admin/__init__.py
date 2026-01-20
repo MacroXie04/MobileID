@@ -1,5 +1,5 @@
 """
-Core models package.
+Admin models package.
 """
 
 from core.models.admin.admin_audit import AdminAuditLog
