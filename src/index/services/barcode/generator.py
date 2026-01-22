@@ -4,7 +4,12 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from index.models import Barcode, UserBarcodePullSettings, UserBarcodeSettings, Transaction
+from index.models import (
+    Barcode,
+    Transaction,
+    UserBarcodePullSettings,
+    UserBarcodeSettings,
+)
 from index.services.usage_limit import UsageLimitService
 
 from .constants import (

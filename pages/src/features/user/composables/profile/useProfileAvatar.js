@@ -3,12 +3,7 @@ import { useImageCropper } from '@user/composables/useImageCropper.js';
 import { validateImageFile } from '@user/utils/imageUtils.js';
 import avatarPlaceholder from '@/assets/images/user/avatar_placeholder.png';
 
-export function useProfileAvatar({
-  errors,
-  avatarFile,
-  avatarPreviewUrl,
-  triggerAutoSave,
-}) {
+export function useProfileAvatar({ errors, avatarFile, avatarPreviewUrl, triggerAutoSave }) {
   const fileInput = ref(null);
   const cropperDialog = ref(null);
 

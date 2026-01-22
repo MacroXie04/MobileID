@@ -21,13 +21,8 @@ export function useProfileEditLogic(options = {}) {
   const successMessage = ref('');
   const originalData = ref({});
 
-  const {
-    autoSaving,
-    lastSaved,
-    autoSaveStatus,
-    triggerAutoSave,
-    getAutoSaveStatusText,
-  } = useProfileAutoSave({ formData, avatarFile, originalData });
+  const { autoSaving, lastSaved, autoSaveStatus, triggerAutoSave, getAutoSaveStatusText } =
+    useProfileAutoSave({ formData, avatarFile, originalData });
 
   const profileAvatar = useProfileAvatar({
     errors,

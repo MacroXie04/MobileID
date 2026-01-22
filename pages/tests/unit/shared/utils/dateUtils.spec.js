@@ -16,11 +16,15 @@ describe('date utils', () => {
 
     expect(formatRelativeTime(new Date(now.getTime() - 10_000).toISOString())).toBe('Just now');
     expect(formatRelativeTime(new Date(now.getTime() - 60_000).toISOString())).toBe('1 min ago');
-    expect(formatRelativeTime(new Date(now.getTime() - 5 * 60_000).toISOString())).toBe('5 mins ago');
+    expect(formatRelativeTime(new Date(now.getTime() - 5 * 60_000).toISOString())).toBe(
+      '5 mins ago'
+    );
     expect(formatRelativeTime(new Date(now.getTime() - 2 * 3_600_000).toISOString())).toBe(
       '2 hours ago'
     );
-    expect(formatRelativeTime(new Date(now.getTime() - 86_400_000).toISOString())).toBe('1 day ago');
+    expect(formatRelativeTime(new Date(now.getTime() - 86_400_000).toISOString())).toBe(
+      '1 day ago'
+    );
   });
 
   it('falls back to locale date for older timestamps', () => {
