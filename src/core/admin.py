@@ -4,8 +4,7 @@ Core admin configuration.
 
 from django.contrib import admin
 
-from core.models.admin_audit import AdminAuditLog
-from core.models.admin_onetimepass import AdminOneTimePass
+from core.models import AdminAuditLog, AdminOneTimePass
 
 
 @admin.register(AdminAuditLog)

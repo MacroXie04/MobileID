@@ -7,7 +7,7 @@ Logs all admin access and actions for security auditing.
 from django.conf import settings
 from django.db import transaction
 
-from core.models.admin_audit import AdminAuditLog
+from core.models import AdminAuditLog
 
 
 class AdminAuditMiddleware:
