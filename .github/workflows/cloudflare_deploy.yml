@@ -3,10 +3,10 @@ name: Deploy Frontend to Cloudflare Pages
 on:
   # Allow manual deployment trigger
   workflow_dispatch:
-  # Trigger after Frontend Tests succeed (ensures tested code is deployed)
+  # Trigger after Frontend CI succeeds (ensures tested code is deployed)
   # This prevents deployment of untested code
   workflow_run:
-    workflows: ["Frontend Tests"]
+    workflows: ["Frontend CI"]
     branches: [main]
     types:
       - completed
@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 15
     # Only deploy when:
     # 1. Manual trigger on main branch by allowlisted user
-    # 2. Frontend Tests workflow on this repo/main succeeded by allowlisted user
+    # 2. Frontend CI workflow on this repo/main succeeded by allowlisted user
     # Allowed users: hongzhe, MacroXie04
     if: |
       (
@@ -93,18 +93,6 @@ jobs:
       - name: Build Frontend
         working-directory: ./pages
         run: yarn build
-
-      - name: Install Wrangler CLI
-        run: npm install -g wrangler
-
-      - name: Ensure Cloudflare Pages Project Exists
-        run: |
-          if ! wrangler pages project list | grep -q 'mobileid'; then
-            echo "Creating Cloudflare Pages project: mobileid"
-            wrangler pages project create mobileid --production-branch=main
-          else
-            echo "Cloudflare Pages project 'mobileid' already exists."
-          fi
 
       # ---------- Deploy to Cloudflare Pages ----------
       # Note: gitHubToken is not provided to avoid duplicate deployment records.

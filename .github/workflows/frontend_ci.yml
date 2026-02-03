@@ -1,0 +1,165 @@
+name: Frontend CI
+
+# Standard CI trigger set: push/pull_request on all branches, plus manual
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Least-privilege default token permissions
+permissions:
+  contents: read
+  pull-requests: read
+
+# Cancel in-progress runs for the same branch
+# Use head_ref for PRs (source branch), ref_name for push events
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  detect-open-pr:
+    name: Detect Open PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+      contents: read
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+
+    steps:
+      - name: Check for open PR
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.eventName === 'pull_request') {
+              core.setOutput('should_run', 'true');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const branch = context.ref.replace('refs/heads/', '');
+            const { data: prs } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              head: `${owner}:${branch}`,
+              per_page: 1,
+            });
+            core.setOutput('should_run', prs.length > 0 ? 'false' : 'true');
+
+  code-style-check:
+    name: Code Style Check
+    needs: [detect-open-pr]
+    if: needs.detect-open-pr.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NPM_CONFIG_FETCH_RETRIES: 5
+      NPM_CONFIG_FETCH_RETRY_FACTOR: 2
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: 20000
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 120000
+      YARN_NETWORK_TIMEOUT: 120000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile --network-timeout 120000
+
+      - name: Run Prettier
+        working-directory: ./pages
+        run: yarn prettier --check .
+
+  frontend-linting:
+    name: Frontend Linting
+    needs: [detect-open-pr]
+    if: needs.detect-open-pr.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NPM_CONFIG_FETCH_RETRIES: 5
+      NPM_CONFIG_FETCH_RETRY_FACTOR: 2
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: 20000
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 120000
+      YARN_NETWORK_TIMEOUT: 120000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile --network-timeout 120000
+
+      - name: Run ESLint
+        working-directory: ./pages
+        run: yarn lint
+
+  npm-test:
+    name: NPM Test
+    needs: [detect-open-pr]
+    if: needs.detect-open-pr.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NPM_CONFIG_FETCH_RETRIES: 5
+      NPM_CONFIG_FETCH_RETRY_FACTOR: 2
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: 20000
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 120000
+      YARN_NETWORK_TIMEOUT: 120000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile --network-timeout 120000
+
+      - name: Run unit tests
+        working-directory: ./pages
+        run: yarn test:unit
+
+      - name: Install Playwright browsers
+        working-directory: ./pages
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright E2E tests
+        working-directory: ./pages
+        env:
+          CI: "true"
+        run: yarn test:e2e:ci
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: pages/playwright-report
+          if-no-files-found: ignore

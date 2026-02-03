@@ -10,6 +10,10 @@ on:
     - cron: "0 0 * * 0"
   workflow_dispatch:
 
+# Least-privilege default token permissions
+permissions:
+  contents: read
+
 # Cancel in-progress runs for the same branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -41,10 +45,32 @@ jobs:
           # Generate requirements with pinned versions
           pip install -r requirements.txt
           pip freeze > requirements-frozen.txt
-          # Run safety check (continue on error to report results)
+          # Run safety check (always produce report)
           safety check -r requirements-frozen.txt --output json > safety-report.json || true
           # Display human-readable output
-          safety check -r requirements-frozen.txt || echo "::warning::Vulnerabilities found in Python dependencies"
+          safety check -r requirements-frozen.txt || true
+
+      - name: Enforce Safety baseline
+        working-directory: ./src
+        run: |
+          python - <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          report = pathlib.Path("safety-report.json")
+          if not report.exists():
+              print("::error::Safety report missing")
+              sys.exit(1)
+
+          data = json.loads(report.read_text())
+          vulns = data.get("vulnerabilities") or data.get("issues") or []
+          if len(vulns) > 0:
+              print(f"::error::Safety found {len(vulns)} vulnerabilities")
+              sys.exit(1)
+
+          print("Safety: no vulnerabilities found")
+          PY
 
       - name: Upload Safety report
         uses: actions/upload-artifact@v4
@@ -87,7 +113,51 @@ jobs:
           # Run yarn audit and save results
           yarn audit --json > yarn-audit-report.json 2>&1 || true
           # Display summary
-          yarn audit --summary || echo "::warning::Vulnerabilities found in Node.js dependencies"
+          yarn audit --summary || true
+
+      - name: Enforce Yarn Audit baseline
+        working-directory: ./pages
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+
+          if (!fs.existsSync('yarn-audit-report.json')) {
+            console.error('::error::Yarn audit report missing');
+            process.exit(1);
+          }
+
+          const content = fs.readFileSync('yarn-audit-report.json', 'utf8').trim();
+          if (!content) {
+            console.error('::error::Yarn audit report is empty');
+            process.exit(1);
+          }
+
+          let summary;
+          for (const line of content.split('\n')) {
+            let obj;
+            try {
+              obj = JSON.parse(line);
+            } catch {
+              continue;
+            }
+            if (obj.type === 'auditSummary') {
+              summary = obj.data;
+            }
+          }
+
+          if (!summary || !summary.vulnerabilities) {
+            console.error('::error::Yarn audit summary missing');
+            process.exit(1);
+          }
+
+          const { high = 0, critical = 0 } = summary.vulnerabilities;
+          if (high > 0 || critical > 0) {
+            console.error(`::error::Yarn audit found high=${high} critical=${critical}`);
+            process.exit(1);
+          }
+
+          console.log('Yarn audit: no high/critical vulnerabilities');
+          NODE
 
       - name: Upload Yarn Audit report
         uses: actions/upload-artifact@v4
@@ -112,7 +182,7 @@ jobs:
           docker build -t mobileid-backend:scan ./src
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.24.0
         with:
           image-ref: "mobileid-backend:scan"
           format: "table"
@@ -122,7 +192,7 @@ jobs:
           severity: "CRITICAL,HIGH,MEDIUM"
 
       - name: Run Trivy and save JSON report
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.24.0
         with:
           image-ref: "mobileid-backend:scan"
           format: "json"
@@ -139,15 +209,15 @@ jobs:
           path: trivy-report.json
           retention-days: 30
 
-      - name: Fail on critical vulnerabilities
-        uses: aquasecurity/trivy-action@master
+      - name: Fail on high/critical vulnerabilities
+        uses: aquasecurity/trivy-action@v0.24.0
         with:
           image-ref: "mobileid-backend:scan"
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
           vuln-type: "os,library"
-          severity: "CRITICAL"
+          severity: "CRITICAL,HIGH"
 
   # ---------- Summary Job ----------
   security-summary:
@@ -183,4 +253,3 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "See artifacts for detailed reports." >> $GITHUB_STEP_SUMMARY
-

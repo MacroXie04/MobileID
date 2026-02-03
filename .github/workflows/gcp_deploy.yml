@@ -3,10 +3,10 @@ name: Deploy to Cloud Run
 on:
   # Allow manual deployment trigger (main branch only enforced in job condition)
   workflow_dispatch:
-  # Trigger only after database migrations pipeline completes on main branch
-  # This ensures migrations are applied before deployment
+  # Trigger only after Backend CI completes on main branch
+  # This ensures tests/lints/migration checks pass before deployment
   workflow_run:
-    workflows: ["Database Migrations"]
+    workflows: ["Backend CI"]
     branches: [main]
     types:
       - completed
@@ -20,6 +20,7 @@ env:
   PROJECT_ID: mobileid-478800
   REGION: us-west1
   SERVICE_NAME: mobileid
+  MIGRATION_JOB_NAME: mobileid-migrate
 
 jobs:
   deploy:
@@ -27,7 +28,7 @@ jobs:
     timeout-minutes: 30
     # Only deploy when:
     # 1. Manual trigger on main branch by allowlisted user
-    # 2. Database Migrations workflow on this repo/main succeeded by allowlisted user
+    # 2. Backend CI workflow on this repo/main succeeded by allowlisted user
     # Allowed users: hongzhe, MacroXie04
     if: |
       (
@@ -76,7 +77,15 @@ jobs:
           echo "Commit message: $(git log -1 --pretty=%B)"
           echo "Image tag: ${{ steps.sha.outputs.short }}"
 
-      - name: Google Auth
+      - name: Google Auth (Workload Identity)
+        if: ${{ secrets.GCP_WIF_PROVIDER != '' && secrets.GCP_SERVICE_ACCOUNT_EMAIL != '' }}
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Google Auth (Service Account Key Fallback)
+        if: ${{ secrets.GCP_WIF_PROVIDER == '' || secrets.GCP_SERVICE_ACCOUNT_EMAIL == '' }}
         uses: google-github-actions/auth@v2
         with:
           credentials_json: "${{ secrets.GCP_SA_KEY }}"
@@ -84,12 +93,31 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Configure gcloud project
+        run: gcloud config set project "${{ env.PROJECT_ID }}"
+
       # ---------- Build and Deploy ----------
       # Note: GitHub Deployment record is automatically created by the job-level 'environment' setting
       # Use commit SHA as image tag to ensure unique images and traceability
       - name: Build and Push Container
         run: |-
           gcloud builds submit src --tag gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ steps.sha.outputs.short }}
+
+      - name: Run database migrations (Cloud Run Job)
+        run: |
+          JOB_NAME="${{ env.MIGRATION_JOB_NAME }}"
+          IMAGE="gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ steps.sha.outputs.short }}"
+
+          echo "Using migration job: ${JOB_NAME}"
+          echo "Using image: ${IMAGE}"
+
+          if ! gcloud run jobs describe "${JOB_NAME}" --region="${{ env.REGION }}" > /dev/null 2>&1; then
+            echo "::error::Cloud Run Job '${JOB_NAME}' not found. Create it before deploying."
+            exit 1
+          fi
+
+          gcloud run jobs update "${JOB_NAME}" --region="${{ env.REGION }}" --image="${IMAGE}"
+          gcloud run jobs execute "${JOB_NAME}" --region="${{ env.REGION }}" --wait
 
       - name: Deploy to Cloud Run
         id: deploy_cloudrun
