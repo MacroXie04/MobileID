@@ -257,12 +257,143 @@ jobs:
           CI: "true"
         run: yarn test:e2e:ci
 
+  # ---------- Security Checks ----------
+  security:
+    name: Security Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: prepare
+    env:
+      NPM_CONFIG_FETCH_RETRIES: 5
+      NPM_CONFIG_FETCH_RETRY_FACTOR: 2
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: 20000
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 120000
+      YARN_NETWORK_TIMEOUT: 120000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Safety
+        run: pip install safety
+
+      - name: Run Safety check
+        working-directory: ./src
+        run: |
+          pip install -r requirements.txt
+          pip freeze > requirements-frozen.txt
+          safety check -r requirements-frozen.txt --output json > safety-report.json || true
+          safety check -r requirements-frozen.txt || true
+
+      - name: Enforce Safety baseline
+        working-directory: ./src
+        run: |
+          python - <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          report = pathlib.Path("safety-report.json")
+          if not report.exists():
+              print("::error::Safety report missing")
+              sys.exit(1)
+
+          data = json.loads(report.read_text())
+          vulns = data.get("vulnerabilities") or data.get("issues") or []
+          if len(vulns) > 0:
+              print(f"::error::Safety found {len(vulns)} vulnerabilities")
+              sys.exit(1)
+
+          print("Safety: no vulnerabilities found")
+          PY
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install Node dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile --network-timeout 120000
+
+      - name: Run Yarn Audit
+        working-directory: ./pages
+        run: |
+          yarn audit --json > yarn-audit-report.json 2>&1 || true
+          yarn audit --summary || true
+
+      - name: Enforce Yarn Audit baseline
+        working-directory: ./pages
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+
+          if (!fs.existsSync('yarn-audit-report.json')) {
+            console.error('::error::Yarn audit report missing');
+            process.exit(1);
+          }
+
+          const content = fs.readFileSync('yarn-audit-report.json', 'utf8').trim();
+          if (!content) {
+            console.error('::error::Yarn audit report is empty');
+            process.exit(1);
+          }
+
+          let summary;
+          for (const line of content.split('\n')) {
+            let obj;
+            try {
+              obj = JSON.parse(line);
+            } catch {
+              continue;
+            }
+            if (obj.type === 'auditSummary') {
+              summary = obj.data;
+            }
+          }
+
+          if (!summary || !summary.vulnerabilities) {
+            console.error('::error::Yarn audit summary missing');
+            process.exit(1);
+          }
+
+          const { high = 0, critical = 0 } = summary.vulnerabilities;
+          if (high > 0 || critical > 0) {
+            console.error(`::error::Yarn audit found high=${high} critical=${critical}`);
+            process.exit(1);
+          }
+
+          console.log('Yarn audit: no high/critical vulnerabilities');
+          NODE
+
+      - name: Build Docker image for scanning
+        run: |
+          docker build -t mobileid-backend:scan ./src
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.24.0
+        with:
+          image-ref: "mobileid-backend:scan"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
   # ---------- Create GitHub Release ----------
   release:
     name: Create Release
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [prepare, changelog, test]
+    needs: [prepare, changelog, test, security]
 
     steps:
       - name: Checkout code
