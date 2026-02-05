@@ -5,6 +5,8 @@ from authn.api.webauthn import (
     RSALoginView,
     api_logout,
     list_devices,
+    revoke_all_other_devices,
+    revoke_device,
     login_challenge,
     csrf_token,
     user_info,
@@ -16,8 +18,6 @@ from authn.api.webauthn import (
     passkey_register_verify,
     passkey_auth_options,
     passkey_auth_verify,
-    revoke_all_other_devices,
-    revoke_device,
 )
 from django.urls import path
 
@@ -54,9 +54,15 @@ urlpatterns = [
     path("profile/avatar/", api_avatar_upload, name="api_avatar_upload"),
     # Device management
     path("devices/", list_devices, name="api_devices_list"),
-    path("devices/<int:token_id>/", revoke_device, name="api_device_revoke"),
     path(
-        "devices/revoke-all/", revoke_all_other_devices, name="api_devices_revoke_all"
+        "devices/<int:token_id>/revoke/",
+        revoke_device,
+        name="api_device_revoke",
+    ),
+    path(
+        "devices/revoke-all/",
+        revoke_all_other_devices,
+        name="api_devices_revoke_all",
     ),
     # Passkeys
     path(

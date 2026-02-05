@@ -73,9 +73,13 @@
           <div class="section-header">
             <md-icon>devices_other</md-icon>
             <span>Other Devices ({{ otherDevices.length }})</span>
-            <md-filled-tonal-button class="revoke-all-button md-ml-auto" @click="handleRevokeAll">
+            <md-filled-tonal-button
+              class="revoke-all-button"
+              :disabled="revoking !== null"
+              @click="revokeAllOtherDevices"
+            >
               <md-icon slot="icon">logout</md-icon>
-              Log Out All
+              {{ revoking === 'all' ? 'Logging out...' : 'Log out all' }}
             </md-filled-tonal-button>
           </div>
 
@@ -103,17 +107,13 @@
                   </span>
                 </div>
               </div>
-              <div class="device-actions">
-                <md-filled-tonal-button
-                  :disabled="revoking[device.id]"
-                  class="revoke-button"
-                  @click="handleRevoke(device.id)"
-                >
-                  <md-icon v-if="revoking[device.id]" slot="icon">hourglass_empty</md-icon>
-                  <md-icon v-else slot="icon">logout</md-icon>
-                  {{ revoking[device.id] ? 'Logging out...' : 'Log Out' }}
-                </md-filled-tonal-button>
-              </div>
+              <md-icon-button
+                class="revoke-button"
+                :disabled="revoking !== null"
+                @click="revokeDevice(device.id)"
+              >
+                <md-icon>{{ revoking === device.id ? 'hourglass_top' : 'logout' }}</md-icon>
+              </md-icon-button>
             </div>
           </div>
         </div>
@@ -154,10 +154,10 @@ const {
   otherDevices,
   hasOtherDevices,
   fetchDevices,
+  revokeDevice,
+  revokeAllOtherDevices,
   getDeviceIcon,
   formatRelativeTime,
   formatExpirationTime,
-  handleRevoke,
-  handleRevokeAll,
 } = useDevicesCardSetup();
 </script>
