@@ -108,9 +108,7 @@ describe('auth API', () => {
     it('should clear public key cache on 401 error', async () => {
       const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
       const apiError = new ApiError('Invalid credentials', 401, { detail: 'Bad password' });
-      mockApiRequest
-        .mockResolvedValueOnce(mockChallenge)
-        .mockRejectedValueOnce(apiError);
+      mockApiRequest.mockResolvedValueOnce(mockChallenge).mockRejectedValueOnce(apiError);
       mockEncryptPassword.mockResolvedValue('encrypted');
 
       await expect(login('user', 'pass')).rejects.toThrow();
@@ -121,9 +119,7 @@ describe('auth API', () => {
     it('should clear public key cache on 410 error (key rotated)', async () => {
       const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
       const apiError = new ApiError('Key expired', 410, { detail: 'Key has been rotated' });
-      mockApiRequest
-        .mockResolvedValueOnce(mockChallenge)
-        .mockRejectedValueOnce(apiError);
+      mockApiRequest.mockResolvedValueOnce(mockChallenge).mockRejectedValueOnce(apiError);
       mockEncryptPassword.mockResolvedValue('encrypted');
 
       await expect(login('user', 'pass')).rejects.toThrow();
@@ -134,9 +130,7 @@ describe('auth API', () => {
     it('should throw ApiError with detail for auth errors', async () => {
       const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
       const apiError = new ApiError('Error', 401, { detail: 'Custom error message' });
-      mockApiRequest
-        .mockResolvedValueOnce(mockChallenge)
-        .mockRejectedValueOnce(apiError);
+      mockApiRequest.mockResolvedValueOnce(mockChallenge).mockRejectedValueOnce(apiError);
       mockEncryptPassword.mockResolvedValue('encrypted');
 
       try {
@@ -151,9 +145,7 @@ describe('auth API', () => {
     it('should use default message when no detail provided', async () => {
       const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
       const apiError = new ApiError('Error', 401, {});
-      mockApiRequest
-        .mockResolvedValueOnce(mockChallenge)
-        .mockRejectedValueOnce(apiError);
+      mockApiRequest.mockResolvedValueOnce(mockChallenge).mockRejectedValueOnce(apiError);
       mockEncryptPassword.mockResolvedValue('encrypted');
 
       try {

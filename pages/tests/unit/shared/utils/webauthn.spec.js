@@ -231,9 +231,7 @@ describe('webauthn utils', () => {
     it('should preserve other allowCredentials properties', () => {
       const options = {
         challenge: 'Y2hhbGxlbmdl',
-        allowCredentials: [
-          { id: 'Y3JlZDE', type: 'public-key', transports: ['usb', 'nfc'] },
-        ],
+        allowCredentials: [{ id: 'Y3JlZDE', type: 'public-key', transports: ['usb', 'nfc'] }],
       };
 
       const prepared = preparePublicKeyOptions(options);
