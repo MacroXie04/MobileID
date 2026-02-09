@@ -13,10 +13,10 @@ from index.models import (
 from index.services.barcode import (
     generate_barcode,
     generate_unique_identification_barcode,
-    _create_identification_barcode,
-    _touch_barcode_usage,
-    _random_digits,
 )
+from index.services.barcode.identification import _create_identification_barcode
+from index.services.barcode.usage import _touch_barcode_usage
+from index.services.barcode.utils import _random_digits
 from index.services.usage_limit import UsageLimitService
 from index.services.transfer_barcode import TransferBarcodeParser
 
@@ -62,7 +62,7 @@ class BarcodeServiceTest(TestCase):
         self.assertTrue(barcode2.isdigit())
         self.assertNotEqual(barcode1, barcode2)
 
-    @patch("index.services.barcode.Barcode.objects.filter")
+    @patch("index.services.barcode.identification.Barcode.objects.filter")
     def test_generate_unique_identification_barcode_max_attempts(self, mock_filter):
         """Test max attempts for unique barcode generation"""
         # Mock that all generated barcodes already exist
@@ -272,7 +272,9 @@ class BarcodeServiceTest(TestCase):
             user=self.school_user, barcode=dynamic_barcode
         )
 
-        with patch("index.services.barcode._timestamp", return_value="20231201120000"):
+        with patch(
+            "index.services.barcode.generator._timestamp", return_value="20231201120000"
+        ):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")
@@ -310,7 +312,9 @@ class BarcodeServiceTest(TestCase):
             barcode=dynamic_barcode,
         )
 
-        with patch("index.services.barcode._timestamp", return_value="20231201120000"):
+        with patch(
+            "index.services.barcode.generator._timestamp", return_value="20231201120000"
+        ):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")

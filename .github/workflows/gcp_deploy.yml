@@ -258,13 +258,13 @@ jobs:
 
             SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
 
-            ALLOWED_HOSTS=*
+            ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }}
             DB_PROFILE=gcp
             DEBUG=False
             ENVIRONMENT=production
 
-            CORS_ALLOWED_ORIGINS=*
-            CSRF_TRUSTED_ORIGINS=https://*.run.app
+            CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}
+            CSRF_TRUSTED_ORIGINS=${{ secrets.CSRF_TRUSTED_ORIGINS }}
             ADMIN_URL_PATH=${{ secrets.ADMIN_URL_PATH }}
 
       # ---------- Post-Deployment Health Check ----------

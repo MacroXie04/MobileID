@@ -31,7 +31,7 @@ RUN chmod +x /run.sh
 RUN SECRET_KEY=build_secret python manage.py collectstatic --noinput
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
 # Default command (can be overridden in docker-compose)
 CMD ["/run.sh"]
