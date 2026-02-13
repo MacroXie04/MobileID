@@ -30,21 +30,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Install Safety
-        run: pip install safety
+        run: uv tool install safety
 
       - name: Run Safety check
         working-directory: ./src
         run: |
-          # Generate requirements with pinned versions
-          pip install -r requirements.txt
-          pip freeze > requirements-frozen.txt
+          # Export frozen requirements from uv.lock
+          uv export --frozen --no-dev > requirements-frozen.txt
           # Run safety check (always produce report)
           # Safety 3.x uses 'scan' command with different output format
           safety scan --target requirements-frozen.txt --output json 2>/dev/null > safety-report.json || \

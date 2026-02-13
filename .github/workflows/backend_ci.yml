@@ -48,29 +48,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Install linters
         working-directory: ./src
-        run: |
-          python -m pip install --upgrade pip
-          pip install 'black>=24.0,<25.0' flake8 ruff
+        run: uv sync --frozen --only-group dev
 
       - name: Run Black
         working-directory: ./src
-        run: black --check .
+        run: uv run black --check .
 
       - name: Run Flake8
         working-directory: ./src
-        run: flake8 .
+        run: uv run flake8 .
 
       - name: Run Ruff
         working-directory: ./src
-        run: ruff check .
+        run: uv run ruff check .
 
   migration-check:
     name: Migration Check
@@ -83,31 +78,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
         working-directory: ./src
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: uv sync --frozen --no-dev
 
       - name: Check for missing migrations
         working-directory: ./src
         env:
           DJANGO_SETTINGS_MODULE: "core.settings.dev"
           TESTING: "True"
-        run: python manage.py makemigrations --check --dry-run
+        run: uv run python manage.py makemigrations --check --dry-run
 
       - name: Test migrations application
         working-directory: ./src
         env:
           DJANGO_SETTINGS_MODULE: "core.settings.dev"
           TESTING: "True"
-        run: python manage.py migrate
+        run: uv run python manage.py migrate
 
   django-test:
     name: Django Test
@@ -120,17 +110,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
         working-directory: ./src
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: uv sync --frozen
 
       - name: Run Django tests with coverage
         working-directory: ./src
@@ -138,8 +123,8 @@ jobs:
           TESTING: "True"
           DJANGO_SETTINGS_MODULE: "core.settings.dev"
         run: |
-          python -m coverage run manage.py test -v 2
-          python -m coverage xml -o coverage.xml
+          uv run coverage run manage.py test -v 2
+          uv run coverage xml -o coverage.xml
 
       - name: Upload coverage XML
         uses: actions/upload-artifact@v4

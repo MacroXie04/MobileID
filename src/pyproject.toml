@@ -1,0 +1,31 @@
+[project]
+name = "mobileid"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "Django>=5.2,<6.0",
+    "djangorestframework>=3.14,<4.0",
+    "djangorestframework-simplejwt>=5.3,<6.0",
+    "django-cors-headers>=4.3,<5.0",
+    "python-dotenv>=1.0",
+    "Pillow>=10.0,<13.0",
+    "webauthn>=1.11,<2.0",
+    "django-extensions>=3.2,<4.0",
+    "django-widget-tweaks>=1.5,<2.0",
+    "gunicorn>=21.2,<24.0",
+    "redis>=5.0,<6.0",
+    "dj-database-url>=2.2",
+    "mysqlclient>=2.2,<3.0",
+    "psycopg2-binary>=2.9",
+    "uvicorn[standard]>=0.30,<1.0",
+    "argon2-cffi>=23.1.0,<24.0",
+    "whitenoise>=6.6.0,<7.0",
+]
+
+[dependency-groups]
+dev = [
+    "black>=24.0,<27.0",
+    "ruff>=0.1.0",
+    "flake8>=7.0,<8.0",
+    "coverage>=7.0,<8.0",
+]
