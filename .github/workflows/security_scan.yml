@@ -233,6 +233,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH,MEDIUM"
+          trivyignores: src/.trivyignore
 
       - name: Run Trivy and save JSON report
         uses: aquasecurity/trivy-action@0.33.1
@@ -243,6 +244,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH,MEDIUM"
+          trivyignores: src/.trivyignore
 
       - name: Upload Trivy report
         uses: actions/upload-artifact@v4
@@ -261,6 +263,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+          trivyignores: src/.trivyignore
 
   # ---------- Summary Job ----------
   security-summary:

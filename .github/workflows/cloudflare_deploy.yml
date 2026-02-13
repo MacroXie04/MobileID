@@ -29,7 +29,7 @@ jobs:
     # Only deploy when:
     # 1. Manual trigger on main branch by allowlisted user
     # 2. Frontend CI workflow on this repo/main succeeded by allowlisted user
-    # Allowed users: hongzhe, MacroXie04
+    # Allowed users: MacroXie04
     if: |
       (
         github.event_name == 'workflow_dispatch' &&
