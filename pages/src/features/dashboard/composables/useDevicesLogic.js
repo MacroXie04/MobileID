@@ -3,7 +3,7 @@ import { useApi } from '@shared/composables/useApi';
 
 /**
  * Composable for managing user devices/sessions.
- * Provides functionality to list, revoke, and manage logged-in devices.
+ * Provides functionality to list and display logged-in devices.
  */
 export function useDevicesLogic() {
   const { apiCallWithAutoRefresh } = useApi();
@@ -12,7 +12,7 @@ export function useDevicesLogic() {
   const devices = ref([]);
   const loading = ref(false);
   const error = ref(null);
-  const revoking = ref({}); // Track which devices are being revoked { [deviceId]: true }
+  const revoking = ref(null); // token_id being revoked, or 'all'
 
   /**
    * Fetch all devices/sessions for the current user.
@@ -40,61 +40,6 @@ export function useDevicesLogic() {
       console.error('Failed to fetch devices:', err);
       error.value = err.message || 'Failed to load devices';
       devices.value = [];
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  /**
-   * Revoke a specific device session.
-   * @param {number} deviceId - The token ID to revoke
-   * @returns {Promise<boolean>} - True if successful
-   */
-  async function revokeDevice(deviceId) {
-    revoking.value[deviceId] = true;
-    error.value = null;
-
-    try {
-      await apiCallWithAutoRefresh(`/authn/devices/${deviceId}/`, {
-        method: 'DELETE',
-      });
-
-      // Remove the device from the local list
-      devices.value = devices.value.filter((d) => d.id !== deviceId);
-      return true;
-    } catch (err) {
-      console.error('Failed to revoke device:', err);
-      error.value = err.message || 'Failed to revoke device';
-      return false;
-    } finally {
-      delete revoking.value[deviceId];
-    }
-  }
-
-  /**
-   * Revoke all other device sessions except the current one.
-   * @returns {Promise<{success: boolean, count: number}>}
-   */
-  async function revokeAllOtherDevices() {
-    loading.value = true;
-    error.value = null;
-
-    try {
-      const response = await apiCallWithAutoRefresh('/authn/devices/revoke-all/', {
-        method: 'DELETE',
-      });
-
-      // Keep only the current device in the local list
-      devices.value = devices.value.filter((d) => d.is_current);
-
-      return {
-        success: true,
-        count: response.revoked_count || 0,
-      };
-    } catch (err) {
-      console.error('Failed to revoke all devices:', err);
-      error.value = err.message || 'Failed to revoke all devices';
-      return { success: false, count: 0 };
     } finally {
       loading.value = false;
     }
@@ -194,6 +139,43 @@ export function useDevicesLogic() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  /**
+   * Revoke a specific device/session.
+   * @param {number} tokenId - The token ID to revoke
+   */
+  async function revokeDevice(tokenId) {
+    revoking.value = tokenId;
+    try {
+      await apiCallWithAutoRefresh(`/authn/devices/${tokenId}/revoke/`, {
+        method: 'DELETE',
+      });
+      await fetchDevices();
+    } catch (err) {
+      console.error('Failed to revoke device:', err);
+      error.value = err.message || 'Failed to log out device';
+    } finally {
+      revoking.value = null;
+    }
+  }
+
+  /**
+   * Revoke all other devices/sessions except the current one.
+   */
+  async function revokeAllOtherDevices() {
+    revoking.value = 'all';
+    try {
+      await apiCallWithAutoRefresh('/authn/devices/revoke-all/', {
+        method: 'DELETE',
+      });
+      await fetchDevices();
+    } catch (err) {
+      console.error('Failed to revoke all devices:', err);
+      error.value = err.message || 'Failed to log out other devices';
+    } finally {
+      revoking.value = null;
+    }
   }
 
   // Computed properties

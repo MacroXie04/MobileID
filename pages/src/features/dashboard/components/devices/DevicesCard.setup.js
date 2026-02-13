@@ -28,21 +28,6 @@ export function useDevicesCardSetup() {
     formatDateTime,
   } = useDevicesLogic();
 
-  /**
-   * Handle single device revocation.
-   * @param {number} deviceId - The token ID to revoke
-   */
-  async function handleRevoke(deviceId) {
-    await revokeDevice(deviceId);
-  }
-
-  /**
-   * Handle revoking all other devices.
-   */
-  async function handleRevokeAll() {
-    await revokeAllOtherDevices();
-  }
-
   return {
     // State
     devices,
@@ -62,7 +47,5 @@ export function useDevicesCardSetup() {
     formatRelativeTime,
     formatExpirationTime,
     formatDateTime,
-    handleRevoke,
-    handleRevokeAll,
   };
 }

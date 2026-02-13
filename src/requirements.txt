@@ -8,7 +8,7 @@ django-cors-headers>=4.3,<5.0
 # Env loading
 python-dotenv>=1.0
 # Images
-Pillow>=10.0,<11.0
+Pillow>=10.0,<13.0
 # WebAuthn
 webauthn>=1.11,<2.0
 # Useful dev utilities referenced in settings

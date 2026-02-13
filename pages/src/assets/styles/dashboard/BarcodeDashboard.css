@@ -1526,12 +1526,13 @@ md-switch { /* Track shape - rounded pill */
 }
 
 .revoke-button {
-    --md-filled-tonal-button-container-color: var(--md-sys-color-error-container);
-    --md-filled-tonal-button-label-text-color: var(--md-sys-color-on-error-container);
-    --md-filled-tonal-button-icon-color: var(--md-sys-color-on-error-container);
+    flex-shrink: 0;
+    align-self: center;
+    --md-icon-button-icon-color: var(--md-sys-color-error);
 }
 
 .revoke-all-button {
+    margin-left: auto;
     --md-filled-tonal-button-container-color: var(--md-sys-color-error-container);
     --md-filled-tonal-button-label-text-color: var(--md-sys-color-on-error-container);
     --md-filled-tonal-button-icon-color: var(--md-sys-color-on-error-container);

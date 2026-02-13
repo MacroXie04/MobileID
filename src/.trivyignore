@@ -1,0 +1,5 @@
+# PostgreSQL client library CVEs - waiting for Debian package update
+# These are in libpq-dev/libpq5 (build dependency for mysqlclient), not runtime exploitable
+CVE-2026-2004
+CVE-2026-2005
+CVE-2026-2006
