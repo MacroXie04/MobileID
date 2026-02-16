@@ -1,4 +1,4 @@
-Django>=5.2,<6.0
+Django>=5.2,<7.0
 # REST framework
 djangorestframework>=3.14,<4.0
 # JWT
@@ -12,7 +12,7 @@ Pillow>=10.0,<13.0
 # WebAuthn
 webauthn>=1.11,<2.0
 # Useful dev utilities referenced in settings
-django-extensions>=3.2,<4.0
+django-extensions>=3.2,<5.0
 django-widget-tweaks>=1.5,<2.0
 # WSGI server
 gunicorn>=21.2,<24.0
