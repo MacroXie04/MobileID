@@ -15,7 +15,7 @@
     "test:e2e:ci": "playwright test --reporter=list"
   },
   "dependencies": {
-    "@fontsource/material-symbols-outlined": "^5.2.18",
+    "@fontsource/material-symbols-outlined": "^5.2.35",
     "@fontsource/open-sans": "^5.2.6",
     "@fontsource/roboto": "^5.2.6",
     "@fontsource/roboto-mono": "^5.2.6",
