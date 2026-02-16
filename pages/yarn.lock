@@ -301,10 +301,10 @@
     "@eslint/core" "^0.17.0"
     levn "^0.4.1"
 
-"@fontsource/material-symbols-outlined@^5.2.18":
-  version "5.2.30"
-  resolved "https://registry.yarnpkg.com/@fontsource/material-symbols-outlined/-/material-symbols-outlined-5.2.30.tgz#81660406f79d3a9ea9fceadb8f75d20f26f6d771"
-  integrity sha512-GOiapDM2PAKQfDM3pgxK0/DzW8RZBYPMyknFCc2mayiZ5KKXamz9zMqrnGy5S3iuwzyVukqdXbAKLWClPbJmuw==
+"@fontsource/material-symbols-outlined@^5.2.35":
+  version "5.2.35"
+  resolved "https://registry.yarnpkg.com/@fontsource/material-symbols-outlined/-/material-symbols-outlined-5.2.35.tgz#58636d04d984a85372b9ae8d30e435db21cc9607"
+  integrity sha512-iMyZUbCUpqnGcpkt0JbO+EBNGynstCgt6Gh7IYnjlmBK+7aqsJ3NB/86cYcM1ySYjceQTQ5WhFKClHDeD7GPyg==
 
 "@fontsource/open-sans@^5.2.6":
   version "5.2.7"
