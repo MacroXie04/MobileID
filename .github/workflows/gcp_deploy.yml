@@ -141,7 +141,7 @@ jobs:
             core.setOutput('head_sha', targetSha);
 
       - name: Download backend image metadata
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: backend-image
           run-id: ${{ steps.backend_ci.outputs.run_id }}
