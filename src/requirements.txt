@@ -10,7 +10,7 @@ python-dotenv>=1.0
 # Images
 Pillow>=10.0,<13.0
 # WebAuthn
-webauthn>=1.11,<2.0
+webauthn>=1.11,<3.0
 # Useful dev utilities referenced in settings
 django-extensions>=3.2,<5.0
 django-widget-tweaks>=1.5,<2.0
@@ -29,7 +29,7 @@ psycopg2-binary>=2.9
 uvicorn[standard]>=0.30,<1.0
 
 # Strong password hashing
-argon2-cffi>=23.1.0,<24.0
+argon2-cffi>=23.1.0,<26.0
 
 # Development and testing tools
 black>=24.0,<27.0
