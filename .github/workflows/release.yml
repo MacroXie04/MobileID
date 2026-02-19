@@ -177,7 +177,7 @@ jobs:
 
     steps:
       - name: Verify Backend CI and Frontend CI passed
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const { owner, repo } = context.repo;
