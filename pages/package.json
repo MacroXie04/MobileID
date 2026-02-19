@@ -42,7 +42,7 @@
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.30.0",
     "eslint-plugin-vue": "^9.29.0",
-    "jsdom": "^27.2.0",
+    "jsdom": "^28.1.0",
     "prettier": "^3.3.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
