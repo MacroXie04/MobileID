@@ -23,17 +23,17 @@ describe('cookie utils', () => {
   });
 
   it('gets cookie values by name', () => {
-    document.cookie = 'csrftoken=abc123';
+    document.cookie = 'csrftoken=abc123; Secure';
 
     expect(getCookie('csrftoken')).toBe('abc123');
     expect(getCookie('missing')).toBe('');
   });
 
   it('clears auth cookies while leaving other cookies intact', () => {
-    document.cookie = 'csrftoken=token';
-    document.cookie = 'sessionid=session';
-    document.cookie = 'access_token=access';
-    document.cookie = 'refresh_token=refresh';
+    document.cookie = 'csrftoken=token; Secure';
+    document.cookie = 'sessionid=session; Secure';
+    document.cookie = 'access_token=access; Secure';
+    document.cookie = 'refresh_token=refresh; Secure';
     document.cookie = 'non_auth=keep';
 
     clearAuthCookies();
@@ -62,13 +62,13 @@ describe('cookie utils', () => {
   it('detects auth tokens in cookies or storage', () => {
     expect(hasAuthTokens()).toBe(false);
 
-    document.cookie = 'sessionid=session';
+    document.cookie = 'sessionid=session; Secure';
     expect(hasAuthTokens()).toBe(true);
 
     clearAllCookies();
     expect(hasAuthTokens()).toBe(false);
 
-    document.cookie = 'access_token=access';
+    document.cookie = 'access_token=access; Secure';
     expect(hasAuthTokens()).toBe(true);
 
     clearAllCookies();
