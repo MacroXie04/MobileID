@@ -17,7 +17,7 @@ django-widget-tweaks>=1.5,<2.0
 # WSGI server
 gunicorn>=21.2,<24.0
 # Redis cache backend (required for CI/CD and production)
-redis>=5.0,<6.0
+redis>=5.0,<8.0
 
 # Database URL parser and drivers
 dj-database-url>=2.2
