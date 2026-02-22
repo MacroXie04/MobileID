@@ -336,8 +336,12 @@ jobs:
               continue
             fi
 
-            if [[ "$name" != *"." ]]; then
+            name="${name%.}"
+            root_domain="${AWS_FRONTEND_CUSTOM_DOMAIN_ROOT%.}"
+            if [[ "$name" == "$root_domain" || "$name" == *".${root_domain}" ]]; then
               name="${name}."
+            else
+              name="${name}.${root_domain}."
             fi
 
             change_batch="$(jq -cn \
