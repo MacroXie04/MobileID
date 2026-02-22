@@ -125,12 +125,12 @@ jobs:
               repo: context.repo.repo,
               ref: context.sha,
               task: "deploy",
-              environment: "i2g-MobileID-backend",
+              environment: "Mobile ID -Prod - AWS - ECS Fargate",
               auto_merge: false,
               required_contexts: [],
               production_environment: true,
               transient_environment: false,
-              description: `AWS backend deploy run ${context.runId}`
+              description: `AWS ECS backend deploy run ${context.runId}`
             });
             core.setOutput("id", String(deployment.data.id));
 
