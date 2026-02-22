@@ -204,6 +204,7 @@ jobs:
                   {"name": "DJANGO_SETTINGS_MODULE", "value": "core.settings.prod"},
                   {"name": "DB_PROFILE", "value": "aws"},
                   {"name": "DB_SSL_MODE", "value": "require"},
+                  {"name": "SECURE_SSL_REDIRECT", "value": "False"},
                   {"name": "DEBUG", "value": "False"},
                   {"name": "ENVIRONMENT", "value": "production"}
                 ],
