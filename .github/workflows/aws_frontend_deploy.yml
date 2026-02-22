@@ -21,23 +21,23 @@ jobs:
     uses: ./.github/workflows/aws_guardrails.yml
     secrets: inherit
     with:
-      aws_region: ${{ secrets.AWS_REGION || 'us-west-2' }}
-      expected_account_id: ${{ secrets.AWS_ACCOUNT_ID || '394167325273' }}
+      aws_region: us-west-2
+      expected_account_id: "394167325273"
       resource_prefix: i2g-mobileid-
-      amplify_app_name: ${{ secrets.AWS_FRONTEND_AMPLIFY_APP_NAME || 'i2g-MobileID' }}
+      amplify_app_name: i2g-MobileID
       cloudfront_comment: i2g-MobileID-backend-api
-      resource_names: ${{ secrets.AWS_FRONTEND_ARTIFACT_BUCKET }}
+      resource_names: i2g-mobileid-frontend-artifacts-394167325273-us-west-2
 
   deploy:
     runs-on: ubuntu-latest
     needs: [guardrails]
     timeout-minutes: 35
     env:
-      AWS_REGION: ${{ secrets.AWS_REGION || 'us-west-2' }}
-      AWS_FRONTEND_AMPLIFY_APP_ID: ${{ secrets.AWS_FRONTEND_AMPLIFY_APP_ID }}
-      AWS_FRONTEND_AMPLIFY_BRANCH: ${{ secrets.AWS_FRONTEND_AMPLIFY_BRANCH || 'main' }}
-      AWS_FRONTEND_ARTIFACT_BUCKET: ${{ secrets.AWS_FRONTEND_ARTIFACT_BUCKET }}
-      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL_AWS }}
+      AWS_REGION: us-west-2
+      AWS_FRONTEND_AMPLIFY_APP_ID: d1oa95nsvsa2az
+      AWS_FRONTEND_AMPLIFY_BRANCH: main
+      AWS_FRONTEND_ARTIFACT_BUCKET: i2g-mobileid-frontend-artifacts-394167325273-us-west-2
+      VITE_API_BASE_URL: https://d3c92y3ydsav7u.cloudfront.net
 
     steps:
       - name: Checkout
