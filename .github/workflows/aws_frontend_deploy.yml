@@ -1,0 +1,185 @@
+name: AWS Frontend Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pages/**"
+      - ".github/workflows/aws_frontend_deploy.yml"
+      - ".github/workflows/aws_guardrails.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aws-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guardrails:
+    uses: ./.github/workflows/aws_guardrails.yml
+    secrets: inherit
+    with:
+      aws_region: ${{ secrets.AWS_REGION || 'us-west-2' }}
+      expected_account_id: ${{ secrets.AWS_ACCOUNT_ID || '394167325273' }}
+      resource_prefix: i2g-mobileid-
+      amplify_app_name: ${{ secrets.AWS_FRONTEND_AMPLIFY_APP_NAME || 'i2g-MobileID' }}
+      cloudfront_comment: i2g-MobileID-backend-api
+      resource_names: ${{ secrets.AWS_FRONTEND_ARTIFACT_BUCKET }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [guardrails]
+    timeout-minutes: 35
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-west-2' }}
+      AWS_FRONTEND_AMPLIFY_APP_ID: ${{ secrets.AWS_FRONTEND_AMPLIFY_APP_ID }}
+      AWS_FRONTEND_AMPLIFY_BRANCH: ${{ secrets.AWS_FRONTEND_AMPLIFY_BRANCH || 'main' }}
+      AWS_FRONTEND_ARTIFACT_BUCKET: ${{ secrets.AWS_FRONTEND_ARTIFACT_BUCKET }}
+      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL_AWS }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (session token)
+        if: ${{ secrets.AWS_SESSION_TOKEN != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials (long-lived)
+        if: ${{ secrets.AWS_SESSION_TOKEN == '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate required deployment inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            AWS_FRONTEND_AMPLIFY_APP_ID
+            AWS_FRONTEND_AMPLIFY_BRANCH
+            AWS_FRONTEND_ARTIFACT_BUCKET
+            VITE_API_BASE_URL
+          )
+          for key in "${required[@]}"; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error::Missing required env/secrets: $key"
+              exit 1
+            fi
+          done
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile --network-timeout 120000
+
+      - name: Build frontend
+        working-directory: ./pages
+        run: yarn build
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cd pages/dist
+          zip -qr ../../out/frontend-dist.zip .
+
+      - name: Upload artifact to S3
+        id: artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEY="frontend/${GITHUB_SHA}/frontend-dist.zip"
+          aws s3 cp out/frontend-dist.zip "s3://${AWS_FRONTEND_ARTIFACT_BUCKET}/${KEY}"
+          echo "source_url=s3://${AWS_FRONTEND_ARTIFACT_BUCKET}/${KEY}" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure Amplify branch exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          exists="$(aws amplify get-branch --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" --branch-name "$AWS_FRONTEND_AMPLIFY_BRANCH" --query 'branch.branchName' --output text 2>/dev/null || true)"
+          if [[ -z "$exists" || "$exists" == "None" ]]; then
+            aws amplify create-branch --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" --branch-name "$AWS_FRONTEND_AMPLIFY_BRANCH" >/dev/null
+          fi
+
+      - name: Start Amplify deployment
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          JOB_ID="$(aws amplify start-deployment \
+            --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
+            --branch-name "$AWS_FRONTEND_AMPLIFY_BRANCH" \
+            --source-url "${{ steps.artifact.outputs.source_url }}" \
+            --query 'jobSummary.jobId' \
+            --output text)"
+
+          echo "job_id=${JOB_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Amplify deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          JOB_ID="${{ steps.deploy.outputs.job_id }}"
+
+          for i in {1..90}; do
+            STATUS="$(aws amplify get-job \
+              --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
+              --branch-name "$AWS_FRONTEND_AMPLIFY_BRANCH" \
+              --job-id "$JOB_ID" \
+              --query 'job.summary.status' \
+              --output text)"
+
+            case "$STATUS" in
+              SUCCEED)
+                echo "Amplify deployment succeeded"
+                exit 0
+                ;;
+              FAILED|CANCELLED)
+                echo "::error::Amplify deployment failed: $STATUS"
+                aws amplify get-job --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" --branch-name "$AWS_FRONTEND_AMPLIFY_BRANCH" --job-id "$JOB_ID"
+                exit 1
+                ;;
+              *)
+                sleep 10
+                ;;
+            esac
+          done
+
+          echo "::error::Amplify deployment timed out"
+          exit 1
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          domain="$(aws amplify get-app --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" --query 'app.defaultDomain' --output text)"
+          url="https://${AWS_FRONTEND_AMPLIFY_BRANCH}.${domain}"
+
+          for i in {1..24}; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$url" || true)"
+            if [[ "$code" -ge 200 && "$code" -lt 400 ]]; then
+              echo "Frontend smoke test passed: $url"
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "::error::Frontend smoke test failed: $url"
+          exit 1

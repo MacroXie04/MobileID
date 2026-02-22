@@ -6,7 +6,6 @@ import BarcodesListCard from '@dashboard/components/barcodes/BarcodesListCard.vu
 import AddBarcodeCard from '@dashboard/components/barcodes/AddBarcodeCard.vue';
 import DevicesCard from '@dashboard/components/devices/DevicesCard.vue';
 import ProfileTabCard from '@dashboard/components/profile/ProfileTabCard.vue';
-import PasskeysCard from '@dashboard/components/devices/PasskeysCard.vue';
 import { useDashboardLogic } from '@dashboard/composables/useDashboardLogic.js';
 import '@/assets/styles/dashboard/BarcodeDashboard.css';
 
@@ -17,7 +16,6 @@ export {
   AddBarcodeCard,
   DevicesCard,
   ProfileTabCard,
-  PasskeysCard,
 };
 
 export function useBarcodeDashboardViewSetup() {

@@ -6,10 +6,6 @@ import {
   logout,
   getUserProfile,
   updateUserProfile,
-  passkeyAuthOptions,
-  passkeyAuthVerify,
-  passkeyRegisterOptions,
-  passkeyRegisterVerify,
   register,
 } from '@shared/api/auth.js';
 import { ApiError } from '@shared/api/client.js';
@@ -248,81 +244,6 @@ describe('auth API', () => {
         method: 'PUT',
         body: profileData,
       });
-    });
-  });
-
-  describe('passkeyAuthOptions', () => {
-    it('should call apiRequest with auth options endpoint', async () => {
-      const mockOptions = { challenge: 'base64challenge', allowCredentials: [] };
-      mockApiRequest.mockResolvedValue(mockOptions);
-
-      const result = await passkeyAuthOptions();
-
-      expect(mockApiRequest).toHaveBeenCalledWith('/authn/passkeys/auth/options/', {
-        method: 'POST',
-        body: {},
-        withCredentials: true,
-      });
-      expect(result).toEqual(mockOptions);
-    });
-
-    it('should include username when provided', async () => {
-      mockApiRequest.mockResolvedValue({});
-
-      await passkeyAuthOptions('testuser');
-
-      expect(mockApiRequest).toHaveBeenCalledWith('/authn/passkeys/auth/options/', {
-        method: 'POST',
-        body: { username: 'testuser' },
-        withCredentials: true,
-      });
-    });
-  });
-
-  describe('passkeyAuthVerify', () => {
-    it('should call apiRequest with verify endpoint and credential', async () => {
-      const credential = { id: 'cred-id', rawId: 'base64', type: 'public-key' };
-      mockApiRequest.mockResolvedValue({ access: 'token', refresh: 'refresh' });
-
-      const result = await passkeyAuthVerify(credential);
-
-      expect(mockApiRequest).toHaveBeenCalledWith('/authn/passkeys/auth/verify/', {
-        method: 'POST',
-        body: credential,
-        withCredentials: true,
-      });
-      expect(result).toEqual({ access: 'token', refresh: 'refresh' });
-    });
-  });
-
-  describe('passkeyRegisterOptions', () => {
-    it('should call apiRequest with register options endpoint (GET)', async () => {
-      const mockOptions = { challenge: 'challenge', user: { id: 'user-id' } };
-      mockApiRequest.mockResolvedValue(mockOptions);
-
-      const result = await passkeyRegisterOptions();
-
-      expect(mockApiRequest).toHaveBeenCalledWith('/authn/passkeys/register/options/', {
-        method: 'GET',
-        withCredentials: true,
-      });
-      expect(result).toEqual(mockOptions);
-    });
-  });
-
-  describe('passkeyRegisterVerify', () => {
-    it('should call apiRequest with register verify endpoint and credential', async () => {
-      const credential = { id: 'new-cred', attestationObject: 'base64' };
-      mockApiRequest.mockResolvedValue({ success: true });
-
-      const result = await passkeyRegisterVerify(credential);
-
-      expect(mockApiRequest).toHaveBeenCalledWith('/authn/passkeys/register/verify/', {
-        method: 'POST',
-        body: credential,
-        withCredentials: true,
-      });
-      expect(result).toEqual({ success: true });
     });
   });
 

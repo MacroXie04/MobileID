@@ -44,7 +44,6 @@ def api_profile(request):
                 "data": {
                     "name": profile.name,
                     "information_id": profile.information_id,
-                    "has_passkey": hasattr(request.user, "passkey"),
                 },
             }
         )

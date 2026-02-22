@@ -208,7 +208,7 @@ class SecurityTest(TestCase):
         """Test that admin audit log is created on POST actions"""
         from django.test import Client
         from django.contrib.auth.models import User
-        from core.models.admin_audit import AdminAuditLog
+        from core.models import AdminAuditLog
 
         # Clear existing logs
         AdminAuditLog.objects.all().delete()
@@ -252,7 +252,7 @@ class SecurityTest(TestCase):
         """Test that admin audit log includes IP address and user agent"""
         from django.test import Client
         from django.contrib.auth.models import User
-        from core.models.admin_audit import AdminAuditLog
+        from core.models import AdminAuditLog
 
         # Clear existing logs
         AdminAuditLog.objects.all().delete()

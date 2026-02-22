@@ -104,22 +104,9 @@ elif ADMIN_URL_PATH == "admin":
 ADMIN_ALLOWED_IPS = []  # Disable IP whitelist for now
 
 
-# ---------------------------------------------------------------------
-# Cloud SQL MySQL database configuration (Production)
-# ---------------------------------------------------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "HOST": "/cloudsql/" + env("INSTANCE_CONNECTION_NAME"),
-        "PORT": "3306",
-        "NAME": env("DB_NAME", "mobileid_prod"),
-        "USER": env("DB_USER", "root"),
-        "PASSWORD": env("DB_PASSWORD"),
-        "OPTIONS": {
-            "charset": "utf8mb4",
-        },
-    }
-}
+# Database configuration is resolved in base.py via DB_PROFILE and
+# DATABASE_URL_* / DB_* variables. This keeps production portable across
+# providers (for example GCP Cloud SQL and AWS RDS) without code changes.
 
 
 # Production logging - structured logging

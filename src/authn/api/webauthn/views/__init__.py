@@ -1,12 +1,6 @@
 from .avatar import api_avatar_upload, user_img
 from .challenge import login_challenge, csrf_token
 from .devices import list_devices, revoke_all_other_devices, revoke_device
-from .passkeys import (
-    passkey_auth_options,
-    passkey_auth_verify,
-    passkey_register_options,
-    passkey_register_verify,
-)
 from .profile import api_profile, user_info
 from .registration import api_register
 from .tokens import (
@@ -28,10 +22,6 @@ __all__ = [
     "revoke_all_other_devices",
     "revoke_device",
     "login_challenge",
-    "passkey_auth_options",
-    "passkey_auth_verify",
-    "passkey_register_options",
-    "passkey_register_verify",
     "RSALoginView",
     "user_img",
     "user_info",

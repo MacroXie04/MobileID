@@ -773,22 +773,3 @@
     opacity: 0;
 }
 
-/* Passkey Login Section */
-.passkey-section {
-    margin-top: var(--md-sys-spacing-6);
-}
-
-.passkey-text {
-    text-align: center;
-    margin: 0 0 var(--md-sys-spacing-4) 0;
-    color: var(--md-sys-color-on-surface-variant);
-}
-
-.passkey-button {
-    width: 100%;
-}
-
-.passkey-error {
-    margin-top: var(--md-sys-spacing-4);
-    cursor: pointer;
-}

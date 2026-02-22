@@ -57,7 +57,7 @@
           <!-- Submit Button -->
           <md-filled-button
             ref="submitBtn"
-            :disabled="loading || passkeyLoading"
+            :disabled="loading"
             class="submit-button"
             type="submit"
           >
@@ -66,31 +66,6 @@
             {{ loading ? 'Signing in...' : 'Sign In' }}
           </md-filled-button>
         </form>
-
-        <!-- Passkey Login -->
-        <div v-if="passkeySupported" class="passkey-section">
-          <md-outlined-button
-            :disabled="loading || passkeyLoading"
-            class="passkey-button"
-            @click="handlePasskeyLogin"
-          >
-            <md-circular-progress v-if="passkeyLoading" indeterminate></md-circular-progress>
-            <md-icon v-if="!passkeyLoading" slot="icon">passkey</md-icon>
-            {{ passkeyLoading ? 'Authenticating...' : 'Passkey' }}
-          </md-outlined-button>
-
-          <!-- Passkey Error Message -->
-          <transition name="slide-up">
-            <div
-              v-if="passkeyError"
-              class="md-banner md-banner-error passkey-error"
-              @click="clearPasskeyError"
-            >
-              <md-icon>error_outline</md-icon>
-              <span class="md-typescale-body-medium">{{ passkeyError }}</span>
-            </div>
-          </transition>
-        </div>
 
         <!-- Register Link -->
         <div class="auth-footer">
@@ -120,10 +95,5 @@ const {
   clearError,
   validateField,
   handleSubmit,
-  passkeyLoading,
-  passkeyError,
-  passkeySupported,
-  handlePasskeyLogin,
-  clearPasskeyError,
 } = useLoginViewSetup();
 </script>

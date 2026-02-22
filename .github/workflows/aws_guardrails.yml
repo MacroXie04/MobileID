@@ -1,0 +1,179 @@
+name: AWS Guardrails
+
+on:
+  workflow_call:
+    inputs:
+      aws_region:
+        required: true
+        type: string
+      resource_prefix:
+        required: true
+        type: string
+      expected_account_id:
+        required: true
+        type: string
+      ecr_repository:
+        required: false
+        type: string
+        default: ""
+      ecs_cluster:
+        required: false
+        type: string
+        default: ""
+      ecs_service:
+        required: false
+        type: string
+        default: ""
+      ecs_task_family:
+        required: false
+        type: string
+        default: ""
+      alb_name:
+        required: false
+        type: string
+        default: ""
+      target_group_name:
+        required: false
+        type: string
+        default: ""
+      rds_instance:
+        required: false
+        type: string
+        default: ""
+      vpc_name:
+        required: false
+        type: string
+        default: ""
+      amplify_app_name:
+        required: false
+        type: string
+        default: ""
+      cloudfront_comment:
+        required: false
+        type: string
+        default: ""
+      resource_names:
+        required: false
+        type: string
+        default: ""
+      forbid_patterns:
+        required: false
+        type: string
+        default: "itg-,i2g-prod-,innovate-to-grow-frontend,E2866C7XYF6J3G"
+
+  workflow_dispatch:
+    inputs:
+      aws_region:
+        required: true
+        default: us-west-2
+        type: string
+      resource_prefix:
+        required: true
+        default: i2g-mobileid-
+        type: string
+      expected_account_id:
+        required: true
+        default: "394167325273"
+        type: string
+      resource_names:
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  guardrails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Configure AWS credentials (session token)
+        if: ${{ secrets.AWS_SESSION_TOKEN != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Configure AWS credentials (long-lived)
+        if: ${{ secrets.AWS_SESSION_TOKEN == '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Validate account + protected naming
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          prefix="${{ inputs.resource_prefix }}"
+          prefix_lc="$(echo "$prefix" | tr '[:upper:]' '[:lower:]')"
+          expected_account="${{ inputs.expected_account_id }}"
+          deny_csv="${{ inputs.forbid_patterns }}"
+
+          account_id="$(aws sts get-caller-identity --query 'Account' --output text)"
+          if [[ "$account_id" != "$expected_account" ]]; then
+            echo "::error::AWS account mismatch. expected=$expected_account actual=$account_id"
+            exit 1
+          fi
+
+          declare -a resources
+          resources+=("${{ inputs.ecr_repository }}")
+          resources+=("${{ inputs.ecs_cluster }}")
+          resources+=("${{ inputs.ecs_service }}")
+          resources+=("${{ inputs.ecs_task_family }}")
+          resources+=("${{ inputs.alb_name }}")
+          resources+=("${{ inputs.target_group_name }}")
+          resources+=("${{ inputs.rds_instance }}")
+          resources+=("${{ inputs.vpc_name }}")
+          resources+=("${{ inputs.amplify_app_name }}")
+          resources+=("${{ inputs.cloudfront_comment }}")
+
+          IFS=',' read -r -a extra_resources <<< "${{ inputs.resource_names }}"
+          for r in "${extra_resources[@]}"; do
+            resources+=("$(echo "$r" | xargs)")
+          done
+
+          IFS=',' read -r -a deny_patterns <<< "$deny_csv"
+
+          checked=0
+          for raw in "${resources[@]}"; do
+            res="$(echo "$raw" | xargs)"
+            if [[ -z "$res" ]]; then
+              continue
+            fi
+            checked=$((checked + 1))
+            lower="$(echo "$res" | tr '[:upper:]' '[:lower:]')"
+
+            if [[ "$res" == "${{ inputs.amplify_app_name }}" && -n "${{ inputs.amplify_app_name }}" ]]; then
+              if [[ "$lower" != *"i2g-mobileid"* ]]; then
+                echo "::error::Amplify app name must contain i2g-mobileid: $res"
+                exit 1
+              fi
+            else
+              if [[ "$lower" != ${prefix_lc}* ]]; then
+                echo "::error::Resource name must start with '$prefix': $res"
+                exit 1
+              fi
+            fi
+
+            for pat in "${deny_patterns[@]}"; do
+              p="$(echo "$pat" | xargs | tr '[:upper:]' '[:lower:]')"
+              if [[ -n "$p" && "$lower" == *"$p"* ]]; then
+                echo "::error::Resource matches forbidden pattern '$p': $res"
+                exit 1
+              fi
+            done
+          done
+
+          if [[ "$checked" -eq 0 ]]; then
+            echo "::error::No resource names were provided to guardrails"
+            exit 1
+          fi
+
+          echo "Guardrails passed for $checked resource names in account $account_id"
