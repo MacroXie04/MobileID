@@ -68,11 +68,12 @@ CSRF_TRUSTED_ORIGINS = csv_env(
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS if not CORS_ALLOW_ALL_ORIGINS else []
 CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
-# Cookies - Production: secure cookies required
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SECURE = False  # env("SESSION_COOKIE_SECURE", "True").lower() == "true"
-CSRF_COOKIE_SECURE = False  # env("CSRF_COOKIE_SECURE", "True").lower() == "true"
+# Cookies - Production: cross-site frontend/backend requires SameSite=None.
+# Keep these configurable via env for emergency rollback.
+SESSION_COOKIE_SAMESITE = env("SESSION_COOKIE_SAMESITE", "None").capitalize()
+CSRF_COOKIE_SAMESITE = env("CSRF_COOKIE_SAMESITE", "None").capitalize()
+SESSION_COOKIE_SECURE = env("SESSION_COOKIE_SECURE", "True").lower() == "true"
+CSRF_COOKIE_SECURE = env("CSRF_COOKIE_SECURE", "True").lower() == "true"
 CSRF_COOKIE_HTTPONLY = False
 
 # Security settings - Production: strict security
