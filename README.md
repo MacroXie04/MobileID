@@ -1,6 +1,6 @@
 # MobileID
 
-> Tag: Google Cloud Run + Cloudflare
+> Tag: AWS ECS + AWS Amplify
 
 A secure, dual-stack web application for mobile identification and barcode management built with Django and Vue.js.
 
@@ -179,14 +179,7 @@ yarn format         # Format code with Prettier
 
 #### Backend CI/CD pipeline
 
-Backend automation is serialized so every backend check passes before a deploy:
-
-1. `Lint Ruff` (`.github/workflows/lint_ruff.yml`) runs on each push/PR touching backend code.
-2. `Django Tests` (`.github/workflows/django_tests.yml`) starts only after Ruff succeeds.
-3. `Database Migrations` (`.github/workflows/database_migrations.yml`) runs after the Django test suite passes to ensure migrations remain in sync.
-4. `Deploy to Cloud Run` (`.github/workflows/gcp_deploy.yml`) now triggers from the completed migrations workflow, so production deployments only occur after the entire backend chain passes on `main`.
-
-Each chained workflow deploys the exact commit that passed the previous step by reusing `github.event.workflow_run.head_sha`.
+Backend CI (`.github/workflows/backend_ci.yml`) runs Lint, Migration Check, and Django Test **in parallel**, gated by a PR detection step. On PRs, a Docker test build also runs. Deployment to AWS ECS Fargate (`.github/workflows/aws_backend_deploy.yml`) triggers on pushes to `main` that touch `src/`.
 
 ## Configuration
 
