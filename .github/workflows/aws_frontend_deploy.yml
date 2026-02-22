@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  deployments: write
 
 concurrency:
   group: aws-frontend-${{ github.ref }}
@@ -39,7 +40,7 @@ jobs:
       AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
       AWS_FRONTEND_AMPLIFY_APP_ID: ${{ vars.AWS_FRONTEND_AMPLIFY_APP_ID }}
       AWS_FRONTEND_AMPLIFY_BRANCH: ${{ vars.AWS_FRONTEND_AMPLIFY_BRANCH || 'main' }}
-      AWS_FRONTEND_ARTIFACT_BUCKET: ${{ vars.AWS_FRONTEND_ARTIFACT_BUCKET }}
+      AWS_FRONTEND_ARTIFACT_BUCKET: ${{ secrets.AWS_FRONTEND_ARTIFACT_BUCKET || vars.AWS_FRONTEND_ARTIFACT_BUCKET }}
       VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL_AWS }}
 
     steps:
@@ -79,6 +80,43 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Create GitHub deployment (frontend)
+        id: gh_deployment
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              task: "deploy",
+              environment: "i2g-MobileID-frontend",
+              auto_merge: false,
+              required_contexts: [],
+              production_environment: true,
+              transient_environment: false,
+              description: `AWS frontend deploy run ${context.runId}`
+            });
+            core.setOutput("id", String(deployment.data.id));
+
+      - name: Mark GitHub deployment in progress (frontend)
+        if: ${{ steps.gh_deployment.outputs.id != '' }}
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          DEPLOYMENT_ID: ${{ steps.gh_deployment.outputs.id }}
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state: "in_progress",
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: "AWS frontend deployment is running"
+            });
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -171,6 +209,7 @@ jobs:
           exit 1
 
       - name: Smoke test
+        id: smoke
         shell: bash
         run: |
           set -euo pipefail
@@ -181,6 +220,7 @@ jobs:
             code="$(curl -s -o /dev/null -w '%{http_code}' "$url" || true)"
             if [[ "$code" -ge 200 && "$code" -lt 400 ]]; then
               echo "Frontend smoke test passed: $url"
+              echo "url=${url}" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             sleep 5
@@ -188,3 +228,57 @@ jobs:
 
           echo "::error::Frontend smoke test failed: $url"
           exit 1
+
+      - name: Mark GitHub deployment success (frontend)
+        if: ${{ success() && steps.gh_deployment.outputs.id != '' }}
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          DEPLOYMENT_ID: ${{ steps.gh_deployment.outputs.id }}
+          DEPLOYMENT_URL: ${{ steps.smoke.outputs.url }}
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state: "success",
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              environment_url: process.env.DEPLOYMENT_URL || undefined,
+              auto_inactive: false,
+              description: "AWS frontend deployment succeeded"
+            });
+
+      - name: Mark GitHub deployment failure (frontend)
+        if: ${{ failure() && steps.gh_deployment.outputs.id != '' }}
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          DEPLOYMENT_ID: ${{ steps.gh_deployment.outputs.id }}
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state: "failure",
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: "AWS frontend deployment failed"
+            });
+
+      - name: Mark GitHub deployment cancelled (frontend)
+        if: ${{ cancelled() && steps.gh_deployment.outputs.id != '' }}
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          DEPLOYMENT_ID: ${{ steps.gh_deployment.outputs.id }}
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state: "inactive",
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: "AWS frontend deployment cancelled"
+            });
