@@ -67,7 +67,7 @@ jobs:
 
   frontend-linting:
     name: Frontend Linting
-    needs: [detect-open-pr]
+    needs: [detect-open-pr, code-style-check]
     if: needs.detect-open-pr.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -93,7 +93,7 @@ jobs:
 
   npm-test:
     name: NPM Test
-    needs: [detect-open-pr]
+    needs: [detect-open-pr, frontend-linting]
     if: needs.detect-open-pr.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30

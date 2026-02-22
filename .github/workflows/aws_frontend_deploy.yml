@@ -1,12 +1,10 @@
 name: AWS Frontend Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Frontend CI"]
+    types: [completed]
     branches: [main]
-    paths:
-      - "pages/**"
-      - ".github/workflows/aws_frontend_deploy.yml"
-      - ".github/workflows/aws_guardrails.yml"
   workflow_dispatch:
 
 permissions:
@@ -14,11 +12,12 @@ permissions:
   deployments: write
 
 concurrency:
-  group: aws-frontend-${{ github.ref }}
+  group: aws-frontend-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: true
 
 jobs:
   guardrails:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     uses: ./.github/workflows/aws_guardrails.yml
     secrets: inherit
     with:
@@ -30,10 +29,12 @@ jobs:
       resource_names: ${{ vars.AWS_FRONTEND_ARTIFACT_BUCKET }}
 
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     needs: [guardrails]
     timeout-minutes: 35
     env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
       AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -47,6 +48,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
 
       - name: Configure AWS credentials (session token)
         if: ${{ env.AWS_SESSION_TOKEN != '' }}
@@ -98,12 +101,14 @@ jobs:
         id: gh_deployment
         continue-on-error: true
         uses: actions/github-script@v7
+        env:
+          DEPLOY_SHA: ${{ env.DEPLOY_SHA }}
         with:
           script: |
             const deployment = await github.rest.repos.createDeployment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: context.sha,
+              ref: process.env.DEPLOY_SHA,
               task: "deploy",
               environment: "Mobile ID -Prod - AWS - Amplify",
               auto_merge: false,
@@ -159,7 +164,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          KEY="frontend/${GITHUB_SHA}/frontend-dist.zip"
+          KEY="frontend/${DEPLOY_SHA}/frontend-dist.zip"
           S3_URI="s3://${AWS_FRONTEND_ARTIFACT_BUCKET}/${KEY}"
           aws s3 cp out/frontend-dist.zip "${S3_URI}"
           SOURCE_URL="$(aws s3 presign "${S3_URI}" --expires-in 3600)"

@@ -26,6 +26,7 @@ def health_check(request):
     except Exception:
         response_data["status"] = "unhealthy"
         response_data["database"] = "disconnected"
+        response_data["error"] = "Database connection failed"
         return JsonResponse(response_data, status=503)
 
     return JsonResponse(response_data, status=200)

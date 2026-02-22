@@ -64,7 +64,7 @@ jobs:
 
   migration-check:
     name: Migration Check
-    needs: [detect-open-pr]
+    needs: [detect-open-pr, django-test]
     if: needs.detect-open-pr.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -96,7 +96,7 @@ jobs:
 
   django-test:
     name: Django Test
-    needs: [detect-open-pr]
+    needs: [detect-open-pr, backend-lint]
     if: needs.detect-open-pr.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -130,10 +130,8 @@ jobs:
 
   docker-build:
     name: Docker Build
-    needs: [detect-open-pr]
-    if: |
-      needs.detect-open-pr.outputs.should_run == 'true' &&
-      !(github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: [detect-open-pr, migration-check]
+    if: needs.detect-open-pr.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

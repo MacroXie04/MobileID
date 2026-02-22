@@ -220,7 +220,12 @@ else:
         # DB_PASSWORD, DB_HOST, DB_PORT)
         default_engine = "mysql" if DB_PROFILE in {"gcp", "aws"} else "postgresql"
         ENGINE = os.getenv("DB_ENGINE", default_engine).lower()
-        if ENGINE in {"postgres", "postgresql", "psql", "django.db.backends.postgresql"}:
+        if ENGINE in {
+            "postgres",
+            "postgresql",
+            "psql",
+            "django.db.backends.postgresql",
+        }:
             engine_path = "django.db.backends.postgresql"
         elif ENGINE in {"mysql", "django.db.backends.mysql"}:
             engine_path = "django.db.backends.mysql"

@@ -1,12 +1,10 @@
 name: AWS Backend Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Backend CI"]
+    types: [completed]
     branches: [main]
-    paths:
-      - "src/**"
-      - ".github/workflows/aws_backend_deploy.yml"
-      - ".github/workflows/aws_guardrails.yml"
   workflow_dispatch:
 
 permissions:
@@ -14,11 +12,12 @@ permissions:
   deployments: write
 
 concurrency:
-  group: aws-backend-${{ github.ref }}
+  group: aws-backend-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: true
 
 jobs:
   guardrails:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     uses: ./.github/workflows/aws_guardrails.yml
     secrets: inherit
     with:
@@ -36,10 +35,12 @@ jobs:
       cloudfront_comment: ${{ vars.AWS_BACKEND_CLOUDFRONT_COMMENT }}
 
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     needs: [guardrails]
     timeout-minutes: 45
     env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
       AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
       AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID || '394167325273' }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -68,6 +69,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
 
       - name: Configure AWS credentials (session token)
         if: ${{ env.AWS_SESSION_TOKEN != '' }}
@@ -118,12 +121,14 @@ jobs:
         id: gh_deployment
         continue-on-error: true
         uses: actions/github-script@v7
+        env:
+          DEPLOY_SHA: ${{ env.DEPLOY_SHA }}
         with:
           script: |
             const deployment = await github.rest.repos.createDeployment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: context.sha,
+              ref: process.env.DEPLOY_SHA,
               task: "deploy",
               environment: "Mobile ID -Prod - AWS - ECS Fargate",
               auto_merge: false,
@@ -197,7 +202,7 @@ jobs:
         run: |
           set -euo pipefail
           ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}"
-          IMAGE_TAG="${GITHUB_SHA}"
+          IMAGE_TAG="${DEPLOY_SHA}"
 
           docker buildx build \
             --platform linux/amd64 \
