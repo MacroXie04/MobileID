@@ -42,6 +42,7 @@ jobs:
       AWS_FRONTEND_AMPLIFY_BRANCH: ${{ vars.AWS_FRONTEND_AMPLIFY_BRANCH || 'main' }}
       AWS_FRONTEND_ARTIFACT_BUCKET: ${{ secrets.AWS_FRONTEND_ARTIFACT_BUCKET || vars.AWS_FRONTEND_ARTIFACT_BUCKET }}
       VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL_AWS }}
+      VITE_API_BASE_URL_AWS: ${{ vars.VITE_API_BASE_URL_AWS }}
 
     steps:
       - name: Checkout
@@ -80,6 +81,18 @@ jobs:
               exit 1
             fi
           done
+
+          if [[ "$VITE_API_BASE_URL" != https://* ]]; then
+            echo "::error::VITE_API_BASE_URL must use https: $VITE_API_BASE_URL"
+            exit 1
+          fi
+
+          if [[ "$VITE_API_BASE_URL" == *".elb.amazonaws.com"* ]]; then
+            echo "::error::VITE_API_BASE_URL must not point to ALB directly: $VITE_API_BASE_URL"
+            exit 1
+          fi
+
+          echo "Frontend API base URL: $VITE_API_BASE_URL"
 
       - name: Create GitHub deployment (frontend)
         id: gh_deployment
