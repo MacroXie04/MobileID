@@ -109,8 +109,10 @@ jobs:
         run: |
           set -euo pipefail
           KEY="frontend/${GITHUB_SHA}/frontend-dist.zip"
-          aws s3 cp out/frontend-dist.zip "s3://${AWS_FRONTEND_ARTIFACT_BUCKET}/${KEY}"
-          echo "source_url=s3://${AWS_FRONTEND_ARTIFACT_BUCKET}/${KEY}" >> "$GITHUB_OUTPUT"
+          S3_URI="s3://${AWS_FRONTEND_ARTIFACT_BUCKET}/${KEY}"
+          aws s3 cp out/frontend-dist.zip "${S3_URI}"
+          SOURCE_URL="$(aws s3 presign "${S3_URI}" --expires-in 3600)"
+          echo "source_url=${SOURCE_URL}" >> "$GITHUB_OUTPUT"
 
       - name: Ensure Amplify branch exists
         shell: bash
