@@ -235,22 +235,22 @@ jobs:
 
           backend_origin="$(
             python3 - <<'PY'
-import os
-from urllib.parse import urlparse
+          import os
+          from urllib.parse import urlparse
 
-raw = os.environ.get("AWS_BACKEND_HEALTHCHECK_URL", "").strip()
-if not raw:
-    raise SystemExit("missing AWS_BACKEND_HEALTHCHECK_URL")
+          raw = os.environ.get("AWS_BACKEND_HEALTHCHECK_URL", "").strip()
+          if not raw:
+              raise SystemExit("missing AWS_BACKEND_HEALTHCHECK_URL")
 
-if "://" not in raw:
-    raw = "https://" + raw
+          if "://" not in raw:
+              raw = "https://" + raw
 
-parsed = urlparse(raw)
-if not parsed.scheme or not parsed.netloc:
-    raise SystemExit(f"invalid AWS_BACKEND_HEALTHCHECK_URL: {raw}")
+          parsed = urlparse(raw)
+          if not parsed.scheme or not parsed.netloc:
+              raise SystemExit(f"invalid AWS_BACKEND_HEALTHCHECK_URL: {raw}")
 
-print(f"{parsed.scheme}://{parsed.netloc}")
-PY
+          print(f"{parsed.scheme}://{parsed.netloc}")
+          PY
           )"
 
           csrf_origins="$(
