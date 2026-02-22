@@ -13,11 +13,6 @@ class Command(BaseCommand):
         email = os.environ.get("DJANGO_SUPERUSER_EMAIL")
         password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
 
-        # Debugging - REMOVE AFTER DEBUGGING
-        self.stdout.write(f"DEBUG - Username: {username}")
-        self.stdout.write(f"DEBUG - Email: {email}")
-        self.stdout.write(f"DEBUG - Password: {password}")
-
         if not username or not email or not password:
             self.stdout.write(
                 self.style.WARNING(
