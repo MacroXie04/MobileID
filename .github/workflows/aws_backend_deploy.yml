@@ -106,6 +106,7 @@ jobs:
       AWS_APP_SECRET_ARN: ${{ secrets.AWS_APP_SECRET_ARN || vars.AWS_APP_SECRET_ARN }}
       AWS_ALB_NAME: ${{ vars.AWS_ALB_NAME }}
       AWS_BACKEND_HEALTHCHECK_URL: ${{ vars.AWS_BACKEND_HEALTHCHECK_URL }}
+      AWS_FRONTEND_ALLOWED_ORIGINS: ${{ vars.AWS_FRONTEND_ALLOWED_ORIGINS }}
       # Username/email are configured in repository variables; password stays in secrets.
       GH_DJANGO_SUPERUSER_USERNAME: ${{ vars.DJANGO_SUPERUSER_USERNAME || secrets.DJANGO_SUPERUSER_USERNAME }}
       GH_DJANGO_SUPERUSER_EMAIL: ${{ vars.DJANGO_SUPERUSER_EMAIL || secrets.DJANGO_SUPERUSER_EMAIL }}
@@ -152,6 +153,8 @@ jobs:
             AWS_DB_SECRET_ARN
             AWS_APP_SECRET_ARN
             AWS_ALB_NAME
+            AWS_BACKEND_HEALTHCHECK_URL
+            AWS_FRONTEND_ALLOWED_ORIGINS
             GH_DJANGO_SUPERUSER_USERNAME
             GH_DJANGO_SUPERUSER_EMAIL
             GH_DJANGO_SUPERUSER_PASSWORD
@@ -217,16 +220,63 @@ jobs:
             exit 1
           fi
 
+          frontend_origins="$(
+            printf '%s' "$AWS_FRONTEND_ALLOWED_ORIGINS" \
+              | tr ',' '\n' \
+              | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+              | awk 'NF && !seen[$0]++' \
+              | paste -sd, -
+          )"
+
+          if [[ -z "$frontend_origins" ]]; then
+            echo "::error::AWS_FRONTEND_ALLOWED_ORIGINS resolved to empty value"
+            exit 1
+          fi
+
+          backend_origin="$(
+            python3 - <<'PY'
+import os
+from urllib.parse import urlparse
+
+raw = os.environ.get("AWS_BACKEND_HEALTHCHECK_URL", "").strip()
+if not raw:
+    raise SystemExit("missing AWS_BACKEND_HEALTHCHECK_URL")
+
+if "://" not in raw:
+    raw = "https://" + raw
+
+parsed = urlparse(raw)
+if not parsed.scheme or not parsed.netloc:
+    raise SystemExit(f"invalid AWS_BACKEND_HEALTHCHECK_URL: {raw}")
+
+print(f"{parsed.scheme}://{parsed.netloc}")
+PY
+          )"
+
+          csrf_origins="$(
+            {
+              printf '%s\n' "$backend_origin"
+              printf '%s' "$frontend_origins" | tr ',' '\n'
+            } \
+              | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+              | awk 'NF && !seen[$0]++' \
+              | paste -sd, -
+          )"
+
           updated_secret="$(
             jq -c \
               --arg su "$GH_DJANGO_SUPERUSER_USERNAME" \
               --arg em "$GH_DJANGO_SUPERUSER_EMAIL" \
               --arg pw "$GH_DJANGO_SUPERUSER_PASSWORD" \
               --arg ap "$GH_ADMIN_URL_PATH" \
+              --arg cors "$frontend_origins" \
+              --arg csrf "$csrf_origins" \
               '
                 .DJANGO_SUPERUSER_USERNAME = $su
                 | .DJANGO_SUPERUSER_EMAIL = $em
                 | .DJANGO_SUPERUSER_PASSWORD = $pw
+                | .CORS_ALLOWED_ORIGINS = $cors
+                | .CSRF_TRUSTED_ORIGINS = $csrf
                 | if ($ap | length) > 0 then .ADMIN_URL_PATH = $ap else . end
               ' <<<"$current_secret"
           )"
@@ -234,6 +284,10 @@ jobs:
           aws secretsmanager put-secret-value \
             --secret-id "$AWS_APP_SECRET_ARN" \
             --secret-string "$updated_secret" >/dev/null
+
+          echo "Synchronized app secret CORS/CSRF origins:"
+          echo "CORS_ALLOWED_ORIGINS=${frontend_origins}"
+          echo "CSRF_TRUSTED_ORIGINS=${csrf_origins}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

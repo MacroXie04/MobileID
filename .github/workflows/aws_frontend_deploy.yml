@@ -88,6 +88,9 @@ jobs:
       AWS_FRONTEND_AMPLIFY_APP_ID: ${{ vars.AWS_FRONTEND_AMPLIFY_APP_ID }}
       AWS_FRONTEND_AMPLIFY_BRANCH: ${{ vars.AWS_FRONTEND_AMPLIFY_BRANCH || 'main' }}
       AWS_FRONTEND_ARTIFACT_BUCKET: ${{ secrets.AWS_FRONTEND_ARTIFACT_BUCKET || vars.AWS_FRONTEND_ARTIFACT_BUCKET }}
+      AWS_FRONTEND_CUSTOM_DOMAIN_ROOT: ${{ vars.AWS_FRONTEND_CUSTOM_DOMAIN_ROOT }}
+      AWS_FRONTEND_CUSTOM_SUBDOMAIN: ${{ vars.AWS_FRONTEND_CUSTOM_SUBDOMAIN }}
+      AWS_FRONTEND_ROUTE53_ZONE_ID: ${{ vars.AWS_FRONTEND_ROUTE53_ZONE_ID }}
       VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL_AWS }}
       VITE_API_BASE_URL_AWS: ${{ vars.VITE_API_BASE_URL_AWS }}
 
@@ -122,6 +125,9 @@ jobs:
             AWS_FRONTEND_AMPLIFY_APP_ID
             AWS_FRONTEND_AMPLIFY_BRANCH
             AWS_FRONTEND_ARTIFACT_BUCKET
+            AWS_FRONTEND_CUSTOM_DOMAIN_ROOT
+            AWS_FRONTEND_CUSTOM_SUBDOMAIN
+            AWS_FRONTEND_ROUTE53_ZONE_ID
             VITE_API_BASE_URL
           )
           for key in "${required[@]}"; do
@@ -141,7 +147,18 @@ jobs:
             exit 1
           fi
 
+          if [[ "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" == http* ]]; then
+            echo "::error::AWS_FRONTEND_CUSTOM_DOMAIN_ROOT must not include scheme: $AWS_FRONTEND_CUSTOM_DOMAIN_ROOT"
+            exit 1
+          fi
+
+          if [[ "$AWS_FRONTEND_CUSTOM_SUBDOMAIN" == *"."* ]]; then
+            echo "::error::AWS_FRONTEND_CUSTOM_SUBDOMAIN must be a prefix only (no dots): $AWS_FRONTEND_CUSTOM_SUBDOMAIN"
+            exit 1
+          fi
+
           echo "Frontend API base URL: $VITE_API_BASE_URL"
+          echo "Frontend custom domain target: https://${AWS_FRONTEND_CUSTOM_SUBDOMAIN}.${AWS_FRONTEND_CUSTOM_DOMAIN_ROOT}"
 
       - name: Create GitHub deployment (frontend)
         id: gh_deployment
@@ -249,6 +266,139 @@ jobs:
             aws amplify create-branch --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" --branch-name "$AWS_FRONTEND_AMPLIFY_BRANCH" >/dev/null
           fi
 
+      - name: Ensure Amplify custom domain association + Route53 records
+        id: custom_domain_setup
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          custom_fqdn="${AWS_FRONTEND_CUSTOM_SUBDOMAIN}.${AWS_FRONTEND_CUSTOM_DOMAIN_ROOT}"
+          zone_id="${AWS_FRONTEND_ROUTE53_ZONE_ID##*/}"
+          echo "custom_fqdn=${custom_fqdn}" >> "$GITHUB_OUTPUT"
+
+          assoc_json="$(aws amplify get-domain-association \
+            --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
+            --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
+            --output json 2>/dev/null || true)"
+
+          if [[ -z "$assoc_json" ]]; then
+            sub_settings="$(jq -cn \
+              --arg prefix "$AWS_FRONTEND_CUSTOM_SUBDOMAIN" \
+              --arg branch "$AWS_FRONTEND_AMPLIFY_BRANCH" \
+              '[{prefix:$prefix,branchName:$branch}]'
+            )"
+            aws amplify create-domain-association \
+              --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
+              --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
+              --sub-domain-settings "$sub_settings" >/dev/null
+          else
+            merged_settings="$(jq -c \
+              --arg prefix "$AWS_FRONTEND_CUSTOM_SUBDOMAIN" \
+              --arg branch "$AWS_FRONTEND_AMPLIFY_BRANCH" \
+              '
+                (
+                  [.domainAssociation.subDomains[]?.subDomainSetting
+                    | select(.prefix != $prefix)]
+                  + [{"prefix":$prefix,"branchName":$branch}]
+                )
+              ' <<<"$assoc_json"
+            )"
+            aws amplify update-domain-association \
+              --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
+              --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
+              --sub-domain-settings "$merged_settings" >/dev/null
+          fi
+
+          assoc_json="$(aws amplify get-domain-association \
+            --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
+            --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
+            --output json)"
+
+          mapfile -t dns_records < <(
+            jq -r '
+              [
+                .domainAssociation.certificateVerificationDNSRecord,
+                (.domainAssociation.subDomains[]?.dnsRecord)
+              ]
+              | map(select(. != null and . != ""))
+              | unique
+              | .[]
+            ' <<<"$assoc_json"
+          )
+
+          for rec in "${dns_records[@]}"; do
+            name="$(awk '{print $1}' <<<"$rec")"
+            rtype="$(awk '{print $2}' <<<"$rec")"
+            value="$(awk '{print $3}' <<<"$rec")"
+
+            if [[ -z "$name" || -z "$rtype" || -z "$value" ]]; then
+              echo "::warning::Skipping unexpected Amplify DNS record format: $rec"
+              continue
+            fi
+
+            if [[ "$name" != *"." ]]; then
+              name="${name}."
+            fi
+
+            change_batch="$(jq -cn \
+              --arg name "$name" \
+              --arg type "$rtype" \
+              --arg value "$value" \
+              '{
+                Changes: [
+                  {
+                    Action: "UPSERT",
+                    ResourceRecordSet: {
+                      Name: $name,
+                      Type: $type,
+                      TTL: 300,
+                      ResourceRecords: [{Value: $value}]
+                    }
+                  }
+                ]
+              }'
+            )"
+
+            aws route53 change-resource-record-sets \
+              --hosted-zone-id "$zone_id" \
+              --change-batch "$change_batch" >/dev/null
+          done
+
+      - name: Resolve preferred frontend URL
+        id: preferred_domain
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          custom_fqdn="${{ steps.custom_domain_setup.outputs.custom_fqdn }}"
+          default_domain="$(aws amplify get-app --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" --query 'app.defaultDomain' --output text)"
+          default_url="https://${AWS_FRONTEND_AMPLIFY_BRANCH}.${default_domain}"
+          preferred_url="$default_url"
+          available="false"
+
+          for i in {1..120}; do
+            status="$(aws amplify get-domain-association \
+              --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
+              --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
+              --query 'domainAssociation.domainStatus' \
+              --output text 2>/dev/null || true)"
+
+            if [[ "$status" == "AVAILABLE" ]]; then
+              preferred_url="https://${custom_fqdn}"
+              available="true"
+              break
+            fi
+            sleep 10
+          done
+
+          if [[ "$available" != "true" ]]; then
+            echo "::warning::Custom domain is not AVAILABLE yet. Falling back to ${default_url} for this deployment run."
+          fi
+
+          echo "custom_domain_available=${available}" >> "$GITHUB_OUTPUT"
+          echo "url=${preferred_url}" >> "$GITHUB_OUTPUT"
+          echo "Frontend preferred URL: ${preferred_url}"
+
       - name: Start Amplify deployment
         id: deploy
         shell: bash
@@ -301,8 +451,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          domain="$(aws amplify get-app --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" --query 'app.defaultDomain' --output text)"
-          url="https://${AWS_FRONTEND_AMPLIFY_BRANCH}.${domain}"
+          url="${{ steps.preferred_domain.outputs.url }}"
+          if [[ -z "$url" ]]; then
+            domain="$(aws amplify get-app --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" --query 'app.defaultDomain' --output text)"
+            url="https://${AWS_FRONTEND_AMPLIFY_BRANCH}.${domain}"
+          fi
 
           for i in {1..24}; do
             code="$(curl -s -o /dev/null -w '%{http_code}' "$url" || true)"
