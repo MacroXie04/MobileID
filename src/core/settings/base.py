@@ -6,7 +6,6 @@ Environment-specific settings are defined in dev.py and prod.py.
 """
 
 import os
-import warnings
 from datetime import timedelta
 from pathlib import Path
 
@@ -16,9 +15,6 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Prefer real env vars; then supplement from .env if present (do NOT override)
 load_dotenv(BASE_DIR / ".env", override=False)
-
-# Suppress cbor2 deprecation warning (comes from third-party dependency)
-warnings.filterwarnings("ignore", category=UserWarning, module="cbor2")
 
 
 def env(key, default=None):
@@ -141,7 +137,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 # Database (profile-based configuration)
 # --- DB profile switch ---
-# DB_PROFILE: "local" or "gcp" (or any custom name you like)
+# DB_PROFILE: "local", "gcp", or "aws" (or any custom name you like)
 DB_PROFILE = os.getenv("DB_PROFILE", "local").lower()
 
 # Common options
@@ -156,12 +152,16 @@ def _apply_common(db_cfg: dict) -> dict:
     db_cfg.setdefault("CONN_MAX_AGE", DB_CONN_MAX_AGE)
     # SSL (useful for Cloud SQL / managed DBs)
     if DB_SSL_MODE in {"require", "verify-ca", "verify-full"}:
+        engine = str(db_cfg.get("ENGINE", "")).lower()
         db_cfg.setdefault("OPTIONS", {})
-        db_cfg["OPTIONS"]["sslmode"] = DB_SSL_MODE
-        if DB_DISABLE_SERVER_CERT_VERIFICATION:
-            # psycopg: sslrootcert='' + sslmode=require will skip verification;
-            # for mysqlclient use 'ssl' dict
-            db_cfg["OPTIONS"]["sslmode"] = "require"
+        if "postgresql" in engine:
+            db_cfg["OPTIONS"]["sslmode"] = DB_SSL_MODE
+            if DB_DISABLE_SERVER_CERT_VERIFICATION:
+                # psycopg: sslrootcert='' + sslmode=require will skip verification
+                db_cfg["OPTIONS"]["sslmode"] = "require"
+        elif "mysql" in engine:
+            # mysqlclient enables TLS if ssl option exists
+            db_cfg["OPTIONS"].setdefault("ssl", {})
     return db_cfg
 
 
@@ -203,16 +203,20 @@ else:
     profile_to_env = {
         "local": "DATABASE_URL_LOCAL",
         "gcp": "DATABASE_URL_GCP",
+        "aws": "DATABASE_URL_AWS",
     }
 
     db_cfg = _from_url(profile_to_env.get(DB_PROFILE, "DATABASE_URL"))
+    if not db_cfg and DB_PROFILE not in profile_to_env:
+        db_cfg = _from_url("DATABASE_URL")
     if not db_cfg:
         # 2) Fallback to legacy discrete vars (DB_ENGINE, DB_NAME, DB_USER,
         # DB_PASSWORD, DB_HOST, DB_PORT)
-        ENGINE = os.getenv("DB_ENGINE", "postgresql").lower()
-        if ENGINE in {"postgres", "postgresql", "psql"}:
+        default_engine = "mysql" if DB_PROFILE in {"gcp", "aws"} else "postgresql"
+        ENGINE = os.getenv("DB_ENGINE", default_engine).lower()
+        if ENGINE in {"postgres", "postgresql", "psql", "django.db.backends.postgresql"}:
             engine_path = "django.db.backends.postgresql"
-        elif ENGINE in {"mysql"}:
+        elif ENGINE in {"mysql", "django.db.backends.mysql"}:
             engine_path = "django.db.backends.mysql"
         else:
             engine_path = "django.db.backends.sqlite3"
@@ -226,7 +230,10 @@ else:
         # Cloud SQL Unix socket override (if provided)
         # For Postgres: set CLOUDSQL_UNIX_SOCKET=/cloudsql/PROJECT:REGION:INSTANCE
         # For MySQL:   same var; django will pass via OPTIONS
+        instance_connection_name = os.getenv("INSTANCE_CONNECTION_NAME", "")
         unix_socket = os.getenv("CLOUDSQL_UNIX_SOCKET", "")
+        if DB_PROFILE == "gcp" and instance_connection_name and not unix_socket:
+            unix_socket = f"/cloudsql/{instance_connection_name}"
 
         options = {}
         if unix_socket:
@@ -240,7 +247,7 @@ else:
             if "postgresql" in engine_path:
                 options["sslmode"] = DB_SSL_MODE
             elif "mysql" in engine_path:
-                options["ssl"] = {"ssl-mode": DB_SSL_MODE}
+                options["ssl"] = {}
 
         db_cfg = {
             "ENGINE": engine_path,

@@ -3,3 +3,21 @@
 CVE-2026-2004
 CVE-2026-2005
 CVE-2026-2006
+
+# linux-libc-dev kernel CVEs - not exploitable in Docker containers
+# These are kernel development headers, waiting for Debian base image update to 6.12.73-1
+CVE-2025-71225
+CVE-2025-71229
+CVE-2025-71231
+CVE-2025-71233
+CVE-2025-71236
+CVE-2026-23111
+CVE-2026-23112
+CVE-2026-23191
+CVE-2026-23193
+CVE-2026-23204
+CVE-2026-23209
+CVE-2026-23215
+CVE-2026-23216
+CVE-2026-23229
+CVE-2026-23230

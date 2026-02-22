@@ -9,7 +9,6 @@ dependencies = [
     "django-cors-headers>=4.3,<5.0",
     "python-dotenv>=1.0",
     "Pillow>=10.0,<13.0",
-    "webauthn>=1.11,<2.0",
     "django-extensions>=3.2,<4.0",
     "django-widget-tweaks>=1.5,<2.0",
     "gunicorn>=21.2,<24.0",

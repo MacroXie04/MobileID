@@ -9,6 +9,23 @@ config.global.renderStubDefaultSlot = true;
 
 const noop = () => {};
 
+// Node.js 25+ exposes a broken globalThis.localStorage (no clear/setItem/etc.)
+// that shadows jsdom 28's working implementation. Restore jsdom's version.
+// @ts-expect-error vitest exposes jsdom instance on globalThis
+const jsdomInstance = globalThis.jsdom;
+if (jsdomInstance) {
+  const jsdomWindow = jsdomInstance.window;
+  for (const key of ['localStorage', 'sessionStorage'] as const) {
+    if (typeof globalThis[key]?.clear !== 'function' && typeof jsdomWindow[key]?.clear === 'function') {
+      Object.defineProperty(globalThis, key, {
+        value: jsdomWindow[key],
+        writable: true,
+        configurable: true,
+      });
+    }
+  }
+}
+
 if (typeof window !== 'undefined') {
   if (!window.matchMedia) {
     Object.defineProperty(window, 'matchMedia', {
