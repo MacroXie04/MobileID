@@ -59,8 +59,9 @@ jobs:
       AWS_APP_SECRET_ARN: ${{ secrets.AWS_APP_SECRET_ARN || vars.AWS_APP_SECRET_ARN }}
       AWS_ALB_NAME: ${{ vars.AWS_ALB_NAME }}
       AWS_BACKEND_HEALTHCHECK_URL: ${{ vars.AWS_BACKEND_HEALTHCHECK_URL }}
-      GH_DJANGO_SUPERUSER_USERNAME: ${{ secrets.DJANGO_SUPERUSER_USERNAME }}
-      GH_DJANGO_SUPERUSER_EMAIL: ${{ secrets.DJANGO_SUPERUSER_EMAIL }}
+      # Username/email are configured in repository variables; password stays in secrets.
+      GH_DJANGO_SUPERUSER_USERNAME: ${{ vars.DJANGO_SUPERUSER_USERNAME || secrets.DJANGO_SUPERUSER_USERNAME }}
+      GH_DJANGO_SUPERUSER_EMAIL: ${{ vars.DJANGO_SUPERUSER_EMAIL || secrets.DJANGO_SUPERUSER_EMAIL }}
       GH_DJANGO_SUPERUSER_PASSWORD: ${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
       GH_ADMIN_URL_PATH: ${{ secrets.ADMIN_URL_PATH }}
 
@@ -308,6 +309,45 @@ jobs:
           EXIT_CODE="$(aws ecs describe-tasks --cluster "$AWS_ECS_CLUSTER" --tasks "$TASK_ARN" --query 'tasks[0].containers[0].exitCode' --output text)"
           if [[ "$EXIT_CODE" != "0" ]]; then
             echo "::error::Migration task failed with exit code $EXIT_CODE"
+            aws ecs describe-tasks --cluster "$AWS_ECS_CLUSTER" --tasks "$TASK_ARN"
+            exit 1
+          fi
+
+      - name: Create/update Django admin as one-off task
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SUBNETS="$(echo "$AWS_ECS_SUBNET_IDS" | sed 's/,/\,/g')"
+          NETWORK_CONFIG="awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${AWS_ECS_SECURITY_GROUP_ID}],assignPublicIp=ENABLED}"
+
+          TASK_ARN="$(aws ecs run-task \
+            --cluster "$AWS_ECS_CLUSTER" \
+            --launch-type FARGATE \
+            --task-definition "${{ steps.taskdef.outputs.task_def_arn }}" \
+            --network-configuration "$NETWORK_CONFIG" \
+            --overrides "{\"containerOverrides\":[{\"name\":\"$AWS_ECS_CONTAINER_NAME\",\"command\":[\"uv\",\"run\",\"python\",\"manage.py\",\"initadmin\"]}]}" \
+            --query 'tasks[0].taskArn' \
+            --output text)"
+
+          if [[ -z "$TASK_ARN" || "$TASK_ARN" == "None" ]]; then
+            echo "::error::Failed to start initadmin task"
+            exit 1
+          fi
+
+          echo "Started initadmin task: $TASK_ARN"
+
+          for i in {1..120}; do
+            STATUS="$(aws ecs describe-tasks --cluster "$AWS_ECS_CLUSTER" --tasks "$TASK_ARN" --query 'tasks[0].lastStatus' --output text)"
+            if [[ "$STATUS" == "STOPPED" ]]; then
+              break
+            fi
+            sleep 5
+          done
+
+          EXIT_CODE="$(aws ecs describe-tasks --cluster "$AWS_ECS_CLUSTER" --tasks "$TASK_ARN" --query 'tasks[0].containers[0].exitCode' --output text)"
+          if [[ "$EXIT_CODE" != "0" ]]; then
+            echo "::error::Initadmin task failed with exit code $EXIT_CODE"
             aws ecs describe-tasks --cluster "$AWS_ECS_CLUSTER" --tasks "$TASK_ARN"
             exit 1
           fi
