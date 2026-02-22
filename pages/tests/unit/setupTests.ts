@@ -16,7 +16,10 @@ const jsdomInstance = globalThis.jsdom;
 if (jsdomInstance) {
   const jsdomWindow = jsdomInstance.window;
   for (const key of ['localStorage', 'sessionStorage'] as const) {
-    if (typeof globalThis[key]?.clear !== 'function' && typeof jsdomWindow[key]?.clear === 'function') {
+    if (
+      typeof globalThis[key]?.clear !== 'function' &&
+      typeof jsdomWindow[key]?.clear === 'function'
+    ) {
       Object.defineProperty(globalThis, key, {
         value: jsdomWindow[key],
         writable: true,

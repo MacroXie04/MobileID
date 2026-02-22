@@ -554,3 +554,9 @@ pages/.output/
 /CLAUDE.md
 /pages/.vite/deps/_metadata.json
 /pages/.vite/deps/package.json
+
+
+# ===================================================================
+#  Database Exports
+# ===================================================================
+!/cloudsql-exports/

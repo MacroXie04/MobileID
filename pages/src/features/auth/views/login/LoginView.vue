@@ -55,12 +55,7 @@
           </transition>
 
           <!-- Submit Button -->
-          <md-filled-button
-            ref="submitBtn"
-            :disabled="loading"
-            class="submit-button"
-            type="submit"
-          >
+          <md-filled-button ref="submitBtn" :disabled="loading" class="submit-button" type="submit">
             <md-circular-progress v-if="loading" indeterminate></md-circular-progress>
             <md-icon v-if="!loading" slot="icon">login</md-icon>
             {{ loading ? 'Signing in...' : 'Sign In' }}

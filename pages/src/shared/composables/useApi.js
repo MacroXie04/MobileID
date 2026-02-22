@@ -41,11 +41,12 @@ export function useApi() {
       // Prepend baseURL if url doesn't start with http
       const fullUrl = url.startsWith('http') ? url : `${baseURL}${url}`;
 
+      const { headers: _optHeaders, ...restOptions } = options;
       const res = await fetch(fullUrl, {
         credentials: 'include',
+        ...restOptions,
         headers,
         signal: controller.signal,
-        ...options,
       });
       clearTimeout(id);
 
@@ -90,14 +91,9 @@ export function useApi() {
             }
           }
         } else {
-          console.log('Maximum retries reached, trying final token recovery...');
-          const tokenRecoverySuccess = await handleTokenExpired();
-          if (tokenRecoverySuccess) {
-            console.log('Final token recovery successful, retrying request');
-            return await apiCallWithAutoRefresh(url, options, retryCount + 1);
-          } else {
-            throw new Error('Max retries exceeded');
-          }
+          console.log('Maximum retries reached');
+          await handleTokenExpired();
+          throw new Error('Max retries exceeded');
         }
       }
 
