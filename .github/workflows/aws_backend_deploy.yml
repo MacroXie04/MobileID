@@ -21,60 +21,63 @@ jobs:
     uses: ./.github/workflows/aws_guardrails.yml
     secrets: inherit
     with:
-      aws_region: us-west-2
-      expected_account_id: "394167325273"
-      resource_prefix: i2g-mobileid-
-      ecr_repository: i2g-mobileid-backend
-      ecs_cluster: i2g-mobileid-cluster
-      ecs_service: i2g-mobileid-api-svc
-      ecs_task_family: i2g-mobileid-api
-      alb_name: i2g-mobileid-alb
-      target_group_name: i2g-mobileid-tg
-      rds_instance: i2g-mobileid-mysql
-      vpc_name: i2g-mobileid-vpc
-      cloudfront_comment: i2g-MobileID-backend-api
+      aws_region: ${{ vars.AWS_REGION || 'us-west-2' }}
+      expected_account_id: ${{ vars.AWS_ACCOUNT_ID || '394167325273' }}
+      resource_prefix: ${{ vars.AWS_RESOURCE_PREFIX || 'i2g-mobileid-' }}
+      ecr_repository: ${{ vars.AWS_ECR_REPOSITORY }}
+      ecs_cluster: ${{ vars.AWS_ECS_CLUSTER }}
+      ecs_service: ${{ vars.AWS_ECS_SERVICE }}
+      ecs_task_family: ${{ vars.AWS_ECS_TASK_FAMILY }}
+      alb_name: ${{ vars.AWS_ALB_NAME }}
+      target_group_name: ${{ vars.AWS_TARGET_GROUP_NAME }}
+      rds_instance: ${{ vars.AWS_RDS_INSTANCE }}
+      vpc_name: ${{ vars.AWS_VPC_NAME }}
+      cloudfront_comment: ${{ vars.AWS_BACKEND_CLOUDFRONT_COMMENT }}
 
   deploy:
     runs-on: ubuntu-latest
     needs: [guardrails]
     timeout-minutes: 45
     env:
-      AWS_REGION: us-west-2
-      AWS_ACCOUNT_ID: "394167325273"
-      AWS_ECR_REPOSITORY: i2g-mobileid-backend
-      AWS_ECS_CLUSTER: i2g-mobileid-cluster
-      AWS_ECS_SERVICE: i2g-mobileid-api-svc
-      AWS_ECS_TASK_FAMILY: i2g-mobileid-api
-      AWS_ECS_CONTAINER_NAME: i2g-mobileid-api
-      AWS_ECS_SUBNET_IDS: subnet-04bf3bb29364839f7,subnet-003d4470459623d70
-      AWS_ECS_SECURITY_GROUP_ID: sg-0030a21952b22bf3e
-      AWS_ECS_EXECUTION_ROLE_ARN: arn:aws:iam::394167325273:role/i2g-mobileid-ecs-execution-role
-      AWS_ECS_TASK_ROLE_ARN: arn:aws:iam::394167325273:role/i2g-mobileid-ecs-task-role
-      AWS_ECS_TARGET_GROUP_ARN: arn:aws:elasticloadbalancing:us-west-2:394167325273:targetgroup/i2g-mobileid-tg/b02954bd6df2f805
-      AWS_DB_SECRET_ARN: arn:aws:secretsmanager:us-west-2:394167325273:secret:i2g-mobileid/db-RwZqhF
-      AWS_APP_SECRET_ARN: arn:aws:secretsmanager:us-west-2:394167325273:secret:i2g-mobileid/app-OvoT3H
-      AWS_ALB_NAME: i2g-mobileid-alb
-      AWS_BACKEND_HEALTHCHECK_URL: https://d3c92y3ydsav7u.cloudfront.net
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID || '394167325273' }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_ECR_REPOSITORY: ${{ vars.AWS_ECR_REPOSITORY }}
+      AWS_ECS_CLUSTER: ${{ vars.AWS_ECS_CLUSTER }}
+      AWS_ECS_SERVICE: ${{ vars.AWS_ECS_SERVICE }}
+      AWS_ECS_TASK_FAMILY: ${{ vars.AWS_ECS_TASK_FAMILY }}
+      AWS_ECS_CONTAINER_NAME: ${{ vars.AWS_ECS_CONTAINER_NAME }}
+      AWS_ECS_SUBNET_IDS: ${{ vars.AWS_ECS_SUBNET_IDS }}
+      AWS_ECS_SECURITY_GROUP_ID: ${{ vars.AWS_ECS_SECURITY_GROUP_ID }}
+      AWS_ECS_EXECUTION_ROLE_ARN: ${{ vars.AWS_ECS_EXECUTION_ROLE_ARN }}
+      AWS_ECS_TASK_ROLE_ARN: ${{ vars.AWS_ECS_TASK_ROLE_ARN }}
+      AWS_ECS_TARGET_GROUP_ARN: ${{ vars.AWS_ECS_TARGET_GROUP_ARN }}
+      AWS_DB_SECRET_ARN: ${{ vars.AWS_DB_SECRET_ARN }}
+      AWS_APP_SECRET_ARN: ${{ vars.AWS_APP_SECRET_ARN }}
+      AWS_ALB_NAME: ${{ vars.AWS_ALB_NAME }}
+      AWS_BACKEND_HEALTHCHECK_URL: ${{ vars.AWS_BACKEND_HEALTHCHECK_URL }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials (session token)
-        if: ${{ secrets.AWS_SESSION_TOKEN != '' }}
+        if: ${{ env.AWS_SESSION_TOKEN != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ env.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Configure AWS credentials (long-lived)
-        if: ${{ secrets.AWS_SESSION_TOKEN == '' }}
+        if: ${{ env.AWS_SESSION_TOKEN == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Validate required deployment inputs

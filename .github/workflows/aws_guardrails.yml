@@ -87,24 +87,29 @@ jobs:
   guardrails:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      AWS_REGION: ${{ inputs.aws_region }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
     steps:
       - name: Configure AWS credentials (session token)
-        if: ${{ secrets.AWS_SESSION_TOKEN != '' }}
+        if: ${{ env.AWS_SESSION_TOKEN != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ inputs.aws_region }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ env.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Configure AWS credentials (long-lived)
-        if: ${{ secrets.AWS_SESSION_TOKEN == '' }}
+        if: ${{ env.AWS_SESSION_TOKEN == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.aws_region }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Validate account + protected naming
         shell: bash

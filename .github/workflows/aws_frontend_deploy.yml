@@ -21,43 +21,46 @@ jobs:
     uses: ./.github/workflows/aws_guardrails.yml
     secrets: inherit
     with:
-      aws_region: us-west-2
-      expected_account_id: "394167325273"
-      resource_prefix: i2g-mobileid-
-      amplify_app_name: i2g-MobileID
-      cloudfront_comment: i2g-MobileID-backend-api
-      resource_names: i2g-mobileid-frontend-artifacts-394167325273-us-west-2
+      aws_region: ${{ vars.AWS_REGION || 'us-west-2' }}
+      expected_account_id: ${{ vars.AWS_ACCOUNT_ID || '394167325273' }}
+      resource_prefix: ${{ vars.AWS_RESOURCE_PREFIX || 'i2g-mobileid-' }}
+      amplify_app_name: ${{ vars.AWS_FRONTEND_AMPLIFY_APP_NAME }}
+      cloudfront_comment: ${{ vars.AWS_BACKEND_CLOUDFRONT_COMMENT }}
+      resource_names: ${{ vars.AWS_FRONTEND_ARTIFACT_BUCKET }}
 
   deploy:
     runs-on: ubuntu-latest
     needs: [guardrails]
     timeout-minutes: 35
     env:
-      AWS_REGION: us-west-2
-      AWS_FRONTEND_AMPLIFY_APP_ID: d1oa95nsvsa2az
-      AWS_FRONTEND_AMPLIFY_BRANCH: main
-      AWS_FRONTEND_ARTIFACT_BUCKET: i2g-mobileid-frontend-artifacts-394167325273-us-west-2
-      VITE_API_BASE_URL: https://d3c92y3ydsav7u.cloudfront.net
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_FRONTEND_AMPLIFY_APP_ID: ${{ vars.AWS_FRONTEND_AMPLIFY_APP_ID }}
+      AWS_FRONTEND_AMPLIFY_BRANCH: ${{ vars.AWS_FRONTEND_AMPLIFY_BRANCH || 'main' }}
+      AWS_FRONTEND_ARTIFACT_BUCKET: ${{ vars.AWS_FRONTEND_ARTIFACT_BUCKET }}
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL_AWS }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials (session token)
-        if: ${{ secrets.AWS_SESSION_TOKEN != '' }}
+        if: ${{ env.AWS_SESSION_TOKEN != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ env.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Configure AWS credentials (long-lived)
-        if: ${{ secrets.AWS_SESSION_TOKEN == '' }}
+        if: ${{ env.AWS_SESSION_TOKEN == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Validate required deployment inputs
