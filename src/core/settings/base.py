@@ -174,6 +174,12 @@ def _from_url(url_env_name: str, default_url: str = "") -> dict:
         conn_max_age=DB_CONN_MAX_AGE,
         ssl_require=(DB_SSL_MODE == "require"),
     )
+    # dj-database-url may inject postgres-style sslmode for MySQL when
+    # ssl_require is enabled. mysqlclient rejects that keyword.
+    engine = str(cfg.get("ENGINE", "")).lower()
+    if "mysql" in engine:
+        cfg.setdefault("OPTIONS", {})
+        cfg["OPTIONS"].pop("sslmode", None)
     return _apply_common(cfg)
 
 
