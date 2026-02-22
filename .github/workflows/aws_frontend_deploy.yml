@@ -273,13 +273,18 @@ jobs:
           set -euo pipefail
 
           custom_fqdn="${AWS_FRONTEND_CUSTOM_SUBDOMAIN}.${AWS_FRONTEND_CUSTOM_DOMAIN_ROOT}"
+          root_domain="${AWS_FRONTEND_CUSTOM_DOMAIN_ROOT%.}"
           zone_id="${AWS_FRONTEND_ROUTE53_ZONE_ID##*/}"
           echo "custom_fqdn=${custom_fqdn}" >> "$GITHUB_OUTPUT"
 
-          assoc_json="$(aws amplify get-domain-association \
-            --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
-            --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
-            --output json 2>/dev/null || true)"
+          get_domain_assoc() {
+            aws amplify get-domain-association \
+              --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
+              --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
+              --output json 2>/dev/null || true
+          }
+
+          assoc_json="$(get_domain_assoc)"
 
           if [[ -z "$assoc_json" ]]; then
             sub_settings="$(jq -cn \
@@ -287,32 +292,70 @@ jobs:
               --arg branch "$AWS_FRONTEND_AMPLIFY_BRANCH" \
               '[{prefix:$prefix,branchName:$branch}]'
             )"
+            echo "Creating Amplify domain association for ${AWS_FRONTEND_CUSTOM_DOMAIN_ROOT}"
             aws amplify create-domain-association \
               --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
               --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
               --sub-domain-settings "$sub_settings" >/dev/null
           else
+            current_settings="$(jq -c \
+              '[.domainAssociation.subDomains[]?.subDomainSetting | {prefix,branchName}] | sort_by(.prefix,.branchName)' \
+              <<<"$assoc_json"
+            )"
+
             merged_settings="$(jq -c \
               --arg prefix "$AWS_FRONTEND_CUSTOM_SUBDOMAIN" \
               --arg branch "$AWS_FRONTEND_AMPLIFY_BRANCH" \
               '
                 (
                   [.domainAssociation.subDomains[]?.subDomainSetting
+                    | {prefix,branchName}
                     | select(.prefix != $prefix)]
                   + [{"prefix":$prefix,"branchName":$branch}]
                 )
+                | sort_by(.prefix,.branchName)
               ' <<<"$assoc_json"
             )"
-            aws amplify update-domain-association \
-              --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
-              --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
-              --sub-domain-settings "$merged_settings" >/dev/null
+
+            if [[ "$current_settings" != "$merged_settings" ]]; then
+              echo "Updating Amplify domain association subdomain mapping"
+
+              max_attempts=30
+              for attempt in $(seq 1 "$max_attempts"); do
+                if update_output="$(aws amplify update-domain-association \
+                  --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
+                  --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
+                  --sub-domain-settings "$merged_settings" \
+                  --output json 2>&1)"; then
+                  break
+                fi
+
+                if grep -qi "certificate is updating" <<<"$update_output"; then
+                  if [[ "$attempt" -lt "$max_attempts" ]]; then
+                    echo "::warning::Amplify certificate is updating; retrying update-domain-association (${attempt}/${max_attempts})"
+                    sleep 20
+                    continue
+                  fi
+                fi
+
+                echo "::error::Unable to update Amplify domain association"
+                echo "$update_output"
+                exit 1
+              done
+            else
+              echo "Amplify domain association already has desired subdomain mapping"
+            fi
           fi
 
-          assoc_json="$(aws amplify get-domain-association \
-            --app-id "$AWS_FRONTEND_AMPLIFY_APP_ID" \
-            --domain-name "$AWS_FRONTEND_CUSTOM_DOMAIN_ROOT" \
-            --output json)"
+          assoc_json=""
+          for i in {1..30}; do
+            assoc_json="$(get_domain_assoc)"
+            dns_count="$(jq '[.domainAssociation.certificateVerificationDNSRecord, (.domainAssociation.subDomains[]?.dnsRecord)] | map(select(. != null and . != "")) | length' <<<"$assoc_json" 2>/dev/null || echo "0")"
+            if [[ "$dns_count" -gt 0 ]]; then
+              break
+            fi
+            sleep 10
+          done
 
           mapfile -t dns_records < <(
             jq -r '
@@ -326,23 +369,60 @@ jobs:
             ' <<<"$assoc_json"
           )
 
-          for rec in "${dns_records[@]}"; do
-            name="$(awk '{print $1}' <<<"$rec")"
-            rtype="$(awk '{print $2}' <<<"$rec")"
-            value="$(awk '{print $3}' <<<"$rec")"
+          if [[ ${#dns_records[@]} -eq 0 ]]; then
+            echo "::warning::No Amplify DNS records are available yet; skipping Route53 UPSERT for now."
+            exit 0
+          fi
 
-            if [[ -z "$name" || -z "$rtype" || -z "$value" ]]; then
-              echo "::warning::Skipping unexpected Amplify DNS record format: $rec"
+          for rec in "${dns_records[@]}"; do
+            parsed_json="$(
+              python3 - "$rec" "$root_domain" <<'PY'
+          import json
+          import sys
+
+          raw_record = sys.argv[1].strip()
+          root = sys.argv[2].strip().rstrip(".").lower()
+
+          parts = raw_record.split(None, 2)
+          if len(parts) < 3:
+              print(json.dumps({"ok": False, "record": raw_record, "reason": "unexpected format"}))
+              raise SystemExit(0)
+
+          name, rtype, value = parts[0].strip(), parts[1].strip().upper(), parts[2].strip()
+          if not name or not rtype or not value:
+              print(json.dumps({"ok": False, "record": raw_record, "reason": "missing token"}))
+              raise SystemExit(0)
+
+          name = name.rstrip(".")
+          if name == "@":
+              fqdn = root
+          elif name.lower() == root or name.lower().endswith("." + root):
+              fqdn = name
+          else:
+              fqdn = f"{name}.{root}"
+
+          print(json.dumps({
+              "ok": True,
+              "name": fqdn.rstrip(".") + ".",
+              "type": rtype,
+              "value": value,
+              "record": raw_record
+          }))
+          PY
+            )"
+
+            if [[ "$(jq -r '.ok' <<<"$parsed_json")" != "true" ]]; then
+              reason="$(jq -r '.reason' <<<"$parsed_json")"
+              bad_rec="$(jq -r '.record' <<<"$parsed_json")"
+              echo "::warning::Skipping Amplify DNS record (${reason}): ${bad_rec}"
               continue
             fi
 
-            name="${name%.}"
-            root_domain="${AWS_FRONTEND_CUSTOM_DOMAIN_ROOT%.}"
-            if [[ "$name" == "$root_domain" || "$name" == *".${root_domain}" ]]; then
-              name="${name}."
-            else
-              name="${name}.${root_domain}."
-            fi
+            name="$(jq -r '.name' <<<"$parsed_json")"
+            rtype="$(jq -r '.type' <<<"$parsed_json")"
+            value="$(jq -r '.value' <<<"$parsed_json")"
+
+            echo "UPSERT Route53 record: ${name} ${rtype} ${value}"
 
             change_batch="$(jq -cn \
               --arg name "$name" \
