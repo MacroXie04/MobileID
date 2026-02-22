@@ -16,7 +16,53 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  ci_gate:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_sha: ${{ steps.resolve.outputs.deploy_sha }}
+    steps:
+      - name: Validate CI gate
+        id: resolve
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deploySha = context.payload.workflow_run?.head_sha || context.sha;
+
+            if (context.eventName === "workflow_dispatch") {
+              core.setOutput("deploy_sha", deploySha);
+              return;
+            }
+
+            const runsResp = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: deploySha,
+              per_page: 100
+            });
+
+            const backendRuns = runsResp.data.workflow_runs
+              .filter((r) => r.name === "Backend CI")
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (backendRuns.length === 0) {
+              core.setFailed(`No Backend CI run found for commit ${deploySha}`);
+              return;
+            }
+
+            const backendRun = backendRuns[0];
+            if (backendRun.status !== "completed" || backendRun.conclusion !== "success") {
+              core.setFailed(
+                `Backend CI is not successful for ${deploySha}. ` +
+                `status=${backendRun.status} conclusion=${backendRun.conclusion}`
+              );
+              return;
+            }
+
+            core.setOutput("deploy_sha", deploySha);
+
   guardrails:
+    needs: [ci_gate]
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     uses: ./.github/workflows/aws_guardrails.yml
     secrets: inherit
@@ -31,10 +77,10 @@ jobs:
   deploy:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
-    needs: [guardrails]
+    needs: [ci_gate, guardrails]
     timeout-minutes: 35
     env:
-      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      DEPLOY_SHA: ${{ needs.ci_gate.outputs.deploy_sha }}
       AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
