@@ -119,7 +119,7 @@ jobs:
           ref: ${{ env.DEPLOY_SHA }}
 
       - name: Configure AWS credentials (session token)
-        if: ${{ env.AWS_SESSION_TOKEN != '' }}
+        if: ${{ startsWith(env.AWS_ACCESS_KEY_ID, 'ASIA') && env.AWS_SESSION_TOKEN != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -128,7 +128,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Configure AWS credentials (long-lived)
-        if: ${{ env.AWS_SESSION_TOKEN == '' }}
+        if: ${{ !startsWith(env.AWS_ACCESS_KEY_ID, 'ASIA') || env.AWS_SESSION_TOKEN == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}

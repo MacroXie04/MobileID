@@ -98,7 +98,7 @@ jobs:
           ref: ${{ env.DEPLOY_SHA }}
 
       - name: Configure AWS credentials (session token)
-        if: ${{ env.AWS_SESSION_TOKEN != '' }}
+        if: ${{ startsWith(env.AWS_ACCESS_KEY_ID, 'ASIA') && env.AWS_SESSION_TOKEN != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -107,7 +107,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Configure AWS credentials (long-lived)
-        if: ${{ env.AWS_SESSION_TOKEN == '' }}
+        if: ${{ !startsWith(env.AWS_ACCESS_KEY_ID, 'ASIA') || env.AWS_SESSION_TOKEN == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -196,6 +196,30 @@ jobs:
       - name: Build frontend
         working-directory: ./pages
         run: yarn build
+
+      - name: Verify bundled API base URL
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          shopt -s nullglob
+          files=(pages/dist/assets/index-*.js)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "::error::No built index bundles found under pages/dist/assets"
+            exit 1
+          fi
+
+          if grep -R --line-number --fixed-strings ".elb.amazonaws.com" "${files[@]}" >/dev/null; then
+            echo "::error::Built bundle contains ALB endpoint. Frontend must use CloudFront API URL."
+            exit 1
+          fi
+
+          if ! grep -R --line-number --fixed-strings "$VITE_API_BASE_URL" "${files[@]}" >/dev/null; then
+            echo "::error::Built bundle does not contain expected API base URL: $VITE_API_BASE_URL"
+            exit 1
+          fi
+
+          echo "Verified bundled API base URL: $VITE_API_BASE_URL"
 
       - name: Package artifact
         shell: bash
