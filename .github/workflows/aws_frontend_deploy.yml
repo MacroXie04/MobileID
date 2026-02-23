@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Validate CI gate
         id: resolve
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const deploySha = context.payload.workflow_run?.head_sha || context.sha;
@@ -163,7 +163,7 @@ jobs:
       - name: Create GitHub deployment (frontend)
         id: gh_deployment
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           DEPLOY_SHA: ${{ env.DEPLOY_SHA }}
         with:
@@ -185,7 +185,7 @@ jobs:
       - name: Mark GitHub deployment in progress (frontend)
         if: ${{ steps.gh_deployment.outputs.id != '' }}
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           DEPLOYMENT_ID: ${{ steps.gh_deployment.outputs.id }}
         with:
@@ -557,7 +557,7 @@ jobs:
       - name: Mark GitHub deployment success (frontend)
         if: ${{ success() && steps.gh_deployment.outputs.id != '' }}
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           DEPLOYMENT_ID: ${{ steps.gh_deployment.outputs.id }}
           DEPLOYMENT_URL: ${{ steps.smoke.outputs.url }}
@@ -577,7 +577,7 @@ jobs:
       - name: Mark GitHub deployment failure (frontend)
         if: ${{ failure() && steps.gh_deployment.outputs.id != '' }}
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           DEPLOYMENT_ID: ${{ steps.gh_deployment.outputs.id }}
         with:
@@ -594,7 +594,7 @@ jobs:
       - name: Mark GitHub deployment cancelled (frontend)
         if: ${{ cancelled() && steps.gh_deployment.outputs.id != '' }}
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           DEPLOYMENT_ID: ${{ steps.gh_deployment.outputs.id }}
         with:
