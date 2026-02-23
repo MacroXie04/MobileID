@@ -103,7 +103,7 @@ jobs:
     steps:
       - name: Configure AWS credentials (session token)
         if: ${{ startsWith(env.AWS_ACCESS_KEY_ID, 'ASIA') && env.AWS_SESSION_TOKEN != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -112,7 +112,7 @@ jobs:
 
       - name: Configure AWS credentials (long-lived)
         if: ${{ !startsWith(env.AWS_ACCESS_KEY_ID, 'ASIA') || env.AWS_SESSION_TOKEN == '' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
