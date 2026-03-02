@@ -293,10 +293,10 @@
   resolved "https://registry.yarnpkg.com/@exodus/bytes/-/bytes-1.14.1.tgz#9b5c29077162a35f1bd25613e0cd3c239f6e7ad8"
   integrity sha512-OhkBFWI6GcRMUroChZiopRiSp2iAMvEBK47NhJooDqz1RERO4QuZIZnjP63TXX8GAiLABkYmX+fuQsdJ1dd2QQ==
 
-"@fontsource/material-symbols-outlined@^5.2.36":
-  version "5.2.36"
-  resolved "https://registry.yarnpkg.com/@fontsource/material-symbols-outlined/-/material-symbols-outlined-5.2.36.tgz#a7caf11d7da83b64be5baa23b0e763c07a4b774d"
-  integrity sha512-5o5B0HIJ0LAY8563AU4vl94V9tbA+qLdFmUAiP0UFy8P8zFUz9yPyy7jcGC6DdZXFzyu+Va7FEwZCuvZy8sbsg==
+"@fontsource/material-symbols-outlined@^5.2.37":
+  version "5.2.37"
+  resolved "https://registry.yarnpkg.com/@fontsource/material-symbols-outlined/-/material-symbols-outlined-5.2.37.tgz#b9658a55e3ce56554c71c2002379870a8b920876"
+  integrity sha512-7fImLLjo+og+EsDuGbr3Vbr1KRyNUxV8iyHZiS0cgHpEAW/26ouSl4tA0EJl+2Y7Uk4Fk5wB1rnslPmRlcGRqQ==
 
 "@fontsource/open-sans@^5.2.6":
   version "5.2.7"
