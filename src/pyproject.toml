@@ -3,13 +3,13 @@ name = "mobileid"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "Django>=5.2,<6.0",
+    "Django>=5.2,<7.0",
     "djangorestframework>=3.14,<4.0",
     "djangorestframework-simplejwt>=5.3,<6.0",
     "django-cors-headers>=4.3,<5.0",
     "python-dotenv>=1.0",
     "Pillow>=10.0,<13.0",
-    "django-extensions>=3.2,<4.0",
+    "django-extensions>=3.2,<5.0",
     "django-widget-tweaks>=1.5,<2.0",
     "gunicorn>=21.2,<24.0",
     "redis>=5.0,<6.0",
