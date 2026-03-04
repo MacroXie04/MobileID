@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { pathAlias } from './alias.config.mjs';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     vue({
       template: {
@@ -24,8 +24,8 @@ export default defineConfig({
     // Clear the output directory before building
     emptyOutDir: true,
     // Generate source maps for debugging
-    sourcemap: true,
+    sourcemap: mode !== 'production',
   },
   // Only expose env vars with this prefix to the client
   envPrefix: 'VITE_',
-});
+}));

@@ -2,6 +2,11 @@ from django.db import models
 
 
 class FailedLoginAttempt(models.Model):
+    # Keyed by username only (unique=True). An attacker can lock out any
+    # account by repeatedly failing login from any IP. A per-(username, ip)
+    # composite key would prevent this DoS but weaken brute-force protection
+    # (attacker rotates IPs). Current design prioritises brute-force defence.
+    # Consider adding CAPTCHA after N failures as a middle ground.
     username = models.CharField(max_length=150, unique=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     attempt_count = models.PositiveIntegerField(default=0)

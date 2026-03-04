@@ -8,7 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.9 /uv /uvx /bin/
 
 # Install system dependencies
 # We need build tools for mysqlclient (pkg-config, default-libmysqlclient-dev, build-essential)

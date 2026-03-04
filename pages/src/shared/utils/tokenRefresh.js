@@ -1,5 +1,4 @@
 import { baseURL } from '@app/config/config';
-import { getRefreshToken, setAuthTokens } from '@shared/api/axios';
 
 let activeRefreshTokenPromise = null;
 const REFRESH_WAIT_TIMEOUT_MS = 10000; // Avoid hanging forever
@@ -30,8 +29,10 @@ export function checkAuthenticationError(data, response) {
     data?.detail?.includes('token not valid') ||
     data?.detail?.includes('Token is expired') ||
     data?.detail?.includes('Invalid token') ||
-    response?.status === 401 ||
-    response?.status === 403;
+    response?.status === 401;
+  // NOTE: 403 intentionally excluded — it means "authenticated but
+  // lacks permission", not "token invalid". Including it caused
+  // unnecessary token refresh loops on permission-denied responses.
 
   return !!isTokenInvalid;
 }
@@ -39,13 +40,10 @@ export function checkAuthenticationError(data, response) {
 /**
  * Shared token refresh logic
  * Returns a promise that resolves to true (success) or false (failure)
+ *
+ * Uses HttpOnly cookies — browser sends refresh_token cookie automatically.
  */
 export function refreshToken() {
-  const refreshTokenValue = getRefreshToken();
-  if (!refreshTokenValue) {
-    return Promise.resolve(false);
-  }
-
   // If a refresh is already in progress, return the existing promise (with timeout wrapper)
   if (activeRefreshTokenPromise) {
     return waitForPromiseWithTimeout(activeRefreshTokenPromise, REFRESH_WAIT_TIMEOUT_MS).catch(
@@ -61,7 +59,7 @@ export function refreshToken() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ refresh: refreshTokenValue }),
+        credentials: 'include',
       });
 
       // Be tolerant of empty or non-JSON responses
@@ -75,11 +73,10 @@ export function refreshToken() {
         }
       }
 
-      if (res.ok && data?.access) {
-        setAuthTokens({
-          access: data.access,
-          refresh: data.refresh || refreshTokenValue,
-        });
+      if (res.ok) {
+        // Server sets new cookies in response; no localStorage needed
+        // Invalidate cached userInfo so the router guard re-fetches
+        window.userInfoTimestamp = 0;
         return true;
       }
 

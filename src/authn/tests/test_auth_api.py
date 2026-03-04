@@ -1,5 +1,7 @@
 from authn.services.webauthn import create_user_profile
 from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
@@ -11,12 +13,27 @@ class AuthenticationAPITest(APITestCase):
 
     def setUp(self):
         self.client = APIClient()
+        cache.clear()
         self.user = User.objects.create_user(
             username="testuser", password="testpass123"
         )
         create_user_profile(self.user, "Test User", "TEST123", None)
 
     def test_login_success(self):
+        """Default: tokens NOT in body, only in cookies"""
+        url = reverse("authn:api_token_obtain_pair")
+        data = {"username": "testuser", "password": "testpass123"}
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn("access", response.data)
+        self.assertNotIn("refresh", response.data)
+        self.assertIn("access_token", response.cookies)
+        self.assertIn("refresh_token", response.cookies)
+
+    @override_settings(AUTH_EXPOSE_TOKENS_IN_BODY=True)
+    def test_login_success_expose_tokens(self):
+        """With AUTH_EXPOSE_TOKENS_IN_BODY=True, tokens in body and cookies"""
         url = reverse("authn:api_token_obtain_pair")
         data = {"username": "testuser", "password": "testpass123"}
 

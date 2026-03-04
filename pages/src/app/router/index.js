@@ -48,13 +48,19 @@ const router = createRouter({
   routes,
 });
 
+const USER_INFO_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 // Global auth guard: checks meta.requiresAuth and caches user info in a single place
 router.beforeEach(async (to, _from, next) => {
   try {
     if (!to.meta.requiresAuth) return next();
 
-    // If already cached, check access
-    if (window.userInfo) {
+    // Check if cached userInfo is still fresh
+    const cacheExpired =
+      !window.userInfoTimestamp || Date.now() - window.userInfoTimestamp > USER_INFO_CACHE_TTL_MS;
+
+    // If already cached and fresh, check access
+    if (window.userInfo && !cacheExpired) {
       // Check if User type trying to access barcode dashboard
       if (
         to.path === '/dashboard' &&
@@ -69,6 +75,7 @@ router.beforeEach(async (to, _from, next) => {
     const data = await userInfo();
     if (data) {
       window.userInfo = data;
+      window.userInfoTimestamp = Date.now();
       // Check if User type trying to access barcode dashboard
       if (to.path === '/dashboard' && data.groups && data.groups.includes('User')) {
         return next({ path: '/' });
@@ -82,6 +89,7 @@ router.beforeEach(async (to, _from, next) => {
       const retryData = await userInfo();
       if (retryData) {
         window.userInfo = retryData;
+        window.userInfoTimestamp = Date.now();
         // Check if User type trying to access barcode dashboard
         if (to.path === '/dashboard' && retryData.groups && retryData.groups.includes('User')) {
           return next({ path: '/' });

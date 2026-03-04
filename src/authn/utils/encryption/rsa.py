@@ -26,7 +26,7 @@ def get_rsa_private_key():
 
 def decrypt_rsa_ciphertext(encrypted_data_b64, private_key_pem=None):
     """
-    Decrypt RSA ciphertext using private key with OAEP preference.
+    Decrypt RSA ciphertext using private key with OAEP padding.
     """
 
     try:
@@ -39,21 +39,14 @@ def decrypt_rsa_ciphertext(encrypted_data_b64, private_key_pem=None):
         )
         encrypted_data = base64.b64decode(encrypted_data_b64)
 
-        try:
-            return private_key.decrypt(
-                encrypted_data,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None,
-                ),
-            )
-        except ValueError:
-            decrypted_data = private_key.decrypt(
-                encrypted_data,
-                padding.PKCS1v15(),
-            )
-            return decrypted_data
+        return private_key.decrypt(
+            encrypted_data,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
 
     except Exception as exc:
         logger.error("RSA decryption failed: %s", str(exc))
