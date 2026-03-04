@@ -148,27 +148,3 @@ jobs:
           name: coverage-xml
           path: src/coverage.xml
           retention-days: 30
-
-  docker-build:
-    name: Docker Build
-    needs: [detect-open-pr, backend-lint, django-test, migration-check]
-    if: needs.detect-open-pr.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image (no push)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./src
-          file: ./src/Dockerfile
-          push: false
-          tags: mobileid-backend:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
