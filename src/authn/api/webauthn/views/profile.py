@@ -84,5 +84,13 @@ def api_profile(request):
         else:
             profile.user_profile_img = None
 
-    profile.save()
+    updated_fields = []
+    if "name" in data:
+        updated_fields.append("name")
+    if "information_id" in data:
+        updated_fields.append("information_id")
+    if "user_profile_img_base64" in data:
+        updated_fields.append("user_profile_img")
+
+    profile.save(update_fields=updated_fields if updated_fields else None)
     return Response({"success": True, "message": "Profile updated successfully"})

@@ -1,5 +1,4 @@
 import { nextTick, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
 import { userInfo } from '@shared/api/auth';
 import { useUserInfo } from '@user/composables/useUserInfo';
 import { useToken } from '@auth/composables/useToken';
@@ -8,8 +7,6 @@ import { usePdf417 } from '@dashboard/composables/barcode/usePdf417';
 import { animateBarcodeSequence } from '@shared/utils/common/jQueryAnimations.js';
 
 export function useHomeSchoolLogic() {
-  const route = useRoute();
-
   // State
   const loading = ref(false);
   const serverStatus = ref('Emergency');
@@ -196,18 +193,6 @@ export function useHomeSchoolLogic() {
   onMounted(async () => {
     await Promise.all([refreshProfileData(), loadScannerSettings()]);
   });
-
-  // Watch for route changes to refresh when returning from edit page
-  watch(
-    () => route.path,
-    async (newPath, oldPath) => {
-      // If returning from profile edit page, force refresh data
-      if (oldPath === '/profile/edit' && newPath === '/') {
-        console.log('HomeSchool: Returning from profile edit, force refreshing data...');
-        await refreshProfileData(true);
-      }
-    }
-  );
 
   return {
     profile,

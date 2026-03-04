@@ -26,11 +26,11 @@ class AdminAuditMiddleware:
         if not request.path.startswith(self.admin_path):
             return self.get_response(request)
 
-        # Log admin access
-        if request.user.is_authenticated and request.user.is_staff:
-            self._log_admin_access(request)
-
         response = self.get_response(request)
+
+        # Log admin access after processing so we know the response status
+        if request.user.is_authenticated and request.user.is_staff:
+            self._log_admin_access(request, response)
 
         # Log logout if it happened
         if request.path.endswith("/logout/") and request.user.is_authenticated:
@@ -38,7 +38,7 @@ class AdminAuditMiddleware:
 
         return response
 
-    def _log_admin_access(self, request):
+    def _log_admin_access(self, request, response=None):
         """
         Log admin page access.
 
@@ -70,8 +70,9 @@ class AdminAuditMiddleware:
             # For other POST requests, log as action
             action = AdminAuditLog.ACTION
 
-        # Log the action
-        self._log_admin_action(request, action, resource=resource, success=True)
+        # Determine success from response status code
+        success = response is None or (200 <= response.status_code < 400)
+        self._log_admin_action(request, action, resource=resource, success=success)
 
     def _log_admin_action(
         self, request, action, resource="", success=True, details=None

@@ -1,4 +1,4 @@
-import random
+import secrets
 
 from django.contrib.auth.models import Group
 
@@ -16,14 +16,14 @@ def generate_unique_information_id(length: int = 9) -> str:
     upper = (10**length) - 1
 
     while True:
-        info_id = str(random.randint(lower, upper))
+        info_id = str(secrets.randbelow(upper - lower + 1) + lower)
         if not UserProfile.objects.filter(information_id=info_id).exists():
             return info_id
 
 
 def generate_unique_identification_barcode():
     while True:
-        code = "".join([str(random.randint(0, 9)) for _ in range(28)])
+        code = "".join([str(secrets.randbelow(10)) for _ in range(28)])
         if not Barcode.objects.filter(barcode=code).exists():
             return code
 

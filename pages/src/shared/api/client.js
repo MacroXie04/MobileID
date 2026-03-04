@@ -18,18 +18,27 @@ export async function apiRequest(endpoint, options = {}) {
       await ensureCsrfToken();
     }
 
+    const {
+      headers: optHeaders,
+      body,
+      method: _m,
+      withCredentials: wc,
+      timeout,
+      params,
+      responseType,
+      ...rest // eslint-disable-line no-unused-vars
+    } = options;
+
     const config = {
       url: endpoint,
       method,
-      headers: options.headers || {},
-      data: options.body, // axios uses 'data' for body
-      withCredentials:
-        typeof options.withCredentials === 'boolean' ? options.withCredentials : true,
-      ...options,
+      headers: optHeaders || {},
+      data: body, // axios uses 'data' for body
+      withCredentials: typeof wc === 'boolean' ? wc : true,
+      ...(timeout !== undefined && { timeout }),
+      ...(params !== undefined && { params }),
+      ...(responseType !== undefined && { responseType }),
     };
-
-    // Remove body from config as we mapped it to data
-    delete config.body;
 
     const response = await api(config);
     return response.data;

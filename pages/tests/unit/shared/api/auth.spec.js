@@ -31,11 +31,11 @@ vi.mock('@shared/utils/encryption', () => ({
   clearPublicKeyCache: () => mockClearPublicKeyCache(),
 }));
 
-const mockSetAuthTokens = vi.fn();
-const mockClearAuthTokens = vi.fn();
-vi.mock('@shared/api/axios', () => ({
-  setAuthTokens: (tokens) => mockSetAuthTokens(tokens),
-  clearAuthTokens: () => mockClearAuthTokens(),
+const mockClearAuthCookies = vi.fn();
+const mockClearAuthStorage = vi.fn();
+vi.mock('@shared/utils/cookie', () => ({
+  clearAuthCookies: () => mockClearAuthCookies(),
+  clearAuthStorage: () => mockClearAuthStorage(),
 }));
 
 describe('auth API', () => {
@@ -60,7 +60,7 @@ describe('auth API', () => {
       const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
       mockApiRequest
         .mockResolvedValueOnce(mockChallenge) // fetchLoginChallenge
-        .mockResolvedValueOnce({ access: 'access-token', refresh: 'refresh-token' }); // login
+        .mockResolvedValueOnce({ message: 'Login successful' }); // login
       mockEncryptPassword.mockResolvedValue('encrypted-password');
 
       const result = await login('testuser', 'password123');
@@ -71,34 +71,20 @@ describe('auth API', () => {
         method: 'POST',
         body: { username: 'testuser', password: 'encrypted-password' },
       });
-      expect(result).toEqual({ access: 'access-token', refresh: 'refresh-token' });
+      expect(result).toEqual({ message: 'Login successful' });
     });
 
-    it('should save tokens to localStorage on success', async () => {
+    it('should not store tokens locally (cookie-only auth)', async () => {
       const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
       mockApiRequest
         .mockResolvedValueOnce(mockChallenge)
-        .mockResolvedValueOnce({ access: 'new-access', refresh: 'new-refresh' });
+        .mockResolvedValueOnce({ message: 'Login successful' });
       mockEncryptPassword.mockResolvedValue('encrypted');
 
       await login('user', 'pass');
 
-      expect(mockSetAuthTokens).toHaveBeenCalledWith({
-        access: 'new-access',
-        refresh: 'new-refresh',
-      });
-    });
-
-    it('should not save tokens if response has no tokens', async () => {
-      const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
-      mockApiRequest
-        .mockResolvedValueOnce(mockChallenge)
-        .mockResolvedValueOnce({ message: 'Login successful' }); // No tokens
-      mockEncryptPassword.mockResolvedValue('encrypted');
-
-      await login('user', 'pass');
-
-      expect(mockSetAuthTokens).not.toHaveBeenCalled();
+      // No localStorage interaction expected
+      expect(mockClearAuthCookies).not.toHaveBeenCalled();
     });
 
     it('should clear public key cache on 401 error', async () => {
@@ -197,20 +183,22 @@ describe('auth API', () => {
       expect(mockApiRequest).toHaveBeenCalledWith('/authn/logout/', { method: 'POST' });
     });
 
-    it('should clear auth tokens even on success', async () => {
+    it('should clear auth cookies and storage even on success', async () => {
       mockApiRequest.mockResolvedValue({});
 
       await logout();
 
-      expect(mockClearAuthTokens).toHaveBeenCalled();
+      expect(mockClearAuthCookies).toHaveBeenCalled();
+      expect(mockClearAuthStorage).toHaveBeenCalled();
     });
 
-    it('should clear auth tokens even on error', async () => {
+    it('should clear auth cookies and storage even on error', async () => {
       mockApiRequest.mockRejectedValue(new Error('Server error'));
 
       await logout();
 
-      expect(mockClearAuthTokens).toHaveBeenCalled();
+      expect(mockClearAuthCookies).toHaveBeenCalled();
+      expect(mockClearAuthStorage).toHaveBeenCalled();
     });
 
     it('should not throw on API error', async () => {
@@ -250,7 +238,7 @@ describe('auth API', () => {
   describe('register', () => {
     it('should call apiRequest with register endpoint and user data', async () => {
       const userData = { username: 'newuser', password: 'pass123', name: 'New User' };
-      mockApiRequest.mockResolvedValue({ access: 'token', refresh: 'refresh' });
+      mockApiRequest.mockResolvedValue({ success: true, message: 'Registration successful' });
 
       const result = await register(userData);
 
@@ -258,28 +246,17 @@ describe('auth API', () => {
         method: 'POST',
         body: userData,
       });
-      expect(result).toEqual({ access: 'token', refresh: 'refresh' });
+      expect(result).toEqual({ success: true, message: 'Registration successful' });
     });
 
-    it('should save tokens to localStorage on success', async () => {
+    it('should not store tokens locally (cookie-only auth)', async () => {
       const userData = { username: 'newuser', password: 'pass' };
-      mockApiRequest.mockResolvedValue({ access: 'new-access', refresh: 'new-refresh' });
+      mockApiRequest.mockResolvedValue({ success: true });
 
       await register(userData);
 
-      expect(mockSetAuthTokens).toHaveBeenCalledWith({
-        access: 'new-access',
-        refresh: 'new-refresh',
-      });
-    });
-
-    it('should not save tokens if response has no tokens', async () => {
-      const userData = { username: 'newuser', password: 'pass' };
-      mockApiRequest.mockResolvedValue({ message: 'Registered' });
-
-      await register(userData);
-
-      expect(mockSetAuthTokens).not.toHaveBeenCalled();
+      // No localStorage interaction expected
+      expect(mockClearAuthCookies).not.toHaveBeenCalled();
     });
 
     it('should logout and retry if token_not_valid error', async () => {
@@ -288,13 +265,14 @@ describe('auth API', () => {
       mockApiRequest
         .mockRejectedValueOnce(tokenError) // First register fails
         .mockResolvedValueOnce({}) // logout succeeds
-        .mockResolvedValueOnce({ access: 'token', refresh: 'refresh' }); // Retry succeeds
+        .mockResolvedValueOnce({ success: true }); // Retry succeeds
 
       const result = await register(userData);
 
-      expect(mockClearAuthTokens).toHaveBeenCalled(); // logout clears tokens
+      expect(mockClearAuthCookies).toHaveBeenCalled(); // logout clears cookies
+      expect(mockClearAuthStorage).toHaveBeenCalled(); // logout clears storage
       expect(mockApiRequest).toHaveBeenCalledTimes(3); // register, logout, register retry
-      expect(result).toEqual({ access: 'token', refresh: 'refresh' });
+      expect(result).toEqual({ success: true });
     });
 
     it('should logout and retry if token is expired error', async () => {
@@ -307,7 +285,8 @@ describe('auth API', () => {
 
       await register(userData);
 
-      expect(mockClearAuthTokens).toHaveBeenCalled();
+      expect(mockClearAuthCookies).toHaveBeenCalled();
+      expect(mockClearAuthStorage).toHaveBeenCalled();
     });
 
     it('should re-throw non-token errors', async () => {

@@ -8,6 +8,7 @@ export { HomeSchoolView, HomeUserView };
 export function useHomeViewSetup() {
   const loading = ref(true);
   const groups = ref([]);
+  const apiError = ref(null);
 
   onMounted(() => {
     // read user info from window.userInfo
@@ -15,7 +16,7 @@ export function useHomeViewSetup() {
 
     // Check if API error occurred (connection failed)
     if (window.apiError) {
-      // API connection failed, show error page
+      apiError.value = window.apiError;
       groups.value = [];
       loading.value = false;
       return;
@@ -37,5 +38,5 @@ export function useHomeViewSetup() {
     window.location.reload();
   }
 
-  return { loading, groups, retryConnection };
+  return { loading, groups, apiError, retryConnection };
 }

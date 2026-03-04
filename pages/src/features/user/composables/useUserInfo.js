@@ -4,19 +4,16 @@ import { useApi } from '@shared/composables/useApi';
 import { hasAuthTokens } from '@shared/utils/cookie';
 import { useToken } from '@auth/composables/useToken';
 import { baseURL } from '@app/config/config';
-import { getAccessToken } from '@shared/api/axios';
 
 // Global state to prevent multiple instances and API calls
 const globalProfile = ref(window.userInfo?.profile || { name: '', information_id: '' });
 const isLoading = ref(false);
 const isLoaded = ref(false);
+const avatarBlobUrl = ref('');
 
 export function useUserInfo() {
   const { apiCallWithAutoRefresh } = useApi();
   const { refreshToken, handleTokenExpired } = useToken();
-
-  // Avatar state
-  const avatarBlobUrl = ref('');
 
   // Avatar URL - returns blob URL or empty string
   const avatarSrc = computed(() => avatarBlobUrl.value);
@@ -26,13 +23,10 @@ export function useUserInfo() {
    */
   async function loadAvatar() {
     try {
-      const token = getAccessToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
       console.log('Loading avatar from:', `${baseURL}/authn/user_img/`);
       let response = await fetch(`${baseURL}/authn/user_img/`, {
         method: 'GET',
-        headers,
+        credentials: 'include',
       });
 
       console.log('Avatar response status:', response.status);
@@ -41,11 +35,9 @@ export function useUserInfo() {
       if (response.status === 401 || response.status === 403) {
         const refreshed = await refreshToken();
         if (refreshed) {
-          const retryToken = getAccessToken();
-          const retryHeaders = retryToken ? { Authorization: `Bearer ${retryToken}` } : {};
           response = await fetch(`${baseURL}/authn/user_img/`, {
             method: 'GET',
-            headers: retryHeaders,
+            credentials: 'include',
           });
         } else {
           await handleTokenExpired();

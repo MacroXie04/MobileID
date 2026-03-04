@@ -32,6 +32,27 @@ jobs:
       contents: read
       pull-requests: read
 
+  migration-file-guard:
+    name: Migration File Guard
+    needs: [detect-open-pr]
+    if: needs.detect-open-pr.outputs.should_run == 'true' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for migration file changes
+        run: |
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- \
+            'src/*/migrations/*.py' 'src/*/*/migrations/*.py' | grep -v '__init__.py' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "::error::Migration files changed: $CHANGED"
+            exit 1
+          fi
+
   backend-lint:
     name: Backend Lint
     needs: [detect-open-pr]
@@ -64,7 +85,7 @@ jobs:
 
   migration-check:
     name: Migration Check
-    needs: [detect-open-pr, django-test]
+    needs: [detect-open-pr]
     if: needs.detect-open-pr.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -96,7 +117,7 @@ jobs:
 
   django-test:
     name: Django Test
-    needs: [detect-open-pr, backend-lint]
+    needs: [detect-open-pr]
     if: needs.detect-open-pr.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -130,7 +151,7 @@ jobs:
 
   docker-build:
     name: Docker Build
-    needs: [detect-open-pr, migration-check]
+    needs: [detect-open-pr, backend-lint, django-test, migration-check]
     if: needs.detect-open-pr.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30

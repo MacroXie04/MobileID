@@ -301,12 +301,13 @@ class LoginSecurityTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_login_returns_access_token(self):
-        """Test that successful login returns access token"""
+    def test_login_returns_message_without_tokens_in_body(self):
+        """Test that successful login returns message but no tokens in body (default)"""
         response = self._perform_rsa_login()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("access", response.data)
-        self.assertIsNotNone(response.data["access"])
+        self.assertIn("message", response.data)
+        self.assertNotIn("access", response.data)
+        self.assertNotIn("refresh", response.data)
 
     def test_access_token_cookie_set_on_login(self):
         """Test that access token cookie is set on login"""

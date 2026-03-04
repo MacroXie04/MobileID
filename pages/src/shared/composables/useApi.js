@@ -1,6 +1,5 @@
 import { getCookie } from '@shared/utils/cookie';
 import { useToken } from '@auth/composables/useToken';
-import { getAccessToken } from '@shared/api/axios';
 import { baseURL } from '@app/config/config';
 import { useServerWakeup } from '@shared/composables/useServerWakeup';
 import { ensureCsrfToken } from '@shared/api/csrf';
@@ -27,16 +26,12 @@ export function useApi() {
         csrfToken = await ensureCsrfToken();
       }
 
-      // Get access token and add Authorization header
-      const token = getAccessToken();
+      // No Authorization header — browser sends cookie automatically
       const headers = {
         ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
         'Content-Type': 'application/json',
         ...options.headers,
       };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
 
       // Prepend baseURL if url doesn't start with http
       const fullUrl = url.startsWith('http') ? url : `${baseURL}${url}`;

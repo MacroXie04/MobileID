@@ -9,8 +9,8 @@ export function useDailyLimit(apiUpdateBarcodeDailyLimit, showMessage) {
   // Per-barcode daily limit updating state
   const updatingLimit = ref({});
 
-  // Debounce timeout
-  let dailyLimitTimeout = null;
+  // Per-barcode debounce timeouts
+  const dailyLimitTimeouts = new Map();
 
   /**
    * Update daily usage limit for a barcode with debouncing
@@ -21,13 +21,14 @@ export function useDailyLimit(apiUpdateBarcodeDailyLimit, showMessage) {
   async function updateDailyLimit(barcode, value, barcodes) {
     if (!barcode || !barcode.is_owned_by_current_user) return;
 
-    // Clear previous timeout
-    if (dailyLimitTimeout) {
-      clearTimeout(dailyLimitTimeout);
+    // Clear previous timeout for this specific barcode
+    if (dailyLimitTimeouts.has(barcode.id)) {
+      clearTimeout(dailyLimitTimeouts.get(barcode.id));
     }
 
-    // Debounce for 1 second
-    dailyLimitTimeout = setTimeout(async () => {
+    // Debounce for 1 second per barcode
+    const timeoutId = setTimeout(async () => {
+      dailyLimitTimeouts.delete(barcode.id);
       try {
         const limit = parseInt(value) || 0;
         if (limit < 0) {
@@ -56,6 +57,7 @@ export function useDailyLimit(apiUpdateBarcodeDailyLimit, showMessage) {
         updatingLimit.value = { ...updatingLimit.value, [barcode.id]: false };
       }
     }, 1000);
+    dailyLimitTimeouts.set(barcode.id, timeoutId);
   }
 
   /**
@@ -132,9 +134,10 @@ export function useDailyLimit(apiUpdateBarcodeDailyLimit, showMessage) {
    * Clean up timeout on unmount
    */
   onUnmounted(() => {
-    if (dailyLimitTimeout) {
-      clearTimeout(dailyLimitTimeout);
+    for (const timeoutId of dailyLimitTimeouts.values()) {
+      clearTimeout(timeoutId);
     }
+    dailyLimitTimeouts.clear();
   });
 
   return {

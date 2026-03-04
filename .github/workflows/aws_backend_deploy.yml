@@ -2,7 +2,7 @@ name: AWS Backend Deploy
 
 on:
   workflow_run:
-    workflows: ["Frontend CI"]
+    workflows: ["Backend CI"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -384,8 +384,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          SUBNETS="$(echo "$AWS_ECS_SUBNET_IDS" | sed 's/,/\,/g')"
-          NETWORK_CONFIG="awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${AWS_ECS_SECURITY_GROUP_ID}],assignPublicIp=ENABLED}"
+          NETWORK_CONFIG="awsvpcConfiguration={subnets=[${AWS_ECS_SUBNET_IDS}],securityGroups=[${AWS_ECS_SECURITY_GROUP_ID}],assignPublicIp=ENABLED}"
 
           TASK_ARN="$(aws ecs run-task \
             --cluster "$AWS_ECS_CLUSTER" \
@@ -423,8 +422,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          SUBNETS="$(echo "$AWS_ECS_SUBNET_IDS" | sed 's/,/\,/g')"
-          NETWORK_CONFIG="awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${AWS_ECS_SECURITY_GROUP_ID}],assignPublicIp=ENABLED}"
+          NETWORK_CONFIG="awsvpcConfiguration={subnets=[${AWS_ECS_SUBNET_IDS}],securityGroups=[${AWS_ECS_SECURITY_GROUP_ID}],assignPublicIp=ENABLED}"
 
           TASK_ARN="$(aws ecs run-task \
             --cluster "$AWS_ECS_CLUSTER" \
@@ -462,8 +460,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          SUBNETS="$(echo "$AWS_ECS_SUBNET_IDS" | sed 's/,/\,/g')"
-          NETWORK_CONFIG="awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${AWS_ECS_SECURITY_GROUP_ID}],assignPublicIp=ENABLED}"
+          NETWORK_CONFIG="awsvpcConfiguration={subnets=[${AWS_ECS_SUBNET_IDS}],securityGroups=[${AWS_ECS_SECURITY_GROUP_ID}],assignPublicIp=ENABLED}"
 
           SERVICE_STATUS="$(aws ecs describe-services --cluster "$AWS_ECS_CLUSTER" --services "$AWS_ECS_SERVICE" --query 'services[0].status' --output text 2>/dev/null || true)"
 

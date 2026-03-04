@@ -2,42 +2,25 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth import login
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from authn.api.utils import set_auth_cookies
 from authn.services.webauthn import generate_unique_information_id
-from authn.throttling import _ScopeRateFallbackMixin
+from authn.throttling import RegisterRateThrottle
 
 from ..forms import UserRegisterForm
 
 
-class RegisterThrottle(_ScopeRateFallbackMixin, AnonRateThrottle):
-    scope = "registration"
-    fallback_rate = "5/day"
-
-
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([RegisterRateThrottle])
 def api_register(request):
     """
-    Register a new user with rudimentary rate limiting.
+    Register a new user with rate limiting via RegisterRateThrottle.
     """
-
-    if getattr(settings, "THROTTLES_ENABLED", True):
-        throttle = RegisterThrottle()
-        if not throttle.allow_request(request, None):
-            return Response(
-                {
-                    "success": False,
-                    "message": "Registration request is too frequent, please "
-                    "try again later",
-                },
-                status=429,
-            )
 
     try:
         required_fields = [
@@ -82,18 +65,18 @@ def api_register(request):
             access_token = str(refresh.access_token)
             refresh_token = str(refresh)
 
-            response = Response(
-                {
-                    "success": True,
-                    "message": "Registration successful",
-                    "access": access_token,
-                    "refresh": refresh_token,
-                    "data": {
-                        "username": user.username,
-                        "groups": list(user.groups.values_list("name", flat=True)),
-                    },
-                }
-            )
+            response_data = {
+                "success": True,
+                "message": "Registration successful",
+                "data": {
+                    "username": user.username,
+                    "groups": list(user.groups.values_list("name", flat=True)),
+                },
+            }
+            if settings.AUTH_EXPOSE_TOKENS_IN_BODY:
+                response_data["access"] = access_token
+                response_data["refresh"] = refresh_token
+            response = Response(response_data)
             set_auth_cookies(response, access_token, refresh_token, request=request)
 
             return response
