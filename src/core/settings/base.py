@@ -353,10 +353,19 @@ SESSION_ENGINE = os.getenv(
     ),
 )
 
-# Session settings - Set to 10 years (effectively unlimited)
-SESSION_COOKIE_AGE = 315360000  # 10 years in seconds
+# Session settings - 30 days; JWT refresh tokens handle re-authentication
+SESSION_COOKIE_AGE = 2592000  # 30 days in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser close
 SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on each request
+
+# Cookie security defaults (overridden in dev.py / prod.py)
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = False  # Overridden to True in prod.py
+CSRF_COOKIE_SECURE = False  # Overridden to True in prod.py
+CSRF_COOKIE_HTTPONLY = False  # Must be False so JS can read CSRF token
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 # REST throttle settings
 # Default to disabling throttles in development (when DEBUG=True) unless testing.

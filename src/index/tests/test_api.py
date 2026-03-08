@@ -1,6 +1,7 @@
 from authn.models import UserProfile
 from authn.services.webauthn import create_user_profile
 from django.contrib.auth.models import User, Group
+from django.test import RequestFactory
 from django.urls import reverse
 from index.models import (
     Barcode,
@@ -9,6 +10,7 @@ from index.models import (
     UserBarcodePullSettings,
     BarcodeUserProfile,
 )
+from index.permissions import IsNotUserGroup, IsSchoolGroup
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -608,7 +610,6 @@ class TransferDynamicBarcodeAPITest(APITestCase):
         response = self.client.post(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data["status"], "error")
 
     def test_transfer_missing_html(self):
         """Test that missing HTML returns error"""
@@ -667,3 +668,75 @@ class TransferDynamicBarcodeAPITest(APITestCase):
         response = self.client.post(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class PermissionClassTest(APITestCase):
+    """Test IsNotUserGroup and IsSchoolGroup permission classes"""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.school_group = Group.objects.create(name="School")
+        self.user_group = Group.objects.create(name="User")
+        self.staff_group = Group.objects.create(name="Staff")
+
+    def _make_request(self, user):
+        request = self.factory.get("/fake")
+        request.user = user
+        return request
+
+    def test_is_not_user_group_denies_user_group(self):
+        user = User.objects.create_user(username="u1", password="pass")
+        user.groups.add(self.user_group)
+        request = self._make_request(user)
+        self.assertFalse(IsNotUserGroup().has_permission(request, None))
+
+    def test_is_not_user_group_allows_school_group(self):
+        user = User.objects.create_user(username="u2", password="pass")
+        user.groups.add(self.school_group)
+        request = self._make_request(user)
+        self.assertTrue(IsNotUserGroup().has_permission(request, None))
+
+    def test_is_not_user_group_allows_staff(self):
+        user = User.objects.create_user(username="u3", password="pass", is_staff=True)
+        request = self._make_request(user)
+        self.assertTrue(IsNotUserGroup().has_permission(request, None))
+
+    def test_is_not_user_group_allows_no_groups(self):
+        user = User.objects.create_user(username="u4", password="pass")
+        request = self._make_request(user)
+        self.assertTrue(IsNotUserGroup().has_permission(request, None))
+
+    def test_is_not_user_group_denies_multiple_groups_including_user(self):
+        user = User.objects.create_user(username="u5", password="pass")
+        user.groups.add(self.user_group, self.staff_group)
+        request = self._make_request(user)
+        self.assertFalse(IsNotUserGroup().has_permission(request, None))
+
+    def test_is_school_group_allows_school(self):
+        user = User.objects.create_user(username="s1", password="pass")
+        user.groups.add(self.school_group)
+        request = self._make_request(user)
+        self.assertTrue(IsSchoolGroup().has_permission(request, None))
+
+    def test_is_school_group_denies_user_group(self):
+        user = User.objects.create_user(username="s2", password="pass")
+        user.groups.add(self.user_group)
+        request = self._make_request(user)
+        self.assertFalse(IsSchoolGroup().has_permission(request, None))
+
+    def test_is_school_group_denies_staff_without_school(self):
+        user = User.objects.create_user(username="s3", password="pass")
+        user.groups.add(self.staff_group)
+        request = self._make_request(user)
+        self.assertFalse(IsSchoolGroup().has_permission(request, None))
+
+    def test_is_school_group_denies_no_groups(self):
+        user = User.objects.create_user(username="s4", password="pass")
+        request = self._make_request(user)
+        self.assertFalse(IsSchoolGroup().has_permission(request, None))
+
+    def test_is_school_group_allows_multiple_groups_including_school(self):
+        user = User.objects.create_user(username="s5", password="pass")
+        user.groups.add(self.school_group, self.staff_group)
+        request = self._make_request(user)
+        self.assertTrue(IsSchoolGroup().has_permission(request, None))

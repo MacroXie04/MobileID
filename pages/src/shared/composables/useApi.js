@@ -63,30 +63,22 @@ export function useApi() {
 
       // Check if it is an authentication error
       if (checkAuthenticationError(data, res)) {
-        console.log(`Token expired (retry count: ${retryCount}/${maxRetries})`);
-
         if (retryCount < maxRetries) {
-          console.log('Trying to refresh token and retry...');
-
           // try to refresh token
           const refreshSuccess = await refreshToken();
 
           if (refreshSuccess) {
-            console.log('Token refreshed successfully, retrying...');
             // Recursive call, increase retry count
             return await apiCallWithAutoRefresh(url, options, retryCount + 1);
           } else {
-            console.log('Token refresh failed, trying handleTokenExpired...');
             const tokenRecoverySuccess = await handleTokenExpired();
             if (tokenRecoverySuccess) {
-              console.log('Token recovery successful, retrying request');
               return await apiCallWithAutoRefresh(url, options, retryCount + 1);
             } else {
               throw new Error('Token refresh failed');
             }
           }
         } else {
-          console.log('Maximum retries reached');
           await handleTokenExpired();
           throw new Error('Max retries exceeded');
         }
@@ -94,9 +86,6 @@ export function useApi() {
 
       // Check for server unavailable errors (502, 503, 504)
       if (res.status === 502 || res.status === 503 || res.status === 504) {
-        console.log(
-          'Server error detected (status: ' + res.status + '), triggering wakeup overlay'
-        );
         triggerWakeup();
         throw new Error('Server unavailable - wakeup triggered');
       }
@@ -135,14 +124,10 @@ export function useApi() {
       const isServerError = error?.status === 502 || error?.status === 503 || error?.status === 504;
 
       if (isServerUnavailable || isServerError) {
-        console.log('Server unavailable detected, triggering wakeup overlay');
         triggerWakeup();
         throw new Error('Server unavailable - wakeup triggered');
       }
 
-      if (error?.name === 'AbortError' || error === 'timeout') {
-        throw new Error('Network error: request_timeout');
-      }
       if (
         typeof error?.message === 'string' &&
         (error.message.includes('Token') || error.message.includes('retries'))

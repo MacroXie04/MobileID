@@ -23,13 +23,10 @@ export function useUserInfo() {
    */
   async function loadAvatar() {
     try {
-      console.log('Loading avatar from:', `${baseURL}/authn/user_img/`);
       let response = await fetch(`${baseURL}/authn/user_img/`, {
         method: 'GET',
         credentials: 'include',
       });
-
-      console.log('Avatar response status:', response.status);
 
       // Handle auth errors by attempting a single refresh + retry
       if (response.status === 401 || response.status === 403) {
@@ -48,16 +45,13 @@ export function useUserInfo() {
 
       if (response.ok) {
         const blob = await response.blob();
-        console.log('Avatar blob received, size:', blob.size, 'type:', blob.type);
 
         // Revoke previous blob URL to avoid memory leaks
         if (avatarBlobUrl.value) {
           URL.revokeObjectURL(avatarBlobUrl.value);
         }
         avatarBlobUrl.value = URL.createObjectURL(blob);
-        console.log('Avatar blob URL created:', avatarBlobUrl.value);
       } else {
-        console.log('Avatar not found or error, status:', response.status);
         avatarBlobUrl.value = '';
       }
     } catch (error) {
@@ -71,18 +65,15 @@ export function useUserInfo() {
    */
   async function getUserInfoWithAutoRefresh() {
     try {
-      console.log('Making API call to /authn/user_info/');
       return await apiCallWithAutoRefresh(`${baseURL}/authn/user_info/`, {
         method: 'GET',
       });
     } catch (error) {
       // If it is an authentication error, it has been handled in apiCallWithAutoRefresh
       if (error.message.includes('Token')) {
-        console.log('Authentication error in user info call:', error.message);
         throw error;
       }
       // If it is not an authentication error, use the original userInfo function as a fallback
-      console.log('Using fallback method to get user info...');
       return await userInfo();
     }
   }
@@ -93,7 +84,6 @@ export function useUserInfo() {
   async function loadUserProfile(forceReload = false) {
     // Check if user has authentication tokens before making API call
     if (!hasAuthTokens() && !forceReload) {
-      console.log('No auth tokens found, skipping user info load');
       return null;
     }
 
@@ -106,11 +96,13 @@ export function useUserInfo() {
       return globalProfile.value;
     }
 
-    // If currently loading, wait for the existing call to complete
+    // If currently loading, wait for the existing call to complete (max 10s)
     if (isLoading.value) {
-      console.log('User info loading in progress, waiting...');
-      while (isLoading.value) {
+      const MAX_WAIT_MS = 10000;
+      let waited = 0;
+      while (isLoading.value && waited < MAX_WAIT_MS) {
         await new Promise((resolve) => setTimeout(resolve, 100));
+        waited += 100;
       }
       return globalProfile.value;
     }
@@ -118,25 +110,18 @@ export function useUserInfo() {
     isLoading.value = true;
 
     try {
-      console.log('Loading user info from server...');
       const data = await getUserInfoWithAutoRefresh();
       if (data?.profile) {
         globalProfile.value = data.profile;
         isLoaded.value = true;
-        console.log('User info loaded successfully');
         // Load avatar after user info is loaded
         await loadAvatar();
         return data.profile;
       } else {
-        console.log('No user info found, may need to login');
         return null;
       }
     } catch (error) {
       console.error('Failed to get user info:', error);
-      // If the user info is not found, let the router guard handle the authentication check
-      if (!error.message.includes('Token')) {
-        console.log('Router guard will handle authentication check');
-      }
       throw error;
     } finally {
       isLoading.value = false;
@@ -155,7 +140,6 @@ export function useUserInfo() {
       URL.revokeObjectURL(avatarBlobUrl.value);
       avatarBlobUrl.value = '';
     }
-    console.log('User profile cache cleared');
   }
 
   return {

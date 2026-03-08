@@ -1,3 +1,5 @@
+import logging
+
 from authn.api.utils import clear_auth_cookies, set_auth_cookies
 from authn.throttling import (
     LoginRateThrottle,
@@ -24,6 +26,8 @@ from ..serializers import (
     EncryptedTokenObtainPairSerializer,
     RSAEncryptedLoginSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_outstanding_token(refresh_token_str):
@@ -150,12 +154,9 @@ def api_logout(request):
     try:
         rt = request.COOKIES.get("refresh_token")
         if rt:
-            try:
-                RefreshToken(rt).blacklist()
-            except Exception:
-                pass
+            RefreshToken(rt).blacklist()
     except Exception:
-        pass
+        logger.warning("Failed to blacklist refresh token during logout", exc_info=True)
 
     resp = Response({"message": "Logged out"})
     return clear_auth_cookies(resp)
