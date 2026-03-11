@@ -45,9 +45,12 @@ export async function userInfo() {
   try {
     return await apiRequest('/authn/user_info/');
   } catch (error) {
-    // The original implementation returned null on failure. Replicating this behavior.
     if (error instanceof ApiError) {
-      console.error('Failed to fetch user info:', error.data);
+      // Return null for auth errors (401/403) to indicate "not authenticated".
+      // Re-throw server errors (5xx) so callers can distinguish them.
+      if (error.status >= 500) {
+        throw error;
+      }
       return null;
     }
     // Re-throw other errors (e.g., network errors)

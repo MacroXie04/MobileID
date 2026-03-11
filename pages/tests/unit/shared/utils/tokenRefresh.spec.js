@@ -9,6 +9,9 @@ import {
 vi.mock('@app/config/config', () => ({
   baseURL: 'http://localhost:8000',
 }));
+vi.mock('@shared/state/authState', () => ({
+  invalidateUserInfoCache: vi.fn(),
+}));
 
 describe('tokenRefresh utils', () => {
   let originalFetch;
@@ -244,22 +247,34 @@ describe('tokenRefresh utils', () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
-    it('should timeout waiting for in-flight refresh after 10 seconds', async () => {
-      // First call: never resolving fetch
-      const neverResolvingFetch = new Promise(() => {}); // Never resolves
-      global.fetch.mockReturnValue(neverResolvingFetch);
+    it('should share the same promise for concurrent callers (no timeout wrapper)', async () => {
+      let resolveFirst;
+      const firstFetchPromise = new Promise((resolve) => {
+        resolveFirst = resolve;
+      });
 
-      // Start first refresh (will hang)
+      global.fetch.mockReturnValue(firstFetchPromise);
+
+      // Start first refresh
       const promise1 = refreshToken();
-
-      // Second call should wait then timeout
+      // Second caller gets the exact same promise reference
       const promise2 = refreshToken();
 
-      // Advance timer by 10 seconds
-      await vi.advanceTimersByTimeAsync(10000);
+      // Only one fetch should have been made
+      expect(global.fetch).toHaveBeenCalledTimes(1);
 
-      // The waiting promise should have timed out and returned false
-      const result2 = await promise2;
+      // Resolve the fetch — both callers should get the same result
+      resolveFirst({
+        ok: false,
+        status: 401,
+        headers: { get: () => 'application/json' },
+        json: () => Promise.resolve({ code: 'token_not_valid' }),
+      });
+
+      await vi.runAllTimersAsync();
+
+      const [result1, result2] = await Promise.all([promise1, promise2]);
+      expect(result1).toBe(false);
       expect(result2).toBe(false);
     });
   });

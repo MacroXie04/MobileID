@@ -8,10 +8,7 @@ from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.token_blacklist.models import (
-    BlacklistedToken,
-    OutstandingToken,
-)
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
 from authn.models import LoginAuditLog
 
@@ -42,14 +39,11 @@ def list_devices(request):
 
     # Get all non-blacklisted, non-expired tokens for the user
     now = timezone.now()
-    tokens = (
-        OutstandingToken.objects.filter(
-            user=request.user,
-            expires_at__gt=now,  # Only include non-expired tokens
-        )
-        .exclude(id__in=BlacklistedToken.objects.values_list("token_id", flat=True))
-        .order_by("-created_at")
-    )
+    tokens = OutstandingToken.objects.filter(
+        user=request.user,
+        expires_at__gt=now,  # Only include non-expired tokens
+        blacklistedtoken__isnull=True,  # LEFT JOIN exclusion
+    ).order_by("-created_at")
 
     # Prefetch all successful login audits for this user to avoid N+1 queries.
     all_audits = (

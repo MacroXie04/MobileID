@@ -1,5 +1,6 @@
 import { register, userInfo } from '@shared/api/auth.js';
 import { ApiError } from '@shared/api/client';
+import { setUserInfo } from '@shared/state/authState';
 
 export function useRegisterSubmit({
   formData,
@@ -39,7 +40,7 @@ export function useRegisterSubmit({
       try {
         const user = await userInfo();
         if (user) {
-          window.userInfo = user;
+          setUserInfo(user);
           await router.push('/');
         } else {
           await router.push('/login');

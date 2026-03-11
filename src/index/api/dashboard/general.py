@@ -2,10 +2,12 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import Prefetch, Q
 
 from index.models import (
     Barcode,
+    Transaction,
     UserBarcodeSettings,
     UserBarcodePullSettings,
     BarcodeUsage,
@@ -79,7 +81,17 @@ class BarcodeDashboardAPIView(APIView):
                     )
                 )
                 .select_related("user")
-                .prefetch_related("barcodeuserprofile", "barcodeusage_set")
+                .prefetch_related(
+                    "barcodeuserprofile",
+                    "barcodeusage_set",
+                    Prefetch(
+                        "transaction_set",
+                        queryset=Transaction.objects.select_related("user").order_by(
+                            "-time_created"
+                        ),
+                        to_attr="prefetched_transactions",
+                    ),
+                )
                 .order_by("-time_created")
             )
         else:
@@ -95,7 +107,17 @@ class BarcodeDashboardAPIView(APIView):
                     ],
                 )
                 .select_related("user")
-                .prefetch_related("barcodeuserprofile", "barcodeusage_set")
+                .prefetch_related(
+                    "barcodeuserprofile",
+                    "barcodeusage_set",
+                    Prefetch(
+                        "transaction_set",
+                        queryset=Transaction.objects.select_related("user").order_by(
+                            "-time_created"
+                        ),
+                        to_attr="prefetched_transactions",
+                    ),
+                )
                 .order_by("-time_created")
             )
 
@@ -105,13 +127,19 @@ class BarcodeDashboardAPIView(APIView):
             defaults={"pull_setting": "Disable", "gender_setting": "Unknow"},
         )
 
-        # Serialize data
+        # Serialize data — pass shared context to avoid redundant DB queries
+        shared_context = {
+            "request": request,
+            "user_groups": user_groups,
+            "pull_settings": pull_settings,
+            "barcodes": barcodes,
+        }
         settings_serializer = UserBarcodeSettingsSerializer(
-            settings, context={"request": request}
+            settings, context=shared_context
         )
         pull_settings_serializer = UserBarcodePullSettingsSerializer(pull_settings)
         barcodes_serializer = BarcodeSerializer(
-            barcodes, many=True, context={"request": request}
+            barcodes, many=True, context=shared_context
         )
 
         return Response(
@@ -126,6 +154,10 @@ class BarcodeDashboardAPIView(APIView):
 
     def post(self, request):
         """Update user barcode settings and/or pull settings"""
+        with transaction.atomic():
+            return self._post_inner(request)
+
+    def _post_inner(self, request):
         user = request.user
         settings, _ = UserBarcodeSettings.objects.get_or_create(user=user)
 

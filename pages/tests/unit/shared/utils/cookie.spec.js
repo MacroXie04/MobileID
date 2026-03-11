@@ -1,10 +1,11 @@
-import { beforeEach, afterEach, describe, expect, it } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import {
   clearAuthCookies,
   clearAuthStorage,
   getCookie,
   hasAuthTokens,
 } from '@shared/utils/cookie.js';
+import { setUserInfo, clearUserInfo } from '@shared/state/authState';
 
 const clearAllCookies = () => {
   document.cookie.split(';').forEach((cookie) => {
@@ -16,18 +17,15 @@ const clearAllCookies = () => {
 };
 
 describe('cookie utils', () => {
-  let savedUserInfo;
-
   beforeEach(() => {
     clearAllCookies();
     localStorage.clear();
     sessionStorage.clear();
-    savedUserInfo = window.userInfo;
-    window.userInfo = undefined;
+    clearUserInfo();
   });
 
   afterEach(() => {
-    window.userInfo = savedUserInfo;
+    clearUserInfo();
   });
 
   it('gets cookie values by name', () => {
@@ -81,8 +79,8 @@ describe('cookie utils', () => {
       expect(hasAuthTokens()).toBe(true);
     });
 
-    it('returns true when window.userInfo is set', () => {
-      window.userInfo = { profile: { name: 'Test' } };
+    it('returns true when auth state userInfo is set', () => {
+      setUserInfo({ profile: { name: 'Test' } });
       expect(hasAuthTokens()).toBe(true);
     });
 

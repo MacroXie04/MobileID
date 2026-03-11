@@ -1,84 +1,74 @@
 /**
- * jQuery Animation Utilities
- * Provides wrappers around jQuery animations for better code organization
- * Note: Requires jQuery to be loaded globally (window.$)
+ * Native DOM Animation Utilities
+ * Replaces jQuery animations with the Web Animations API.
  */
 
 /**
  * Fade in an element
- * @param {string} selector - jQuery selector
+ * @param {string} selector - CSS selector
  * @param {number} duration - Animation duration in ms (default: 400)
  * @returns {Promise} Resolves when animation completes
  */
 export function fadeIn(selector, duration = 400) {
-  if (!window.$) {
-    console.warn('jQuery not loaded');
-    return Promise.resolve();
-  }
+  const el = document.querySelector(selector);
+  if (!el) return Promise.resolve();
 
-  return new Promise((resolve) => {
-    window.$(selector).fadeIn(duration, resolve);
-  });
+  el.style.display = '';
+  return el.animate([{ opacity: 0 }, { opacity: 1 }], { duration, fill: 'forwards' }).finished;
 }
 
 /**
  * Fade out an element
- * @param {string} selector - jQuery selector
+ * @param {string} selector - CSS selector
  * @param {number} duration - Animation duration in ms (default: 400)
  * @returns {Promise} Resolves when animation completes
  */
 export function fadeOut(selector, duration = 400) {
-  if (!window.$) {
-    console.warn('jQuery not loaded');
-    return Promise.resolve();
-  }
+  const el = document.querySelector(selector);
+  if (!el) return Promise.resolve();
 
-  return new Promise((resolve) => {
-    window.$(selector).fadeOut(duration, resolve);
-  });
+  return el
+    .animate([{ opacity: 1 }, { opacity: 0 }], { duration, fill: 'forwards' })
+    .finished.then(() => {
+      el.style.display = 'none';
+    });
 }
 
 /**
  * Set CSS properties on an element
- * @param {string} selector - jQuery selector
+ * @param {string} selector - CSS selector
  * @param {Object} properties - CSS properties to set
  */
 export function setCss(selector, properties) {
-  if (!window.$) {
-    console.warn('jQuery not loaded');
-    return;
-  }
+  const el = document.querySelector(selector);
+  if (!el) return;
 
-  window.$(selector).css(properties);
+  Object.assign(el.style, properties);
 }
 
 /**
  * Get CSS property value
- * @param {string} selector - jQuery selector
+ * @param {string} selector - CSS selector
  * @param {string} property - CSS property name
  * @returns {string} Property value
  */
 export function getCss(selector, property) {
-  if (!window.$) {
-    console.warn('jQuery not loaded');
-    return '';
-  }
+  const el = document.querySelector(selector);
+  if (!el) return '';
 
-  return window.$(selector).css(property);
+  return getComputedStyle(el)[property];
 }
 
 /**
  * Check if element is visible
- * @param {string} selector - jQuery selector
+ * @param {string} selector - CSS selector
  * @returns {boolean} True if visible
  */
 export function isVisible(selector) {
-  if (!window.$) {
-    console.warn('jQuery not loaded');
-    return false;
-  }
+  const el = document.querySelector(selector);
+  if (!el) return false;
 
-  return window.$(selector).css('display') !== 'none';
+  return getComputedStyle(el).display !== 'none';
 }
 
 /**
@@ -92,11 +82,6 @@ export function isVisible(selector) {
  */
 export async function animateBarcodeSequence(options = {}) {
   const { displayDuration = 10000, fadeInDuration = 400, fadeOutDuration = 400 } = options;
-
-  if (!window.$) {
-    console.warn('jQuery not loaded');
-    return;
-  }
 
   const isFaded = getCss('#show-info-button', 'display') === 'none';
 
@@ -147,7 +132,7 @@ export async function animateBarcodeSequence(options = {}) {
 }
 
 /**
- * Simple wrapper for multiple jQuery animations in sequence
+ * Simple wrapper for multiple animations in sequence
  * @param {Array<Function>} animations - Array of animation functions
  * @returns {Promise} Resolves when all animations complete
  */
@@ -158,7 +143,7 @@ export async function runSequence(animations) {
 }
 
 /**
- * Simple wrapper for multiple jQuery animations in parallel
+ * Simple wrapper for multiple animations in parallel
  * @param {Array<Function>} animations - Array of animation functions
  * @returns {Promise} Resolves when all animations complete
  */

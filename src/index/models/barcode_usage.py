@@ -36,7 +36,7 @@ class BarcodeUsage(models.Model):
     daily_usage_limit = models.PositiveIntegerField(default=0)
 
     # last used timestamp
-    last_used = models.DateTimeField(auto_now=True)
+    last_used = models.DateTimeField(auto_now=True, db_index=True)
 
     class Meta:
         app_label = "index"

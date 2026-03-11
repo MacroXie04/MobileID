@@ -51,6 +51,16 @@ def set_auth_cookies(response, access_token, refresh_token, request=None):
 
 
 def clear_auth_cookies(response):
-    response.delete_cookie(ACCESS_COOKIE_NAME)
-    response.delete_cookie(REFRESH_COOKIE_NAME, path=REFRESH_COOKIE_PATH)
+    # Use set_cookie with max_age=0 instead of delete_cookie so we can pass
+    # samesite and secure flags that match the original cookie attributes.
+    # delete_cookie() defaults to SameSite=Lax without Secure, which won't
+    # clear cookies originally set with SameSite=None; Secure=True.
+    common = {
+        "max_age": 0,
+        "httponly": True,
+        "samesite": _cookie_samesite(),
+        "secure": _cookie_secure(None),
+    }
+    response.set_cookie(ACCESS_COOKIE_NAME, "", **common)
+    response.set_cookie(REFRESH_COOKIE_NAME, "", path=REFRESH_COOKIE_PATH, **common)
     return response

@@ -1,24 +1,7 @@
 import { baseURL } from '@app/config/config';
+import { invalidateUserInfoCache } from '@shared/state/authState';
 
 let activeRefreshTokenPromise = null;
-const REFRESH_WAIT_TIMEOUT_MS = 10000; // Avoid hanging forever
-
-/**
- * Helper to wait for a promise with timeout
- */
-function waitForPromiseWithTimeout(promise, timeoutMs) {
-  let timeoutId;
-  return new Promise((resolve, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error('refresh_timeout'));
-    }, timeoutMs);
-
-    promise
-      .then((value) => resolve(value))
-      .catch((error) => reject(error))
-      .finally(() => clearTimeout(timeoutId));
-  });
-}
 
 /**
  * Check if response indicates authentication error
@@ -44,11 +27,9 @@ export function checkAuthenticationError(data, response) {
  * Uses HttpOnly cookies — browser sends refresh_token cookie automatically.
  */
 export function refreshToken() {
-  // If a refresh is already in progress, return the existing promise (with timeout wrapper)
+  // If a refresh is already in progress, all callers share the same promise
   if (activeRefreshTokenPromise) {
-    return waitForPromiseWithTimeout(activeRefreshTokenPromise, REFRESH_WAIT_TIMEOUT_MS).catch(
-      () => false
-    );
+    return activeRefreshTokenPromise;
   }
 
   // Start a new token refresh
@@ -76,7 +57,7 @@ export function refreshToken() {
       if (res.ok) {
         // Server sets new cookies in response; no localStorage needed
         // Invalidate cached userInfo so the router guard re-fetches
-        window.userInfoTimestamp = 0;
+        invalidateUserInfoCache();
         return true;
       }
 

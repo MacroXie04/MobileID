@@ -2,6 +2,8 @@
  * Cookie utility functions
  */
 
+import { getUserInfo } from '@shared/state/authState';
+
 /**
  * Get cookie value by name
  * @param {string} name - Cookie name
@@ -49,12 +51,12 @@ export function clearAuthStorage() {
  *
  * HttpOnly JWT cookies are invisible to JS, so we use the presence of
  * the csrftoken cookie (set alongside auth cookies) or a cached
- * window.userInfo as a reasonable proxy for an active session.
+ * userInfo as a reasonable proxy for an active session.
  *
  * @returns {boolean} True if authentication tokens are likely present
  */
 export function hasAuthTokens() {
-  return !!getCookie('csrftoken') || !!window.userInfo;
+  return !!getCookie('csrftoken') || !!getUserInfo();
 }
 
 /**

@@ -10,7 +10,7 @@ class FailedLoginAttempt(models.Model):
     username = models.CharField(max_length=150, unique=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     attempt_count = models.PositiveIntegerField(default=0)
-    locked_until = models.DateTimeField(null=True, blank=True)
+    locked_until = models.DateTimeField(null=True, blank=True, db_index=True)
     last_attempt = models.DateTimeField(auto_now=True)
 
     class Meta:

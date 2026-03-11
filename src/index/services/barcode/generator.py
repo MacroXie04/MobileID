@@ -17,6 +17,8 @@ from .constants import (
     BARCODE_IDENTIFICATION,
     BARCODE_OTHERS,
     RESULT_TEMPLATE,
+    STICKINESS_MINUTES,
+    USAGE_COOLDOWN_MINUTES,
 )
 from .identification import _create_identification_barcode
 from .usage import _touch_barcode_usage
@@ -27,10 +29,11 @@ def generate_barcode(user) -> dict:
     """Generate or refresh a barcode for *user* based on their group membership."""
     result = RESULT_TEMPLATE.copy()
 
-    # Determine account type via groups
-    is_staff = user.groups.filter(name="Staff").exists()
-    is_user = user.groups.filter(name="User").exists()
-    is_school = user.groups.filter(name="School").exists()
+    # Determine account type via groups (single query)
+    user_group_names = set(user.groups.values_list("name", flat=True))
+    is_staff = "Staff" in user_group_names
+    is_user = "User" in user_group_names
+    is_school = "School" in user_group_names
 
     # STAFF — not allowed
     if is_staff:
@@ -72,12 +75,9 @@ def generate_barcode(user) -> dict:
             },
         )
 
-        if (
-            pull_settings.pull_setting == "Enable"
-            and user.groups.filter(name="School").exists()
-        ):
-            # 1. Check for recent personal usage (Stickiness) - 10 min
-            cutoff_10m = timezone.now() - timedelta(minutes=10)
+        if pull_settings.pull_setting == "Enable" and is_school:
+            # 1. Check for recent personal usage (Stickiness)
+            cutoff_10m = timezone.now() - timedelta(minutes=STICKINESS_MINUTES)
             recent_txn = (
                 Transaction.objects.filter(user=user, time_created__gte=cutoff_10m)
                 .order_by("-time_created")
@@ -90,7 +90,7 @@ def generate_barcode(user) -> dict:
 
             # 2. Pull from pool if no candidate
             if not candidate:
-                cutoff_5m = timezone.now() - timedelta(minutes=5)
+                cutoff_5m = timezone.now() - timedelta(minutes=USAGE_COOLDOWN_MINUTES)
 
                 # Base query: User's own barcodes OR Shareable Dynamic barcodes
                 qs = Barcode.objects.filter(

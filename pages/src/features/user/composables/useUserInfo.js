@@ -2,11 +2,13 @@ import { computed, ref } from 'vue';
 import { userInfo } from '@shared/api/auth';
 import { useApi } from '@shared/composables/useApi';
 import { hasAuthTokens } from '@shared/utils/cookie';
+import { getUserInfo } from '@shared/state/authState';
 import { useToken } from '@auth/composables/useToken';
 import { baseURL } from '@app/config/config';
 
 // Global state to prevent multiple instances and API calls
-const globalProfile = ref(window.userInfo?.profile || { name: '', information_id: '' });
+const cachedInfo = getUserInfo();
+const globalProfile = ref(cachedInfo?.profile || { name: '', information_id: '' });
 const isLoading = ref(false);
 const isLoaded = ref(false);
 const avatarBlobUrl = ref('');
@@ -87,9 +89,10 @@ export function useUserInfo() {
       return null;
     }
 
-    // read from window.userInfo first
-    if (window.userInfo && !forceReload) {
-      globalProfile.value = window.userInfo.profile;
+    // read from cached auth state first
+    const cached = getUserInfo();
+    if (cached && !forceReload) {
+      globalProfile.value = cached.profile;
       isLoaded.value = true;
       // Load avatar after setting profile from window
       await loadAvatar();

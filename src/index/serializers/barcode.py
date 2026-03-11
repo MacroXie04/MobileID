@@ -38,6 +38,11 @@ class BarcodeSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "barcode_type", "time_created"]
 
+    def _get_usage(self, obj):
+        """Get the first BarcodeUsage using the prefetch cache."""
+        usages = obj.barcodeusage_set.all()
+        return usages[0] if usages else None
+
     def get_usage_count(self, obj):
         """Get total usage count for the barcode
 
@@ -45,17 +50,13 @@ class BarcodeSerializer(serializers.ModelSerializer):
         their usage (they regenerate each time). The data is still returned
         for consistency and potential admin/debugging purposes.
         """
-        try:
-            return obj.barcodeusage_set.first().total_usage
-        except Exception:
-            return 0
+        usage = self._get_usage(obj)
+        return usage.total_usage if usage else 0
 
     def get_last_used(self, obj):
         """Get last used timestamp for the barcode"""
-        try:
-            return obj.barcodeusage_set.first().last_used
-        except Exception:
-            return None
+        usage = self._get_usage(obj)
+        return usage.last_used if usage else None
 
     def get_display_name(self, obj):
         """Get display name for the barcode based on its type"""
@@ -105,33 +106,69 @@ class BarcodeSerializer(serializers.ModelSerializer):
     def get_recent_transactions(self, obj):
         """Return last 3 transactions for this barcode."""
         try:
-            qs = (
-                Transaction.objects.filter(barcode_used=obj)
-                .select_related("user")
-                .order_by("-time_created")[:3]
-            )
+            if hasattr(obj, "prefetched_transactions"):
+                txns = obj.prefetched_transactions[:3]
+            else:
+                txns = (
+                    Transaction.objects.filter(barcode_used=obj)
+                    .select_related("user")
+                    .order_by("-time_created")[:3]
+                )
             return [
                 {
                     "id": t.id,
                     "user": t.user.username if t.user_id else None,
                     "time_created": t.time_created,
                 }
-                for t in qs
+                for t in txns
             ]
         except Exception:
             return []
 
     def get_usage_stats(self, obj):
         """Get usage statistics including daily and total limits."""
-        return UsageLimitService.get_usage_stats(obj)
+        usage = self._get_usage(obj)
+        if usage is None:
+            return {
+                "daily_used": 0,
+                "daily_limit": 0,
+                "total_used": 0,
+                "total_limit": 0,
+                "daily_remaining": None,
+                "total_remaining": None,
+            }
+
+        if hasattr(obj, "prefetched_transactions"):
+            start_of_day, end_of_day = UsageLimitService._today_window()
+            daily_used = sum(
+                1
+                for t in obj.prefetched_transactions
+                if t.time_created and start_of_day <= t.time_created < end_of_day
+            )
+        else:
+            return UsageLimitService.get_usage_stats(obj)
+
+        return {
+            "daily_used": daily_used,
+            "daily_limit": usage.daily_usage_limit,
+            "total_used": usage.total_usage,
+            "total_limit": usage.total_usage_limit,
+            "daily_remaining": (
+                None
+                if usage.daily_usage_limit == 0
+                else max(0, usage.daily_usage_limit - daily_used)
+            ),
+            "total_remaining": (
+                None
+                if usage.total_usage_limit == 0
+                else max(0, usage.total_usage_limit - usage.total_usage)
+            ),
+        }
 
     def get_daily_usage_limit(self, obj):
         """Get the daily usage limit for quick access."""
-        try:
-            usage = obj.barcodeusage_set.first()
-            return usage.daily_usage_limit if usage else 0
-        except Exception:
-            return 0
+        usage = self._get_usage(obj)
+        return usage.daily_usage_limit if usage else 0
 
 
 class BarcodeCreateSerializer(serializers.ModelSerializer):

@@ -140,6 +140,7 @@ jobs:
           DJANGO_SETTINGS_MODULE: "core.settings.dev"
         run: |
           uv run coverage run manage.py test -v 2
+          uv run coverage report --fail-under=70
           uv run coverage xml -o coverage.xml
 
       - name: Upload coverage XML

@@ -2,6 +2,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { login, userInfo } from '@shared/api/auth.js';
 import { ApiError } from '@shared/api/client.js';
+import { setUserInfo } from '@shared/state/authState';
 import { useLoginValidation } from '@auth/composables/useLoginValidation.js';
 
 export function useLoginLogic() {
@@ -52,7 +53,7 @@ export function useLoginLogic() {
         // Verify session establishment before redirecting
         const user = await userInfo();
         if (user) {
-          window.userInfo = user;
+          setUserInfo(user);
           await router.push('/');
         } else {
           setGeneralError(

@@ -4,29 +4,29 @@
     <div class="grid-container">
       <!-- Row 1 -->
       <a class="btn-grid" href="/profile/edit" @click.prevent="handleEditProfile">
-        <i class="fa fa-credit-card fa-2x"></i>
+        <md-icon class="grid-icon">credit_card</md-icon>
         <p>Add Funds</p>
       </a>
       <a class="btn-grid" href="/dashboard" @click.prevent="handleBarcodeDashboard">
-        <i class="fa fa-money-bill fa-2x"></i>
+        <md-icon class="grid-icon">payments</md-icon>
         <p>Balance</p>
       </a>
       <a id="lost-my-card" class="btn-grid" href="#">
-        <i class="fa fa-id-card fa-2x"></i>
+        <md-icon class="grid-icon">badge</md-icon>
         <p>Lost My Card</p>
       </a>
 
       <!-- Row 2 -->
       <a id="emergency" class="btn-grid" href="#">
-        <i class="fa fa-exclamation-triangle fa-2x"></i>
+        <md-icon class="grid-icon">warning</md-icon>
         <p>{{ serverStatus }}</p>
       </a>
       <a id="gym" class="btn-grid" href="#">
-        <i class="fa fa-dumbbell fa-2x"></i>
+        <md-icon class="grid-icon">fitness_center</md-icon>
         <p>Gym</p>
       </a>
       <a id="resource" class="btn-grid" href="#">
-        <i class="fa fa-info fa-2x"></i>
+        <md-icon class="grid-icon">info</md-icon>
         <p>Resources</p>
       </a>
 
@@ -37,11 +37,11 @@
         rel="noopener noreferrer"
         target="_blank"
       >
-        <i class="fa fa-link fa-2x"></i>
+        <md-icon class="grid-icon">link</md-icon>
         <p>Alynx</p>
       </a>
       <a class="btn-grid" href="#" @click.prevent="handleLogout">
-        <i class="fa fa-sign-out-alt fa-2x"></i>
+        <md-icon class="grid-icon">logout</md-icon>
         <p>Log out</p>
       </a>
     </div>

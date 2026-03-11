@@ -116,7 +116,7 @@ class SettingsConfigurationTest(TestCase):
         """Test session configuration"""
         self.assertEqual(settings.SESSION_COOKIE_AGE, 2592000)  # 30 days
         self.assertFalse(settings.SESSION_EXPIRE_AT_BROWSER_CLOSE)
-        self.assertTrue(settings.SESSION_SAVE_EVERY_REQUEST)
+        self.assertFalse(settings.SESSION_SAVE_EVERY_REQUEST)
 
 
 class EnvironmentVariableTest(TestCase):

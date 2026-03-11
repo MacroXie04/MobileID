@@ -3,8 +3,6 @@ import { useHomeSchoolLogic } from '@home/composables/useHomeSchoolLogic.js';
 
 // CSS Imports
 import '@/assets/styles/home/HomeSchool.css';
-// Import Font Awesome for this page (needed for GridMenu component)
-import '@fortawesome/fontawesome-free/css/all.min.css';
 
 // Components
 import Header from '@school/components/header/Header.vue';

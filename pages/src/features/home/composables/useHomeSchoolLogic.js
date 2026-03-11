@@ -1,5 +1,6 @@
 import { nextTick, onMounted, ref, watch } from 'vue';
 import { userInfo } from '@shared/api/auth';
+import { getUserInfo, setUserInfo } from '@shared/state/authState';
 import { useUserInfo } from '@user/composables/useUserInfo';
 import { useToken } from '@auth/composables/useToken';
 import { useApi } from '@shared/composables/useApi';
@@ -34,12 +35,13 @@ export function useHomeSchoolLogic() {
    * Refresh user profile and active profile data
    */
   async function refreshProfileData(forceRefresh = false) {
-    // Refresh window.userInfo if it was cleared or force refresh is requested
-    if (!window.userInfo || forceRefresh) {
+    // Refresh cached auth state if it was cleared or force refresh is requested
+    const cached = getUserInfo();
+    if (!cached || forceRefresh) {
       try {
         const data = await userInfo();
         if (data) {
-          window.userInfo = data;
+          setUserInfo(data);
           if (data.profile) {
             profile.value = data.profile;
           }
@@ -47,9 +49,9 @@ export function useHomeSchoolLogic() {
       } catch (error) {
         console.error('HomeSchool: Failed to refresh user info:', error);
       }
-    } else if (window.userInfo && window.userInfo.profile) {
-      // Update profile from window.userInfo
-      profile.value = window.userInfo.profile;
+    } else if (cached && cached.profile) {
+      // Update profile from cached auth state
+      profile.value = cached.profile;
     }
 
     // Force reload user profile to get latest data

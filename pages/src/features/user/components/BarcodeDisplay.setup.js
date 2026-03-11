@@ -1,9 +1,3 @@
-import '@material/web/button/elevated-button.js';
-import '@material/web/icon/icon.js';
-import '@material/web/progress/circular-progress.js';
-import '@material/web/progress/linear-progress.js';
-import '@material/web/ripple/ripple.js';
-
 import { useBarcodeDisplay } from '@dashboard/composables/barcode/useBarcodeDisplay.js';
 import { usePdf417 } from '@dashboard/composables/barcode/usePdf417.js';
 

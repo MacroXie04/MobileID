@@ -356,7 +356,9 @@ SESSION_ENGINE = os.getenv(
 # Session settings - 30 days; JWT refresh tokens handle re-authentication
 SESSION_COOKIE_AGE = 2592000  # 30 days in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser close
-SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on each request
+SESSION_SAVE_EVERY_REQUEST = (
+    False  # JWT handles API auth; admin sessions use AdminSessionExpiryMiddleware
+)
 
 # Cookie security defaults (overridden in dev.py / prod.py)
 SESSION_COOKIE_SAMESITE = "Lax"

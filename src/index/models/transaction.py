@@ -16,3 +16,13 @@ class Transaction(models.Model):
 
     class Meta:
         app_label = "index"
+        indexes = [
+            models.Index(
+                fields=["barcode_used", "time_created"],
+                name="idx_txn_barcode_created",
+            ),
+            models.Index(
+                fields=["user", "-time_created"],
+                name="idx_txn_user_created",
+            ),
+        ]

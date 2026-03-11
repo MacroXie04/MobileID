@@ -14,7 +14,7 @@
 }
 
 /* General Text & Icons - Scoped to HomeSchool */
-.home-school-container .fa, .home-school-container h2, .home-school-container h3, .home-school-container p {
+.home-school-container md-icon, .home-school-container h2, .home-school-container h3, .home-school-container p {
     color: #bf9c44; /* Original gold color */
     transition: color 0.3s ease-in-out, transform 0.3s ease-in-out;
 }
@@ -148,12 +148,12 @@
 }
 
 /* Icon & Image Styling */
-.home-school-container .btn-grid i, .home-school-container .btn-grid img {
+.home-school-container .btn-grid md-icon, .home-school-container .btn-grid img {
     margin-bottom: 5px;
     transition: transform 0.2s ease-in-out;
 }
 
-.home-school-container .btn-grid:hover i, .home-school-container .btn-grid:hover img {
+.home-school-container .btn-grid:hover md-icon, .home-school-container .btn-grid:hover img {
     transform: scale(1.1);
 }
 
@@ -207,12 +207,12 @@
 }
 
 /* ========================= */ /* ICON HOVER & ANIMATIONS */ /* ========================= */
-.home-school-container .fa {
-    font-size: 20px;
+.home-school-container md-icon.grid-icon {
+    font-size: 24px;
     transition: transform 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 
-.home-school-container .fa:hover {
+.home-school-container md-icon.grid-icon:hover {
     transform: scale(1.2) rotate(5deg);
     color: #d4af37; /* Lighter gold on hover */
 }
