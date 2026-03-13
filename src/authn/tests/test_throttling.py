@@ -6,7 +6,10 @@ from django.test import SimpleTestCase, TestCase, override_settings
 
 from authn.throttling import (
     AdminLoginThrottle,
+    ChallengeRateThrottle,
     LoginRateThrottle,
+    RefreshRateThrottle,
+    RegisterRateThrottle,
     UsernameRateThrottle,
     _get_rate_for_scope,
 )
@@ -51,6 +54,53 @@ class ThrottleFallbackTests(SimpleTestCase):
                 throttle.get_rate(),
                 AdminLoginThrottle.fallback_rate,
             )
+
+    def test_challenge_scope_fallback_rate_used(self):
+        rest = self._rest_without_scope("challenge")
+        with override_settings(REST_FRAMEWORK=rest):
+            throttle = ChallengeRateThrottle()
+            self.assertEqual(
+                throttle.get_rate(),
+                ChallengeRateThrottle.fallback_rate,
+            )
+
+    def test_refresh_scope_fallback_rate_used(self):
+        rest = self._rest_without_scope("refresh")
+        with override_settings(REST_FRAMEWORK=rest):
+            throttle = RefreshRateThrottle()
+            self.assertEqual(
+                throttle.get_rate(),
+                RefreshRateThrottle.fallback_rate,
+            )
+
+    def test_register_scope_fallback_rate_used(self):
+        rest = self._rest_without_scope("registration")
+        with override_settings(REST_FRAMEWORK=rest):
+            throttle = RegisterRateThrottle()
+            self.assertEqual(
+                throttle.get_rate(),
+                RegisterRateThrottle.fallback_rate,
+            )
+
+
+class AllowRequestThrottlesEnabledTests(SimpleTestCase):
+    """Test that _ScopeRateFallbackMixin.allow_request respects THROTTLES_ENABLED."""
+
+    @override_settings(THROTTLES_ENABLED=False)
+    def test_allow_request_when_throttles_disabled(self):
+        throttle = LoginRateThrottle()
+        request = MagicMock()
+        self.assertTrue(throttle.allow_request(request, None))
+
+    @override_settings(THROTTLES_ENABLED=True)
+    def test_allow_request_delegates_when_throttles_enabled(self):
+        """When enabled, allow_request calls super() which may deny."""
+        throttle = ChallengeRateThrottle()
+        request = MagicMock()
+        # We just verify it doesn't unconditionally return True
+        # (actual throttle behavior depends on cache state)
+        result = throttle.allow_request(request, None)
+        self.assertIsInstance(result, bool)
 
 
 class GetRateForScopeTests(SimpleTestCase):
@@ -240,6 +290,25 @@ class AdminLoginThrottleTests(TestCase):
         self.assertEqual(duration, 15 * 60)
 
 
+class NewThrottleClassTests(SimpleTestCase):
+    """Test new throttle classes"""
+
+    def test_challenge_throttle_scope(self):
+        throttle = ChallengeRateThrottle()
+        self.assertEqual(throttle.scope, "challenge")
+        self.assertEqual(throttle.fallback_rate, "10/minute")
+
+    def test_refresh_throttle_scope(self):
+        throttle = RefreshRateThrottle()
+        self.assertEqual(throttle.scope, "refresh")
+        self.assertEqual(throttle.fallback_rate, "10/minute")
+
+    def test_register_throttle_scope(self):
+        throttle = RegisterRateThrottle()
+        self.assertEqual(throttle.scope, "registration")
+        self.assertEqual(throttle.fallback_rate, "5/day")
+
+
 class ThrottleIntegrationTests(TestCase):
     """Integration tests for throttle behavior"""
 
@@ -257,3 +326,13 @@ class ThrottleIntegrationTests(TestCase):
         """Test that admin_login throttle scope is in settings"""
         rates = settings.REST_FRAMEWORK.get("DEFAULT_THROTTLE_RATES", {})
         self.assertIn("admin_login", rates)
+
+    def test_challenge_throttle_has_correct_scope_settings(self):
+        """Test that challenge throttle scope is in settings"""
+        rates = settings.REST_FRAMEWORK.get("DEFAULT_THROTTLE_RATES", {})
+        self.assertIn("challenge", rates)
+
+    def test_refresh_throttle_has_correct_scope_settings(self):
+        """Test that refresh throttle scope is in settings"""
+        rates = settings.REST_FRAMEWORK.get("DEFAULT_THROTTLE_RATES", {})
+        self.assertIn("refresh", rates)

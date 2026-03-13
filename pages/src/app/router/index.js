@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { userInfo } from '@shared/api/auth';
 import { refreshToken } from '@shared/utils/tokenRefresh';
+import { getUserInfo, setUserInfo, isUserInfoStale, setApiError } from '@shared/state/authState';
 
 const routes = [
   {
@@ -53,14 +54,12 @@ router.beforeEach(async (to, _from, next) => {
   try {
     if (!to.meta.requiresAuth) return next();
 
-    // If already cached, check access
-    if (window.userInfo) {
+    const cached = getUserInfo();
+
+    // If already cached and fresh, check access
+    if (cached && !isUserInfoStale()) {
       // Check if User type trying to access barcode dashboard
-      if (
-        to.path === '/dashboard' &&
-        window.userInfo.groups &&
-        window.userInfo.groups.includes('User')
-      ) {
+      if (to.path === '/dashboard' && cached.groups && cached.groups.includes('User')) {
         return next({ path: '/' });
       }
       return next();
@@ -68,7 +67,7 @@ router.beforeEach(async (to, _from, next) => {
 
     const data = await userInfo();
     if (data) {
-      window.userInfo = data;
+      setUserInfo(data);
       // Check if User type trying to access barcode dashboard
       if (to.path === '/dashboard' && data.groups && data.groups.includes('User')) {
         return next({ path: '/' });
@@ -81,7 +80,7 @@ router.beforeEach(async (to, _from, next) => {
     if (refreshSuccess) {
       const retryData = await userInfo();
       if (retryData) {
-        window.userInfo = retryData;
+        setUserInfo(retryData);
         // Check if User type trying to access barcode dashboard
         if (to.path === '/dashboard' && retryData.groups && retryData.groups.includes('User')) {
           return next({ path: '/' });
@@ -92,7 +91,7 @@ router.beforeEach(async (to, _from, next) => {
 
     return next({ path: '/login', query: { redirect: to.fullPath } });
   } catch (_err) {
-    window.apiError = 'API server is offline';
+    setApiError('API server is offline');
     // If navigating to a protected route but API is down, still allow to hit Home which shows an error panel.
     return next();
   }

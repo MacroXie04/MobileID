@@ -1,6 +1,7 @@
 import { onMounted, ref } from 'vue';
 import HomeSchoolView from './HomeSchoolView.vue';
 import HomeUserView from './HomeUserView.vue';
+import { getUserInfo, getApiError } from '@shared/state/authState';
 import '@/assets/styles/home/home-merged.css';
 
 export { HomeSchoolView, HomeUserView };
@@ -8,14 +9,15 @@ export { HomeSchoolView, HomeUserView };
 export function useHomeViewSetup() {
   const loading = ref(true);
   const groups = ref([]);
+  const apiError = ref(null);
 
   onMounted(() => {
-    // read user info from window.userInfo
-    const data = window.userInfo;
+    const data = getUserInfo();
 
     // Check if API error occurred (connection failed)
-    if (window.apiError) {
-      // API connection failed, show error page
+    const storedError = getApiError();
+    if (storedError) {
+      apiError.value = storedError;
       groups.value = [];
       loading.value = false;
       return;
@@ -37,5 +39,5 @@ export function useHomeViewSetup() {
     window.location.reload();
   }
 
-  return { loading, groups, retryConnection };
+  return { loading, groups, apiError, retryConnection };
 }

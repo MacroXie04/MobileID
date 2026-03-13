@@ -1,18 +1,24 @@
 services:
   backend:
     build: ./src
-    command: python manage.py runserver 0.0.0.0:8000
+    command: uv run python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./src:/app
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - DEBUG=True
       - SECRET_KEY=docker-dev-secret-key
       - DB_PROFILE=local
       - DATABASE_URL_LOCAL=postgres://postgres:postgres@db:5432/mobileid_local
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     restart: always
 
   db:
@@ -25,6 +31,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     restart: always
 
 volumes:

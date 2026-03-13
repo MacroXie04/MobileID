@@ -8,17 +8,14 @@ from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.token_blacklist.models import (
-    BlacklistedToken,
-    OutstandingToken,
-)
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
 from authn.models import LoginAuditLog
 
 from .utils import _get_current_session_iat, _parse_device_info
 
 
-@api_view(["GET", "POST"])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_devices(request):
     """
@@ -42,13 +39,22 @@ def list_devices(request):
 
     # Get all non-blacklisted, non-expired tokens for the user
     now = timezone.now()
-    tokens = (
-        OutstandingToken.objects.filter(
-            user=request.user,
-            expires_at__gt=now,  # Only include non-expired tokens
+    tokens = OutstandingToken.objects.filter(
+        user=request.user,
+        expires_at__gt=now,  # Only include non-expired tokens
+        blacklistedtoken__isnull=True,  # LEFT JOIN exclusion
+    ).order_by("-created_at")
+
+    # Prefetch all successful login audits for this user to avoid N+1 queries.
+    all_audits = (
+        list(
+            LoginAuditLog.objects.filter(
+                user=request.user,
+                success=True,
+            ).order_by("-created_at")
         )
-        .exclude(id__in=BlacklistedToken.objects.values_list("token_id", flat=True))
-        .order_by("-created_at")
+        if tokens.exists()
+        else []
     )
 
     devices = []
@@ -56,35 +62,23 @@ def list_devices(request):
         # Find the closest successful login audit log entry to the token creation time.
         # We use a time window approach: first look for an audit within +/-5 seconds,
         # then fallback to just before the token if nothing found.
-        # This prevents matching the wrong session when multiple logins occur.
         time_window = timedelta(seconds=5)
         window_start = token.created_at - time_window
         window_end = token.created_at + time_window
 
-        # First, try to find an audit log within the time window around token creation
-        audit = (
-            LoginAuditLog.objects.filter(
-                user=request.user,
-                success=True,
-                created_at__gte=window_start,
-                created_at__lte=window_end,
-            )
-            .order_by("-created_at")
-            .first()
-        )
+        # Search in prefetched audits (time window match)
+        audit = None
+        for a in all_audits:
+            if window_start <= a.created_at <= window_end:
+                audit = a
+                break
 
-        # Fallback: if no audit in the tight window, find the closest one before token
-        # This handles edge cases where audit logging was slightly delayed
+        # Fallback: closest audit before token creation
         if audit is None:
-            audit = (
-                LoginAuditLog.objects.filter(
-                    user=request.user,
-                    success=True,
-                    created_at__lte=token.created_at,
-                )
-                .order_by("-created_at")
-                .first()
-            )
+            for a in all_audits:
+                if a.created_at <= token.created_at:
+                    audit = a
+                    break
 
         # Parse device info from user agent
         user_agent = audit.user_agent if audit else ""

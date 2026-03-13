@@ -4,8 +4,10 @@ Production Django settings for core project.
 This file imports base settings and overrides them with production-specific values.  # noqa: E501
 """
 
+import warnings
+
 from .base import *  # noqa: F403, F401
-from .base import env, csv_env, BACKEND_ORIGIN  # noqa: F401
+from .base import env, csv_env, BACKEND_ORIGIN, CACHE_BACKEND  # noqa: F401
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG", "False").lower() == "true"
@@ -33,6 +35,12 @@ if not SECRET_KEY or SECRET_KEY == "dev-secret":
         "SECRET_KEY must be set in production environment. "
         "Do not use the default dev-secret key!"
     )
+
+# Update JWT signing key to use the production SECRET_KEY.
+# SIMPLE_JWT was constructed in base.py when SECRET_KEY was still the
+# default "dev-secret" placeholder — the dict captured that value, not
+# a live reference. We must patch it here after overriding SECRET_KEY.
+SIMPLE_JWT["SIGNING_KEY"] = SECRET_KEY  # noqa: F405
 
 # Hosts - MUST be set via environment variable in production
 ALLOWED_HOSTS = csv_env("ALLOWED_HOSTS")
@@ -68,6 +76,15 @@ CSRF_TRUSTED_ORIGINS = csv_env(
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS if not CORS_ALLOW_ALL_ORIGINS else []
 CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
+# CORS wildcard + credentials is invalid per the spec — browsers will reject it.
+if CORS_ALLOW_ALL_ORIGINS and CORS_ALLOW_CREDENTIALS:
+    warnings.warn(
+        "CORS_ALLOW_ALL_ORIGINS=True with CORS_ALLOW_CREDENTIALS=True is "
+        "invalid per the CORS specification. Forcing CORS_ALLOW_CREDENTIALS=False.",
+        stacklevel=1,
+    )
+    CORS_ALLOW_CREDENTIALS = False
+
 # Cookies - Production: cross-site frontend/backend requires SameSite=None.
 # Keep these configurable via env for emergency rollback.
 SESSION_COOKIE_SAMESITE = env("SESSION_COOKIE_SAMESITE", "None").capitalize()
@@ -90,19 +107,41 @@ CSP_DEFAULT_POLICY = env(
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:",  # noqa: E501
 )
 
+# Production security header overrides
+PERMISSIONS_POLICY = env(
+    "PERMISSIONS_POLICY",
+    "camera=(self), microphone=(), geolocation=(), payment=()",
+)
+# cross-origin needed for Amplify↔ECS
+CROSS_ORIGIN_RESOURCE_POLICY = env("CROSS_ORIGIN_RESOURCE_POLICY", "cross-origin")
+
+# CSRF trusted origins validation
+if not CSRF_TRUSTED_ORIGINS:  # noqa: F405
+    raise ValueError("CSRF_TRUSTED_ORIGINS must be set in production.")
+
 # Admin security - Production: MUST be configured
 ADMIN_URL_PATH = env("ADMIN_URL_PATH")
 if not ADMIN_URL_PATH:
-    print("WARNING: ADMIN_URL_PATH not set in production. Defaulting to 'admin'.")
-    ADMIN_URL_PATH = "admin"
+    raise ValueError(
+        "ADMIN_URL_PATH must be set in production. "
+        "Using the default 'admin' path is a security risk."
+    )
 elif ADMIN_URL_PATH == "admin":
-    print(
-        "WARNING: ADMIN_URL_PATH set to default 'admin' in production. "
-        "This is a security risk."
+    raise ValueError(
+        "ADMIN_URL_PATH is set to the default 'admin' in production. "
+        "This is a security risk. Use a non-default path."
     )
 
 
-ADMIN_ALLOWED_IPS = []  # Disable IP whitelist for now
+# Admin IP whitelist: set ADMIN_ALLOWED_IPS env var to a comma-separated
+# list of IPs to restrict admin access. Empty list disables the whitelist.
+ADMIN_ALLOWED_IPS = csv_env("ADMIN_ALLOWED_IPS", [])
+if not ADMIN_ALLOWED_IPS:
+    warnings.warn(
+        "ADMIN_ALLOWED_IPS is empty in production. "
+        "Consider restricting admin access by IP.",
+        stacklevel=1,
+    )
 
 
 # Database configuration is resolved in base.py via DB_PROFILE and
@@ -152,3 +191,11 @@ LOGGING = {
         },
     },
 }
+
+# Warn if production is using LocMemCache (nonces won't work with >1 worker)
+if CACHE_BACKEND == "django.core.cache.backends.locmem.LocMemCache":
+    warnings.warn(
+        "Production is using LocMemCache. Login challenge nonces will not "
+        "be shared across workers. Set CACHE_BACKEND to a shared backend.",
+        stacklevel=1,
+    )

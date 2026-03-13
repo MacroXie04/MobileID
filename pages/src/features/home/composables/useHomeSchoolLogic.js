@@ -1,6 +1,6 @@
 import { nextTick, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
 import { userInfo } from '@shared/api/auth';
+import { getUserInfo, setUserInfo } from '@shared/state/authState';
 import { useUserInfo } from '@user/composables/useUserInfo';
 import { useToken } from '@auth/composables/useToken';
 import { useApi } from '@shared/composables/useApi';
@@ -8,8 +8,6 @@ import { usePdf417 } from '@dashboard/composables/barcode/usePdf417';
 import { animateBarcodeSequence } from '@shared/utils/common/jQueryAnimations.js';
 
 export function useHomeSchoolLogic() {
-  const route = useRoute();
-
   // State
   const loading = ref(false);
   const serverStatus = ref('Emergency');
@@ -37,12 +35,13 @@ export function useHomeSchoolLogic() {
    * Refresh user profile and active profile data
    */
   async function refreshProfileData(forceRefresh = false) {
-    // Refresh window.userInfo if it was cleared or force refresh is requested
-    if (!window.userInfo || forceRefresh) {
+    // Refresh cached auth state if it was cleared or force refresh is requested
+    const cached = getUserInfo();
+    if (!cached || forceRefresh) {
       try {
         const data = await userInfo();
         if (data) {
-          window.userInfo = data;
+          setUserInfo(data);
           if (data.profile) {
             profile.value = data.profile;
           }
@@ -50,9 +49,9 @@ export function useHomeSchoolLogic() {
       } catch (error) {
         console.error('HomeSchool: Failed to refresh user info:', error);
       }
-    } else if (window.userInfo && window.userInfo.profile) {
-      // Update profile from window.userInfo
-      profile.value = window.userInfo.profile;
+    } else if (cached && cached.profile) {
+      // Update profile from cached auth state
+      profile.value = cached.profile;
     }
 
     // Force reload user profile to get latest data
@@ -196,18 +195,6 @@ export function useHomeSchoolLogic() {
   onMounted(async () => {
     await Promise.all([refreshProfileData(), loadScannerSettings()]);
   });
-
-  // Watch for route changes to refresh when returning from edit page
-  watch(
-    () => route.path,
-    async (newPath, oldPath) => {
-      // If returning from profile edit page, force refresh data
-      if (oldPath === '/profile/edit' && newPath === '/') {
-        console.log('HomeSchool: Returning from profile edit, force refreshing data...');
-        await refreshProfileData(true);
-      }
-    }
-  );
 
   return {
     profile,

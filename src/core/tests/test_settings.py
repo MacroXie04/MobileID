@@ -83,12 +83,8 @@ class SettingsConfigurationTest(TestCase):
 
         # Check that tokens have appropriate lifetime
         access_lifetime = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]
-        if getattr(settings, "TESTING", False):
-            # In test mode, use shorter token lifetime (1 day)
-            self.assertEqual(access_lifetime.days, 1)
-        else:
-            # In production, use long lifetime (10 years)
-            self.assertEqual(access_lifetime.days, 3650)
+        # Tests always run with TESTING=True → 1-day access tokens
+        self.assertEqual(access_lifetime.days, 1)
 
     def test_cors_configuration(self):
         """Test CORS configuration"""
@@ -117,10 +113,10 @@ class SettingsConfigurationTest(TestCase):
         self.assertTrue(settings.USE_TZ)
 
     def test_session_configuration(self):
-        """Test session configuration for long-term sessions"""
-        self.assertEqual(settings.SESSION_COOKIE_AGE, 315360000)  # 10 years
+        """Test session configuration"""
+        self.assertEqual(settings.SESSION_COOKIE_AGE, 2592000)  # 30 days
         self.assertFalse(settings.SESSION_EXPIRE_AT_BROWSER_CLOSE)
-        self.assertTrue(settings.SESSION_SAVE_EVERY_REQUEST)
+        self.assertFalse(settings.SESSION_SAVE_EVERY_REQUEST)
 
 
 class EnvironmentVariableTest(TestCase):

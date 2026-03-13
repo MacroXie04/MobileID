@@ -1,6 +1,7 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { logout } from '@shared/api/auth';
+import { getUserInfo, clearUserInfo } from '@shared/state/authState';
 import { useApi } from '@shared/composables/useApi';
 import { useUserInfo } from '@user/composables/useUserInfo';
 
@@ -15,9 +16,8 @@ export function useHomeUserLogic() {
 
   onMounted(() => {
     console.log('HomeUser component mounted');
-    // read user info from window.userInfo
-    const data = window.userInfo;
-    console.log('window.userInfo:', data);
+    const data = getUserInfo();
+    console.log('authState.userInfo:', data);
     profile.value = data?.profile;
     console.log('Profile set to:', profile.value);
 
@@ -91,15 +91,14 @@ export function useHomeUserLogic() {
     try {
       await logout();
 
-      // Clear window.userInfo
-      window.userInfo = null;
+      clearUserInfo();
 
       // Navigate to login
       router.push('/login');
     } catch (error) {
       console.error('Logout error:', error);
       // Even if logout API fails, clear local data and redirect
-      window.userInfo = null;
+      clearUserInfo();
       router.push('/login');
     }
   }

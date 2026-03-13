@@ -1,4 +1,5 @@
 import { updateUserProfile } from '@shared/api/auth';
+import { clearUserInfo } from '@shared/state/authState';
 import { fileToBase64 } from '@user/utils/imageUtils.js';
 
 export function useProfileSubmit({
@@ -48,7 +49,7 @@ export function useProfileSubmit({
         information_id: formData.value.information_id,
       };
 
-      window.userInfo = null;
+      clearUserInfo();
 
       if (redirectOnSubmit) {
         setTimeout(() => {

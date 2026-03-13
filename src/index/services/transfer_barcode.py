@@ -36,20 +36,3 @@ class TransferBarcodeParser:
             "img_base64": img_base64,
             "barcode": magstrip_suffix,
         }
-
-
-# only for testing
-# if __name__ == "__main__":
-
-#     import os
-
-#     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-#     html_path = os.path.join(BASE_DIR, "test.html")
-
-#     parser = TransferBarcodeParser()
-
-#     with open(html_path, "r", encoding="utf-8") as f:
-#         html = f.read()
-#     parser.parse(html)
-
-#     print("Done")

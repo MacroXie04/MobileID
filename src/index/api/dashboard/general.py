@@ -2,14 +2,17 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import Prefetch, Q
 
 from index.models import (
     Barcode,
+    Transaction,
     UserBarcodeSettings,
     UserBarcodePullSettings,
     BarcodeUsage,
 )
+from index.permissions import IsNotUserGroup, _get_cached_groups
 from index.serializers import (
     BarcodeSerializer,
     BarcodeCreateSerializer,
@@ -34,18 +37,14 @@ class BarcodeDashboardAPIView(APIView):
     3. Only DynamicBarcode and Others types can be managed
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsNotUserGroup]
 
     def get(self, request):
         """Get user settings and barcodes"""
         user = request.user
-
-        # Check if user is in User group - they shouldn't access this endpoint
-        if user.groups.filter(name="User").exists():
-            return Response(
-                {"detail": "User type accounts cannot access barcode " "dashboard"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        user_groups = _get_cached_groups(request)
+        is_user_group = "User" in user_groups
+        is_school_group = "School" in user_groups
 
         # Get or create user settings
         settings, created = UserBarcodeSettings.objects.get_or_create(
@@ -60,14 +59,11 @@ class BarcodeDashboardAPIView(APIView):
 
         # Force associate_user_profile_with_barcode to False for User group
         # members
-        is_user_group = user.groups.filter(name="User").exists()
         if is_user_group and settings.associate_user_profile_with_barcode:
             settings.associate_user_profile_with_barcode = False
             settings.save()
 
         # Get barcodes based on user type
-        is_school_group = user.groups.filter(name="School").exists()
-
         if is_school_group:
             # School users see:
             # - Dynamic barcodes that are shared by others OR owned by themselves  # noqa: E501
@@ -85,7 +81,17 @@ class BarcodeDashboardAPIView(APIView):
                     )
                 )
                 .select_related("user")
-                .prefetch_related("barcodeuserprofile", "barcodeusage_set")
+                .prefetch_related(
+                    "barcodeuserprofile",
+                    "barcodeusage_set",
+                    Prefetch(
+                        "transaction_set",
+                        queryset=Transaction.objects.select_related("user").order_by(
+                            "-time_created"
+                        ),
+                        to_attr="prefetched_transactions",
+                    ),
+                )
                 .order_by("-time_created")
             )
         else:
@@ -101,7 +107,17 @@ class BarcodeDashboardAPIView(APIView):
                     ],
                 )
                 .select_related("user")
-                .prefetch_related("barcodeuserprofile", "barcodeusage_set")
+                .prefetch_related(
+                    "barcodeuserprofile",
+                    "barcodeusage_set",
+                    Prefetch(
+                        "transaction_set",
+                        queryset=Transaction.objects.select_related("user").order_by(
+                            "-time_created"
+                        ),
+                        to_attr="prefetched_transactions",
+                    ),
+                )
                 .order_by("-time_created")
             )
 
@@ -111,13 +127,19 @@ class BarcodeDashboardAPIView(APIView):
             defaults={"pull_setting": "Disable", "gender_setting": "Unknow"},
         )
 
-        # Serialize data
+        # Serialize data — pass shared context to avoid redundant DB queries
+        shared_context = {
+            "request": request,
+            "user_groups": user_groups,
+            "pull_settings": pull_settings,
+            "barcodes": barcodes,
+        }
         settings_serializer = UserBarcodeSettingsSerializer(
-            settings, context={"request": request}
+            settings, context=shared_context
         )
         pull_settings_serializer = UserBarcodePullSettingsSerializer(pull_settings)
         barcodes_serializer = BarcodeSerializer(
-            barcodes, many=True, context={"request": request}
+            barcodes, many=True, context=shared_context
         )
 
         return Response(
@@ -126,20 +148,17 @@ class BarcodeDashboardAPIView(APIView):
                 "pull_settings": pull_settings_serializer.data,
                 "barcodes": barcodes_serializer.data,
                 "is_user_group": is_user_group,
-                "is_school_group": user.groups.filter(name="School").exists(),
+                "is_school_group": is_school_group,
             }
         )
 
     def post(self, request):
         """Update user barcode settings and/or pull settings"""
-        user = request.user
+        with transaction.atomic():
+            return self._post_inner(request)
 
-        # Check if user is in User group - they shouldn't access this endpoint
-        if user.groups.filter(name="User").exists():
-            return Response(
-                {"detail": "User type accounts cannot access barcode " "dashboard"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+    def _post_inner(self, request):
+        user = request.user
         settings, _ = UserBarcodeSettings.objects.get_or_create(user=user)
 
         # Create a copy of request data to potentially modify
@@ -240,13 +259,6 @@ class BarcodeDashboardAPIView(APIView):
 
     def put(self, request):
         """Create new barcode"""
-        # Check if user is in User group - they shouldn't access this endpoint
-        if request.user.groups.filter(name="User").exists():
-            return Response(
-                {"detail": "User type accounts cannot access barcode " "dashboard"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         serializer = BarcodeCreateSerializer(
             data=request.data, context={"request": request}
         )
@@ -273,13 +285,6 @@ class BarcodeDashboardAPIView(APIView):
 
     def patch(self, request):
         """Update properties of a barcode owned by the current user (share flag and daily limit)"""  # noqa: E501
-        # Check if user is in User group - they shouldn't access this endpoint
-        if request.user.groups.filter(name="User").exists():
-            return Response(
-                {"detail": "User type accounts cannot access barcode " "dashboard"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         barcode_id = request.data.get("barcode_id")
         share_with_others = request.data.get("share_with_others")
         daily_usage_limit = request.data.get("daily_usage_limit")
@@ -369,13 +374,6 @@ class BarcodeDashboardAPIView(APIView):
         Delete barcode - users may delete only their own barcodes
         (DynamicBarcode and Others types)
         """
-        # Check if user is in User group - they shouldn't access this endpoint
-        if request.user.groups.filter(name="User").exists():
-            return Response(
-                {"detail": "User type accounts cannot access barcode " "dashboard"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         barcode_id = request.data.get("barcode_id")
 
         if not barcode_id:

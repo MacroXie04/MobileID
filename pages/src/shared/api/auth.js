@@ -1,6 +1,7 @@
 import { ApiError, apiRequest } from './client';
 import { clearPublicKeyCache, encryptPassword } from '@shared/utils/encryption';
-import { setAuthTokens, clearAuthTokens } from './axios';
+import { clearAuthCookies, clearAuthStorage } from '@shared/utils/cookie';
+import { clearUserInfo } from '@shared/state/authState';
 
 export async function fetchLoginChallenge() {
   return apiRequest('/authn/login-challenge/');
@@ -24,11 +25,7 @@ export async function login(username, password) {
       body: { username, password: encryptedPassword },
     });
 
-    // Save tokens to localStorage if present in response
-    if (response.access && response.refresh) {
-      setAuthTokens({ access: response.access, refresh: response.refresh });
-    }
-
+    // Server sets auth cookies; no localStorage storage needed
     return response;
   } catch (error) {
     // If we get a 401/410, the key might have rotated - clear cache
@@ -49,9 +46,12 @@ export async function userInfo() {
   try {
     return await apiRequest('/authn/user_info/');
   } catch (error) {
-    // The original implementation returned null on failure. Replicating this behavior.
     if (error instanceof ApiError) {
-      console.error('Failed to fetch user info:', error.data);
+      // Return null for auth errors (401/403) to indicate "not authenticated".
+      // Re-throw server errors (5xx) so callers can distinguish them.
+      if (error.status >= 500) {
+        throw error;
+      }
       return null;
     }
     // Re-throw other errors (e.g., network errors)
@@ -66,8 +66,10 @@ export async function logout() {
   } catch (error) {
     console.warn('Logout request failed:', error);
   } finally {
-    // Always clear tokens from localStorage on logout
-    clearAuthTokens();
+    // Always clear cookies, storage, and cached user info on logout
+    clearAuthCookies();
+    clearAuthStorage();
+    clearUserInfo();
   }
 }
 
@@ -92,22 +94,17 @@ export async function register(userData) {
       body: userData,
     });
 
-    // Save tokens to localStorage if present in response
-    if (response.access && response.refresh) {
-      setAuthTokens({ access: response.access, refresh: response.refresh });
-    }
-
+    // Server sets auth cookies; no localStorage storage needed
     return response;
   } catch (error) {
     // If token-related error, try to log out to clear cookies and then retry registration.
-    const errorMessage = JSON.stringify(error.data).toLowerCase();
-    if (
-      error instanceof ApiError &&
-      (errorMessage.includes('token_not_valid') || errorMessage.includes('token is expired'))
-    ) {
-      await logout();
-      // Retry registration. A second failure will now correctly bubble up.
-      return apiRequest('/authn/register/', { method: 'POST', body: userData });
+    if (error instanceof ApiError) {
+      const errorMessage = JSON.stringify(error.data || {}).toLowerCase();
+      if (errorMessage.includes('token_not_valid') || errorMessage.includes('token is expired')) {
+        await logout();
+        // Retry registration. A second failure will now correctly bubble up.
+        return apiRequest('/authn/register/', { method: 'POST', body: userData });
+      }
     }
     throw error;
   }

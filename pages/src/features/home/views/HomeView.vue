@@ -19,13 +19,13 @@
         </div>
       </div>
       <h2 class="md-typescale-headline-medium md-mb-2">
-        {{ window.apiError ? 'Connection Error' : 'Access Denied' }}
+        {{ apiError ? 'Connection Error' : 'Access Denied' }}
       </h2>
       <p class="md-typescale-body-large md-mb-6">
-        {{ window.apiError || 'Unknown user group. Please contact your administrator.' }}
+        {{ apiError || 'Unknown user group. Please contact your administrator.' }}
       </p>
       <div
-        v-if="window.apiError"
+        v-if="apiError"
         class="error-details md-card md-card-filled md-rounded-lg md-p-4 md-mb-6 md-text-left"
       >
         <p class="md-typescale-body-medium md-mb-3">
@@ -36,7 +36,7 @@
           <li class="md-typescale-body-medium">The server is running and accessible</li>
           <li class="md-typescale-body-medium">Your network allows access to the server</li>
         </ul>
-        <p class="error-code md-typescale-label-medium md-mt-4">Error: {{ window.apiError }}</p>
+        <p class="error-code md-typescale-label-medium md-mt-4">Error: {{ apiError }}</p>
       </div>
       <div
         v-else
@@ -63,5 +63,5 @@
 <script setup>
 import { HomeSchoolView, HomeUserView, useHomeViewSetup } from './HomeView.setup.js';
 
-const { loading, groups, retryConnection } = useHomeViewSetup();
+const { loading, groups, apiError, retryConnection } = useHomeViewSetup();
 </script>

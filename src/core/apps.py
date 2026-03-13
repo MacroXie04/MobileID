@@ -13,9 +13,12 @@ class CoreConfig(AppConfig):
     verbose_name = "Core"
 
     def ready(self):
-        """Import signals and admin registration when app is ready"""
+        """Import signals, checks, and admin registration when app is ready"""
         # Import admin to register models
         import core.admin  # noqa: F401
+
+        # Import system checks (cache backend validation, etc.)
+        import core.checks  # noqa: F401
 
         # Import signals to connect admin login/logout logging
         import core.signals  # noqa: F401

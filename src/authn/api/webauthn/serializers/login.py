@@ -55,7 +55,7 @@ class EncryptedTokenObtainPairSerializer(_BaseLoginSerializer):
                 username, client_ip, "failure", reason="invalid_credentials"
             )
             raise AuthenticationFailed(detail=self.generic_error_message) from exc
-        except TokenError as exc:  # pragma: no cover
+        except TokenError as exc:
             self._record_failed_attempt(attempt_record, client_ip)
             self._log_auth_event(username, client_ip, "failure", reason="token_error")
             raise AuthenticationFailed(detail=self.generic_error_message) from exc
@@ -133,7 +133,7 @@ class RSAEncryptedLoginSerializer(_BaseLoginSerializer):
                 username, client_ip, "failure", reason="invalid_credentials"
             )
             raise AuthenticationFailed(detail=self.generic_error_message) from exc
-        except TokenError as exc:  # pragma: no cover
+        except TokenError as exc:
             self._record_failed_attempt(attempt_record, client_ip)
             self._log_auth_event(username, client_ip, "failure", reason="token_error")
             raise AuthenticationFailed(detail=self.generic_error_message) from exc

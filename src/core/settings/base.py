@@ -328,7 +328,11 @@ MAX_FAILED_LOGIN_ATTEMPTS = int(os.getenv("MAX_FAILED_LOGIN_ATTEMPTS", "5"))
 ACCOUNT_LOCKOUT_DURATION = int(os.getenv("ACCOUNT_LOCKOUT_DURATION", "30"))
 
 # Cache configuration
-# Use only local memory cache and database session backend (no Redis support)
+# WARNING: The default LocMemCache is per-process. Login challenge nonces
+# (authn/services/login_challenge.py) will NOT be shared across Gunicorn
+# workers. Production with multiple workers MUST set CACHE_BACKEND to a
+# shared backend (e.g. django.core.cache.backends.db.DatabaseCache).
+# Currently run.sh uses --workers 1, so LocMemCache works.
 CACHE_BACKEND = os.getenv(
     "CACHE_BACKEND", "django.core.cache.backends.locmem.LocMemCache"
 )
@@ -349,10 +353,21 @@ SESSION_ENGINE = os.getenv(
     ),
 )
 
-# Session settings - Set to 10 years (effectively unlimited)
-SESSION_COOKIE_AGE = 315360000  # 10 years in seconds
+# Session settings - 30 days; JWT refresh tokens handle re-authentication
+SESSION_COOKIE_AGE = 2592000  # 30 days in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser close
-SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on each request
+SESSION_SAVE_EVERY_REQUEST = (
+    False  # JWT handles API auth; admin sessions use AdminSessionExpiryMiddleware
+)
+
+# Cookie security defaults (overridden in dev.py / prod.py)
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = False  # Overridden to True in prod.py
+CSRF_COOKIE_SECURE = False  # Overridden to True in prod.py
+CSRF_COOKIE_HTTPONLY = False  # Must be False so JS can read CSRF token
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 # REST throttle settings
 # Default to disabling throttles in development (when DEBUG=True) unless testing.
@@ -391,6 +406,8 @@ REST_FRAMEWORK = {
         "login": "5/minute",
         "login_username": "5/minute",
         "registration": "5/day",
+        "challenge": "10/minute",
+        "refresh": "10/minute",
         "barcode_generation": "100/hour",
         "barcode_management": "50/hour",
         "user_profile": "20/hour",
@@ -405,7 +422,11 @@ if DISABLE_THROTTLES:
 SIMPLE_JWT = {
     # Tests: keep tokens long to avoid flakiness; Prod: short-lived access,
     # moderate refresh
-    "ACCESS_TOKEN_LIFETIME": (timedelta(days=1) if TESTING else timedelta(days=1)),
+    "ACCESS_TOKEN_LIFETIME": (
+        timedelta(days=1)
+        if TESTING
+        else timedelta(minutes=int(env("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", "30")))
+    ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
         days=1 if TESTING else int(env("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "7"))
     ),
@@ -415,8 +436,21 @@ SIMPLE_JWT = {
     "SIGNING_KEY": SECRET_KEY,
 }
 
+AUTH_EXPOSE_TOKENS_IN_BODY = (
+    env("AUTH_EXPOSE_TOKENS_IN_BODY", "False").lower() == "true"
+)
+
 LOGIN_CHALLENGE_TTL_SECONDS = int(env("LOGIN_CHALLENGE_TTL_SECONDS", "120"))
 LOGIN_CHALLENGE_NONCE_BYTES = int(env("LOGIN_CHALLENGE_NONCE_BYTES", "16"))
+
+# Security headers
+PERMISSIONS_POLICY = env(
+    "PERMISSIONS_POLICY",
+    "camera=(*), microphone=(), geolocation=(), payment=()",
+)
+CROSS_ORIGIN_OPENER_POLICY = env("CROSS_ORIGIN_OPENER_POLICY", "same-origin")
+CROSS_ORIGIN_RESOURCE_POLICY = env("CROSS_ORIGIN_RESOURCE_POLICY", "same-origin")
+CSP_REPORT_ONLY = env("CSP_REPORT_ONLY", "False").lower() == "true"
 
 # Admin security settings
 ADMIN_URL_PATH = env("ADMIN_URL_PATH", "admin")

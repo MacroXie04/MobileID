@@ -2,13 +2,16 @@
  * Cookie utility functions
  */
 
+import { getUserInfo } from '@shared/state/authState';
+
 /**
  * Get cookie value by name
  * @param {string} name - Cookie name
  * @returns {string} Cookie value or empty string if not found
  */
 export function getCookie(name) {
-  const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = document.cookie.match(new RegExp('(^| )' + escapedName + '=([^;]+)'));
   return m ? decodeURIComponent(m[2]) : '';
 }
 
@@ -29,7 +32,14 @@ export function clearAuthCookies() {
  * Clear authentication-related storage items
  */
 export function clearAuthStorage() {
-  const authKeys = ['access_token', 'refresh_token', 'user_info', 'auth_token'];
+  const authKeys = [
+    'access_token',
+    'refresh_token',
+    'user_info',
+    'auth_token',
+    'access',
+    'refresh',
+  ];
   authKeys.forEach((key) => {
     localStorage.removeItem(key);
     sessionStorage.removeItem(key);
@@ -37,16 +47,16 @@ export function clearAuthStorage() {
 }
 
 /**
- * Check if user appears to be authenticated based on cookies/storage
- * @returns {boolean} True if authentication tokens are present
+ * Check if user appears to be authenticated based on cookies/cached state.
+ *
+ * HttpOnly JWT cookies are invisible to JS, so we use the presence of
+ * the csrftoken cookie (set alongside auth cookies) or a cached
+ * userInfo as a reasonable proxy for an active session.
+ *
+ * @returns {boolean} True if authentication tokens are likely present
  */
 export function hasAuthTokens() {
-  const sessionId = getCookie('sessionid');
-  const accessToken = getCookie('access_token') || localStorage.getItem('access_token');
-
-  // For authenticated API calls (especially GET like avatar), a valid sessionid
-  // or JWT access_token is sufficient. CSRF is only required for unsafe methods.
-  return !!(accessToken || sessionId);
+  return !!getCookie('csrftoken') || !!getUserInfo();
 }
 
 /**

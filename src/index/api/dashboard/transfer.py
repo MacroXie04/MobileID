@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from index.permissions import IsSchoolGroup
 from index.serializers import (
     BarcodeSerializer,
     DynamicBarcodeWithProfileSerializer,
@@ -17,20 +18,10 @@ class TransferDynamicBarcodeAPIView(APIView):
     Only School group users can use this endpoint.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSchoolGroup]
 
     def post(self, request):
         """Parse HTML and create a new dynamic barcode with profile data"""
-        # Check if user is in School group
-        if not request.user.groups.filter(name="School").exists():
-            return Response(
-                {
-                    "status": "error",
-                    "message": "Only School group users can transfer dynamic barcodes",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         # Get HTML from request
         html_content = request.data.get("html")
         if not html_content:
