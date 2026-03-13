@@ -1,6 +1,10 @@
+import logging
+
 from index.models import Barcode, BarcodeUserProfile, Transaction
 from index.services.usage_limit import UsageLimitService
 from rest_framework import serializers
+
+logger = logging.getLogger(__name__)
 
 
 class BarcodeSerializer(serializers.ModelSerializer):
@@ -87,6 +91,7 @@ class BarcodeSerializer(serializers.ModelSerializer):
         except BarcodeUserProfile.DoesNotExist:
             return False
         except Exception:
+            logger.exception("Error checking profile addon for barcode %s", obj.pk)
             return False
 
     def get_profile_info(self, obj):
@@ -101,6 +106,7 @@ class BarcodeSerializer(serializers.ModelSerializer):
         except BarcodeUserProfile.DoesNotExist:
             return None
         except Exception:
+            logger.exception("Error fetching profile info for barcode %s", obj.pk)
             return None
 
     def get_recent_transactions(self, obj):
@@ -123,6 +129,7 @@ class BarcodeSerializer(serializers.ModelSerializer):
                 for t in txns
             ]
         except Exception:
+            logger.exception("Error fetching transactions for barcode %s", obj.pk)
             return []
 
     def get_usage_stats(self, obj):

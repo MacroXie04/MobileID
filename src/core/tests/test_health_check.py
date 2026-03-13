@@ -35,8 +35,11 @@ class HealthCheckTest(TestCase):
         self.assertIn("status", data)
         self.assertIn("service", data)
         self.assertIn("database", data)
+        self.assertIn("cache", data)
+        self.assertIn("rsa_key", data)
 
-        self.assertEqual(data["status"], "healthy")
+        # Status may be "healthy" or "degraded" depending on RSA key presence
+        self.assertIn(data["status"], ("healthy", "degraded"))
         self.assertEqual(data["service"], "MobileID")
         self.assertEqual(data["database"], "connected")
 

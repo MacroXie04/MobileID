@@ -1,6 +1,7 @@
 import { ApiError, apiRequest } from './client';
 import { clearPublicKeyCache, encryptPassword } from '@shared/utils/encryption';
 import { clearAuthCookies, clearAuthStorage } from '@shared/utils/cookie';
+import { clearUserInfo } from '@shared/state/authState';
 
 export async function fetchLoginChallenge() {
   return apiRequest('/authn/login-challenge/');
@@ -65,9 +66,10 @@ export async function logout() {
   } catch (error) {
     console.warn('Logout request failed:', error);
   } finally {
-    // Always clear cookies and storage on logout
+    // Always clear cookies, storage, and cached user info on logout
     clearAuthCookies();
     clearAuthStorage();
+    clearUserInfo();
   }
 }
 
