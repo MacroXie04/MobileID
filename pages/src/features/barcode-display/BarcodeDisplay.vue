@@ -13,29 +13,37 @@
     <canvas v-if="scannerDetectionEnabled" ref="detectionCanvas" class="hidden-canvas"></canvas>
 
     <!-- Barcode Display -->
-    <div
-      id="qrcode-div"
-      class="barcode-canvas-container"
-      :style="{ display: showBarcode ? 'block' : 'none' }"
-    >
-      <canvas ref="barcodeCanvas" class="pdf417"></canvas>
-    </div>
+    <transition name="barcode-reveal">
+      <div
+        id="qrcode-div"
+        class="barcode-canvas-container"
+        :aria-hidden="String(!showBarcode)"
+        v-show="showBarcode"
+      >
+        <canvas ref="barcodeCanvas" class="pdf417"></canvas>
+      </div>
+    </transition>
 
     <!-- Progress Bar -->
-    <div
-      id="qrcode-code"
-      class="barcode-progress-container"
-      :style="{ display: showBarcode ? 'block' : 'none' }"
-    >
-      <div class="progress">
-        <div
-          id="progress-bar"
-          class="progress-bar progress-bar-white"
-          role="progressbar"
-          :style="{ width: progressPercent + '%' }"
-        ></div>
+    <transition name="fade">
+      <div
+        id="qrcode-code"
+        class="barcode-progress-container"
+        :aria-hidden="String(!showBarcode)"
+        v-show="showBarcode"
+      >
+        <div class="progress">
+          <div
+            id="progress-bar"
+            class="progress-bar progress-bar-white"
+            role="progressbar"
+            :style="{ width: progressPercent + '%' }"
+          ></div>
+        </div>
       </div>
-    </div>
+    </transition>
+
+    <p v-if="renderError" class="barcode-error" role="status">{{ renderError }}</p>
   </div>
 </template>
 
@@ -55,10 +63,18 @@ const {
   detectionCanvas,
   showBarcode,
   progressPercent,
+  renderError,
   exposeBindings,
 } = useSchoolBarcodeDisplaySetup({ props, emit });
 
 defineExpose(exposeBindings || {});
 </script>
 
-<!-- Styles imported via BarcodeDisplay.setup.js from school-merged.css -->
+<style scoped>
+.barcode-error {
+  color: #ffd8d8;
+  font-size: 0.95rem;
+  margin: 12px auto 0;
+  max-width: 320px;
+}
+</style>

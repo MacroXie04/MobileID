@@ -36,6 +36,24 @@ class UserRegistrationAPITest(APITestCase):
             user.is_active, "New users should be inactive until admin activation"
         )
 
+    def test_registration_allows_single_character_password(self):
+        cache.clear()
+        data = self.registration_data.copy()
+        data["username"] = "weak-pass-user"
+        data["password1"] = "1"
+        data["password2"] = "1"
+
+        url = reverse("authn:api_register")
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["success"])
+
+        user = User.objects.get(username="weak-pass-user")
+        self.assertTrue(user.check_password("1"))
+        self.assertTrue(hasattr(user, "userprofile"))
+        self.assertFalse(user.is_active)
+
     def test_registration_with_avatar(self):
         cache.clear()
         data = self.registration_data.copy()

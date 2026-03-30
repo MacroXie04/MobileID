@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from index.models import (
     Barcode,
+    BarcodeUsage,
     BarcodeUserProfile,
     UserBarcodeSettings,
 )
@@ -37,6 +38,35 @@ class GenerateBarcodeAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "success")
         self.assertEqual(response.data["barcode_type"], "Identification")
+
+    def test_generate_barcode_identification_updates_dashboard_usage(self):
+        """Test Identification generate is reflected in dashboard usage fields."""
+        ident = Barcode.objects.get(user=self.user, barcode_type="Identification")
+        UserBarcodeSettings.objects.filter(user=self.user).update(barcode=ident)
+
+        generate_url = reverse("index:api_generate_barcode")
+        generate_response = self.client.post(generate_url)
+
+        self.assertEqual(generate_response.status_code, status.HTTP_200_OK)
+
+        current_ident = Barcode.objects.get(
+            user=self.user,
+            barcode_type="Identification",
+        )
+        usage = BarcodeUsage.objects.get(barcode=current_ident)
+        self.assertEqual(usage.total_usage, 1)
+
+        dashboard_url = reverse("index:api_barcode_dashboard")
+        dashboard_response = self.client.get(dashboard_url)
+
+        self.assertEqual(dashboard_response.status_code, status.HTTP_200_OK)
+        identification_barcode = next(
+            item
+            for item in dashboard_response.data["barcodes"]
+            if item["barcode_type"] == "Identification"
+        )
+        self.assertEqual(identification_barcode["usage_count"], 1)
+        self.assertIsNotNone(identification_barcode["last_used"])
 
     def test_generate_barcode_unauthenticated(self):
         """Test barcode generation without authentication"""

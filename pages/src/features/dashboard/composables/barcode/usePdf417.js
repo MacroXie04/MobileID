@@ -1,7 +1,78 @@
 import { ref } from 'vue';
 
+const BCMATH_SRC = '/js/bcmath-min.js';
+const PDF417_SRC = '/js/pdf417-min.js';
+
+let pdf417LoadPromise = null;
+
+function isScriptReady(globalName) {
+  return typeof window !== 'undefined' && typeof window[globalName] !== 'undefined';
+}
+
+function loadScript(src, globalName) {
+  if (isScriptReady(globalName)) {
+    return Promise.resolve(window[globalName]);
+  }
+
+  if (typeof document === 'undefined') {
+    return Promise.reject(new Error(`Cannot load ${src} outside the browser`));
+  }
+
+  return new Promise((resolve, reject) => {
+    const existingScript = document.querySelector(`script[data-src="${src}"]`);
+
+    const handleReady = () => {
+      if (isScriptReady(globalName)) {
+        resolve(window[globalName]);
+        return;
+      }
+      reject(new Error(`${src} loaded but ${globalName} is unavailable`));
+    };
+
+    const handleError = () => {
+      reject(new Error(`Failed to load ${src}`));
+    };
+
+    if (existingScript) {
+      existingScript.addEventListener('load', handleReady, { once: true });
+      existingScript.addEventListener('error', handleError, { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.dataset.src = src;
+    script.addEventListener('load', handleReady, { once: true });
+    script.addEventListener('error', handleError, { once: true });
+    document.head.appendChild(script);
+  });
+}
+
 export function usePdf417() {
   const barcodeReady = ref(false);
+
+  async function ensurePdf417Ready() {
+    if (isScriptReady('PDF417')) {
+      barcodeReady.value = true;
+      return window.PDF417;
+    }
+
+    if (!pdf417LoadPromise) {
+      pdf417LoadPromise = (async () => {
+        await loadScript(BCMATH_SRC, 'libbcmath');
+        await loadScript(PDF417_SRC, 'PDF417');
+        return window.PDF417;
+      })().catch((error) => {
+        pdf417LoadPromise = null;
+        throw error;
+      });
+    }
+
+    const pdf417 = await pdf417LoadPromise;
+    barcodeReady.value = true;
+    return pdf417;
+  }
 
   /**
    * Draw PDF417 barcode on canvas element
@@ -9,34 +80,27 @@ export function usePdf417() {
    * @param {string} text - The text to encode in the barcode
    * @param {Object} options - Drawing options (moduleWidth, moduleHeight)
    */
-  function drawPdf417(canvas, text, options = {}) {
+  async function drawPdf417(canvas, text, options = {}) {
     if (!canvas) {
-      console.error('Canvas element not found');
-      return;
+      barcodeReady.value = false;
+      throw new Error('Canvas element not found');
     }
 
-    console.log('Generating barcode for text:', text);
-
-    // Check if global PDF417 object is available
-    if (typeof window.PDF417 === 'undefined') {
-      console.error('PDF417 library not loaded');
-      return;
+    if (!text) {
+      barcodeReady.value = false;
+      throw new Error('Barcode text is required');
     }
 
     try {
+      const pdf417 = await ensurePdf417Ready();
+
       // Initialize PDF417 with the barcode text
-      window.PDF417.init(text);
-      const barcodeArray = window.PDF417.getBarcodeArray();
+      pdf417.init(text);
+      const barcodeArray = pdf417.getBarcodeArray();
 
       if (!barcodeArray || !barcodeArray.bcode || barcodeArray.num_rows <= 0) {
-        console.error('Failed to generate PDF417 barcode array');
-        return;
+        throw new Error('Failed to generate PDF417 barcode array');
       }
-
-      console.log('Barcode array generated:', {
-        rows: barcodeArray.num_rows,
-        cols: barcodeArray.num_cols,
-      });
 
       // Set canvas size based on barcode dimensions (matching backend settings)
       const moduleWidth = options.moduleWidth || 2.5;
@@ -50,6 +114,9 @@ export function usePdf417() {
       canvas.style.height = '';
 
       const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('Canvas 2D context unavailable');
+      }
 
       // Clear the canvas first with white background
       ctx.fillStyle = '#FFFFFF';
@@ -70,41 +137,22 @@ export function usePdf417() {
         y += moduleHeight;
       }
 
-      console.log('PDF417 barcode rendered successfully');
       barcodeReady.value = true;
+      return {
+        width: canvas.width,
+        height: canvas.height,
+        rows: barcodeArray.num_rows,
+        cols: barcodeArray.num_cols,
+      };
     } catch (error) {
-      console.error('PDF417 generation failed:', error);
       barcodeReady.value = false;
+      throw error;
     }
-  }
-
-  /**
-   * Draw PDF417 barcode to a container by ID
-   * @param {string} containerId - ID of the container element
-   * @param {string} text - The text to encode in the barcode
-   * @param {Object} options - Drawing options (moduleWidth, moduleHeight)
-   */
-  function drawPdf417ToContainer(containerId, text, options = {}) {
-    const container = document.getElementById(containerId);
-    if (!container) {
-      console.error(`Container element with ID "${containerId}" not found`);
-      return;
-    }
-
-    // Clear container first
-    container.innerHTML = '';
-
-    // Create canvas element
-    const canvas = document.createElement('canvas');
-    container.appendChild(canvas);
-
-    // Draw barcode on canvas
-    drawPdf417(canvas, text, options);
   }
 
   return {
     barcodeReady,
+    ensurePdf417Ready,
     drawPdf417,
-    drawPdf417ToContainer,
   };
 }

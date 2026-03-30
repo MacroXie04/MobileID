@@ -14,6 +14,10 @@ export const propsDefinition = {
     type: Boolean,
     default: false,
   },
+  barcodeVisible: {
+    type: Boolean,
+    default: false,
+  },
   isRefreshingToken: {
     type: Boolean,
     default: false,

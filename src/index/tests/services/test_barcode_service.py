@@ -1,7 +1,9 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.utils import timezone
 from index.models import (
     Barcode,
     BarcodeUsage,
@@ -74,6 +76,57 @@ class BarcodeServiceTest(BarcodeServiceTestBase):
         self.assertEqual(new_barcode.barcode_type, "Identification")
         self.assertEqual(len(new_barcode.barcode), 28)
 
+    def test_create_identification_barcode_merges_usage_rows(self):
+        """Test rotating identification barcode preserves merged usage stats."""
+        older_barcode = Barcode.objects.create(
+            user=self.user,
+            barcode="1234567890123456789012345678",
+            barcode_type="Identification",
+        )
+        newer_barcode = Barcode.objects.create(
+            user=self.user,
+            barcode="8765432109876543210987654321",
+            barcode_type="Identification",
+        )
+        older_last_used = timezone.now() - timedelta(days=1)
+        newer_last_used = timezone.now() - timedelta(minutes=2)
+
+        older_usage = BarcodeUsage.objects.create(
+            barcode=older_barcode,
+            total_usage=2,
+            total_usage_limit=4,
+            daily_usage_limit=1,
+        )
+        BarcodeUsage.objects.filter(pk=older_usage.pk).update(last_used=older_last_used)
+
+        newer_usage = BarcodeUsage.objects.create(
+            barcode=newer_barcode,
+            total_usage=3,
+            total_usage_limit=7,
+            daily_usage_limit=5,
+        )
+        BarcodeUsage.objects.filter(pk=newer_usage.pk).update(last_used=newer_last_used)
+
+        rotated_barcode = _create_identification_barcode(self.user)
+
+        self.assertEqual(
+            Barcode.objects.filter(
+                user=self.user, barcode_type="Identification"
+            ).count(),
+            1,
+        )
+        self.assertFalse(Barcode.objects.filter(pk=older_barcode.pk).exists())
+        self.assertFalse(Barcode.objects.filter(pk=newer_barcode.pk).exists())
+
+        usage_rows = BarcodeUsage.objects.filter(barcode=rotated_barcode)
+        self.assertEqual(usage_rows.count(), 1)
+
+        usage = usage_rows.get()
+        self.assertEqual(usage.total_usage, 5)
+        self.assertEqual(usage.total_usage_limit, 7)
+        self.assertEqual(usage.daily_usage_limit, 5)
+        self.assertEqual(usage.last_used, newer_last_used)
+
     def test_touch_barcode_usage_new_barcode(self):
         """Test updating usage for barcode without existing usage record"""
         barcode = Barcode.objects.create(
@@ -125,10 +178,6 @@ class BarcodeServiceTest(BarcodeServiceTestBase):
 
     def test_touch_barcode_usage_after_5_minutes(self):
         """Test that usage after 5 minutes is recorded"""
-        from datetime import timedelta
-
-        from django.utils import timezone
-
         barcode = Barcode.objects.create(
             user=self.user, barcode="1234567890123456", barcode_type="Others"
         )
@@ -153,6 +202,23 @@ class BarcodeServiceTest(BarcodeServiceTestBase):
         self.assertEqual(
             Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 2
         )
+
+    def test_touch_identification_usage_duplicate_within_5_minutes_uses_last_used(self):
+        """Test identification cooldown uses BarcodeUsage.last_used."""
+        barcode = Barcode.objects.create(
+            user=self.user,
+            barcode="1234567890123456789012345678",
+            barcode_type="Identification",
+        )
+        usage = BarcodeUsage.objects.create(barcode=barcode, total_usage=4)
+        recent_time = timezone.now() - timedelta(minutes=2)
+        BarcodeUsage.objects.filter(pk=usage.pk).update(last_used=recent_time)
+
+        _touch_barcode_usage(barcode, request_user=self.user)
+
+        usage.refresh_from_db()
+        self.assertEqual(usage.total_usage, 4)
+        self.assertEqual(Transaction.objects.filter(barcode_used=barcode).count(), 0)
 
     def test_touch_barcode_usage_different_users_within_5_minutes(self):
         """Test that different users can use the same barcode within 5 minutes"""

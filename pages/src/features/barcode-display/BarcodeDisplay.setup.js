@@ -1,4 +1,4 @@
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import '@material/web/icon/icon';
 
@@ -6,6 +6,7 @@ import '@material/web/icon/icon';
 import '@/assets/styles/school/school-merged.css';
 
 // Composable
+import { usePdf417 } from '@dashboard/composables/barcode/usePdf417.js';
 import { useScannerDetection } from '@/features/useScannerDetection.js';
 
 export const propsDefinition = {
@@ -37,6 +38,7 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
   const showBarcode = ref(false);
   const progressPercent = ref(100);
   const autoDisplayed = ref(false);
+  const renderError = ref('');
   let progressInterval = null;
   let autoDisplayTimeout = null;
 
@@ -82,15 +84,24 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
     videoRef: videoElement,
     canvasRef: detectionCanvas,
   });
+  const { drawPdf417 } = usePdf417();
 
-  function startProgressBar() {
-    progressPercent.value = 100;
-
+  function clearProgressBar() {
     if (progressInterval) {
       clearInterval(progressInterval);
+      progressInterval = null;
     }
+  }
 
-    const duration = 10000; // 10 seconds
+  function resetDisplayState() {
+    clearProgressBar();
+    progressPercent.value = 100;
+    showBarcode.value = false;
+  }
+
+  function startProgressBar(duration = 10000, onComplete = () => {}) {
+    progressPercent.value = 100;
+    clearProgressBar();
     const interval = 100; // Update every 100ms
     const decrement = 100 / (duration / interval);
 
@@ -98,11 +109,47 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
       progressPercent.value -= decrement;
       if (progressPercent.value <= 0) {
         progressPercent.value = 0;
-        clearInterval(progressInterval);
+        clearProgressBar();
         showBarcode.value = false;
-        // Note: Resume detection is handled by parent's handleGenerate()
+        onComplete();
       }
     }, interval);
+  }
+
+  async function renderBarcodeSequence(data, options = {}) {
+    const {
+      displayDuration = 10000,
+      moduleWidth = 2.5,
+      moduleHeight = 1,
+    } = options;
+
+    if (!data) {
+      renderError.value = 'Unable to display barcode';
+      throw new Error('Barcode data is required');
+    }
+
+    stopDetection();
+    renderError.value = '';
+    resetDisplayState();
+
+    await nextTick();
+
+    try {
+      await drawPdf417(barcodeCanvas.value, data, {
+        moduleWidth,
+        moduleHeight,
+      });
+    } catch (error) {
+      renderError.value = 'Unable to display barcode';
+      resetDisplayState();
+      throw error;
+    }
+
+    showBarcode.value = true;
+
+    return new Promise((resolve) => {
+      startProgressBar(displayDuration, resolve);
+    });
   }
 
   // Auto-start detection when enabled
@@ -152,9 +199,7 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
   });
 
   onUnmounted(() => {
-    if (progressInterval) {
-      clearInterval(progressInterval);
-    }
+    clearProgressBar();
     if (autoDisplayTimeout) {
       clearTimeout(autoDisplayTimeout);
     }
@@ -162,10 +207,9 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
   });
 
   const exposeBindings = {
-    barcodeCanvas,
-    showBarcode,
-    startProgressBar,
     isDetectionActive,
+    isBarcodeVisible: showBarcode,
+    renderBarcodeSequence,
     scannerDetected: autoDisplayed,
     startDetection,
   };
@@ -176,6 +220,7 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
     detectionCanvas,
     showBarcode,
     progressPercent,
+    renderError,
     isDetectionActive,
     isModelLoading,
     hasCameraPermission,

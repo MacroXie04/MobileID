@@ -1,15 +1,13 @@
-<!-- src/views/Home.vue -->
 <template>
   <div
-    v-if="loading"
+    v-if="pageLoading"
     class="md-loading-container md-flex md-flex-column md-items-center md-justify-center md-theme-dark"
   >
     <md-circular-progress indeterminate></md-circular-progress>
     <p class="md-typescale-body-large md-mt-4">Loading...</p>
   </div>
 
-  <HomeSchoolView v-else-if="!apiError" />
-  <div v-else class="error-page md-flex md-items-center md-justify-center md-p-6">
+  <div v-else-if="apiError" class="error-page md-flex md-items-center md-justify-center md-p-6">
     <div class="error-content md-card md-rounded-xl md-p-8 md-text-center md-max-w-lg">
       <div class="error-icon-wrapper md-flex md-justify-center md-mb-6">
         <div class="error-icon md-flex md-items-center md-justify-center">
@@ -37,10 +35,59 @@
       </md-filled-button>
     </div>
   </div>
+
+  <div v-else class="home-container">
+    <Header />
+
+    <UserProfile
+      :avatar-src="avatarSrc"
+      :barcode-visible="isBarcodeVisible"
+      :is-refreshing-token="isRefreshingToken"
+      :loading="homeLoading"
+      :profile="profile"
+      @generate="handleGenerate"
+    />
+
+    <BarcodeDisplay
+      ref="barcodeDisplayRef"
+      :scanner-detection-enabled="scannerDetectionEnabled"
+      :prefer-front-camera="preferFrontCamera"
+      @generate="handleGenerate"
+    />
+
+    <GridMenu
+      :server-status="serverStatus"
+      :scanner-detection-enabled="scannerDetectionEnabled"
+      :is-detection-active="isDetectionActive"
+      :scanner-detected="scannerDetected"
+    />
+  </div>
 </template>
 
 <script setup>
-import { HomeSchoolView, useHomeViewSetup } from './HomeView.setup.js';
+import {
+  Header,
+  UserProfile,
+  BarcodeDisplay,
+  GridMenu,
+  useHomeViewSetup,
+} from './HomeView.setup.js';
 
-const { loading, apiError, retryConnection } = useHomeViewSetup();
+const {
+  pageLoading,
+  apiError,
+  retryConnection,
+  profile,
+  avatarSrc,
+  homeLoading,
+  serverStatus,
+  barcodeDisplayRef,
+  isRefreshingToken,
+  scannerDetectionEnabled,
+  preferFrontCamera,
+  handleGenerate,
+  isDetectionActive,
+  isBarcodeVisible,
+  scannerDetected,
+} = useHomeViewSetup();
 </script>

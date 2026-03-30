@@ -1,13 +1,11 @@
-import { nextTick, onMounted, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { userInfo } from '@shared/api/auth';
 import { getUserInfo, setUserInfo } from '@shared/state/authState';
 import { useUserInfo } from '@user/composables/useUserInfo';
 import { useToken } from '@auth/composables/useToken';
 import { useApi } from '@shared/composables/useApi';
-import { usePdf417 } from '@dashboard/composables/barcode/usePdf417';
-import { animateBarcodeSequence } from '@shared/utils/common/jQueryAnimations.js';
 
-export function useHomeSchoolLogic() {
+export function useHomeLogic() {
   // State
   const loading = ref(false);
   const serverStatus = ref('Emergency');
@@ -21,7 +19,6 @@ export function useHomeSchoolLogic() {
   const { profile, avatarSrc: defaultAvatarSrc, loadAvatar, loadUserProfile } = useUserInfo();
   const { isRefreshingToken } = useToken();
   const { apiGenerateBarcode, apiGetActiveProfile, apiGetBarcodeDashboard } = useApi();
-  const { drawPdf417 } = usePdf417();
 
   // Create a new ref for avatarSrc that can be overridden
   const avatarSrc = ref(defaultAvatarSrc.value);
@@ -47,7 +44,7 @@ export function useHomeSchoolLogic() {
           }
         }
       } catch (error) {
-        console.error('HomeSchool: Failed to refresh user info:', error);
+        console.error('Home: Failed to refresh user info:', error);
       }
     } else if (cached && cached.profile) {
       // Update profile from cached auth state
@@ -58,7 +55,7 @@ export function useHomeSchoolLogic() {
     try {
       await loadUserProfile(forceRefresh);
     } catch (error) {
-      console.error('HomeSchool: Failed to reload user profile:', error);
+      console.error('Home: Failed to reload user profile:', error);
     }
 
     // Load user avatar
@@ -66,14 +63,9 @@ export function useHomeSchoolLogic() {
 
     // Check for active profile (for School users with barcode profile association)
     try {
-      console.log('HomeSchool: Fetching active profile...');
       const response = await apiGetActiveProfile();
-      console.log('HomeSchool: Active profile response:', response);
 
       if (response && response.profile_info) {
-        console.log('HomeSchool: Profile info found:', response.profile_info);
-        console.log('HomeSchool: Current profile before update:', profile.value);
-
         // Override with barcode profile info
         profile.value = {
           name: response.profile_info.name,
@@ -82,17 +74,11 @@ export function useHomeSchoolLogic() {
 
         // Update avatar if provided
         if (response.profile_info.avatar_data) {
-          console.log('HomeSchool: Updating avatar with profile data');
           avatarSrc.value = response.profile_info.avatar_data;
         }
-
-        console.log('HomeSchool: Profile updated to:', profile.value);
-        console.log('HomeSchool: Avatar updated to:', avatarSrc.value?.substring(0, 50) + '...');
-      } else {
-        console.log('HomeSchool: No active profile info returned, using default profile');
       }
     } catch (error) {
-      console.error('HomeSchool: Failed to load active profile:', error);
+      console.error('Home: Failed to load active profile:', error);
     }
   }
 
@@ -107,35 +93,36 @@ export function useHomeSchoolLogic() {
       if (status === 'success' && barcode) {
         // Update profile if profile_info is returned (for School users with associate_user_profile_with_barcode)
         if (profile_info) {
-          console.log('HomeSchool: Generate barcode returned profile info:', profile_info);
           profile.value = {
             name: profile_info.name,
             information_id: profile_info.information_id,
           };
           // Update avatar if provided
           if (profile_info.avatar_data) {
-            console.log('HomeSchool: Updating avatar from generate barcode response');
             avatarSrc.value = profile_info.avatar_data;
           }
-          console.log('HomeSchool: Profile updated from generate response to:', profile.value);
-        } else {
-          console.log('HomeSchool: No profile_info in generate barcode response');
-        }
-        // First generate the barcode
-        await nextTick();
-
-        // Get canvas from BarcodeDisplay component
-        const canvas = barcodeDisplayRef.value?.barcodeCanvas;
-        if (canvas) {
-          drawPdf417(canvas, barcode);
         }
 
-        // Use animation utility for barcode sequence
-        await animateBarcodeSequence({
-          displayDuration: 10000,
-          fadeInDuration: 400,
-          fadeOutDuration: 400,
-        });
+        const barcodeDisplay = barcodeDisplayRef.value;
+        if (!barcodeDisplay || typeof barcodeDisplay.renderBarcodeSequence !== 'function') {
+          serverStatus.value = 'Unable to display barcode';
+          return;
+        }
+
+        try {
+          await barcodeDisplay.renderBarcodeSequence(barcode, {
+            displayDuration: 10000,
+          });
+        } catch (error) {
+          serverStatus.value = 'Unable to display barcode';
+
+          if (scannerDetectionEnabled.value && typeof barcodeDisplay.startDetection === 'function') {
+            await barcodeDisplay.startDetection();
+          }
+
+          console.error('Home: Failed to render barcode:', error);
+          return;
+        }
 
         // Reset server status back to Emergency after animation completes
         serverStatus.value = 'Emergency';
@@ -145,9 +132,11 @@ export function useHomeSchoolLogic() {
           // Access the startDetection method from the component's exposeBindings
           const startDetection = barcodeDisplayRef.value?.startDetection;
           if (typeof startDetection === 'function') {
-            startDetection();
+            await startDetection();
           }
         }
+      } else {
+        serverStatus.value = message || 'Error';
       }
     } catch (err) {
       // Handle different types of errors
@@ -181,20 +170,15 @@ export function useHomeSchoolLogic() {
           data.settings.prefer_front_camera !== undefined
             ? Boolean(data.settings.prefer_front_camera)
             : true;
-        console.log('HomeSchool: Scanner detection settings loaded:', {
-          enabled: scannerDetectionEnabled.value,
-          preferFront: preferFrontCamera.value,
-        });
       }
     } catch (error) {
-      console.error('HomeSchool: Failed to load scanner settings:', error);
+      console.error('Home: Failed to load scanner settings:', error);
     }
   }
 
-  /* ── lifecycle ──────────────────────────────────────────────────────────── */
-  onMounted(async () => {
+  async function initializeHome() {
     await Promise.all([refreshProfileData(), loadScannerSettings()]);
-  });
+  }
 
   return {
     profile,
@@ -203,9 +187,9 @@ export function useHomeSchoolLogic() {
     serverStatus,
     barcodeDisplayRef,
     isRefreshingToken,
-    userInfoLoading: false, // exposed but not separately tracked here, reusing loading or just passing false if not needed
     scannerDetectionEnabled,
     preferFrontCamera,
     handleGenerate,
+    initializeHome,
   };
 }

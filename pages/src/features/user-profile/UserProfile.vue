@@ -18,21 +18,35 @@
       {{ profile.name }}
     </h4>
 
-    <h4 id="information_id" class="white-h4 profile-info-id">
-      {{ profile.information_id }}
-    </h4>
-
-    <div id="show-info-button" class="profile-button-container">
-      <button
-        :disabled="loading || isRefreshingToken"
-        class="btn btn-trans btn-trans-default"
-        @click="handleGenerate"
+    <transition name="slide-up">
+      <h4
+        id="information_id"
+        class="white-h4 profile-info-id"
+        :aria-hidden="String(!props.barcodeVisible)"
+        v-show="props.barcodeVisible"
       >
-        <b>{{
-          isRefreshingToken ? 'Refreshing Token...' : loading ? 'Processing…' : 'PAY / Check-in'
-        }}</b>
-      </button>
-    </div>
+        {{ profile.information_id }}
+      </h4>
+    </transition>
+
+    <transition name="fade">
+      <div
+        id="show-info-button"
+        class="profile-button-container"
+        :aria-hidden="String(props.barcodeVisible)"
+        v-show="!props.barcodeVisible"
+      >
+        <button
+          :disabled="loading || isRefreshingToken"
+          class="btn btn-trans btn-trans-default"
+          @click="handleGenerate"
+        >
+          <b>{{
+            isRefreshingToken ? 'Refreshing Token...' : loading ? 'Processing…' : 'PAY / Check-in'
+          }}</b>
+        </button>
+      </div>
+    </transition>
   </div>
 </template>
 

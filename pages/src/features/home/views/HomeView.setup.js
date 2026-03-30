@@ -1,20 +1,50 @@
-import { onMounted, ref } from 'vue';
-import HomeSchoolView from './HomeSchoolView.vue';
+import { computed, onMounted, ref } from 'vue';
 import { getUserInfo, getApiError } from '@shared/state/authState';
+import { useHomeLogic } from '@home/composables/useHomeLogic.js';
+import Header from '@/features/header/Header.vue';
+import UserProfile from '@/features/user-profile/UserProfile.vue';
+import BarcodeDisplay from '@/features/barcode-display/BarcodeDisplay.vue';
+import GridMenu from '@/features/grid-menu/GridMenu.vue';
 import '@/assets/styles/home/home-merged.css';
+import '@/assets/styles/home/Home.css';
 
-export { HomeSchoolView };
+export { Header, UserProfile, BarcodeDisplay, GridMenu };
 
 export function useHomeViewSetup() {
-  const loading = ref(true);
+  const pageLoading = ref(true);
   const apiError = ref(null);
 
-  onMounted(() => {
+  const {
+    profile,
+    avatarSrc,
+    loading: homeLoading,
+    serverStatus,
+    barcodeDisplayRef,
+    isRefreshingToken,
+    scannerDetectionEnabled,
+    preferFrontCamera,
+    handleGenerate,
+    initializeHome,
+  } = useHomeLogic();
+
+  const isDetectionActive = computed(() => {
+    return barcodeDisplayRef.value?.isDetectionActive ?? false;
+  });
+
+  const isBarcodeVisible = computed(() => {
+    return barcodeDisplayRef.value?.isBarcodeVisible ?? false;
+  });
+
+  const scannerDetected = computed(() => {
+    return barcodeDisplayRef.value?.scannerDetected ?? false;
+  });
+
+  onMounted(async () => {
     // Check if API error occurred (connection failed)
     const storedError = getApiError();
     if (storedError) {
       apiError.value = storedError;
-      loading.value = false;
+      pageLoading.value = false;
       return;
     }
 
@@ -22,9 +52,12 @@ export function useHomeViewSetup() {
     const data = getUserInfo();
     if (!data) {
       apiError.value = 'Unable to load user data';
+      pageLoading.value = false;
+      return;
     }
 
-    loading.value = false;
+    await initializeHome();
+    pageLoading.value = false;
   });
 
   // Retry connection function
@@ -32,5 +65,21 @@ export function useHomeViewSetup() {
     window.location.reload();
   }
 
-  return { loading, apiError, retryConnection };
+  return {
+    pageLoading,
+    apiError,
+    retryConnection,
+    profile,
+    avatarSrc,
+    homeLoading,
+    serverStatus,
+    barcodeDisplayRef,
+    isRefreshingToken,
+    scannerDetectionEnabled,
+    preferFrontCamera,
+    handleGenerate,
+    isDetectionActive,
+    isBarcodeVisible,
+    scannerDetected,
+  };
 }
