@@ -3,7 +3,6 @@ from datetime import timedelta
 from django.contrib.auth.models import User
 from django.test import override_settings
 from django.urls import reverse
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 from rest_framework_simplejwt.token_blacklist.models import (
@@ -33,9 +32,7 @@ class _DeviceTestMixin:
         _ensure_outstanding_token(str(refresh))
 
         # Find the OutstandingToken just created
-        token = OutstandingToken.objects.filter(
-            user=user, jti=refresh["jti"]
-        ).first()
+        token = OutstandingToken.objects.filter(user=user, jti=refresh["jti"]).first()
 
         # Shift created_at if requested (to simulate sessions from different times)
         if time_offset and token:
@@ -59,9 +56,7 @@ class _DeviceTestMixin:
 
     def _auth_with_session(self, client, refresh):
         """Authenticate the API client with the given refresh token's access token."""
-        client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
 
 @override_settings(THROTTLES_ENABLED=False)
@@ -116,9 +111,18 @@ class DeviceListingTests(_DeviceTestMixin, APITestCase):
         # Verify all expected fields are present
         device = response.data["devices"][0]
         expected_fields = {
-            "id", "jti", "device_name", "browser", "os", "device_type",
-            "ip_address", "user_agent", "created_at", "expires_at",
-            "last_active", "is_current",
+            "id",
+            "jti",
+            "device_name",
+            "browser",
+            "os",
+            "device_type",
+            "ip_address",
+            "user_agent",
+            "created_at",
+            "expires_at",
+            "last_active",
+            "is_current",
         }
         self.assertTrue(expected_fields.issubset(set(device.keys())))
 
@@ -184,9 +188,7 @@ class DeviceRevocationTests(_DeviceTestMixin, APITestCase):
 
     def test_revoke_device_success(self):
         refresh1, _ = self._create_session(self.user)
-        _, token2 = self._create_session(
-            self.user, time_offset=timedelta(minutes=-10)
-        )
+        _, token2 = self._create_session(self.user, time_offset=timedelta(minutes=-10))
 
         self._auth_with_session(self.client, refresh1)
         url = reverse("authn:api_device_revoke", args=[token2.id])
@@ -228,9 +230,7 @@ class DeviceRevocationTests(_DeviceTestMixin, APITestCase):
 
     def test_revoke_device_already_revoked_returns_400(self):
         refresh1, _ = self._create_session(self.user)
-        _, token2 = self._create_session(
-            self.user, time_offset=timedelta(minutes=-10)
-        )
+        _, token2 = self._create_session(self.user, time_offset=timedelta(minutes=-10))
 
         BlacklistedToken.objects.create(token=token2)
 
@@ -243,9 +243,7 @@ class DeviceRevocationTests(_DeviceTestMixin, APITestCase):
 
     def test_revoke_device_via_post_method(self):
         refresh1, _ = self._create_session(self.user)
-        _, token2 = self._create_session(
-            self.user, time_offset=timedelta(minutes=-10)
-        )
+        _, token2 = self._create_session(self.user, time_offset=timedelta(minutes=-10))
 
         self._auth_with_session(self.client, refresh1)
         url = reverse("authn:api_device_revoke", args=[token2.id])

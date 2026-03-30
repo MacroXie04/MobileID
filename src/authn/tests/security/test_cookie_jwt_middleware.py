@@ -26,9 +26,7 @@ class CookieJWTAuthenticationTests(APITestCase):
 
     def test_authenticate_from_authorization_header(self):
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
         response = self.client.get(self.auth_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["username"], "cookieuser")
@@ -57,10 +55,13 @@ class CookieJWTAuthenticationTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
         response = self.client.get(self.auth_url)
         # Should be rejected (401 or 403)
-        self.assertIn(response.status_code, [
-            status.HTTP_401_UNAUTHORIZED,
-            status.HTTP_403_FORBIDDEN,
-        ])
+        self.assertIn(
+            response.status_code,
+            [
+                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_403_FORBIDDEN,
+            ],
+        )
 
     def test_session_revocation_window_rejects_token(self):
         refresh = RefreshToken.for_user(self.user)
@@ -75,10 +76,13 @@ class CookieJWTAuthenticationTests(APITestCase):
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
         response = self.client.get(self.auth_url)
-        self.assertIn(response.status_code, [
-            status.HTTP_401_UNAUTHORIZED,
-            status.HTTP_403_FORBIDDEN,
-        ])
+        self.assertIn(
+            response.status_code,
+            [
+                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_403_FORBIDDEN,
+            ],
+        )
 
     def test_cookie_auth_post_requires_csrf(self):
         """POST with cookie auth but no CSRF token should fail."""

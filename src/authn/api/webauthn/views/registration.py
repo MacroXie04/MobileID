@@ -60,7 +60,10 @@ def api_register(request):
             return Response(
                 {
                     "success": True,
-                    "message": "Registration successful. Your account is pending activation by an administrator.",
+                    "message": (
+                        "Registration successful. Your account is pending "
+                        "activation by an administrator."
+                    ),
                     "activated": False,
                 },
             )

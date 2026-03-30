@@ -6,7 +6,7 @@ import '@material/web/icon/icon';
 import '@/assets/styles/school/school-merged.css';
 
 // Composable
-import { useScannerDetection } from '@school/composables/useScannerDetection.js';
+import { useScannerDetection } from '@/features/useScannerDetection.js';
 
 export const propsDefinition = {
   scannerDetectionEnabled: {

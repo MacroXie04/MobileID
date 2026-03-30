@@ -28,7 +28,8 @@ def check_cache_backend_for_multi_worker(app_configs, **kwargs):
                     "Set CACHE_BACKEND to a shared backend "
                     "(e.g. django.core.cache.backends.db.DatabaseCache) "
                     "when GUNICORN_WORKERS > 1. LocMemCache is per-process "
-                    "and will cause throttle counters and session state to diverge across workers."
+                    "and will cause throttle counters and session state "
+                    "to diverge across workers."
                 ),
                 id="core.E001",
             )

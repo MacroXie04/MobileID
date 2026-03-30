@@ -1,4 +1,4 @@
-import { useSchoolProfileLogic } from '@school/composables/useSchoolProfileLogic.js';
+import { useSchoolProfileLogic } from '@/features/useSchoolProfileLogic.js';
 import '@/assets/styles/school/school-merged.css';
 
 export const propsDefinition = {

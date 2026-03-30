@@ -123,7 +123,10 @@ describe('useAutoSave', () => {
     it('should not call save concurrently when already saving', async () => {
       let resolveFirst;
       saveFn.mockImplementationOnce(
-        () => new Promise((resolve) => { resolveFirst = resolve; })
+        () =>
+          new Promise((resolve) => {
+            resolveFirst = resolve;
+          })
       );
 
       const { performAutoSave, markChanged, autoSaving } = useAutoSave(saveFn);
@@ -144,7 +147,10 @@ describe('useAutoSave', () => {
     it('should skip queued save when no changes remain after save completes', async () => {
       let resolveFirst;
       saveFn.mockImplementationOnce(
-        () => new Promise((resolve) => { resolveFirst = resolve; })
+        () =>
+          new Promise((resolve) => {
+            resolveFirst = resolve;
+          })
       );
 
       const { performAutoSave, markChanged } = useAutoSave(saveFn, { debounceMs: 100 });

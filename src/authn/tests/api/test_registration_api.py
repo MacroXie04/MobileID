@@ -25,15 +25,16 @@ class UserRegistrationAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["success"])
-        self.assertEqual(response.data["message"], "Registration successful")
+        self.assertIn("Registration successful", response.data["message"])
 
         user = User.objects.get(username="newuser")
         self.assertTrue(hasattr(user, "userprofile"))
         self.assertEqual(user.userprofile.name, "New User")
         self.assertEqual(len(user.userprofile.information_id), 9)
         self.assertTrue(user.userprofile.information_id.isdigit())
-        self.assertIn("access_token", response.cookies)
-        self.assertIn("refresh_token", response.cookies)
+        self.assertFalse(
+            user.is_active, "New users should be inactive until admin activation"
+        )
 
     def test_registration_with_avatar(self):
         cache.clear()

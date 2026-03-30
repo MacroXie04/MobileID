@@ -1,5 +1,6 @@
 """
-Tests for security-related settings — passwords, CSRF, cookies, admin, and account lockout.
+Tests for security-related settings: passwords, CSRF,
+cookies, admin, and account lockout.
 """
 
 from django.conf import settings

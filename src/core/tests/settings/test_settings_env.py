@@ -1,5 +1,6 @@
 """
-Tests for environment variable handling, cache, database, and testing mode configuration.
+Tests for environment variable handling, cache, database,
+and testing mode configuration.
 """
 
 import os

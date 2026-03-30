@@ -220,7 +220,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.34.1
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: "mobileid-backend:scan"
           format: "table"
@@ -231,7 +231,7 @@ jobs:
           trivyignores: src/.trivyignore
 
       - name: Run Trivy and save JSON report
-        uses: aquasecurity/trivy-action@0.34.1
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: "mobileid-backend:scan"
           format: "json"
@@ -250,7 +250,7 @@ jobs:
           retention-days: 30
 
       - name: Fail on high/critical vulnerabilities
-        uses: aquasecurity/trivy-action@0.34.1
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: "mobileid-backend:scan"
           format: "table"

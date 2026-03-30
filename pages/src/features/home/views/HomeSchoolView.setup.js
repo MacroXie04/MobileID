@@ -5,10 +5,10 @@ import { useHomeSchoolLogic } from '@home/composables/useHomeSchoolLogic.js';
 import '@/assets/styles/home/HomeSchool.css';
 
 // Components
-import Header from '@school/components/header/Header.vue';
-import UserProfile from '@school/components/user-profile/UserProfile.vue';
-import BarcodeDisplay from '@school/components/barcode-display/BarcodeDisplay.vue';
-import GridMenu from '@school/components/grid-menu/GridMenu.vue';
+import Header from '@/features/header/Header.vue';
+import UserProfile from '@/features/user-profile/UserProfile.vue';
+import BarcodeDisplay from '@/features/barcode-display/BarcodeDisplay.vue';
+import GridMenu from '@/features/grid-menu/GridMenu.vue';
 
 export { Header, UserProfile, BarcodeDisplay, GridMenu };
 

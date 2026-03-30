@@ -9,9 +9,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ..forms import UserRegisterForm
+from ..helpers import _b64_any_to_bytes
 
 MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
-from ..helpers import _b64_any_to_bytes
 
 
 @api_view(["GET"])

@@ -10,7 +10,9 @@ from authn.models import AccessTokenBlacklist
 class AccessTokenBlacklistModelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user(username="blacklist_user", password="pass123")
+        cls.user = User.objects.create_user(
+            username="blacklist_user", password="pass123"
+        )
 
     def test_blacklist_token_creates_entry(self):
         expires = timezone.now() + timedelta(hours=1)
@@ -24,9 +26,7 @@ class AccessTokenBlacklistModelTests(TestCase):
         expires = timezone.now() + timedelta(hours=1)
         AccessTokenBlacklist.blacklist_token("jti-idem", self.user, expires)
         AccessTokenBlacklist.blacklist_token("jti-idem", self.user, expires)
-        self.assertEqual(
-            AccessTokenBlacklist.objects.filter(jti="jti-idem").count(), 1
-        )
+        self.assertEqual(AccessTokenBlacklist.objects.filter(jti="jti-idem").count(), 1)
 
     def test_is_blacklisted_returns_true(self):
         AccessTokenBlacklist.objects.create(
@@ -47,7 +47,9 @@ class AccessTokenBlacklistModelTests(TestCase):
         )
         deleted_count, _ = AccessTokenBlacklist.cleanup_expired()
         self.assertEqual(deleted_count, 1)
-        self.assertFalse(AccessTokenBlacklist.objects.filter(jti="jti-expired").exists())
+        self.assertFalse(
+            AccessTokenBlacklist.objects.filter(jti="jti-expired").exists()
+        )
 
     def test_cleanup_expired_preserves_active_entries(self):
         AccessTokenBlacklist.objects.create(

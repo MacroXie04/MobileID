@@ -14,8 +14,8 @@
           </div>
           <h2 class="md-typescale-headline-medium md-mb-2">Account Pending Activation</h2>
           <p class="md-typescale-body-large md-mb-6">
-            Your account has been created but is not yet activated.
-            Please wait for an administrator to activate your account.
+            Your account has been created but is not yet activated. Please wait for an administrator
+            to activate your account.
           </p>
           <md-filled-button class="submit-button" @click="handleLogout">
             <md-icon slot="icon">logout</md-icon>
