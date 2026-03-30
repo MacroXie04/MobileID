@@ -1,0 +1,133 @@
+from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIClient, APITestCase
+
+
+class UserRegistrationAPITest(APITestCase):
+    """Test user registration API"""
+
+    def setUp(self):
+        self.client = APIClient()
+        cache.clear()
+        self.registration_data = {
+            "username": "newuser",
+            "password1": "newpass123",
+            "password2": "newpass123",
+            "name": "New User",
+        }
+
+    def test_registration_success(self):
+        cache.clear()
+        url = reverse("authn:api_register")
+        response = self.client.post(url, self.registration_data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["success"])
+        self.assertIn("Registration successful", response.data["message"])
+
+        user = User.objects.get(username="newuser")
+        self.assertTrue(hasattr(user, "userprofile"))
+        self.assertEqual(user.userprofile.name, "New User")
+        self.assertEqual(len(user.userprofile.information_id), 9)
+        self.assertTrue(user.userprofile.information_id.isdigit())
+        self.assertFalse(
+            user.is_active, "New users should be inactive until admin activation"
+        )
+
+    def test_registration_allows_single_character_password(self):
+        cache.clear()
+        data = self.registration_data.copy()
+        data["username"] = "weak-pass-user"
+        data["password1"] = "1"
+        data["password2"] = "1"
+
+        url = reverse("authn:api_register")
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["success"])
+
+        user = User.objects.get(username="weak-pass-user")
+        self.assertTrue(user.check_password("1"))
+        self.assertTrue(hasattr(user, "userprofile"))
+        self.assertFalse(user.is_active)
+
+    def test_registration_with_avatar(self):
+        cache.clear()
+        data = self.registration_data.copy()
+        data["username"] = "newuser-avatar"
+        data["user_profile_img_base64"] = (
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+"
+            "hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        )
+
+        url = reverse("authn:api_register")
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user = User.objects.get(username="newuser-avatar")
+        self.assertIsNotNone(user.userprofile.user_profile_img)
+
+    def test_information_id_generated_server_side(self):
+        cache.clear()
+        data = self.registration_data.copy()
+        data["username"] = "client-supplied-id"
+        data["information_id"] = "CLIENT123"  # should be ignored by server
+
+        url = reverse("authn:api_register")
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user = User.objects.get(username="client-supplied-id")
+        self.assertNotEqual(user.userprofile.information_id, "CLIENT123")
+        self.assertEqual(len(user.userprofile.information_id), 9)
+        self.assertTrue(user.userprofile.information_id.isdigit())
+
+    def test_registration_missing_fields(self):
+        data = {"username": "newuser", "password1": "newpass123"}
+
+        url = reverse("authn:api_register")
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(response.data["success"])
+        self.assertIn("errors", response.data)
+        self.assertIn("name", response.data["errors"])
+        self.assertIn("password2", response.data["errors"])
+
+    def test_registration_password_mismatch(self):
+        data = self.registration_data.copy()
+        data["password2"] = "differentpass"
+
+        url = reverse("authn:api_register")
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(response.data["success"])
+
+    def test_registration_duplicate_username(self):
+        User.objects.create_user(username="newuser", password="pass123")
+
+        url = reverse("authn:api_register")
+        response = self.client.post(url, self.registration_data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(response.data["success"])
+
+    def test_registration_invalid_avatar(self):
+        data = self.registration_data.copy()
+        data["user_profile_img_base64"] = "invalid-base64-data"
+
+        url = reverse("authn:api_register")
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(response.data["success"])
+
+    def test_registration_rate_limit(self):
+        url = reverse("authn:api_register")
+
+        response1 = self.client.post(url, self.registration_data, format="json")
+        self.assertIn(response1.status_code, [200, 429])

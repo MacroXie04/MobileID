@@ -8,13 +8,8 @@ import { baseURL } from '@app/config/config';
 // Global Material 3 Styles
 import '@/assets/styles/shared/tokens.css';
 
-// Cropper.js
-import 'cropperjs/dist/cropper.css';
-
-// Local jQuery (for legacy jQuery animations used in HomeSchool)
-import $ from 'jquery';
-// Material Web - Import all components and the typescale styles
-import '@material/web/all.js';
+// Material Web - Import only the components actually used
+import '@shared/material-web.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
 
 // Local fonts (replace Google Fonts CDN)
@@ -26,9 +21,6 @@ import '@fontsource/open-sans/600.css';
 import '@fontsource/roboto-mono/400.css';
 // Optional: Material Symbols Outlined as local font (if <md-icon> uses glyphs)
 import '@fontsource/material-symbols-outlined/400.css';
-
-window.$ = $;
-window.jQuery = $;
 
 const app = createApp(App);
 

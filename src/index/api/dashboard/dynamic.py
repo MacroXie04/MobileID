@@ -13,23 +13,12 @@ from index.services.transactions import TransactionService
 class DynamicBarcodeCreateAPIView(APIView):
     """
     API endpoint for creating dynamic barcodes with profile information.
-    Only School group users can use this endpoint.
     """
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         """Create a new dynamic barcode with profile data"""
-        # Check if user is in School group
-        if not request.user.groups.filter(name="School").exists():
-            return Response(
-                {
-                    "status": "error",
-                    "message": "Only School group users can create dynamic barcodes",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         serializer = DynamicBarcodeWithProfileSerializer(
             data=request.data, context={"request": request}
         )

@@ -8,6 +8,10 @@ const hasCameraPermission = ref(false);
 const isCheckingPermission = ref(false);
 const permissionDenied = ref(false);
 
+// Track listener for cleanup
+let permissionChangeHandler = null;
+let permissionStatusRef = null;
+
 // Check existing permission on module load
 checkExistingPermission();
 
@@ -31,8 +35,13 @@ async function checkExistingPermission() {
         permissionDenied.value = true;
       }
 
+      // Clean up previous listener if any
+      if (permissionStatusRef && permissionChangeHandler) {
+        permissionStatusRef.removeEventListener('change', permissionChangeHandler);
+      }
+
       // Listen for permission changes
-      result.addEventListener('change', () => {
+      permissionChangeHandler = () => {
         if (result.state === 'granted') {
           hasCameraPermission.value = true;
           permissionDenied.value = false;
@@ -43,7 +52,9 @@ async function checkExistingPermission() {
           hasCameraPermission.value = false;
           permissionDenied.value = false;
         }
-      });
+      };
+      permissionStatusRef = result;
+      result.addEventListener('change', permissionChangeHandler);
     }
   } catch (_err) {
     // Permissions API may not be supported, that's ok

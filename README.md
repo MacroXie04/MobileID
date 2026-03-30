@@ -25,7 +25,7 @@ MobileID provides a comprehensive platform for generating, managing, and authent
 - **Framework**: Django 5.2+ with Django REST Framework
 - **Authentication**: JWT tokens with cookie-based storage
 - **Database**: SQLite (development), MySQL/PostgreSQL (production)
-- **Security**: WebAuthn integration, CORS configuration, CSRF protection, RSA password encryption
+- **Security**: WebAuthn integration, CORS configuration, CSRF protection
 
 ### Frontend (Vue.js SPA)
 
@@ -208,7 +208,7 @@ The application uses environment variables for configuration. Create a `.env` fi
 
 ### Authentication
 
-- `POST /authn/login/` - User login (RSA encrypted)
+- `POST /authn/login/` - User login
 - `POST /authn/register/` - User registration
 - `POST /authn/logout/` - User logout
 - `GET /authn/user-info/` - Get current user information

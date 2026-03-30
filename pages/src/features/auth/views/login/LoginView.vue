@@ -10,6 +10,14 @@
     <!-- Main Content -->
     <main class="auth-main">
       <div class="auth-card md-card md-rounded-xl">
+        <!-- Registration Success Banner -->
+        <div v-if="registrationSuccess" class="md-banner md-banner-success md-mb-4">
+          <md-icon>check_circle</md-icon>
+          <span class="md-typescale-body-medium">
+            Registration successful! Your account is pending activation by an administrator.
+          </span>
+        </div>
+
         <!-- Login Form -->
         <form class="auth-form" novalidate @submit.prevent="handleSubmit">
           <div class="form-fields">
@@ -85,6 +93,7 @@ const {
   formData,
   loading,
   showPassword,
+  registrationSuccess,
   submitBtn,
   errors,
   clearError,

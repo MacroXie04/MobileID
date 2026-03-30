@@ -560,3 +560,7 @@ pages/.output/
 #  Database Exports
 # ===================================================================
 !/cloudsql-exports/
+
+# Personal notes
+back.md
+data.md

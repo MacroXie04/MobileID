@@ -4,10 +4,14 @@ Admin audit logging middleware.
 Logs all admin access and actions for security auditing.
 """
 
+import logging
+
 from django.conf import settings
 from django.db import transaction
 
 from core.models import AdminAuditLog
+
+logger = logging.getLogger(__name__)
 
 
 class AdminAuditMiddleware:
@@ -26,11 +30,11 @@ class AdminAuditMiddleware:
         if not request.path.startswith(self.admin_path):
             return self.get_response(request)
 
-        # Log admin access
-        if request.user.is_authenticated and request.user.is_staff:
-            self._log_admin_access(request)
-
         response = self.get_response(request)
+
+        # Log admin access after processing so we know the response status
+        if request.user.is_authenticated and request.user.is_staff:
+            self._log_admin_access(request, response)
 
         # Log logout if it happened
         if request.path.endswith("/logout/") and request.user.is_authenticated:
@@ -38,7 +42,7 @@ class AdminAuditMiddleware:
 
         return response
 
-    def _log_admin_access(self, request):
+    def _log_admin_access(self, request, response=None):
         """
         Log admin page access.
 
@@ -70,8 +74,9 @@ class AdminAuditMiddleware:
             # For other POST requests, log as action
             action = AdminAuditLog.ACTION
 
-        # Log the action
-        self._log_admin_action(request, action, resource=resource, success=True)
+        # Determine success from response status code
+        success = response is None or (200 <= response.status_code < 400)
+        self._log_admin_action(request, action, resource=resource, success=success)
 
     def _log_admin_action(
         self, request, action, resource="", success=True, details=None
@@ -95,7 +100,7 @@ class AdminAuditMiddleware:
                 )
         except Exception:
             # Don't let audit logging break the request
-            pass
+            logger.exception("Failed to write admin audit log")
 
     def _extract_resource(self, path):
         """
@@ -138,7 +143,7 @@ def log_admin_login(request, user, success=True):
             details={"username": getattr(user, "username", "") if user else ""},
         )
     except Exception:
-        pass
+        logger.exception("Failed to log admin login")
 
 
 def log_admin_logout(request, user):
@@ -155,7 +160,7 @@ def log_admin_logout(request, user):
             user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
         )
     except Exception:
-        pass
+        logger.exception("Failed to log admin logout")
 
 
 def _get_client_ip_from_request(request):

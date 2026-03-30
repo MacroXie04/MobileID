@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { userInfo } from '@shared/api/auth';
 import { refreshToken } from '@shared/utils/tokenRefresh';
+import { getUserInfo, setUserInfo, isUserInfoStale, setApiError } from '@shared/state/authState';
 
 const routes = [
   {
@@ -26,16 +27,22 @@ const routes = [
     redirect: '/privacy',
   },
   {
+    path: '/pending',
+    name: 'pending-activation',
+    component: () => import('@auth/views/pending/PendingActivationView.vue'),
+    meta: { requiresAuth: true, feature: 'auth' },
+  },
+  {
     path: '/',
     name: 'home',
     component: () => import('@home/views/HomeView.vue'),
-    meta: { requiresAuth: true, feature: 'home' },
+    meta: { requiresAuth: true, requiresActivation: true, feature: 'home' },
   },
   {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('@dashboard/views/MobileIDDashboardView.vue'),
-    meta: { requiresAuth: true, feature: 'dashboard' },
+    meta: { requiresAuth: true, requiresActivation: true, feature: 'dashboard' },
   },
   {
     path: '/:pathMatch(.*)*',
@@ -53,47 +60,39 @@ router.beforeEach(async (to, _from, next) => {
   try {
     if (!to.meta.requiresAuth) return next();
 
-    // If already cached, check access
-    if (window.userInfo) {
-      // Check if User type trying to access barcode dashboard
-      if (
-        to.path === '/dashboard' &&
-        window.userInfo.groups &&
-        window.userInfo.groups.includes('User')
-      ) {
-        return next({ path: '/' });
-      }
-      return next();
-    }
+    let data = getUserInfo();
 
-    const data = await userInfo();
-    if (data) {
-      window.userInfo = data;
-      // Check if User type trying to access barcode dashboard
-      if (to.path === '/dashboard' && data.groups && data.groups.includes('User')) {
-        return next({ path: '/' });
-      }
-      return next();
-    }
-
-    // Try refresh if user info fetch failed
-    const refreshSuccess = await refreshToken();
-    if (refreshSuccess) {
-      const retryData = await userInfo();
-      if (retryData) {
-        window.userInfo = retryData;
-        // Check if User type trying to access barcode dashboard
-        if (to.path === '/dashboard' && retryData.groups && retryData.groups.includes('User')) {
-          return next({ path: '/' });
+    if (!data || isUserInfoStale()) {
+      data = await userInfo();
+      if (!data) {
+        // Try refresh if user info fetch failed
+        const refreshSuccess = await refreshToken();
+        if (refreshSuccess) {
+          data = await userInfo();
         }
-        return next();
+      }
+      if (data) {
+        setUserInfo(data);
       }
     }
 
-    return next({ path: '/login', query: { redirect: to.fullPath } });
+    if (!data) {
+      return next({ path: '/login', query: { redirect: to.fullPath } });
+    }
+
+    // Redirect non-activated users to pending page for activation-required routes
+    if (to.meta.requiresActivation && !data.is_activated) {
+      return next({ name: 'pending-activation' });
+    }
+
+    // Redirect activated users away from the pending page
+    if (to.name === 'pending-activation' && data.is_activated) {
+      return next({ path: '/' });
+    }
+
+    return next();
   } catch (_err) {
-    window.apiError = 'API server is offline';
-    // If navigating to a protected route but API is down, still allow to hit Home which shows an error panel.
+    setApiError('API server is offline');
     return next();
   }
 });

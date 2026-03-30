@@ -40,6 +40,16 @@ class Barcode(models.Model):
 
     class Meta:
         app_label = "index"
+        indexes = [
+            models.Index(
+                fields=["user", "barcode_type", "-time_created"],
+                name="idx_barcode_user_type_created",
+            ),
+            models.Index(
+                fields=["barcode_type", "share_with_others"],
+                name="idx_barcode_type_shared",
+            ),
+        ]
 
     def __str__(self):
         if self.barcode_type == "DynamicBarcode":

@@ -1,58 +1,66 @@
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
-import UserProfile from '@user/components/UserProfile.vue';
 
-describe('UserProfile', () => {
-  const mockProfile = {
-    name: 'John Doe',
-    information_id: '12345',
-  };
+import UserProfile from '@/features/user-profile/UserProfile.vue';
 
-  it('renders user name and id correctly', () => {
-    const wrapper = mount(UserProfile, {
-      props: {
-        profile: mockProfile,
-      },
-    });
+const mockHandleGenerate = vi.fn();
 
-    expect(wrapper.find('.user-name').text()).toBe('John Doe');
-    expect(wrapper.find('.user-id').text()).toBe('12345');
+vi.mock('@/features/user-profile/UserProfile.setup.js', () => ({
+  emitsDefinition: ['generate'],
+  propsDefinition: {
+    profile: {
+      type: Object,
+      required: true,
+    },
+    avatarSrc: {
+      type: String,
+      required: true,
+    },
+    loading: {
+      type: Boolean,
+      default: false,
+    },
+    barcodeVisible: {
+      type: Boolean,
+      default: false,
+    },
+    isRefreshingToken: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  useSchoolUserProfileSetup: () => ({
+    shouldShowAvatar: false,
+    getInitials: () => 'TU',
+    handleImageError: vi.fn(),
+    handleGenerate: mockHandleGenerate,
+  }),
+}));
+
+describe('School UserProfile', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('renders default name and id when profile is missing', () => {
+  it('shows the pay button before barcode display and swaps to the information id when barcode is visible', async () => {
     const wrapper = mount(UserProfile, {
       props: {
-        profile: {},
-      },
-    });
-
-    expect(wrapper.find('.user-name').text()).toBe('User');
-    expect(wrapper.find('.user-id').text()).toBe('ID not available');
-  });
-
-  it('renders avatar image when avatarSrc is provided', () => {
-    const avatarSrc = 'https://example.com/avatar.png';
-    const wrapper = mount(UserProfile, {
-      props: {
-        profile: mockProfile,
-        avatarSrc,
-      },
-    });
-
-    const img = wrapper.find('img.avatar-image');
-    expect(img.exists()).toBe(true);
-    expect(img.attributes('src')).toBe(avatarSrc);
-  });
-
-  it('renders initials when avatarSrc is not provided', () => {
-    const wrapper = mount(UserProfile, {
-      props: {
-        profile: mockProfile,
+        profile: {
+          name: 'Test User',
+          information_id: 'ID-123',
+        },
         avatarSrc: '',
+        barcodeVisible: false,
       },
     });
 
-    expect(wrapper.find('.avatar-initials').exists()).toBe(true);
-    expect(wrapper.find('.avatar-initials').text()).toBe('JD');
+    expect(wrapper.get('#show-info-button').attributes('aria-hidden')).toBe('false');
+    expect(wrapper.get('#information_id').attributes('aria-hidden')).toBe('true');
+
+    await wrapper.setProps({ barcodeVisible: true });
+
+    expect(wrapper.get('#show-info-button').attributes('aria-hidden')).toBe('true');
+    expect(wrapper.get('#information_id').attributes('aria-hidden')).toBe('false');
+    expect(wrapper.text()).toContain('ID-123');
   });
 });

@@ -6,7 +6,27 @@ from django.utils import timezone
 from index.models import Barcode, BarcodeUsage, Transaction
 from index.services.transactions import TransactionService
 
-from .constants import BARCODE_IDENTIFICATION
+from .constants import BARCODE_IDENTIFICATION, USAGE_COOLDOWN_MINUTES
+
+
+def _has_recent_duplicate_usage(
+    barcode: Barcode,
+    *,
+    request_user,
+    cutoff_5m,
+) -> bool:
+    """Return True when usage should be suppressed by the cooldown window."""
+    if barcode.barcode_type == BARCODE_IDENTIFICATION:
+        return BarcodeUsage.objects.filter(
+            barcode=barcode,
+            last_used__gte=cutoff_5m,
+        ).exists()
+
+    return Transaction.objects.filter(
+        user=request_user,
+        barcode_used=barcode,
+        time_created__gte=cutoff_5m,
+    ).exists()
 
 
 def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
@@ -22,29 +42,23 @@ def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
 
     # Check for duplicate usage within 5 minutes for the same user and barcode
     if request_user is not None:
-        cutoff_5m = now - timedelta(minutes=5)
-        recent_usage = Transaction.objects.filter(
-            user=request_user,
-            barcode_used=barcode,
-            time_created__gte=cutoff_5m,
-        ).exists()
-
-        if recent_usage:
+        cutoff_5m = now - timedelta(minutes=USAGE_COOLDOWN_MINUTES)
+        if _has_recent_duplicate_usage(
+            barcode,
+            request_user=request_user,
+            cutoff_5m=cutoff_5m,
+        ):
             # Skip recording - user already used this barcode within 5 minutes
             return
 
-    # Skip BarcodeUsage tracking for Identification barcodes since they
-    # regenerate each time
-    # But still log transactions for audit purposes
-    if barcode.barcode_type != BARCODE_IDENTIFICATION:
-        # Try to update existing record first
-        updated = BarcodeUsage.objects.filter(barcode=barcode).update(
-            total_usage=F("total_usage") + 1, last_used=now
-        )
+    # Try to update existing record first
+    updated = BarcodeUsage.objects.filter(barcode=barcode).update(
+        total_usage=F("total_usage") + 1, last_used=now
+    )
 
-        # If no rows were updated, create a new record
-        if not updated:
-            BarcodeUsage.objects.create(barcode=barcode, total_usage=1, last_used=now)
+    # If no rows were updated, create a new record
+    if not updated:
+        BarcodeUsage.objects.create(barcode=barcode, total_usage=1, last_used=now)
 
     if request_user is not None:
         TransactionService.create_transaction(

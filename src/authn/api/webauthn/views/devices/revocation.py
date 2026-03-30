@@ -110,25 +110,31 @@ def revoke_all_other_devices(request):
     """
     current_iat = _get_current_session_iat(request)
 
-    # Get all non-blacklisted tokens for the user
+    # Get all non-blacklisted tokens for the user (LEFT JOIN exclusion)
     tokens = OutstandingToken.objects.filter(
         user=request.user,
-    ).exclude(id__in=BlacklistedToken.objects.values_list("token_id", flat=True))
+        blacklistedtoken__isnull=True,
+    )
 
-    revoked_count = 0
+    # Collect non-current tokens to revoke
+    tokens_to_revoke = []
     for token in tokens:
-        # Skip current session (compare iat timestamps)
         token_iat = int(token.created_at.timestamp())
         if current_iat is not None and abs(token_iat - int(current_iat)) <= 2:
             continue
+        tokens_to_revoke.append(token)
 
-        # Blacklist the refresh token
-        BlacklistedToken.objects.create(token=token)
+    # Bulk-blacklist refresh tokens
+    if tokens_to_revoke:
+        BlacklistedToken.objects.bulk_create(
+            [BlacklistedToken(token=t) for t in tokens_to_revoke],
+            ignore_conflicts=True,
+        )
+        # Blacklist associated access tokens for immediate effect
+        for token in tokens_to_revoke:
+            _blacklist_session_access_tokens(request.user, token.created_at)
 
-        # Also blacklist associated access tokens for immediate effect
-        _blacklist_session_access_tokens(request.user, token.created_at)
-
-        revoked_count += 1
+    revoked_count = len(tokens_to_revoke)
 
     return Response(
         {

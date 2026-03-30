@@ -2,7 +2,7 @@ from .forms import UserRegisterForm
 from .views import (
     CookieTokenObtainPairView,
     CookieTokenRefreshView,
-    RSALoginView,
+    LoginView,
     api_avatar_upload,
     api_logout,
     api_profile,
@@ -10,7 +10,6 @@ from .views import (
     list_devices,
     revoke_all_other_devices,
     revoke_device,
-    login_challenge,
     csrf_token,
     user_img,
     user_info,
@@ -19,7 +18,7 @@ from .views import (
 __all__ = [
     "CookieTokenObtainPairView",
     "CookieTokenRefreshView",
-    "RSALoginView",
+    "LoginView",
     "api_avatar_upload",
     "api_logout",
     "api_profile",
@@ -27,7 +26,6 @@ __all__ = [
     "list_devices",
     "revoke_all_other_devices",
     "revoke_device",
-    "login_challenge",
     "csrf_token",
     "UserRegisterForm",
     "user_img",

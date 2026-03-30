@@ -22,11 +22,6 @@ vi.mock('@auth/composables/useToken', () => ({
   }),
 }));
 
-const mockGetAccessToken = vi.fn();
-vi.mock('@shared/api/axios', () => ({
-  getAccessToken: () => mockGetAccessToken(),
-}));
-
 const mockTriggerWakeup = vi.fn();
 vi.mock('@shared/composables/useServerWakeup', () => ({
   useServerWakeup: () => ({
@@ -50,7 +45,6 @@ describe('useApi composable', () => {
 
     // Default mock implementations
     mockGetCookie.mockReturnValue('csrf-token');
-    mockGetAccessToken.mockReturnValue('access-token');
     mockCheckAuthenticationError.mockReturnValue(false);
     mockRefreshToken.mockResolvedValue(true);
     mockHandleTokenExpired.mockResolvedValue(false);
@@ -94,28 +88,7 @@ describe('useApi composable', () => {
       );
     });
 
-    it('should add Authorization header when token exists', async () => {
-      mockGetAccessToken.mockReturnValue('my-access-token');
-      global.fetch.mockResolvedValue({
-        ok: true,
-        headers: { get: () => 'application/json' },
-        json: () => Promise.resolve({}),
-      });
-
-      await api.apiCallWithAutoRefresh('/test/');
-
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: 'Bearer my-access-token',
-          }),
-        })
-      );
-    });
-
-    it('should not add Authorization header when no token', async () => {
-      mockGetAccessToken.mockReturnValue(null);
+    it('should NOT add Authorization header (cookie-only auth)', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
         headers: { get: () => 'application/json' },

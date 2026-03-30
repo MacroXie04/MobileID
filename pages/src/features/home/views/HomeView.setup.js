@@ -1,35 +1,63 @@
-import { onMounted, ref } from 'vue';
-import HomeSchoolView from './HomeSchoolView.vue';
-import HomeUserView from './HomeUserView.vue';
+import { computed, onMounted, ref } from 'vue';
+import { getUserInfo, getApiError } from '@shared/state/authState';
+import { useHomeLogic } from '@home/composables/useHomeLogic.js';
+import Header from '@/features/header/Header.vue';
+import UserProfile from '@/features/user-profile/UserProfile.vue';
+import BarcodeDisplay from '@/features/barcode-display/BarcodeDisplay.vue';
+import GridMenu from '@/features/grid-menu/GridMenu.vue';
 import '@/assets/styles/home/home-merged.css';
+import '@/assets/styles/home/Home.css';
 
-export { HomeSchoolView, HomeUserView };
+export { Header, UserProfile, BarcodeDisplay, GridMenu };
 
 export function useHomeViewSetup() {
-  const loading = ref(true);
-  const groups = ref([]);
+  const pageLoading = ref(true);
+  const apiError = ref(null);
 
-  onMounted(() => {
-    // read user info from window.userInfo
-    const data = window.userInfo;
+  const {
+    profile,
+    avatarSrc,
+    loading: homeLoading,
+    serverStatus,
+    barcodeDisplayRef,
+    isRefreshingToken,
+    scannerDetectionEnabled,
+    preferFrontCamera,
+    handleGenerate,
+    initializeHome,
+  } = useHomeLogic();
 
+  const isDetectionActive = computed(() => {
+    return barcodeDisplayRef.value?.isDetectionActive ?? false;
+  });
+
+  const isBarcodeVisible = computed(() => {
+    return barcodeDisplayRef.value?.isBarcodeVisible ?? false;
+  });
+
+  const scannerDetected = computed(() => {
+    return barcodeDisplayRef.value?.scannerDetected ?? false;
+  });
+
+  onMounted(async () => {
     // Check if API error occurred (connection failed)
-    if (window.apiError) {
-      // API connection failed, show error page
-      groups.value = [];
-      loading.value = false;
+    const storedError = getApiError();
+    if (storedError) {
+      apiError.value = storedError;
+      pageLoading.value = false;
       return;
     }
 
-    // If data exists, set groups
-    if (data) {
-      groups.value = data.groups || [];
-    } else {
-      // No data and no API error means unknown user group
-      groups.value = [];
+    // If user info exists, we're good — show the home view
+    const data = getUserInfo();
+    if (!data) {
+      apiError.value = 'Unable to load user data';
+      pageLoading.value = false;
+      return;
     }
 
-    loading.value = false;
+    await initializeHome();
+    pageLoading.value = false;
   });
 
   // Retry connection function
@@ -37,5 +65,21 @@ export function useHomeViewSetup() {
     window.location.reload();
   }
 
-  return { loading, groups, retryConnection };
+  return {
+    pageLoading,
+    apiError,
+    retryConnection,
+    profile,
+    avatarSrc,
+    homeLoading,
+    serverStatus,
+    barcodeDisplayRef,
+    isRefreshingToken,
+    scannerDetectionEnabled,
+    preferFrontCamera,
+    handleGenerate,
+    isDetectionActive,
+    isBarcodeVisible,
+    scannerDetected,
+  };
 }

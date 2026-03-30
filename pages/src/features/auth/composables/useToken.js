@@ -45,42 +45,40 @@ export function useToken() {
       if (refreshSuccess) {
         window.isLoggingOut = false;
         return true;
-      } else {
-        // Continue to logout process below
       }
     } catch (_error) {
       // Continue to logout process below
     }
 
-    // Clear authentication information
-    clearAuthCookies();
-    clearAuthStorage();
-
-    // Clear user profile cache to force reload on next login
     try {
-      const { clearUserProfile } = await import('@user/composables/useUserInfo');
-      clearUserProfile();
-    } catch (error) {
-      console.warn('Could not clear user profile cache:', error);
-    }
+      // Clear authentication information
+      clearAuthCookies();
+      clearAuthStorage();
 
-    // Show prompt and redirect
-    setTimeout(() => {
-      // Use Vue Router for redirection
+      // Clear user profile cache to force reload on next login
       try {
-        router.push('/login');
-      } catch (_error) {
-        window.location.href = '/login';
+        const { clearUserProfile } = await import('@user/composables/useUserInfo');
+        clearUserProfile();
+      } catch (error) {
+        console.warn('Could not clear user profile cache:', error);
       }
 
-      // Reset duplicate call flag
+      // Show prompt and redirect
+      setTimeout(() => {
+        try {
+          router.push('/login');
+        } catch (_error) {
+          window.location.href = '/login';
+        }
+      }, 100);
+
+      return false;
+    } finally {
+      // Always reset the flag to prevent deadlock
       setTimeout(() => {
         window.isLoggingOut = false;
       }, 1000);
-    }, 100);
-
-    // Token refresh failed, user logged out
-    return false;
+    }
   }
 
   return {

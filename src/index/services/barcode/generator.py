@@ -17,6 +17,8 @@ from .constants import (
     BARCODE_IDENTIFICATION,
     BARCODE_OTHERS,
     RESULT_TEMPLATE,
+    STICKINESS_MINUTES,
+    USAGE_COOLDOWN_MINUTES,
 )
 from .identification import _create_identification_barcode
 from .usage import _touch_barcode_usage
@@ -24,28 +26,8 @@ from .utils import _timestamp
 
 
 def generate_barcode(user) -> dict:
-    """Generate or refresh a barcode for *user* based on their group membership."""
+    """Generate or refresh a barcode for *user*."""
     result = RESULT_TEMPLATE.copy()
-
-    # Determine account type via groups
-    is_staff = user.groups.filter(name="Staff").exists()
-    is_user = user.groups.filter(name="User").exists()
-    is_school = user.groups.filter(name="School").exists()
-
-    # STAFF — not allowed
-    if is_staff:
-        result.update(
-            status="error", message="Staff accounts cannot generate barcodes."
-        )
-        return result
-
-    # Unknown or missing group
-    if not (is_user or is_school):
-        result.update(status="error", message="Permission Denied.")
-        return result
-
-    # --------------------------------------------------------------
-    # handle generate barcode
 
     # Wrap DB operations in an explicit transaction for select_for_update
     with transaction.atomic():
@@ -72,12 +54,9 @@ def generate_barcode(user) -> dict:
             },
         )
 
-        if (
-            pull_settings.pull_setting == "Enable"
-            and user.groups.filter(name="School").exists()
-        ):
-            # 1. Check for recent personal usage (Stickiness) - 10 min
-            cutoff_10m = timezone.now() - timedelta(minutes=10)
+        if pull_settings.pull_setting == "Enable":
+            # 1. Check for recent personal usage (Stickiness)
+            cutoff_10m = timezone.now() - timedelta(minutes=STICKINESS_MINUTES)
             recent_txn = (
                 Transaction.objects.filter(user=user, time_created__gte=cutoff_10m)
                 .order_by("-time_created")
@@ -90,7 +69,7 @@ def generate_barcode(user) -> dict:
 
             # 2. Pull from pool if no candidate
             if not candidate:
-                cutoff_5m = timezone.now() - timedelta(minutes=5)
+                cutoff_5m = timezone.now() - timedelta(minutes=USAGE_COOLDOWN_MINUTES)
 
                 # Base query: User's own barcodes OR Shareable Dynamic barcodes
                 qs = Barcode.objects.filter(
@@ -117,23 +96,6 @@ def generate_barcode(user) -> dict:
 
         # Use the user-selected barcode
         selected = settings.barcode
-
-        # For User type, ensure they have an identification barcode
-        if is_user:
-            # Find or create their identification barcode
-            ident_barcode = Barcode.objects.filter(
-                user=user, barcode_type=BARCODE_IDENTIFICATION
-            ).first()
-
-            if not ident_barcode:
-                # Create one if it doesn't exist
-                ident_barcode = _create_identification_barcode(user)
-
-            # Force the selection to identification barcode
-            selected = ident_barcode
-            settings.barcode = ident_barcode
-            settings.associate_user_profile_with_barcode = False
-            settings.save()
 
         if not selected:
             result.update(status="error", message="No barcode selected.")

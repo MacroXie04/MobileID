@@ -3,12 +3,12 @@ from io import BytesIO
 
 from PIL import Image
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator
+from django.utils.translation import gettext_lazy as _
 
-from authn.services.webauthn import (
+from authn.services import (
     create_user_profile,
     generate_unique_information_id,
 )
@@ -16,11 +16,13 @@ from authn.services.webauthn import (
 from .helpers import _clean_base64
 
 
-class UserRegisterForm(UserCreationForm):
-    # extra fields
+class UserRegisterForm(forms.Form):
+    username = User._meta.get_field("username").formfield()
+    password1 = forms.CharField(label="Password", strip=False)
+    password2 = forms.CharField(label="Confirm Password", strip=False)
     name = forms.CharField(max_length=100, label="Name")
     information_id = forms.CharField(
-        max_length=100, label="Information ID", required=False
+        max_length=100, label="Information ID", required=False
     )
 
     # original file (hidden input, file selection is handled by JS)
@@ -33,18 +35,6 @@ class UserRegisterForm(UserCreationForm):
         label="",
         validators=[MaxLengthValidator(30_000)],
     )
-
-    class Meta:
-        model = User
-        fields = (
-            "username",
-            "password1",
-            "password2",
-            "name",
-            "information_id",
-            "user_profile_img",
-            "user_profile_img_base64",
-        )
 
     # helpers
     @staticmethod
@@ -80,9 +70,37 @@ class UserRegisterForm(UserCreationForm):
 
         return b64
 
+    def clean_username(self):
+        username = User.normalize_username(self.cleaned_data["username"])
+        if User.objects.filter(username=username).exists():
+            raise ValidationError(_("A user with that username already exists."))
+        return username
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 and password2 and password1 != password2:
+            self.add_error(
+                "password2",
+                ValidationError(_("Passwords do not match"), code="password_mismatch"),
+            )
+
+        return cleaned_data
+
     # save
     def save(self, commit=True):
-        user = super().save(commit)
+        if not self.is_valid():
+            raise ValueError("UserRegisterForm must be validated before saving.")
+
+        user = User(username=self.cleaned_data["username"])
+        user.set_password(self.cleaned_data["password1"])
+        user.is_active = False
+
+        if commit:
+            user.save()
+
         name = self.cleaned_data["name"]
         info_id = (
             self.cleaned_data.get("information_id") or generate_unique_information_id()
@@ -99,5 +117,7 @@ class UserRegisterForm(UserCreationForm):
         # if still empty, store None → database field is NULL
         avatar_b64_or_none = avatar_b64 or None
 
-        create_user_profile(user, name, info_id, avatar_b64_or_none)
+        if commit:
+            create_user_profile(user, name, info_id, avatar_b64_or_none)
+
         return user

@@ -9,13 +9,8 @@ import {
 vi.mock('@app/config/config', () => ({
   baseURL: 'http://localhost:8000',
 }));
-
-const mockGetRefreshToken = vi.fn();
-const mockSetAuthTokens = vi.fn();
-
-vi.mock('@shared/api/axios', () => ({
-  getRefreshToken: () => mockGetRefreshToken(),
-  setAuthTokens: (tokens) => mockSetAuthTokens(tokens),
+vi.mock('@shared/state/authState', () => ({
+  invalidateUserInfoCache: vi.fn(),
 }));
 
 describe('tokenRefresh utils', () => {
@@ -59,9 +54,9 @@ describe('tokenRefresh utils', () => {
       expect(checkAuthenticationError({}, response)).toBe(true);
     });
 
-    it('should detect 403 status', () => {
+    it('should not detect 403 status as auth error (403 is authorization, not authentication)', () => {
       const response = { status: 403 };
-      expect(checkAuthenticationError({}, response)).toBe(true);
+      expect(checkAuthenticationError({}, response)).toBe(false);
     });
 
     it('should return false for 200 OK', () => {
@@ -93,30 +88,11 @@ describe('tokenRefresh utils', () => {
   });
 
   describe('refreshToken', () => {
-    it('should return false immediately if no refresh token available', async () => {
-      mockGetRefreshToken.mockReturnValue(null);
-
-      const result = await refreshToken();
-
-      expect(result).toBe(false);
-      expect(global.fetch).not.toHaveBeenCalled();
-    });
-
-    it('should return false for empty refresh token', async () => {
-      mockGetRefreshToken.mockReturnValue('');
-
-      const result = await refreshToken();
-
-      expect(result).toBe(false);
-      expect(global.fetch).not.toHaveBeenCalled();
-    });
-
-    it('should make POST request to token refresh endpoint', async () => {
-      mockGetRefreshToken.mockReturnValue('valid-refresh-token');
+    it('should make POST request to token refresh endpoint with credentials', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
         headers: { get: () => 'application/json' },
-        json: () => Promise.resolve({ access: 'new-access', refresh: 'new-refresh' }),
+        json: () => Promise.resolve({}),
       });
 
       const promise = refreshToken();
@@ -128,17 +104,18 @@ describe('tokenRefresh utils', () => {
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh: 'valid-refresh-token' }),
+          credentials: 'include',
         })
       );
+      // Should NOT send a body (cookie-based refresh)
+      expect(global.fetch.mock.calls[0][1].body).toBeUndefined();
     });
 
-    it('should update tokens via setAuthTokens on success', async () => {
-      mockGetRefreshToken.mockReturnValue('refresh-token');
+    it('should return true on successful refresh', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
         headers: { get: () => 'application/json' },
-        json: () => Promise.resolve({ access: 'new-access-token', refresh: 'new-refresh-token' }),
+        json: () => Promise.resolve({}),
       });
 
       const promise = refreshToken();
@@ -146,32 +123,9 @@ describe('tokenRefresh utils', () => {
       const result = await promise;
 
       expect(result).toBe(true);
-      expect(mockSetAuthTokens).toHaveBeenCalledWith({
-        access: 'new-access-token',
-        refresh: 'new-refresh-token',
-      });
-    });
-
-    it('should use original refresh token if new one not provided', async () => {
-      mockGetRefreshToken.mockReturnValue('original-refresh-token');
-      global.fetch.mockResolvedValue({
-        ok: true,
-        headers: { get: () => 'application/json' },
-        json: () => Promise.resolve({ access: 'new-access-token' }), // No refresh in response
-      });
-
-      const promise = refreshToken();
-      await vi.runAllTimersAsync();
-      await promise;
-
-      expect(mockSetAuthTokens).toHaveBeenCalledWith({
-        access: 'new-access-token',
-        refresh: 'original-refresh-token',
-      });
     });
 
     it('should return false on 401 response', async () => {
-      mockGetRefreshToken.mockReturnValue('expired-refresh-token');
       global.fetch.mockResolvedValue({
         ok: false,
         status: 401,
@@ -184,11 +138,9 @@ describe('tokenRefresh utils', () => {
       const result = await promise;
 
       expect(result).toBe(false);
-      expect(mockSetAuthTokens).not.toHaveBeenCalled();
     });
 
     it('should return false on 403 response', async () => {
-      mockGetRefreshToken.mockReturnValue('invalid-refresh-token');
       global.fetch.mockResolvedValue({
         ok: false,
         status: 403,
@@ -204,7 +156,6 @@ describe('tokenRefresh utils', () => {
     });
 
     it('should return false on network error', async () => {
-      mockGetRefreshToken.mockReturnValue('refresh-token');
       global.fetch.mockRejectedValue(new Error('Network error'));
 
       const promise = refreshToken();
@@ -215,7 +166,6 @@ describe('tokenRefresh utils', () => {
     });
 
     it('should handle non-JSON response gracefully', async () => {
-      mockGetRefreshToken.mockReturnValue('refresh-token');
       global.fetch.mockResolvedValue({
         ok: true,
         headers: { get: () => 'text/html' }, // Not JSON
@@ -226,12 +176,11 @@ describe('tokenRefresh utils', () => {
       await vi.runAllTimersAsync();
       const result = await promise;
 
-      // Should return false because data.access won't exist
-      expect(result).toBe(false);
+      // Should return true because res.ok is true (cookie-based, no body check)
+      expect(result).toBe(true);
     });
 
     it('should handle JSON parse error gracefully', async () => {
-      mockGetRefreshToken.mockReturnValue('refresh-token');
       global.fetch.mockResolvedValue({
         ok: true,
         headers: { get: () => 'application/json' },
@@ -242,13 +191,11 @@ describe('tokenRefresh utils', () => {
       await vi.runAllTimersAsync();
       const result = await promise;
 
-      // Should return false because data will be null
-      expect(result).toBe(false);
+      // Should return true because res.ok is true
+      expect(result).toBe(true);
     });
 
     it('should reuse in-flight refresh promise (prevent duplicate requests)', async () => {
-      mockGetRefreshToken.mockReturnValue('refresh-token');
-
       let resolveFirst;
       const firstFetchPromise = new Promise((resolve) => {
         resolveFirst = resolve;
@@ -268,7 +215,7 @@ describe('tokenRefresh utils', () => {
       resolveFirst({
         ok: true,
         headers: { get: () => 'application/json' },
-        json: () => Promise.resolve({ access: 'new-access', refresh: 'new-refresh' }),
+        json: () => Promise.resolve({}),
       });
 
       await vi.runAllTimersAsync();
@@ -282,11 +229,10 @@ describe('tokenRefresh utils', () => {
     });
 
     it('should clear activeRefreshTokenPromise after completion', async () => {
-      mockGetRefreshToken.mockReturnValue('refresh-token');
       global.fetch.mockResolvedValue({
         ok: true,
         headers: { get: () => 'application/json' },
-        json: () => Promise.resolve({ access: 'access', refresh: 'refresh' }),
+        json: () => Promise.resolve({}),
       });
 
       const promise1 = refreshToken();
@@ -301,36 +247,39 @@ describe('tokenRefresh utils', () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
-    it('should timeout waiting for in-flight refresh after 10 seconds', async () => {
-      mockGetRefreshToken.mockReturnValue('refresh-token');
+    it('should share the same promise for concurrent callers (no timeout wrapper)', async () => {
+      let resolveFirst;
+      const firstFetchPromise = new Promise((resolve) => {
+        resolveFirst = resolve;
+      });
 
-      // First call: never resolving fetch
-      const neverResolvingFetch = new Promise(() => {}); // Never resolves
-      global.fetch.mockReturnValue(neverResolvingFetch);
+      global.fetch.mockReturnValue(firstFetchPromise);
 
-      // Start first refresh (will hang)
+      // Start first refresh
       const promise1 = refreshToken();
-
-      // Second call should wait then timeout
+      // Second caller gets the exact same promise reference
       const promise2 = refreshToken();
 
-      // Advance timer by 10 seconds
-      await vi.advanceTimersByTimeAsync(10000);
+      // Only one fetch should have been made
+      expect(global.fetch).toHaveBeenCalledTimes(1);
 
-      // The waiting promise should have timed out and returned false
-      const result2 = await promise2;
+      // Resolve the fetch — both callers should get the same result
+      resolveFirst({
+        ok: false,
+        status: 401,
+        headers: { get: () => 'application/json' },
+        json: () => Promise.resolve({ code: 'token_not_valid' }),
+      });
+
+      await vi.runAllTimersAsync();
+
+      const [result1, result2] = await Promise.all([promise1, promise2]);
+      expect(result1).toBe(false);
       expect(result2).toBe(false);
     });
   });
 
   describe('isRefreshing', () => {
-    it('should return false when no refresh token available', async () => {
-      // When no refresh token, should not start refreshing
-      mockGetRefreshToken.mockReturnValue(null);
-      const result = await refreshToken();
-      expect(result).toBe(false);
-    });
-
     it('should expose isRefreshing function', () => {
       // Basic test that the function exists and returns a boolean
       expect(typeof isRefreshing).toBe('function');

@@ -1,0 +1,90 @@
+name: Lint
+
+on:
+  push:
+    paths:
+      - "src/**"
+      - "pages/**"
+      - ".github/workflows/lint.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "pages/**"
+      - ".github/workflows/lint.yml"
+  workflow_dispatch:
+
+# Least-privilege default token permissions
+permissions:
+  contents: read
+
+# Cancel in-progress runs for the same branch
+# Use head_ref for PRs (source branch), ref_name for push events
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  backend-lint:
+    name: Backend Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install linters
+        working-directory: ./src
+        run: pip install -r requirements-dev.txt
+
+      - name: Run Black
+        working-directory: ./src
+        run: black --check .
+
+      - name: Run Flake8
+        working-directory: ./src
+        run: flake8 .
+
+      - name: Run Ruff
+        working-directory: ./src
+        run: ruff check .
+
+  frontend-lint:
+    name: Frontend Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      NPM_CONFIG_FETCH_RETRIES: 5
+      NPM_CONFIG_FETCH_RETRY_FACTOR: 2
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: 20000
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 120000
+      YARN_NETWORK_TIMEOUT: 120000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile --network-timeout 120000
+
+      - name: Run Prettier
+        working-directory: ./pages
+        run: yarn prettier --check .
+
+      - name: Run ESLint
+        working-directory: ./pages
+        run: yarn lint

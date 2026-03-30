@@ -14,23 +14,12 @@ from index.services.transfer_barcode import TransferBarcodeParser
 class TransferDynamicBarcodeAPIView(APIView):
     """
     API endpoint for creating dynamic barcodes by parsing HTML content.
-    Only School group users can use this endpoint.
     """
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         """Parse HTML and create a new dynamic barcode with profile data"""
-        # Check if user is in School group
-        if not request.user.groups.filter(name="School").exists():
-            return Response(
-                {
-                    "status": "error",
-                    "message": "Only School group users can transfer dynamic barcodes",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         # Get HTML from request
         html_content = request.data.get("html")
         if not html_content:

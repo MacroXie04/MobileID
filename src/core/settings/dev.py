@@ -50,10 +50,16 @@ CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
 
 # Cookies - Development: Lax is sufficient for same-origin admin login
 # SameSite=None requires Secure=True (HTTPS) which breaks local HTTP dev
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
+if env("CROSS_ORIGIN_DEV", "").lower() == "true":
+    SESSION_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
 
 # Security settings - Development: relaxed security

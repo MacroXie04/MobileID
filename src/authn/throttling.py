@@ -1,6 +1,10 @@
 from django.conf import settings
 from django.utils.encoding import force_str
-from rest_framework.throttling import ScopedRateThrottle, SimpleRateThrottle
+from rest_framework.throttling import (
+    AnonRateThrottle,
+    ScopedRateThrottle,
+    SimpleRateThrottle,
+)
 
 
 def _get_rate_for_scope(scope: str):
@@ -29,6 +33,11 @@ class _ScopeRateFallbackMixin:
         if configured:
             return configured
         return self.fallback_rate
+
+    def allow_request(self, request, view):
+        if not getattr(settings, "THROTTLES_ENABLED", True):
+            return True
+        return super().allow_request(request, view)
 
 
 class LoginRateThrottle(_ScopeRateFallbackMixin, ScopedRateThrottle):
@@ -94,7 +103,8 @@ class AdminLoginThrottle(_ScopeRateFallbackMixin, SimpleRateThrottle):
             return None
 
         # Only apply to admin login URLs
-        if not request.path.endswith("/admin/login/"):
+        admin_path = getattr(settings, "ADMIN_URL_PATH", "admin")
+        if not request.path.endswith(f"/{admin_path}/login/"):
             return None
 
         ident = self.get_ident(request)
@@ -112,3 +122,21 @@ class AdminLoginThrottle(_ScopeRateFallbackMixin, SimpleRateThrottle):
                 return None, None
             return num_requests, 15 * 60
         return super().parse_rate(rate)
+
+
+class RefreshRateThrottle(_ScopeRateFallbackMixin, ScopedRateThrottle):
+    """
+    Throttle token refresh requests.
+    """
+
+    scope = "refresh"
+    fallback_rate = "10/minute"
+
+
+class RegisterRateThrottle(_ScopeRateFallbackMixin, AnonRateThrottle):
+    """
+    Throttle registration requests.
+    """
+
+    scope = "registration"
+    fallback_rate = "5/day"

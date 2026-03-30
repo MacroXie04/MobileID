@@ -1,0 +1,220 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - "src/**"
+      - "pages/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "pages/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+env:
+  NPM_CONFIG_FETCH_RETRIES: 5
+  NPM_CONFIG_FETCH_RETRY_FACTOR: 2
+  NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: 20000
+  NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 120000
+  YARN_NETWORK_TIMEOUT: 120000
+
+# Least-privilege default token permissions
+permissions:
+  contents: read
+
+# Cancel in-progress runs for the same branch
+# Use head_ref for PRs (source branch), ref_name for push events
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Backend ──────────────────────────────────────────────
+
+  migration-file-guard:
+    name: Migration File Guard
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for migration file changes
+        run: |
+          CHANGED=$(git diff --diff-filter=M --name-only origin/${{ github.base_ref }}...HEAD -- \
+            'src/*/migrations/*.py' 'src/*/*/migrations/*.py' | grep -v '__init__.py' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "::error::Migration files changed: $CHANGED"
+            exit 1
+          fi
+
+  migration-check:
+    name: Migration Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: ./src
+        run: pip install -r requirements.txt
+
+      - name: Check for missing migrations
+        working-directory: ./src
+        env:
+          DJANGO_SETTINGS_MODULE: "core.settings.dev"
+          TESTING: "True"
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Test migrations application
+        working-directory: ./src
+        env:
+          DJANGO_SETTINGS_MODULE: "core.settings.dev"
+          TESTING: "True"
+        run: python manage.py migrate
+
+  django-test:
+    name: Django Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: ./src
+        run: pip install -r requirements-dev.txt
+
+      - name: Run Django tests with coverage
+        working-directory: ./src
+        env:
+          TESTING: "True"
+          DJANGO_SETTINGS_MODULE: "core.settings.dev"
+        run: |
+          coverage run manage.py test -v 2
+          coverage report --fail-under=70
+          coverage xml -o coverage.xml
+
+      - name: Upload coverage XML
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: src/coverage.xml
+          retention-days: 30
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        working-directory: ./src
+        run: docker build -t mobileid-backend:test .
+
+  # ── Frontend ─────────────────────────────────────────────
+
+  npm-test:
+    name: NPM Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile --network-timeout 120000
+
+      - name: Run unit tests
+        working-directory: ./pages
+        run: yarn test:unit
+
+      - name: Get Playwright version
+        id: playwright-version
+        working-directory: ./pages
+        run: echo "version=$(npx playwright --version)" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: ./pages
+        run: npx playwright install --with-deps
+
+      - name: Install Playwright system deps (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: ./pages
+        run: npx playwright install-deps
+
+      - name: Run Playwright E2E tests
+        working-directory: ./pages
+        env:
+          CI: "true"
+        run: yarn test:e2e:ci
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: pages/playwright-report
+          if-no-files-found: ignore
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile --network-timeout 120000
+
+      - name: Build frontend
+        working-directory: ./pages
+        run: yarn build

@@ -1,8 +1,12 @@
+import logging
+
 from index.models import UserBarcodeSettings, BarcodeUserProfile
 from index.services.barcode import generate_barcode
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+logger = logging.getLogger(__name__)
 
 
 class ActiveProfileAPIView(APIView):
@@ -11,28 +15,21 @@ class ActiveProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        import logging
-
-        logger = logging.getLogger(__name__)
-        logger.info(f"ActiveProfileAPIView called by user: {request.user.username}")
-
-        # Check if user is School type
-        if not request.user.groups.filter(name="School").exists():
-            logger.info(f"User {request.user.username} is not School type")
-            return Response({"profile_info": None})
+        logger.info("ActiveProfileAPIView called by user: %s", request.user.username)
 
         try:
             settings = UserBarcodeSettings.objects.get(user=request.user)
             logger.info(
-                f"User settings found: associate_user_profile_with_barcode="
-                f"{settings.associate_user_profile_with_barcode}, "
-                f"barcode={settings.barcode}"
+                "User settings found: associate_user_profile_with_barcode=%s, "
+                "barcode=%s",
+                settings.associate_user_profile_with_barcode,
+                settings.barcode,
             )
 
             if settings.associate_user_profile_with_barcode and settings.barcode:
                 try:
                     barcode_profile = settings.barcode.barcodeuserprofile
-                    logger.info(f"BarcodeUserProfile found: {barcode_profile.name}")
+                    logger.info("BarcodeUserProfile found: %s", barcode_profile.name)
 
                     profile_data = {
                         "name": barcode_profile.name,
@@ -47,16 +44,14 @@ class ActiveProfileAPIView(APIView):
                             img_data = f"data:image/png;base64,{img_data}"
                         profile_data["avatar_data"] = img_data
 
-                    logger.info(f"Returning profile data for: {profile_data['name']}")
+                    logger.info("Returning profile data for: %s", profile_data["name"])
                     return Response({"profile_info": profile_data})
                 except BarcodeUserProfile.DoesNotExist:
                     logger.info(
-                        "BarcodeUserProfile does not exist for selected " "barcode"
+                        "BarcodeUserProfile does not exist for selected barcode"
                     )
-                    pass
         except UserBarcodeSettings.DoesNotExist:
             logger.info("UserBarcodeSettings does not exist")
-            pass
 
         logger.info("Returning None for profile_info")
         return Response({"profile_info": None})

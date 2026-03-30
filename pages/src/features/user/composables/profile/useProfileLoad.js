@@ -1,6 +1,5 @@
 import { getUserProfile } from '@shared/api/auth';
 import { baseURL } from '@app/config/config';
-import { getAccessToken } from '@shared/api/axios';
 
 export function useProfileLoad({ formData, originalData, avatarPreviewUrl, errors }) {
   const loadProfile = async () => {
@@ -14,13 +13,15 @@ export function useProfileLoad({ formData, originalData, avatarPreviewUrl, error
         };
 
         try {
-          const token = getAccessToken();
-          const headers = token ? { Authorization: `Bearer ${token}` } : {};
           const avatarResponse = await fetch(`${baseURL}/authn/user_img/`, {
-            headers,
+            credentials: 'include',
           });
           if (avatarResponse.ok) {
             const blob = await avatarResponse.blob();
+            // Revoke previous blob URL to prevent memory leak
+            if (avatarPreviewUrl.value) {
+              URL.revokeObjectURL(avatarPreviewUrl.value);
+            }
             avatarPreviewUrl.value = URL.createObjectURL(blob);
           }
         } catch (_avatarError) {

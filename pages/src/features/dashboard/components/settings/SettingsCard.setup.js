@@ -13,7 +13,6 @@ export const propsDefinition = {
     type: Object,
     default: () => ({ pull_setting: 'Disable', gender_setting: 'Unknow' }),
   },
-  isUserGroup: { type: Boolean, default: false },
   isDynamicSelected: { type: Boolean, default: false },
   currentBarcodeHasProfile: { type: Boolean, default: false },
   errors: { type: Object, default: () => ({}) },

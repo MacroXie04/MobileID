@@ -1,5 +1,5 @@
 import { computed, ref, watch, onUnmounted } from 'vue';
-import { useScannerDetection } from '@school/composables/useScannerDetection.js';
+import { useScannerDetection } from '@/features/useScannerDetection.js';
 
 // CSS - use shared dashboard styles
 import '@/assets/styles/dashboard/BarcodeDashboard.css';

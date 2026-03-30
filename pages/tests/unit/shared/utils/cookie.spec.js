@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import {
   clearAuthCookies,
   clearAuthStorage,
   getCookie,
   hasAuthTokens,
 } from '@shared/utils/cookie.js';
+import { setUserInfo, clearUserInfo } from '@shared/state/authState';
 
 const clearAllCookies = () => {
   document.cookie.split(';').forEach((cookie) => {
@@ -20,6 +21,11 @@ describe('cookie utils', () => {
     clearAllCookies();
     localStorage.clear();
     sessionStorage.clear();
+    clearUserInfo();
+  });
+
+  afterEach(() => {
+    clearUserInfo();
   });
 
   it('gets cookie values by name', () => {
@@ -45,9 +51,11 @@ describe('cookie utils', () => {
     expect(getCookie('non_auth')).toBe('keep');
   });
 
-  it('clears auth tokens from storage', () => {
+  it('clears auth tokens from storage including access and refresh keys', () => {
     localStorage.setItem('access_token', 'access');
     localStorage.setItem('user_info', 'user');
+    localStorage.setItem('access', 'old-access');
+    localStorage.setItem('refresh', 'old-refresh');
     sessionStorage.setItem('refresh_token', 'refresh');
     sessionStorage.setItem('auth_token', 'auth');
 
@@ -55,24 +63,33 @@ describe('cookie utils', () => {
 
     expect(localStorage.getItem('access_token')).toBeNull();
     expect(localStorage.getItem('user_info')).toBeNull();
+    expect(localStorage.getItem('access')).toBeNull();
+    expect(localStorage.getItem('refresh')).toBeNull();
     expect(sessionStorage.getItem('refresh_token')).toBeNull();
     expect(sessionStorage.getItem('auth_token')).toBeNull();
   });
 
-  it('detects auth tokens in cookies or storage', () => {
-    expect(hasAuthTokens()).toBe(false);
+  describe('hasAuthTokens', () => {
+    it('returns false when no auth indicators present', () => {
+      expect(hasAuthTokens()).toBe(false);
+    });
 
-    document.cookie = 'sessionid=session; Secure';
-    expect(hasAuthTokens()).toBe(true);
+    it('returns true when csrftoken cookie is present', () => {
+      document.cookie = 'csrftoken=abc123; Secure';
+      expect(hasAuthTokens()).toBe(true);
+    });
 
-    clearAllCookies();
-    expect(hasAuthTokens()).toBe(false);
+    it('returns true when auth state userInfo is set', () => {
+      setUserInfo({ profile: { name: 'Test' } });
+      expect(hasAuthTokens()).toBe(true);
+    });
 
-    document.cookie = 'access_token=access; Secure';
-    expect(hasAuthTokens()).toBe(true);
+    it('returns false after clearing csrftoken', () => {
+      document.cookie = 'csrftoken=abc123; Secure';
+      expect(hasAuthTokens()).toBe(true);
 
-    clearAllCookies();
-    localStorage.setItem('access_token', 'access');
-    expect(hasAuthTokens()).toBe(true);
+      clearAllCookies();
+      expect(hasAuthTokens()).toBe(false);
+    });
   });
 });

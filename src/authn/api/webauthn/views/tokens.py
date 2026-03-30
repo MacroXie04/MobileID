@@ -1,5 +1,11 @@
+import logging
+
 from authn.api.utils import clear_auth_cookies, set_auth_cookies
-from authn.throttling import LoginRateThrottle, UsernameRateThrottle
+from authn.throttling import (
+    LoginRateThrottle,
+    RefreshRateThrottle,
+    UsernameRateThrottle,
+)
 from django.conf import settings
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
@@ -16,10 +22,9 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from ..serializers import (
-    EncryptedTokenObtainPairSerializer,
-    RSAEncryptedLoginSerializer,
-)
+from ..serializers import PlaintextLoginSerializer
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_outstanding_token(refresh_token_str):
@@ -46,9 +51,12 @@ def _ensure_outstanding_token(refresh_token_str):
                 created_at=token.current_time,
                 expires_at=token.current_time + token.lifetime,
             )
-    except Exception:
-        # Silently fail - don't break login if tracking fails
-        pass
+    except Exception as exc:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "Failed to ensure outstanding token: %s", exc, exc_info=True
+        )
 
 
 if getattr(settings, "THROTTLES_ENABLED", True):
@@ -61,7 +69,7 @@ else:
 class CookieTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
     throttle_scope = "login"
-    serializer_class = EncryptedTokenObtainPairSerializer
+    serializer_class = PlaintextLoginSerializer
     throttle_classes = LOGIN_VIEW_THROTTLES + tuple(
         api_settings.DEFAULT_THROTTLE_CLASSES
     )
@@ -77,11 +85,16 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 get_token(request)
                 # Track the refresh token for device management
                 _ensure_outstanding_token(refresh)
+                if not settings.AUTH_EXPOSE_TOKENS_IN_BODY:
+                    response.data.pop("access", None)
+                    response.data.pop("refresh", None)
         return response
 
 
 class CookieTokenRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]
+    throttle_scope = "refresh"
+    throttle_classes = [RefreshRateThrottle]
 
     def post(self, request, *args, **kwargs):
         # Check if refresh token is in cookies but not in body
@@ -113,7 +126,6 @@ class CookieTokenRefreshView(TokenRefreshView):
                 # Optionally log via logging if desired
                 return Response({"detail": "Invalid token."}, status=400)
 
-        # Ensure tokens are returned in response body (for localStorage usage)
         if response.status_code == 200:
             access = response.data.get("access")
             refresh = response.data.get("refresh")
@@ -121,14 +133,16 @@ class CookieTokenRefreshView(TokenRefreshView):
                 set_auth_cookies(response, access, refresh, request=request)
                 # Force CSRF cookie to be set/rotated so frontend can read it
                 get_token(request)
-                # Ensure response body contains tokens (super() may strip them)
-                access_missing = "access" not in response.data
-                refresh_missing = "refresh" not in response.data
-                if access_missing or refresh_missing:
-                    response.data = {
-                        "access": access,
-                        "refresh": refresh,
-                    }
+                if settings.AUTH_EXPOSE_TOKENS_IN_BODY:
+                    # Ensure response body contains tokens (super() may strip them)
+                    if "access" not in response.data or "refresh" not in response.data:
+                        response.data = {
+                            "access": access,
+                            "refresh": refresh,
+                        }
+                else:
+                    response.data.pop("access", None)
+                    response.data.pop("refresh", None)
         return response
 
 
@@ -138,27 +152,22 @@ def api_logout(request):
     try:
         rt = request.COOKIES.get("refresh_token")
         if rt:
-            try:
-                RefreshToken(rt).blacklist()
-            except Exception:
-                pass
+            RefreshToken(rt).blacklist()
     except Exception:
-        pass
+        logger.warning("Failed to blacklist refresh token during logout", exc_info=True)
 
     resp = Response({"message": "Logged out"})
     return clear_auth_cookies(resp)
 
 
-class RSALoginView(TokenObtainPairView):
+class LoginView(TokenObtainPairView):
     """
-    Login view that ENFORCES RSA-encrypted password submissions.
-    This is the new secure login endpoint that requires encrypted passwords
-    with nonce.
+    Login view that accepts plaintext username/password credentials.
     """
 
     permission_classes = [AllowAny]
     throttle_scope = "login"
-    serializer_class = RSAEncryptedLoginSerializer
+    serializer_class = PlaintextLoginSerializer
     throttle_classes = LOGIN_VIEW_THROTTLES + tuple(
         api_settings.DEFAULT_THROTTLE_CLASSES
     )
@@ -172,9 +181,9 @@ class RSALoginView(TokenObtainPairView):
                 set_auth_cookies(response, access, refresh, request=request)
                 # Track the refresh token for device management
                 _ensure_outstanding_token(refresh)
-                response.data = {
-                    "message": "Login successful",
-                    "access": access,
-                    "refresh": refresh,
-                }
+                data = {"message": "Login successful"}
+                if settings.AUTH_EXPOSE_TOKENS_IN_BODY:
+                    data["access"] = access
+                    data["refresh"] = refresh
+                response.data = data
         return response

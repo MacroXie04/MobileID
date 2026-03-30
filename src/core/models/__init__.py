@@ -2,7 +2,6 @@
 Core models package.
 """
 
-from core.models.admin.admin_audit import AdminAuditLog
-from core.models.admin.admin_onetimepass import AdminOneTimePass
+from core.models.admin import AdminAuditLog, AdminOneTimePass
 
 __all__ = ["AdminAuditLog", "AdminOneTimePass"]

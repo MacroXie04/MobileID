@@ -56,13 +56,13 @@ async function checkServerHealth(timeoutMs = HEALTH_CHECK_TIMEOUT_MS) {
 }
 
 /**
- * Start the elapsed time counter (updates every 10ms)
+ * Start the elapsed time counter (updates every 100ms)
  */
 function startElapsedTimer() {
   elapsedMs.value = 0;
   elapsedTimer = setInterval(() => {
-    elapsedMs.value += 10;
-  }, 10);
+    elapsedMs.value += 100;
+  }, 100);
 }
 
 /**

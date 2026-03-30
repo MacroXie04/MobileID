@@ -1,6 +1,7 @@
 from io import BytesIO
 
 from PIL import Image
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -11,20 +12,19 @@ from ..helpers import _b64_any_to_bytes, _clean_base64
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def user_info(request):
-    groups = list(request.user.groups.values_list("name", flat=True))
     try:
         profile = request.user.userprofile
         profile_data = {
             "name": profile.name,
             "information_id": profile.information_id,
         }
-    except Exception:
+    except ObjectDoesNotExist:
         profile_data = None
     return Response(
         {
             "username": request.user.username,
-            "groups": groups,
             "profile": profile_data,
+            "is_activated": request.user.is_active,
         }
     )
 
@@ -34,7 +34,7 @@ def user_info(request):
 def api_profile(request):
     try:
         profile = request.user.userprofile
-    except Exception:
+    except ObjectDoesNotExist:
         return Response({"success": False, "message": "Profile not found"}, status=404)
 
     if request.method == "GET":
@@ -70,10 +70,10 @@ def api_profile(request):
                 try:
                     with Image.open(BytesIO(img_bytes)) as _:
                         pass
-                except Exception:
+                except (ValueError, IOError, OSError):
                     raise ValueError("Not a valid image format")
                 profile.user_profile_img = b64
-            except Exception:
+            except (ValueError, IOError, OSError):
                 return Response(
                     {
                         "success": False,
@@ -84,5 +84,13 @@ def api_profile(request):
         else:
             profile.user_profile_img = None
 
-    profile.save()
+    updated_fields = []
+    if "name" in data:
+        updated_fields.append("name")
+    if "information_id" in data:
+        updated_fields.append("information_id")
+    if "user_profile_img_base64" in data:
+        updated_fields.append("user_profile_img")
+
+    profile.save(update_fields=updated_fields if updated_fields else None)
     return Response({"success": True, "message": "Profile updated successfully"})

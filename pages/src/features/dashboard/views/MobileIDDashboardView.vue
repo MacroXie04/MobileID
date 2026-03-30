@@ -85,7 +85,6 @@
         :format-relative-time="formatRelativeTime"
         :is-dynamic-selected="isDynamicSelected"
         :is-saving="isSaving"
-        :is-user-group="isUserGroup"
         :pull-settings="pullSettings"
         :selected-barcode="selectedBarcode"
         :settings="settings"
@@ -213,7 +212,6 @@ const {
   settings,
   pullSettings,
   barcodeChoices,
-  isUserGroup,
   filterType,
   ownedOnly,
   showConfirmDialog,

@@ -30,24 +30,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Install Safety
-        run: uv tool install safety
+        run: pip install safety
 
       - name: Run Safety check
         working-directory: ./src
         run: |
-          # Export frozen requirements from uv.lock
-          uv export --frozen --no-dev > requirements-frozen.txt
-          # Run safety check (always produce report)
-          # Safety 3.x uses 'scan' command with different output format
-          safety scan --target requirements-frozen.txt --output json 2>/dev/null > safety-report.json || \
-            safety check -r requirements-frozen.txt --output json > safety-report.json 2>&1 || true
+          # Run safety check against requirements.txt
+          safety scan --target requirements.txt --output json 2>/dev/null > safety-report.json || \
+            safety check -r requirements.txt --output json > safety-report.json 2>&1 || true
           # Display human-readable output
-          safety scan --target requirements-frozen.txt 2>/dev/null || \
-            safety check -r requirements-frozen.txt || true
+          safety scan --target requirements.txt 2>/dev/null || \
+            safety check -r requirements.txt || true
 
       - name: Enforce Safety baseline
         working-directory: ./src
@@ -221,7 +220,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.34.1
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: "mobileid-backend:scan"
           format: "table"
@@ -232,7 +231,7 @@ jobs:
           trivyignores: src/.trivyignore
 
       - name: Run Trivy and save JSON report
-        uses: aquasecurity/trivy-action@0.34.1
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: "mobileid-backend:scan"
           format: "json"
@@ -251,7 +250,7 @@ jobs:
           retention-days: 30
 
       - name: Fail on high/critical vulnerabilities
-        uses: aquasecurity/trivy-action@0.34.1
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: "mobileid-backend:scan"
           format: "table"
