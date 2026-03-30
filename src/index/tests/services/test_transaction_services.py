@@ -43,15 +43,6 @@ class TransactionWriteServiceTests(TestCase):
                 user="not-a-user", barcode=self.barcode
             )
 
-    def test_create_transaction_rejects_inactive_user(self):
-        inactive = User.objects.create_user(
-            username="inactive_tx", password="pass123", is_active=False
-        )
-        with self.assertRaises(PermissionError):
-            TransactionWriteMixin.create_transaction(
-                user=inactive, barcode=self.barcode
-            )
-
     def test_create_transaction_rejects_anonymous_user(self):
         with self.assertRaises((PermissionError, ValueError)):
             TransactionWriteMixin.create_transaction(

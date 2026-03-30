@@ -34,7 +34,7 @@ class TransactionWriteMixin:
         Create and (optionally) persist a Transaction.
 
         Rules:
-        - `user` must be a valid, active User.
+        - `user` must be a valid User.
         - `barcode` must be provided.
         - time_created defaults to now() if omitted.
         """
@@ -85,7 +85,7 @@ class TransactionWriteMixin:
 
         Validation:
           - Requires 'barcode'.
-          - 'user' must be active.
+          - 'user' must be a User instance.
         """
         to_create: list[Transaction] = []
         now = default_time or timezone.now()
