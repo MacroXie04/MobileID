@@ -46,7 +46,7 @@ jobs:
 
       - name: Check for migration file changes
         run: |
-          CHANGED=$(git diff --diff-filter=AM --name-only origin/${{ github.base_ref }}...HEAD -- \
+          CHANGED=$(git diff --diff-filter=M --name-only origin/${{ github.base_ref }}...HEAD -- \
             'src/*/migrations/*.py' 'src/*/*/migrations/*.py' | grep -v '__init__.py' || true)
           if [ -n "$CHANGED" ]; then
             echo "::error::Migration files changed: $CHANGED"
