@@ -34,14 +34,6 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
             "field_states",
         ]
 
-    def _get_user_groups(self):
-        """Get user groups from context (cached) or fall back to DB query."""
-        groups = self.context.get("user_groups")
-        if groups is not None:
-            return groups
-        user = self.context["request"].user
-        return set(user.groups.values_list("name", flat=True))
-
     def _get_pull_settings_enabled(self):
         """Check if pull settings are enabled, using context when available."""
         pull_settings = self.context.get("pull_settings")
@@ -96,74 +88,40 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
         falls back to DB queries otherwise (POST settings update).
         """
         user = self.context["request"].user
-        user_groups = self._get_user_groups()
-        is_school = "School" in user_groups
-        is_user = "User" in user_groups
 
         # Use barcodes from context if available (already queried by view)
         barcodes = self.context.get("barcodes")
         if barcodes is not None:
-            if is_user:
-                barcodes = [b for b in barcodes if b.barcode_type == "Identification"]
             return [self._barcode_to_choice(b, user) for b in barcodes]
 
         # Fallback: query DB directly (for POST/PATCH paths)
-        if is_school:
-            qs = (
-                Barcode.objects.filter(barcode_type="DynamicBarcode")
-                .select_related("user")
-                .prefetch_related("barcodeuserprofile")
-                .order_by("-time_created")
-            )
-            result = [
-                self._barcode_to_choice(b, user)
-                for b in qs
-                if b.user == user or b.share_with_others
-            ]
-            own_other = (
-                Barcode.objects.filter(
-                    user=user, barcode_type__in=["Identification", "Others"]
-                )
-                .prefetch_related("barcodeuserprofile")
-                .order_by("-time_created")
-            )
-            result.extend(self._barcode_to_choice(b, user) for b in own_other)
-            return result
+        from django.db.models import Q
 
-        if is_user:
-            qs = Barcode.objects.filter(
-                user=user, barcode_type="Identification"
-            ).prefetch_related("barcodeuserprofile")
-        else:
-            qs = Barcode.objects.filter(user=user).prefetch_related(
-                "barcodeuserprofile"
+        qs = (
+            Barcode.objects.filter(
+                Q(barcode_type="DynamicBarcode")
+                & (Q(user=user) | Q(share_with_others=True))
+                | Q(
+                    user=user,
+                    barcode_type__in=["Identification", "Others"],
+                )
             )
-        return [self._barcode_to_choice(b, user) for b in qs.order_by("-time_created")]
+            .select_related("user")
+            .prefetch_related("barcodeuserprofile")
+            .order_by("-time_created")
+        )
+        return [self._barcode_to_choice(b, user) for b in qs]
 
     def get_field_states(self, obj):
-        """Get field states based on user group and current settings."""
-        user_groups = self._get_user_groups()
+        """Get field states based on current settings."""
         return {
-            "associate_user_profile_disabled": "User" in user_groups,
+            "associate_user_profile_disabled": False,
             "barcode_disabled": self._get_pull_settings_enabled(),
         }
 
     def validate(self, data):
-        """Simple validation based on user group and pull settings."""
-        user = self.context["request"].user
-        user_groups = self._get_user_groups()
-        is_user_group = "User" in user_groups
+        """Validation based on pull settings."""
         pull_settings_enabled = self._get_pull_settings_enabled()
-
-        # Standard users cannot enable profile association
-        if is_user_group and data.get("associate_user_profile_with_barcode", False):
-            raise serializers.ValidationError(
-                {
-                    "associate_user_profile_with_barcode": (
-                        "Standard users cannot enable profile association."
-                    )
-                }
-            )
 
         # If pull setting is enabled, barcode selection is not allowed
         barcode = data.get("barcode")
@@ -176,8 +134,9 @@ class UserBarcodeSettingsSerializer(serializers.ModelSerializer):
                 }
             )
 
-        # For School users, when selecting a dynamic barcode owned by someone
-        # else, it must be shared_with_others
+        # When selecting a dynamic barcode owned by someone else,
+        # it must be shared_with_others
+        user = self.context["request"].user
         if barcode is not None and not pull_settings_enabled:
             try:
                 b = (

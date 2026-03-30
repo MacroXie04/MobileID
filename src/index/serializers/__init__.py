@@ -1,7 +1,5 @@
-# Export all serializers for backwards compatibility
-# dashboard.py and tests import from index.serializers
-from .barcode import (  # noqa: F401
-    BarcodeSerializer,
+from .barcode import BarcodeSerializer  # noqa: F401
+from .barcode_create import (  # noqa: F401
     BarcodeCreateSerializer,
     DynamicBarcodeWithProfileSerializer,
 )

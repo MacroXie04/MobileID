@@ -220,7 +220,7 @@ export function useAddBarcodeLogic(emit) {
         dynamicError.value =
           fieldErrors.length > 0 ? fieldErrors.join('; ') : error.message || 'Invalid request';
       } else if (error.status === 403) {
-        dynamicError.value = 'Only School group users can create dynamic barcodes';
+        dynamicError.value = 'Permission denied. Please ensure you are logged in.';
       } else {
         dynamicError.value = error.message || 'Network error occurred';
       }
@@ -295,7 +295,7 @@ export function useAddBarcodeLogic(emit) {
         transferError.value =
           fieldErrors.length > 0 ? fieldErrors.join('; ') : 'Could not parse HTML content';
       } else if (error.status === 403) {
-        transferError.value = 'Only School group users can transfer dynamic barcodes';
+        transferError.value = 'Permission denied. Please ensure you are logged in.';
       } else {
         transferError.value = error.message || 'Network error occurred';
       }

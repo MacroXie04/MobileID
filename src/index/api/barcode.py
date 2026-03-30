@@ -17,11 +17,6 @@ class ActiveProfileAPIView(APIView):
     def get(self, request):
         logger.info("ActiveProfileAPIView called by user: %s", request.user.username)
 
-        # Check if user is School type
-        if not request.user.groups.filter(name="School").exists():
-            logger.info("User %s is not School type", request.user.username)
-            return Response({"profile_info": None})
-
         try:
             settings = UserBarcodeSettings.objects.get(user=request.user)
             logger.info(

@@ -22,10 +22,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from ..serializers import (
-    EncryptedTokenObtainPairSerializer,
-    RSAEncryptedLoginSerializer,
-)
+from ..serializers import PlaintextLoginSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +69,7 @@ else:
 class CookieTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
     throttle_scope = "login"
-    serializer_class = EncryptedTokenObtainPairSerializer
+    serializer_class = PlaintextLoginSerializer
     throttle_classes = LOGIN_VIEW_THROTTLES + tuple(
         api_settings.DEFAULT_THROTTLE_CLASSES
     )
@@ -96,6 +93,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
 
 class CookieTokenRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]
+    throttle_scope = "refresh"
     throttle_classes = [RefreshRateThrottle]
 
     def post(self, request, *args, **kwargs):
@@ -162,16 +160,14 @@ def api_logout(request):
     return clear_auth_cookies(resp)
 
 
-class RSALoginView(TokenObtainPairView):
+class LoginView(TokenObtainPairView):
     """
-    Login view that ENFORCES RSA-encrypted password submissions.
-    This is the new secure login endpoint that requires encrypted passwords
-    with nonce.
+    Login view that accepts plaintext username/password credentials.
     """
 
     permission_classes = [AllowAny]
     throttle_scope = "login"
-    serializer_class = RSAEncryptedLoginSerializer
+    serializer_class = PlaintextLoginSerializer
     throttle_classes = LOGIN_VIEW_THROTTLES + tuple(
         api_settings.DEFAULT_THROTTLE_CLASSES
     )

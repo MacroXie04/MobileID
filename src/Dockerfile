@@ -7,9 +7,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set work directory
 WORKDIR /app
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:0.9 /uv /uvx /bin/
-
 # Install system dependencies
 # We need build tools for mysqlclient (pkg-config, default-libmysqlclient-dev, build-essential)
 # and libpq-dev for potential psycopg build requirements or client tools
@@ -20,9 +17,9 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies (production only, no dev group)
-COPY pyproject.toml uv.lock /app/
-RUN uv sync --frozen --no-dev --no-editable
+# Install Python dependencies (production only)
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project
 COPY . /app/
@@ -31,7 +28,7 @@ RUN chmod +x /run.sh
 
 # Collect static files
 # Use a dummy secret key for build step; production key should be provided at runtime
-RUN SECRET_KEY=build_secret uv run --no-dev python manage.py collectstatic --noinput
+RUN SECRET_KEY=build_secret python manage.py collectstatic --noinput
 
 # Expose port
 EXPOSE 8080

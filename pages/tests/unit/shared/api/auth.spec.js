@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  fetchLoginChallenge,
   login,
   userInfo,
   logout,
@@ -24,13 +23,6 @@ vi.mock('@shared/api/client', () => ({
   apiRequest: (...args) => mockApiRequest(...args),
 }));
 
-const mockEncryptPassword = vi.fn();
-const mockClearPublicKeyCache = vi.fn();
-vi.mock('@shared/utils/encryption', () => ({
-  encryptPassword: (...args) => mockEncryptPassword(...args),
-  clearPublicKeyCache: () => mockClearPublicKeyCache(),
-}));
-
 const mockClearAuthCookies = vi.fn();
 const mockClearAuthStorage = vi.fn();
 vi.mock('@shared/utils/cookie', () => ({
@@ -43,43 +35,21 @@ describe('auth API', () => {
     vi.clearAllMocks();
   });
 
-  describe('fetchLoginChallenge', () => {
-    it('should call apiRequest with login-challenge endpoint', async () => {
-      const mockChallenge = { nonce: 'test-nonce', kid: 'key-1', public_key: 'pem-key' };
-      mockApiRequest.mockResolvedValue(mockChallenge);
-
-      const result = await fetchLoginChallenge();
-
-      expect(mockApiRequest).toHaveBeenCalledWith('/authn/login-challenge/');
-      expect(result).toEqual(mockChallenge);
-    });
-  });
-
   describe('login', () => {
-    it('should fetch challenge, encrypt password, and call login endpoint', async () => {
-      const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
-      mockApiRequest
-        .mockResolvedValueOnce(mockChallenge) // fetchLoginChallenge
-        .mockResolvedValueOnce({ message: 'Login successful' }); // login
-      mockEncryptPassword.mockResolvedValue('encrypted-password');
+    it('should call login endpoint with username and password', async () => {
+      mockApiRequest.mockResolvedValueOnce({ message: 'Login successful' });
 
       const result = await login('testuser', 'password123');
 
-      expect(mockApiRequest).toHaveBeenCalledWith('/authn/login-challenge/');
-      expect(mockEncryptPassword).toHaveBeenCalledWith('password123', mockChallenge);
       expect(mockApiRequest).toHaveBeenCalledWith('/authn/login/', {
         method: 'POST',
-        body: { username: 'testuser', password: 'encrypted-password' },
+        body: { username: 'testuser', password: 'password123' },
       });
       expect(result).toEqual({ message: 'Login successful' });
     });
 
     it('should not store tokens locally (cookie-only auth)', async () => {
-      const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
-      mockApiRequest
-        .mockResolvedValueOnce(mockChallenge)
-        .mockResolvedValueOnce({ message: 'Login successful' });
-      mockEncryptPassword.mockResolvedValue('encrypted');
+      mockApiRequest.mockResolvedValueOnce({ message: 'Login successful' });
 
       await login('user', 'pass');
 
@@ -87,33 +57,9 @@ describe('auth API', () => {
       expect(mockClearAuthCookies).not.toHaveBeenCalled();
     });
 
-    it('should clear public key cache on 401 error', async () => {
-      const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
-      const apiError = new ApiError('Invalid credentials', 401, { detail: 'Bad password' });
-      mockApiRequest.mockResolvedValueOnce(mockChallenge).mockRejectedValueOnce(apiError);
-      mockEncryptPassword.mockResolvedValue('encrypted');
-
-      await expect(login('user', 'pass')).rejects.toThrow();
-
-      expect(mockClearPublicKeyCache).toHaveBeenCalled();
-    });
-
-    it('should clear public key cache on 410 error (key rotated)', async () => {
-      const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
-      const apiError = new ApiError('Key expired', 410, { detail: 'Key has been rotated' });
-      mockApiRequest.mockResolvedValueOnce(mockChallenge).mockRejectedValueOnce(apiError);
-      mockEncryptPassword.mockResolvedValue('encrypted');
-
-      await expect(login('user', 'pass')).rejects.toThrow();
-
-      expect(mockClearPublicKeyCache).toHaveBeenCalled();
-    });
-
     it('should throw ApiError with detail for auth errors', async () => {
-      const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
       const apiError = new ApiError('Error', 401, { detail: 'Custom error message' });
-      mockApiRequest.mockResolvedValueOnce(mockChallenge).mockRejectedValueOnce(apiError);
-      mockEncryptPassword.mockResolvedValue('encrypted');
+      mockApiRequest.mockRejectedValueOnce(apiError);
 
       try {
         await login('user', 'pass');
@@ -125,10 +71,8 @@ describe('auth API', () => {
     });
 
     it('should use default message when no detail provided', async () => {
-      const mockChallenge = { nonce: 'nonce', kid: 'kid', public_key: 'key' };
       const apiError = new ApiError('Error', 401, {});
-      mockApiRequest.mockResolvedValueOnce(mockChallenge).mockRejectedValueOnce(apiError);
-      mockEncryptPassword.mockResolvedValue('encrypted');
+      mockApiRequest.mockRejectedValueOnce(apiError);
 
       try {
         await login('user', 'pass');
@@ -291,7 +235,9 @@ describe('auth API', () => {
 
     it('should re-throw non-token errors', async () => {
       const userData = { username: 'newuser', password: 'pass' };
-      const validationError = new ApiError('Validation error', 400, { username: 'Already exists' });
+      const validationError = new ApiError('Validation error', 400, {
+        username: 'Already exists',
+      });
       mockApiRequest.mockRejectedValue(validationError);
 
       await expect(register(userData)).rejects.toThrow();

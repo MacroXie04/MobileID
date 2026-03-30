@@ -95,7 +95,7 @@
             </div>
             <div slot="end">
               <md-switch
-                :disabled="isUserGroup || !currentBarcodeHasProfile"
+                :disabled="!currentBarcodeHasProfile"
                 :selected="associateUserProfileWithBarcode"
                 @change="(e) => $emit('update-associate', e.target.selected)"
               ></md-switch>

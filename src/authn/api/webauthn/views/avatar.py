@@ -8,8 +8,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from authn.constants import MAX_AVATAR_SIZE_BYTES
 from ..forms import UserRegisterForm
+
+MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 from ..helpers import _b64_any_to_bytes
 
 

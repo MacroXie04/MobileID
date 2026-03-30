@@ -1,6 +1,5 @@
-import { register, userInfo } from '@shared/api/auth.js';
+import { register } from '@shared/api/auth.js';
 import { ApiError } from '@shared/api/client';
-import { setUserInfo } from '@shared/state/authState';
 
 export function useRegisterSubmit({
   formData,
@@ -37,17 +36,8 @@ export function useRegisterSubmit({
         return;
       }
 
-      try {
-        const user = await userInfo();
-        if (user) {
-          setUserInfo(user);
-          await router.push('/');
-        } else {
-          await router.push('/login');
-        }
-      } catch {
-        await router.push('/login');
-      }
+      // Account created but not activated — redirect to login with message
+      await router.push({ path: '/login', query: { registered: 'true' } });
     } catch (error) {
       console.error('Registration error:', error);
 

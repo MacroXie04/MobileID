@@ -3,7 +3,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from index.permissions import IsSchoolGroup
 from index.serializers import (
     BarcodeSerializer,
     DynamicBarcodeWithProfileSerializer,
@@ -15,10 +14,9 @@ from index.services.transfer_barcode import TransferBarcodeParser
 class TransferDynamicBarcodeAPIView(APIView):
     """
     API endpoint for creating dynamic barcodes by parsing HTML content.
-    Only School group users can use this endpoint.
     """
 
-    permission_classes = [IsAuthenticated, IsSchoolGroup]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         """Parse HTML and create a new dynamic barcode with profile data"""

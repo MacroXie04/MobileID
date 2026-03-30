@@ -1,12 +1,12 @@
 from .avatar import api_avatar_upload, user_img
-from .challenge import login_challenge, csrf_token
+from .challenge import csrf_token
 from .devices import list_devices, revoke_all_other_devices, revoke_device
 from .profile import api_profile, user_info
 from .registration import api_register
 from .tokens import (
     CookieTokenObtainPairView,
     CookieTokenRefreshView,
-    RSALoginView,
+    LoginView,
     api_logout,
 )
 
@@ -21,8 +21,7 @@ __all__ = [
     "list_devices",
     "revoke_all_other_devices",
     "revoke_device",
-    "login_challenge",
-    "RSALoginView",
+    "LoginView",
     "user_img",
     "user_info",
 ]

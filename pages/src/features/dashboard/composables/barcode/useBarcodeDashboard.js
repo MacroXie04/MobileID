@@ -27,8 +27,6 @@ export default function useBarcodeDashboard() {
   });
   const barcodes = ref([]);
   const barcodeChoices = ref([]);
-  const isUserGroup = ref(false);
-  const isSchoolGroup = ref(false);
 
   const isDynamicSelected = computed(() => {
     if (!settings.value.barcode) return false;
@@ -110,8 +108,6 @@ export default function useBarcodeDashboard() {
       };
 
       barcodes.value = data.barcodes || [];
-      isUserGroup.value = Boolean(data.is_user_group);
-      isSchoolGroup.value = Boolean(data.is_school_group);
     } catch (error) {
       showMessage('Failed to load dashboard: ' + (error?.message || 'Unknown error'), 'danger');
     } finally {
@@ -565,8 +561,6 @@ export default function useBarcodeDashboard() {
     settings,
     barcodes,
     barcodeChoices,
-    isUserGroup,
-    isSchoolGroup,
     isDynamicSelected,
     currentBarcodeHasProfile,
     selectedBarcode,

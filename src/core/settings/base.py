@@ -1,15 +1,19 @@
 """
 Base Django settings for core project.
 
-This file contains all common settings shared between development and production.  # noqa: E501
+This file contains all common settings shared between development and production.
 Environment-specific settings are defined in dev.py and prod.py.
+
+Settings are split across multiple files for organization:
+- base.py: Core Django configuration (this file)
+- database.py: Database connection configuration
+- auth.py: Authentication and password settings
+- security.py: Security, caching, session, and throttling settings
 """
 
 import os
-from datetime import timedelta
 from pathlib import Path
 
-import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -101,11 +105,11 @@ MIDDLEWARE = [
     # Default Django middleware
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "core.middleware.admin_ip_whitelist.AdminIPWhitelistMiddleware",
-    "core.middleware.admin_throttle.AdminLoginThrottleMiddleware",
+    "core.middleware.admin_security.AdminIPWhitelistMiddleware",
+    "core.middleware.admin_security.AdminLoginThrottleMiddleware",
     "core.middleware.csp.ContentSecurityPolicyMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "core.middleware.admin_session.AdminSessionExpiryMiddleware",
+    "core.middleware.admin_security.AdminSessionExpiryMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -135,178 +139,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
-# Database (profile-based configuration)
-# --- DB profile switch ---
-# DB_PROFILE: "local", "gcp", or "aws" (or any custom name you like)
-DB_PROFILE = os.getenv("DB_PROFILE", "local").lower()
-
-# Common options
-DB_CONN_MAX_AGE = int(os.getenv("DB_CONN_MAX_AGE", "60"))  # persistent connections
-DB_SSL_MODE = os.getenv("DB_SSL_MODE", "").lower()  # "", "require", "verify-full"
-DB_DISABLE_SERVER_CERT_VERIFICATION = (
-    os.getenv("DB_SSL_DISABLE_VERIFY", "false").lower() == "true"
-)
-
-
-def _apply_common(db_cfg: dict) -> dict:
-    db_cfg.setdefault("CONN_MAX_AGE", DB_CONN_MAX_AGE)
-    # SSL (useful for Cloud SQL / managed DBs)
-    if DB_SSL_MODE in {"require", "verify-ca", "verify-full"}:
-        engine = str(db_cfg.get("ENGINE", "")).lower()
-        db_cfg.setdefault("OPTIONS", {})
-        if "postgresql" in engine:
-            db_cfg["OPTIONS"]["sslmode"] = DB_SSL_MODE
-            if DB_DISABLE_SERVER_CERT_VERIFICATION:
-                # psycopg: sslrootcert='' + sslmode=require will skip verification
-                db_cfg["OPTIONS"]["sslmode"] = "require"
-        elif "mysql" in engine:
-            # mysqlclient enables TLS if ssl option exists
-            db_cfg["OPTIONS"].setdefault("ssl", {})
-    return db_cfg
-
-
-def _from_url(url_env_name: str, default_url: str = "") -> dict:
-    url = os.getenv(url_env_name, default_url)
-    if not url:
-        return {}
-    cfg = dj_database_url.parse(
-        url,
-        conn_max_age=DB_CONN_MAX_AGE,
-        ssl_require=(DB_SSL_MODE == "require"),
-    )
-    # dj-database-url may inject postgres-style sslmode for MySQL when
-    # ssl_require is enabled. mysqlclient rejects that keyword.
-    engine = str(cfg.get("ENGINE", "")).lower()
-    if "mysql" in engine:
-        cfg.setdefault("OPTIONS", {})
-        cfg["OPTIONS"].pop("sslmode", None)
-    return _apply_common(cfg)
-
-
-DATABASES = {}
-
-# Check if running in Google Cloud Run
-if os.environ.get("K_SERVICE"):
-    # Cloud Run (PostgreSQL via Cloud SQL Auth Proxy)
-    DATABASES["default"] = {
-        "ENGINE": "django.db.backends.postgresql",
-        "HOST": f"/cloudsql/{os.environ.get('INSTANCE_CONNECTION_NAME')}",
-        "USER": os.environ.get("DB_USER"),
-        "NAME": os.environ.get("DB_NAME"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-    }
-else:
-    # Local development or other environments
-    # 1) Prefer explicit URL for the chosen profile
-    #    - For local MySQL, set DATABASE_URL_LOCAL like:
-    #      mysql://user:pass@127.0.0.1:3306/dbname
-    #    - For local Postgres: postgres://user:pass@127.0.0.1:5432/dbname
-    #    - For GCP/Cloud SQL TCP: same postgres/mysql URL pointing to the Cloud SQL
-    #      proxy IP or public IP
-    #    - For GCP/Cloud SQL Unix socket:
-    #        postgres:  postgres://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE  # noqa: E501
-    #        mysql:     mysql://user:pass@/dbname?unix_socket=/cloudsql/PROJECT:REGION:INSTANCE  # noqa: E501
-    profile_to_env = {
-        "local": "DATABASE_URL_LOCAL",
-        "gcp": "DATABASE_URL_GCP",
-        "aws": "DATABASE_URL_AWS",
-    }
-
-    db_cfg = _from_url(profile_to_env.get(DB_PROFILE, "DATABASE_URL"))
-    if not db_cfg and DB_PROFILE not in profile_to_env:
-        db_cfg = _from_url("DATABASE_URL")
-    if not db_cfg:
-        # 2) Fallback to legacy discrete vars (DB_ENGINE, DB_NAME, DB_USER,
-        # DB_PASSWORD, DB_HOST, DB_PORT)
-        default_engine = "mysql" if DB_PROFILE in {"gcp", "aws"} else "postgresql"
-        ENGINE = os.getenv("DB_ENGINE", default_engine).lower()
-        if ENGINE in {
-            "postgres",
-            "postgresql",
-            "psql",
-            "django.db.backends.postgresql",
-        }:
-            engine_path = "django.db.backends.postgresql"
-        elif ENGINE in {"mysql", "django.db.backends.mysql"}:
-            engine_path = "django.db.backends.mysql"
-        else:
-            engine_path = "django.db.backends.sqlite3"
-
-        host = os.getenv("DB_HOST", "")
-        port = os.getenv("DB_PORT", "")
-        name = os.getenv("DB_NAME", "")
-        user = os.getenv("DB_USER", "")
-        pwd = os.getenv("DB_PASSWORD", "")
-
-        # Cloud SQL Unix socket override (if provided)
-        # For Postgres: set CLOUDSQL_UNIX_SOCKET=/cloudsql/PROJECT:REGION:INSTANCE
-        # For MySQL:   same var; django will pass via OPTIONS
-        instance_connection_name = os.getenv("INSTANCE_CONNECTION_NAME", "")
-        unix_socket = os.getenv("CLOUDSQL_UNIX_SOCKET", "")
-        if DB_PROFILE == "gcp" and instance_connection_name and not unix_socket:
-            unix_socket = f"/cloudsql/{instance_connection_name}"
-
-        options = {}
-        if unix_socket:
-            if "postgresql" in engine_path:
-                # psycopg uses host=/cloudsql/instance to connect via socket
-                host = unix_socket
-            elif "mysql" in engine_path:
-                options["unix_socket"] = unix_socket
-
-        if DB_SSL_MODE in {"require", "verify-ca", "verify-full"}:
-            if "postgresql" in engine_path:
-                options["sslmode"] = DB_SSL_MODE
-            elif "mysql" in engine_path:
-                options["ssl"] = {}
-
-        db_cfg = {
-            "ENGINE": engine_path,
-            "NAME": name,
-            "USER": user,
-            "PASSWORD": pwd,
-            "HOST": host or None,
-            "PORT": port or None,
-            "OPTIONS": options or {},
-            "CONN_MAX_AGE": DB_CONN_MAX_AGE,
-        }
-
-    DATABASES["default"] = db_cfg
-
-# Use SQLite for tests, configured database for everything else
-if TESTING:
-    DATABASES["default"] = {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",  # Use in-memory database for tests
-    }
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"  # noqa: E501
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",  # noqa: E501
-        "OPTIONS": {"min_length": 10},
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"  # noqa: E501
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"  # noqa: E501
-    },
-]
-
-# Prefer Argon2; keep PBKDF2 variants as fallback for compatibility
-PASSWORD_HASHERS = [
-    "django.contrib.auth.hashers.Argon2PasswordHasher",
-    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
-    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
-    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
-]
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -323,162 +155,7 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Account security settings
-MAX_FAILED_LOGIN_ATTEMPTS = int(os.getenv("MAX_FAILED_LOGIN_ATTEMPTS", "5"))
-ACCOUNT_LOCKOUT_DURATION = int(os.getenv("ACCOUNT_LOCKOUT_DURATION", "30"))
-
-# Cache configuration
-# WARNING: The default LocMemCache is per-process. Login challenge nonces
-# (authn/services/login_challenge.py) will NOT be shared across Gunicorn
-# workers. Production with multiple workers MUST set CACHE_BACKEND to a
-# shared backend (e.g. django.core.cache.backends.db.DatabaseCache).
-# Currently run.sh uses --workers 1, so LocMemCache works.
-CACHE_BACKEND = os.getenv(
-    "CACHE_BACKEND", "django.core.cache.backends.locmem.LocMemCache"
-)
-CACHE_LOCATION = os.getenv("CACHE_LOCATION", "unique-snowflake")
-
-CACHES = {
-    "default": {
-        "BACKEND": CACHE_BACKEND,
-        "LOCATION": CACHE_LOCATION,
-    }
-}
-SESSION_ENGINE = os.getenv(
-    "SESSION_ENGINE",
-    (
-        "django.contrib.sessions.backends.cache"
-        if TESTING
-        else "django.contrib.sessions.backends.db"
-    ),
-)
-
-# Session settings - 30 days; JWT refresh tokens handle re-authentication
-SESSION_COOKIE_AGE = 2592000  # 30 days in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser close
-SESSION_SAVE_EVERY_REQUEST = (
-    False  # JWT handles API auth; admin sessions use AdminSessionExpiryMiddleware
-)
-
-# Cookie security defaults (overridden in dev.py / prod.py)
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SECURE = False  # Overridden to True in prod.py
-CSRF_COOKIE_SECURE = False  # Overridden to True in prod.py
-CSRF_COOKIE_HTTPONLY = False  # Must be False so JS can read CSRF token
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = "SAMEORIGIN"
-
-# REST throttle settings
-# Default to disabling throttles in development (when DEBUG=True) unless testing.
-# Can be overridden with DISABLE_THROTTLES environment variable.
-# Production overrides this in prod.py.
-# Note: TESTING takes precedence - when running tests, throttles are always enabled
-# to ensure security behavior is properly covered.
-if TESTING:
-    # Always keep throttles enabled when running tests
-    DISABLE_THROTTLES = False
-else:
-    throttle_setting = env("DISABLE_THROTTLES")
-    if throttle_setting not in (None, ""):
-        DISABLE_THROTTLES = throttle_setting.lower() == "true"
-    else:
-        # Default to True (disable throttles) for development
-        # Production should override this in prod.py
-        DISABLE_THROTTLES = True
-THROTTLES_ENABLED = not DISABLE_THROTTLES
-
-# CORS settings
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "authn.middleware.authentication.CookieJWTAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
-        "rest_framework.throttling.ScopedRateThrottle",
-    ],
-    "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/day",
-        "user": "1000/day",
-        "login": "5/minute",
-        "login_username": "5/minute",
-        "registration": "5/day",
-        "challenge": "10/minute",
-        "refresh": "10/minute",
-        "barcode_generation": "100/hour",
-        "barcode_management": "50/hour",
-        "user_profile": "20/hour",
-        "admin_login": "5/15min",
-    },
-}
-
-if DISABLE_THROTTLES:
-    REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = []
-    REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {}
-
-SIMPLE_JWT = {
-    # Tests: keep tokens long to avoid flakiness; Prod: short-lived access,
-    # moderate refresh
-    "ACCESS_TOKEN_LIFETIME": (
-        timedelta(days=1)
-        if TESTING
-        else timedelta(minutes=int(env("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", "30")))
-    ),
-    "REFRESH_TOKEN_LIFETIME": timedelta(
-        days=1 if TESTING else int(env("JWT_REFRESH_TOKEN_LIFETIME_DAYS", "7"))
-    ),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
-    "ALGORITHM": "HS256",
-    "SIGNING_KEY": SECRET_KEY,
-}
-
-AUTH_EXPOSE_TOKENS_IN_BODY = (
-    env("AUTH_EXPOSE_TOKENS_IN_BODY", "False").lower() == "true"
-)
-
-LOGIN_CHALLENGE_TTL_SECONDS = int(env("LOGIN_CHALLENGE_TTL_SECONDS", "120"))
-LOGIN_CHALLENGE_NONCE_BYTES = int(env("LOGIN_CHALLENGE_NONCE_BYTES", "16"))
-
-# Security headers
-PERMISSIONS_POLICY = env(
-    "PERMISSIONS_POLICY",
-    "camera=(*), microphone=(), geolocation=(), payment=()",
-)
-CROSS_ORIGIN_OPENER_POLICY = env("CROSS_ORIGIN_OPENER_POLICY", "same-origin")
-CROSS_ORIGIN_RESOURCE_POLICY = env("CROSS_ORIGIN_RESOURCE_POLICY", "same-origin")
-CSP_REPORT_ONLY = env("CSP_REPORT_ONLY", "False").lower() == "true"
-
-# Admin security settings
-ADMIN_URL_PATH = env("ADMIN_URL_PATH", "admin")
-ADMIN_ALLOWED_IPS = csv_env("ADMIN_ALLOWED_IPS", [])
-ADMIN_SESSION_COOKIE_AGE = int(env("ADMIN_SESSION_COOKIE_AGE", "7200"))  # 2 hours
-
-# Logging configuration
-if TESTING:
-    # Suppress warnings during testing to avoid noise from expected 4xx
-    # responses and dependencies
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "handlers": {
-            "null": {
-                "class": "logging.NullHandler",
-            },
-        },
-        "loggers": {
-            "django.request": {
-                "handlers": ["null"],
-                "level": "ERROR",  # Only show actual errors, not warnings
-                "propagate": False,
-            },
-            "py.warnings": {
-                "handlers": ["null"],
-                "level": "ERROR",
-                "propagate": False,
-            },
-        },
-    }
+# Import settings from sub-modules
+from core.settings.database import *  # noqa: E402, F401, F403
+from core.settings.auth import *  # noqa: E402, F401, F403
+from core.settings.security import *  # noqa: E402, F401, F403

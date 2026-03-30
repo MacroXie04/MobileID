@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator
 
-from authn.services.webauthn import (
+from authn.services import (
     create_user_profile,
     generate_unique_information_id,
 )
@@ -82,7 +82,10 @@ class UserRegisterForm(UserCreationForm):
 
     # save
     def save(self, commit=True):
-        user = super().save(commit)
+        user = super().save(commit=False)
+        user.is_active = False
+        if commit:
+            user.save()
         name = self.cleaned_data["name"]
         info_id = (
             self.cleaned_data.get("information_id") or generate_unique_information_id()

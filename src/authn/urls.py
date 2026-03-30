@@ -1,13 +1,11 @@
-from authn.api.keys import get_public_key
 from authn.api.webauthn import (
     CookieTokenObtainPairView,
     CookieTokenRefreshView,
-    RSALoginView,
+    LoginView,
     api_logout,
     list_devices,
     revoke_all_other_devices,
     revoke_device,
-    login_challenge,
     csrf_token,
     user_info,
     api_register,
@@ -20,15 +18,9 @@ from django.urls import path
 app_name = "authn"
 
 urlpatterns = [
-    # RSA public key endpoint (must be before token endpoint for proper
-    # routing)
-    path("public-key/", get_public_key, name="api_public_key"),
     path("csrf/", csrf_token, name="api_csrf_token"),
     # JWT authentication endpoints
-    path("login-challenge/", login_challenge, name="api_login_challenge"),
-    path(
-        "login/", RSALoginView.as_view(), name="api_rsa_login"
-    ),  # New encrypted-only login
+    path("login/", LoginView.as_view(), name="api_login"),
     path(
         "token/",
         CookieTokenObtainPairView.as_view(),

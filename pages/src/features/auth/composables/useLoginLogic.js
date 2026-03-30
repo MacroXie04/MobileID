@@ -1,5 +1,5 @@
 import { onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { login, userInfo } from '@shared/api/auth.js';
 import { ApiError } from '@shared/api/client.js';
 import { setUserInfo } from '@shared/state/authState';
@@ -7,9 +7,11 @@ import { useLoginValidation } from '@auth/composables/useLoginValidation.js';
 
 export function useLoginLogic() {
   const router = useRouter();
+  const route = useRoute();
   const formData = reactive({ username: '', password: '' });
   const loading = ref(false);
   const showPassword = ref(false);
+  const registrationSuccess = ref(route.query.registered === 'true');
 
   // Template refs
   const iconBtn = ref(null);
@@ -79,6 +81,7 @@ export function useLoginLogic() {
     formData,
     loading,
     showPassword,
+    registrationSuccess,
     iconBtn,
     submitBtn,
     errors,

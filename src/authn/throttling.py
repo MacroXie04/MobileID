@@ -124,15 +124,6 @@ class AdminLoginThrottle(_ScopeRateFallbackMixin, SimpleRateThrottle):
         return super().parse_rate(rate)
 
 
-class ChallengeRateThrottle(_ScopeRateFallbackMixin, ScopedRateThrottle):
-    """
-    Throttle login challenge requests.
-    """
-
-    scope = "challenge"
-    fallback_rate = "10/minute"
-
-
 class RefreshRateThrottle(_ScopeRateFallbackMixin, ScopedRateThrottle):
     """
     Throttle token refresh requests.

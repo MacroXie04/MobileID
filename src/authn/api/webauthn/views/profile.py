@@ -12,7 +12,6 @@ from ..helpers import _b64_any_to_bytes, _clean_base64
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def user_info(request):
-    groups = list(request.user.groups.values_list("name", flat=True))
     try:
         profile = request.user.userprofile
         profile_data = {
@@ -24,8 +23,8 @@ def user_info(request):
     return Response(
         {
             "username": request.user.username,
-            "groups": groups,
             "profile": profile_data,
+            "is_activated": request.user.is_active,
         }
     )
 

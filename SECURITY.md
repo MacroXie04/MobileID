@@ -40,7 +40,6 @@ We are committed to addressing security vulnerabilities promptly:
 
 MobileID implements several security features to protect user data:
 
-- **RSA Encryption**: Passwords are encrypted on the client side using RSA before transmission.
 - **WebAuthn**: Support for FIDO2/WebAuthn for secure, passwordless authentication.
 - **JWT Authentication**: Secure, HTTP-only cookies are used for session management.
 - **CSRF Protection**: All state-changing requests are protected against Cross-Site Request Forgery.

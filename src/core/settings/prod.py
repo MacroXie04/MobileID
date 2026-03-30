@@ -192,10 +192,10 @@ LOGGING = {
     },
 }
 
-# Warn if production is using LocMemCache (nonces won't work with >1 worker)
+# Warn if production is using LocMemCache (cache won't be shared with >1 worker)
 if CACHE_BACKEND == "django.core.cache.backends.locmem.LocMemCache":
     warnings.warn(
-        "Production is using LocMemCache. Login challenge nonces will not "
-        "be shared across workers. Set CACHE_BACKEND to a shared backend.",
+        "Production is using LocMemCache. Throttle counters and session state "
+        "will not be shared across workers. Set CACHE_BACKEND to a shared backend.",
         stacklevel=1,
     )

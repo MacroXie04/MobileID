@@ -1,38 +1,17 @@
 import { ApiError, apiRequest } from './client';
-import { clearPublicKeyCache, encryptPassword } from '@shared/utils/encryption';
 import { clearAuthCookies, clearAuthStorage } from '@shared/utils/cookie';
 import { clearUserInfo } from '@shared/state/authState';
 
-export async function fetchLoginChallenge() {
-  return apiRequest('/authn/login-challenge/');
-}
-
 export async function login(username, password) {
-  // NOTE: This is a change from the original behavior.
-  // The original `login` function did not throw an error on a non-2xx response
-  // (e.g., for invalid credentials). This new version WILL throw an `ApiError`.
-  // The `handleSubmit` function in `Login.vue` should be updated to catch this
-  // error and display the message from `error.data` or `error.message`.
-  // This creates a more consistent and robust error handling pattern.
-
   try {
-    const challenge = await fetchLoginChallenge();
-    const encryptedPassword = await encryptPassword(password, challenge);
-
-    // Use the new encrypted-only login endpoint
     const response = await apiRequest('/authn/login/', {
       method: 'POST',
-      body: { username, password: encryptedPassword },
+      body: { username, password },
     });
 
     // Server sets auth cookies; no localStorage storage needed
     return response;
   } catch (error) {
-    // If we get a 401/410, the key might have rotated - clear cache
-    if (error instanceof ApiError && (error.status === 401 || error.status === 410)) {
-      clearPublicKeyCache();
-    }
-
     if (error instanceof ApiError) {
       const detail = error.data?.detail || 'Invalid username or password.';
       const existingData = error.data && typeof error.data === 'object' ? error.data : {};

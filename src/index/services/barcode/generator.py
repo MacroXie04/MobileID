@@ -26,29 +26,8 @@ from .utils import _timestamp
 
 
 def generate_barcode(user) -> dict:
-    """Generate or refresh a barcode for *user* based on their group membership."""
+    """Generate or refresh a barcode for *user*."""
     result = RESULT_TEMPLATE.copy()
-
-    # Determine account type via groups (single query)
-    user_group_names = set(user.groups.values_list("name", flat=True))
-    is_staff = "Staff" in user_group_names
-    is_user = "User" in user_group_names
-    is_school = "School" in user_group_names
-
-    # STAFF — not allowed
-    if is_staff:
-        result.update(
-            status="error", message="Staff accounts cannot generate barcodes."
-        )
-        return result
-
-    # Unknown or missing group
-    if not (is_user or is_school):
-        result.update(status="error", message="Permission Denied.")
-        return result
-
-    # --------------------------------------------------------------
-    # handle generate barcode
 
     # Wrap DB operations in an explicit transaction for select_for_update
     with transaction.atomic():
@@ -75,7 +54,7 @@ def generate_barcode(user) -> dict:
             },
         )
 
-        if pull_settings.pull_setting == "Enable" and is_school:
+        if pull_settings.pull_setting == "Enable":
             # 1. Check for recent personal usage (Stickiness)
             cutoff_10m = timezone.now() - timedelta(minutes=STICKINESS_MINUTES)
             recent_txn = (
@@ -117,23 +96,6 @@ def generate_barcode(user) -> dict:
 
         # Use the user-selected barcode
         selected = settings.barcode
-
-        # For User type, ensure they have an identification barcode
-        if is_user:
-            # Find or create their identification barcode
-            ident_barcode = Barcode.objects.filter(
-                user=user, barcode_type=BARCODE_IDENTIFICATION
-            ).first()
-
-            if not ident_barcode:
-                # Create one if it doesn't exist
-                ident_barcode = _create_identification_barcode(user)
-
-            # Force the selection to identification barcode
-            selected = ident_barcode
-            settings.barcode = ident_barcode
-            settings.associate_user_profile_with_barcode = False
-            settings.save()
 
         if not selected:
             result.update(status="error", message="No barcode selected.")

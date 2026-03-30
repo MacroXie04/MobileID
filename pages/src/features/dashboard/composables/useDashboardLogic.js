@@ -39,8 +39,6 @@ export function useDashboardLogic() {
   });
   const barcodes = ref([]);
   const barcodeChoices = ref([]);
-  const isUserGroup = ref(false);
-  const isSchoolGroup = ref(false);
 
   // Filter state
   const filterType = ref('All'); // All | Dynamic | Static | Identification
@@ -191,8 +189,6 @@ export function useDashboardLogic() {
       }
 
       barcodes.value = data.barcodes || [];
-      isUserGroup.value = Boolean(data.is_user_group);
-      isSchoolGroup.value = Boolean(data.is_school_group);
     } catch (error) {
       showMessage('Failed to load dashboard: ' + error.message, 'danger');
     } finally {
@@ -409,8 +405,6 @@ export function useDashboardLogic() {
     pullSettings,
     barcodes,
     barcodeChoices,
-    isUserGroup,
-    isSchoolGroup,
     filterType,
     ownedOnly,
     showConfirmDialog,
