@@ -117,11 +117,7 @@ export function useSchoolBarcodeDisplaySetup({ props, emit } = {}) {
   }
 
   async function renderBarcodeSequence(data, options = {}) {
-    const {
-      displayDuration = 10000,
-      moduleWidth = 2.5,
-      moduleHeight = 1,
-    } = options;
+    const { displayDuration = 10000, moduleWidth = 2.5, moduleHeight = 1 } = options;
 
     if (!data) {
       renderError.value = 'Unable to display barcode';

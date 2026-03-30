@@ -116,7 +116,10 @@ export function useHomeLogic() {
         } catch (error) {
           serverStatus.value = 'Unable to display barcode';
 
-          if (scannerDetectionEnabled.value && typeof barcodeDisplay.startDetection === 'function') {
+          if (
+            scannerDetectionEnabled.value &&
+            typeof barcodeDisplay.startDetection === 'function'
+          ) {
             await barcodeDisplay.startDetection();
           }
 

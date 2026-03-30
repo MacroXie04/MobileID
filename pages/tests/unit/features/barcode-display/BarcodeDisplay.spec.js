@@ -34,9 +34,7 @@ describe('School BarcodeDisplay', () => {
     vi.useRealTimers();
   });
 
-  it(
-    'shows the barcode only after rendering completes and restores the initial state after the countdown',
-    async () => {
+  it('shows the barcode only after rendering completes and restores the initial state after the countdown', async () => {
     vi.useFakeTimers();
 
     let resolveDraw;
@@ -70,9 +68,7 @@ describe('School BarcodeDisplay', () => {
 
     expect(wrapper.get('#qrcode-div').attributes('aria-hidden')).toBe('true');
     expect(wrapper.get('#qrcode-code').attributes('aria-hidden')).toBe('true');
-    },
-    15000
-  );
+  }, 15000);
 
   it('shows a render error instead of leaving a blank barcode area', async () => {
     mockDrawPdf417.mockRejectedValue(new Error('boom'));
