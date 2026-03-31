@@ -72,7 +72,7 @@ INSTALLED_APPS = [
 
 # Static files
 STATIC_URL = "/static/"
-STATIC_ROOT = Path(os.environ.get("STATIC_ROOT", str(BASE_DIR / "staticfiles")))
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STORAGES = {
     "default": {

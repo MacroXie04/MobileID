@@ -1,8 +1,7 @@
 import { ref } from 'vue';
 
-const base = import.meta.env.BASE_URL || '/';
-const BCMATH_SRC = `${base}js/bcmath-min.js`;
-const PDF417_SRC = `${base}js/pdf417-min.js`;
+const BCMATH_SRC = '/js/bcmath-min.js';
+const PDF417_SRC = '/js/pdf417-min.js';
 
 let pdf417LoadPromise = null;
 
