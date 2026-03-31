@@ -26,10 +26,10 @@ def health_check(request):
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
         response_data["database"] = "connected"
-    except Exception:
+    except Exception as e:
         response_data["status"] = "unhealthy"
         response_data["database"] = "disconnected"
-        response_data["error"] = "Database connection failed"
+        response_data["error"] = str(e)
         return JsonResponse(response_data, status=503)
 
     # Check cache round-trip (non-critical)
