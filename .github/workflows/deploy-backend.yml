@@ -33,9 +33,44 @@ jobs:
           DJANGO_SETTINGS_MODULE: core.settings.dev
         run: python manage.py test
 
+  migrate:
+    name: Run Migrations
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        working-directory: ./src
+        run: pip install -r requirements.txt
+      - name: Run migrations
+        working-directory: ./src
+        env:
+          DJANGO_SETTINGS_MODULE: core.settings.dev
+          DATABASE_URL_LOCAL: ${{ secrets.SUPERBASE_DATABASE_URL }}
+          DB_PROFILE: local
+          DB_SSL_MODE: require
+        run: |
+          python manage.py migrate --noinput
+          python manage.py createcachetable || true
+      - name: Create/update superuser
+        working-directory: ./src
+        env:
+          DJANGO_SETTINGS_MODULE: core.settings.dev
+          DATABASE_URL_LOCAL: ${{ secrets.SUPERBASE_DATABASE_URL }}
+          DB_PROFILE: local
+          DB_SSL_MODE: require
+          DJANGO_SUPERUSER_USERNAME: ${{ secrets.DJANGO_SUPERUSER_USERNAME }}
+          DJANGO_SUPERUSER_PASSWORD: ${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
+          DJANGO_SUPERUSER_EMAIL: ${{ secrets.DJANGO_SUPERUSER_EMAIL }}
+        run: python manage.py initadmin || true
+
   deploy:
     name: Deploy to Vercel
-    needs: test
+    needs: migrate
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
