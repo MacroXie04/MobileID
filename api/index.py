@@ -9,17 +9,18 @@ sys.path.insert(
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings.prod")
 os.environ.setdefault("STATIC_ROOT", "/tmp/staticfiles")
 
+_startup_error = None
+
 try:
     from core.wsgi import application
-
-    app = application
 except Exception:
-    # If Django fails to start (e.g. during build without env vars),
-    # provide an error handler so Vercel can still detect the function.
-    _error = traceback.format_exc()
+    application = None
+    _startup_error = traceback.format_exc()
 
-    def app(environ, start_response):
-        status = "500 Internal Server Error"
-        body = f"Django startup error:\n{_error}".encode()
-        start_response(status, [("Content-Type", "text/plain")])
-        return [body]
+
+def app(environ, start_response):
+    if application is not None:
+        return application(environ, start_response)
+    body = f"Django startup error:\n{_startup_error}".encode()
+    start_response("500 Internal Server Error", [("Content-Type", "text/plain")])
+    return [body]
