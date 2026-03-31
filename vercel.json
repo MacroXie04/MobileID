@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bash build_files.sh",
+  "buildCommand": "which python3 || which python; cd src && python manage.py collectstatic --noinput && python manage.py migrate --noinput && python manage.py createcachetable; python manage.py initadmin || true",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index" }
   ]
