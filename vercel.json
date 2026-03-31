@@ -1,6 +1,4 @@
 {
-  "outputDirectory": "public",
-  "buildCommand": "cd src && python manage.py collectstatic --noinput && python manage.py migrate --noinput && (python manage.py createcachetable || true) && (python manage.py initadmin || true)",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index" }
   ]
