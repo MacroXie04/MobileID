@@ -1,20 +1,18 @@
 #!/bin/bash
 set -e
 
-echo "Installing Python dependencies..."
-pip install -r src/requirements.txt
+cd src
 
 echo "Collecting static files..."
-cd src
-python manage.py collectstatic --noinput
+python3 manage.py collectstatic --noinput
 
 echo "Running database migrations..."
-python manage.py migrate --noinput
+python3 manage.py migrate --noinput
 
 echo "Creating cache table..."
-python manage.py createcachetable || true
+python3 manage.py createcachetable || true
 
 echo "Creating/updating superuser..."
-python manage.py initadmin || true
+python3 manage.py initadmin || true
 
 echo "Build complete."
