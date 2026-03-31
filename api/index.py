@@ -1,7 +1,6 @@
 import os
 import sys
 import traceback
-from http.server import BaseHTTPRequestHandler
 
 # Add Django project to Python path
 sys.path.insert(
@@ -11,13 +10,16 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings.prod")
 os.environ.setdefault("STATIC_ROOT", "/tmp/staticfiles")
 
 try:
-    from core.wsgi import application as app  # noqa: E402
-except Exception as e:
+    from core.wsgi import application
+
+    app = application
+except Exception:
+    # If Django fails to start (e.g. during build without env vars),
+    # provide an error handler so Vercel can still detect the function.
     _error = traceback.format_exc()
 
-    class handler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(500)
-            self.send_header("Content-Type", "text/plain")
-            self.end_headers()
-            self.wfile.write(f"Django startup error:\n{_error}".encode())
+    def app(environ, start_response):
+        status = "500 Internal Server Error"
+        body = f"Django startup error:\n{_error}".encode()
+        start_response(status, [("Content-Type", "text/plain")])
+        return [body]
