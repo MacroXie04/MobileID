@@ -2,8 +2,8 @@
   <div class="privacy-container">
     <div class="privacy-content">
       <header class="privacy-header">
-        <img src="/images/mobileid.svg" alt="catcard.online logo" class="privacy-logo" />
-        <h1>Privacy Policy for catcard.online</h1>
+        <img :src="`${baseUrl}images/mobileid.svg`" alt="Mobile ID logo" class="privacy-logo" />
+        <h1>Privacy Policy for Mobile ID</h1>
         <p class="last-updated">Last updated: December 2025</p>
       </header>
 
@@ -54,6 +54,7 @@
 <script setup>
 import { useRouter } from 'vue-router';
 
+const baseUrl = import.meta.env.BASE_URL;
 const router = useRouter();
 
 const goBack = () => {

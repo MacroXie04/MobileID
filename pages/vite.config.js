@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import { pathAlias } from './alias.config.mjs';
 
 export default defineConfig(({ mode }) => ({
+  base: process.env.VITE_BASE_PATH || '/',
   plugins: [
     vue({
       template: {

@@ -1,0 +1,58 @@
+name: Deploy Backend to Vercel
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'api/**', 'vercel.json', 'build_files.sh']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        working-directory: ./src
+        run: pip install -r requirements.txt
+      - name: Run tests
+        working-directory: ./src
+        env:
+          TESTING: 'True'
+          DJANGO_SETTINGS_MODULE: core.settings.dev
+        run: python manage.py test
+
+  deploy:
+    name: Deploy to Vercel
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+
+      - name: Build
+        run: vercel build --prod --token=$VERCEL_TOKEN
+
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
