@@ -239,7 +239,7 @@ jobs:
           AMPLIFY_BRANCH: ${{ vars.AMPLIFY_BRANCH }}
           BACKEND_CLOUDFRONT_DOMAIN: ${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}
           DJANGO_SUPERUSER_USERNAME: ${{ vars.DJANGO_SUPERUSER_USERNAME }}
-          DJANGO_SUPERUSER_PASSWORD_ARN: ${{ secrets.DJANGO_SUPERUSER_PASSWORD_ARN }}
+          DJANGO_SUPERUSER_PASSWORD: ${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
         run: |
           set -euo pipefail
 
@@ -249,7 +249,7 @@ jobs:
             AMPLIFY_BRANCH
             BACKEND_CLOUDFRONT_DOMAIN
             DJANGO_SUPERUSER_USERNAME
-            DJANGO_SUPERUSER_PASSWORD_ARN
+            DJANGO_SUPERUSER_PASSWORD
           )
 
           for name in "${required[@]}"; do
@@ -399,16 +399,10 @@ jobs:
       - name: Smoke test same-origin auth session
         env:
           DJANGO_SUPERUSER_USERNAME: ${{ vars.DJANGO_SUPERUSER_USERNAME }}
-          DJANGO_SUPERUSER_PASSWORD_ARN: ${{ secrets.DJANGO_SUPERUSER_PASSWORD_ARN }}
+          DJANGO_SUPERUSER_PASSWORD: ${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
         run: |
           set -euo pipefail
           frontend_origin="https://${{ vars.AMPLIFY_BRANCH }}.${{ vars.AMPLIFY_APP_ID }}.amplifyapp.com"
-          admin_password="$(
-            aws secretsmanager get-secret-value \
-              --secret-id "${DJANGO_SUPERUSER_PASSWORD_ARN}" \
-              --query 'SecretString' \
-              --output text
-          )"
 
           for attempt in $(seq 1 12); do
             rm -f /tmp/frontend-auth.cookies
@@ -426,7 +420,7 @@ jobs:
             login_code="$(
               jq -nc \
                 --arg username "${DJANGO_SUPERUSER_USERNAME}" \
-                --arg password "${admin_password}" \
+                --arg password "${DJANGO_SUPERUSER_PASSWORD}" \
                 '{username: $username, password: $password}' \
               | curl --show-error --silent \
                   --cookie /tmp/frontend-auth.cookies \
