@@ -146,10 +146,29 @@ jobs:
       - name: Smoke test backend health endpoint
         run: |
           set -euo pipefail
-          curl --fail --show-error --silent \
-            --retry 20 \
-            --retry-delay 15 \
-            "https://${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}/health/"
+          for attempt in {1..20}; do
+            http_code="$(
+              curl --show-error --silent \
+                --output /tmp/backend-health.json \
+                --write-out '%{http_code}' \
+                "https://${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}/health/"
+            )"
+
+            if [ "${http_code}" = "200" ] && grep -q '"service"[[:space:]]*:[[:space:]]*"MobileID"' /tmp/backend-health.json; then
+              cat /tmp/backend-health.json
+              exit 0
+            fi
+
+            echo "Backend smoke test attempt ${attempt} returned HTTP ${http_code}"
+            cat /tmp/backend-health.json || true
+
+            if [ "${attempt}" -lt 20 ]; then
+              sleep 15
+            fi
+          done
+
+          echo "::error::Backend health endpoint did not return the expected MobileID health payload"
+          exit 1
 
   frontend-deploy:
     name: Frontend Deploy (Amplify)

@@ -69,7 +69,10 @@ Bootstrap completed for low-cost shared resources.
 
 Next steps that still need AWS account-specific values:
   1. Create or identify an internet-facing ALB, target group, security groups, and ECS service.
+     - Use `/health/` as the ALB target group health check path.
+     - Keep the target group matcher at `200` because the ECS task definition disables backend-side HTTP-to-HTTPS redirects.
   2. Create a CloudFront distribution in front of the backend ALB to get an AWS-managed HTTPS domain.
+     - Use CloudFront viewer policy `redirect-to-https` and keep the origin protocol policy `http-only` for the low-cost setup.
   3. Create an Amplify app + branch for the frontend.
   4. Store the Django SECRET_KEY in SSM Parameter Store or Secrets Manager and note its ARN.
   5. Configure these GitHub repository variables:
