@@ -71,7 +71,7 @@ class BarcodeDashboardReadTest(BarcodeDashboardTestBase):
     def test_dashboard_get_field_states_barcode_enabled_when_pull_disabled(
         self,
     ):
-        """Test that field_states shows barcode_disabled=False when pull_setting is disabled"""
+        """field_states barcode_disabled=False when pull disabled"""
         self._authenticate_user(self.user)
 
         # Ensure pull setting is disabled via SettingsRepository

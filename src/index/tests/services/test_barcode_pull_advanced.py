@@ -76,9 +76,8 @@ class BarcodePullAdvancedTest(BarcodePullTestBase):
             pull_gender_setting="Female",
         )
 
-        # Should fall back to existing selection (bc_male) even though it doesn't match gender.
-        # The pull logic fails to find candidate, so it leaves settings.barcode alone.
-        # Then it uses settings.active_barcode_uuid.
+        # Falls back to existing selection (bc_male) even though
+        # it doesn't match gender — pull finds no candidate.
 
         with patch(
             "index.services.barcode.generator._timestamp", return_value="20230101000000"
@@ -97,7 +96,7 @@ class BarcodePullAdvancedTest(BarcodePullTestBase):
 
         # Create an Unknow gender barcode
         owner_unknow = User.objects.create_user("owner_unknow")
-        bc_unknow = BarcodeRepository.create(
+        BarcodeRepository.create(
             user_id=owner_unknow.id,
             barcode_value="unknow_shareable",
             barcode_type="DynamicBarcode",

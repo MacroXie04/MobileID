@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 from django.utils import timezone
 
-from index.repositories import BarcodeRepository, TransactionRepository
+from index.repositories import TransactionRepository
 
 
 class UsageLimitService:

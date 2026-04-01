@@ -118,7 +118,9 @@ class SettingsRepository:
         Clear active_barcode_uuid only if it matches the given UUID.
 
         Returns True if cleared, False if it didn't match.
-        Replaces: UserBarcodeSettings.objects.filter(barcode=barcode).update(barcode=None)
+        Replaces: UserBarcodeSettings.objects.filter(
+            barcode=barcode
+        ).update(barcode=None)
         """
         try:
             _table().update_item(

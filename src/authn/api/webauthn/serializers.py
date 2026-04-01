@@ -3,7 +3,6 @@ from datetime import timedelta
 
 from authn.repositories import SecurityRepository
 from django.conf import settings
-from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.exceptions import TokenError
