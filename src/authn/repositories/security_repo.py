@@ -84,6 +84,7 @@ class SecurityRepository:
         instead of sequential GetItem calls.
         """
         from django.conf import settings
+        from core.dynamodb.client import get_resource
 
         possible_jtis = [
             f"session_{user_id}_{ts}"
@@ -91,15 +92,15 @@ class SecurityRepository:
         ]
 
         table_name = settings.DYNAMODB_TABLES["auth_security"]
-        from core.dynamodb.client import get_resource
-
         resource = get_resource()
+
+        # Use high-level resource API (simplified key format)
         keys = [
-            {"pk": {"S": f"JTI#{jti}"}, "sk": {"S": "BLACKLIST"}}
+            {"pk": f"JTI#{jti}", "sk": "BLACKLIST"}
             for jti in possible_jtis
         ]
 
-        resp = resource.meta.client.batch_get_item(
+        resp = resource.batch_get_item(
             RequestItems={
                 table_name: {
                     "Keys": keys,
