@@ -90,8 +90,7 @@ def list_devices(request):
         token_iat = int(token.created_at.timestamp())
         is_current = (
             current_iat is not None
-            and abs(token_iat - int(current_iat))
-            <= CURRENT_SESSION_IAT_LEEWAY_SECONDS
+            and abs(token_iat - int(current_iat)) <= CURRENT_SESSION_IAT_LEEWAY_SECONDS
         )
 
         devices.append(
