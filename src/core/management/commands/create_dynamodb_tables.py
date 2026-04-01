@@ -22,6 +22,8 @@ class Command(BaseCommand):
             f"Endpoint: {settings.DYNAMODB_ENDPOINT_URL or 'AWS default'}"
         )
         self.stdout.write(f"Table prefix: {settings.DYNAMODB_TABLE_PREFIX}")
+        self.stdout.write(f"Billing mode: {settings.DYNAMODB_BILLING_MODE}")
+        self.stdout.write(f"Table class: {settings.DYNAMODB_TABLE_CLASS}")
         self.stdout.write("")
 
         wait = not options["no_wait"]

@@ -1,0 +1,286 @@
+name: AWS Production Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: aws-production-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  DYNAMODB_TABLE_PREFIX: MobileIDProd-
+  CLOUDWATCH_LOG_GROUP: /ecs/mobileid-production
+
+jobs:
+  backend-deploy:
+    name: Backend Deploy (ECS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate deployment configuration
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+          ECS_EXECUTION_ROLE_ARN: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
+          ECS_TASK_ROLE_ARN: ${{ secrets.ECS_TASK_ROLE_ARN }}
+          DJANGO_SECRET_KEY_ARN: ${{ secrets.DJANGO_SECRET_KEY_ARN }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+          ECS_TASK_FAMILY: ${{ vars.ECS_TASK_FAMILY }}
+          BACKEND_CLOUDFRONT_DOMAIN: ${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}
+          ALLOWED_HOSTS: ${{ vars.ALLOWED_HOSTS }}
+          CORS_ALLOWED_ORIGINS: ${{ vars.CORS_ALLOWED_ORIGINS }}
+          CSRF_TRUSTED_ORIGINS: ${{ vars.CSRF_TRUSTED_ORIGINS }}
+          ADMIN_URL_PATH: ${{ vars.ADMIN_URL_PATH }}
+        run: |
+          set -euo pipefail
+
+          required=(
+            AWS_ROLE_ARN
+            ECS_EXECUTION_ROLE_ARN
+            ECS_TASK_ROLE_ARN
+            DJANGO_SECRET_KEY_ARN
+            ECR_REPOSITORY
+            ECS_CLUSTER
+            ECS_SERVICE
+            ECS_TASK_FAMILY
+            BACKEND_CLOUDFRONT_DOMAIN
+            ALLOWED_HOSTS
+            CORS_ALLOWED_ORIGINS
+            CSRF_TRUSTED_ORIGINS
+            ADMIN_URL_PATH
+          )
+
+          for name in "${required[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required GitHub secret or variable: ${name}"
+              exit 1
+            fi
+          done
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./src
+          file: ./src/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Render ECS task definition
+        env:
+          IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
+          TASK_FAMILY: ${{ vars.ECS_TASK_FAMILY }}
+          EXECUTION_ROLE_ARN: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
+          TASK_ROLE_ARN: ${{ secrets.ECS_TASK_ROLE_ARN }}
+          LOG_GROUP: ${{ env.CLOUDWATCH_LOG_GROUP }}
+          BACKEND_ORIGIN: https://${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}
+          ALLOWED_HOSTS: ${{ vars.ALLOWED_HOSTS }}
+          CORS_ALLOWED_ORIGINS: ${{ vars.CORS_ALLOWED_ORIGINS }}
+          CSRF_TRUSTED_ORIGINS: ${{ vars.CSRF_TRUSTED_ORIGINS }}
+          ADMIN_URL_PATH: ${{ vars.ADMIN_URL_PATH }}
+          SECRET_KEY_ARN: ${{ secrets.DJANGO_SECRET_KEY_ARN }}
+          DYNAMODB_TABLE_PREFIX: ${{ env.DYNAMODB_TABLE_PREFIX }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          python ops/aws/render_task_definition.py \
+            --template ops/aws/ecs-task-definition.json \
+            --output ops/aws/ecs-task-definition.rendered.json
+
+      - name: Register ECS task definition
+        id: register-task-definition
+        run: |
+          set -euo pipefail
+          task_definition_arn="$(
+            aws ecs register-task-definition \
+              --cli-input-json file://ops/aws/ecs-task-definition.rendered.json \
+              --query 'taskDefinition.taskDefinitionArn' \
+              --output text
+          )"
+          echo "task_definition_arn=${task_definition_arn}" >> "$GITHUB_OUTPUT"
+
+      - name: Update ECS service
+        run: |
+          set -euo pipefail
+          aws ecs update-service \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --service "${{ vars.ECS_SERVICE }}" \
+            --task-definition "${{ steps.register-task-definition.outputs.task_definition_arn }}" \
+            --force-new-deployment
+
+      - name: Wait for ECS service stability
+        run: |
+          set -euo pipefail
+          aws ecs wait services-stable \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --services "${{ vars.ECS_SERVICE }}"
+
+      - name: Smoke test backend health endpoint
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --silent \
+            --retry 20 \
+            --retry-delay 15 \
+            "https://${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}/health/"
+
+  frontend-deploy:
+    name: Frontend Deploy (Amplify)
+    needs:
+      - backend-deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Amplify configuration
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+          AMPLIFY_APP_ID: ${{ vars.AMPLIFY_APP_ID }}
+          AMPLIFY_BRANCH: ${{ vars.AMPLIFY_BRANCH }}
+          BACKEND_CLOUDFRONT_DOMAIN: ${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}
+        run: |
+          set -euo pipefail
+
+          required=(
+            AWS_ROLE_ARN
+            AMPLIFY_APP_ID
+            AMPLIFY_BRANCH
+            BACKEND_CLOUDFRONT_DOMAIN
+          )
+
+          for name in "${required[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required GitHub secret or variable: ${name}"
+              exit 1
+            fi
+          done
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: yarn
+          cache-dependency-path: pages/yarn.lock
+
+      - name: Install frontend dependencies
+        working-directory: ./pages
+        run: yarn install --frozen-lockfile --network-timeout 120000
+
+      - name: Build frontend bundle
+        working-directory: ./pages
+        env:
+          VITE_API_BASE_URL: https://${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}
+        run: yarn build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Package frontend artifact
+        working-directory: ./pages/dist
+        run: |
+          set -euo pipefail
+          zip -r -q ../../frontend-dist.zip .
+
+      - name: Create Amplify deployment
+        id: create-amplify-deployment
+        run: |
+          set -euo pipefail
+          aws amplify create-deployment \
+            --app-id "${{ vars.AMPLIFY_APP_ID }}" \
+            --branch-name "${{ vars.AMPLIFY_BRANCH }}" \
+            > amplify-deployment.json
+
+          upload_url="$(jq -r '.zipUploadUrl' amplify-deployment.json)"
+          job_id="$(jq -r '.jobId' amplify-deployment.json)"
+
+          if [ -z "${upload_url}" ] || [ "${upload_url}" = "null" ]; then
+            echo "::error::Amplify create-deployment did not return a zipUploadUrl"
+            exit 1
+          fi
+
+          if [ -z "${job_id}" ] || [ "${job_id}" = "null" ]; then
+            echo "::error::Amplify create-deployment did not return a jobId"
+            exit 1
+          fi
+
+          echo "upload_url=${upload_url}" >> "$GITHUB_OUTPUT"
+          echo "job_id=${job_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact to Amplify
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --silent \
+            -T frontend-dist.zip \
+            "${{ steps.create-amplify-deployment.outputs.upload_url }}"
+
+      - name: Start Amplify deployment
+        run: |
+          set -euo pipefail
+          aws amplify start-deployment \
+            --app-id "${{ vars.AMPLIFY_APP_ID }}" \
+            --branch-name "${{ vars.AMPLIFY_BRANCH }}" \
+            --job-id "${{ steps.create-amplify-deployment.outputs.job_id }}"
+
+      - name: Wait for Amplify deployment
+        run: |
+          set -euo pipefail
+
+          for attempt in {1..60}; do
+            status="$(
+              aws amplify get-job \
+                --app-id "${{ vars.AMPLIFY_APP_ID }}" \
+                --branch-name "${{ vars.AMPLIFY_BRANCH }}" \
+                --job-id "${{ steps.create-amplify-deployment.outputs.job_id }}" \
+                --query 'job.summary.status' \
+                --output text
+            )"
+
+            echo "Amplify job status: ${status}"
+
+            case "${status}" in
+              SUCCEED|SUCCEEDED)
+                exit 0
+                ;;
+              FAILED|CANCELLED)
+                echo "::error::Amplify deployment finished with status ${status}"
+                exit 1
+                ;;
+            esac
+
+            sleep 15
+          done
+
+          echo "::error::Timed out waiting for Amplify deployment"
+          exit 1

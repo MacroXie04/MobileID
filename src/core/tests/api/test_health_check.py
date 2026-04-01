@@ -5,6 +5,7 @@ Tests for health check endpoint.
 from unittest.mock import patch
 
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.urls import reverse
 
 
@@ -70,3 +71,26 @@ class HealthCheckTest(TestCase):
         self.assertEqual(data["status"], "unhealthy")
         self.assertEqual(data["database"], "disconnected")
         self.assertIn("error", data)
+
+    @override_settings(
+        PERSISTENCE_MODE="dynamodb",
+        DYNAMODB_REQUIRED_TABLE_KEYS=(
+            "barcodes",
+            "transactions",
+            "user_settings",
+            "auth_security",
+        ),
+    )
+    @patch("django.db.connection.cursor")
+    def test_health_check_dynamodb_mode_skips_sql_check(self, mock_cursor):
+        """DynamoDB mode should not require the relational database health check."""
+        mock_cursor.side_effect = Exception("SQL health check should be skipped")
+
+        url = reverse("health_check")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "healthy")
+        self.assertEqual(data["database"], "disabled")
+        self.assertEqual(data["dynamodb"], "connected")

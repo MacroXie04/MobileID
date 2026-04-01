@@ -144,3 +144,16 @@ class TestingModeConfigurationTest(TestCase):
                 settings.SESSION_ENGINE,
                 "django.contrib.sessions.backends.cache",
             )
+
+
+class DynamoDBConfigurationTest(TestCase):
+    """Test cost-first DynamoDB defaults and persistence mode wiring."""
+
+    def test_dynamodb_billing_mode_default(self):
+        self.assertEqual(settings.DYNAMODB_BILLING_MODE, "PAY_PER_REQUEST")
+
+    def test_dynamodb_table_class_default(self):
+        self.assertEqual(settings.DYNAMODB_TABLE_CLASS, "STANDARD")
+
+    def test_persistence_mode_default(self):
+        self.assertEqual(settings.PERSISTENCE_MODE, "hybrid")

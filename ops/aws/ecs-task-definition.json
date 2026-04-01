@@ -1,0 +1,139 @@
+{
+  "family": "__TASK_FAMILY__",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "256",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "ARM64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "executionRoleArn": "__EXECUTION_ROLE_ARN__",
+  "taskRoleArn": "__TASK_ROLE_ARN__",
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "__IMAGE__",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "DJANGO_SETTINGS_MODULE",
+          "value": "core.settings.prod"
+        },
+        {
+          "name": "ENVIRONMENT",
+          "value": "production"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "__AWS_REGION__"
+        },
+        {
+          "name": "DYNAMODB_REGION",
+          "value": "__AWS_REGION__"
+        },
+        {
+          "name": "DYNAMODB_TABLE_PREFIX",
+          "value": "__DYNAMODB_TABLE_PREFIX__"
+        },
+        {
+          "name": "PERSISTENCE_MODE",
+          "value": "dynamodb"
+        },
+        {
+          "name": "RUN_DATABASE_MIGRATIONS",
+          "value": "false"
+        },
+        {
+          "name": "RUN_INITADMIN",
+          "value": "false"
+        },
+        {
+          "name": "BACKEND_ORIGIN",
+          "value": "__BACKEND_ORIGIN__"
+        },
+        {
+          "name": "ALLOWED_HOSTS",
+          "value": "__ALLOWED_HOSTS__"
+        },
+        {
+          "name": "CORS_ALLOWED_ORIGINS",
+          "value": "__CORS_ALLOWED_ORIGINS__"
+        },
+        {
+          "name": "CSRF_TRUSTED_ORIGINS",
+          "value": "__CSRF_TRUSTED_ORIGINS__"
+        },
+        {
+          "name": "ADMIN_URL_PATH",
+          "value": "__ADMIN_URL_PATH__"
+        },
+        {
+          "name": "SESSION_COOKIE_SECURE",
+          "value": "true"
+        },
+        {
+          "name": "CSRF_COOKIE_SECURE",
+          "value": "true"
+        },
+        {
+          "name": "SECURE_SSL_REDIRECT",
+          "value": "true"
+        },
+        {
+          "name": "DYNAMODB_BILLING_MODE",
+          "value": "PAY_PER_REQUEST"
+        },
+        {
+          "name": "DYNAMODB_TABLE_CLASS",
+          "value": "STANDARD"
+        },
+        {
+          "name": "GUNICORN_WORKERS",
+          "value": "1"
+        },
+        {
+          "name": "GUNICORN_THREADS",
+          "value": "8"
+        },
+        {
+          "name": "GUNICORN_TIMEOUT",
+          "value": "120"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "SECRET_KEY",
+          "valueFrom": "__SECRET_KEY_ARN__"
+        }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "python -c \"from urllib.request import urlopen; urlopen('http://127.0.0.1:8080/health/', timeout=5)\" || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "__LOG_GROUP__",
+          "awslogs-region": "__AWS_REGION__",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
