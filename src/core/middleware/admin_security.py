@@ -56,10 +56,9 @@ class AdminAvailabilityMiddleware:
         self.admin_path = f"/{settings.ADMIN_URL_PATH}/"
 
     def __call__(self, request):
-        if (
-            getattr(settings, "PERSISTENCE_MODE", "hybrid") == "dynamodb"
-            and request.path.startswith(self.admin_path)
-        ):
+        if getattr(
+            settings, "PERSISTENCE_MODE", "hybrid"
+        ) == "dynamodb" and request.path.startswith(self.admin_path):
             response = HttpResponse(
                 (
                     "Django admin is unavailable in DynamoDB-only deployments. "
