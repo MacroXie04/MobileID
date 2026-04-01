@@ -410,63 +410,65 @@ jobs:
               --output text
           )"
 
-          csrf_code="$(
-            curl --show-error --silent \
-              --cookie-jar /tmp/frontend-auth.cookies \
-              --output /tmp/frontend-csrf.json \
-              --write-out '%{http_code}' \
-              "${frontend_origin}/authn/csrf/"
-          )"
+          for attempt in $(seq 1 12); do
+            rm -f /tmp/frontend-auth.cookies
 
-          if [ "${csrf_code}" != "200" ]; then
-            echo "::error::Frontend CSRF endpoint returned HTTP ${csrf_code}"
-            cat /tmp/frontend-csrf.json || true
-            exit 1
-          fi
-
-          csrf_cookie="$(awk '/csrftoken/ {print $7}' /tmp/frontend-auth.cookies | tail -1)"
-          if [ -z "${csrf_cookie}" ]; then
-            echo "::error::Frontend auth smoke test did not receive a csrftoken cookie"
-            exit 1
-          fi
-
-          login_code="$(
-            jq -nc \
-              --arg username "${DJANGO_SUPERUSER_USERNAME}" \
-              --arg password "${admin_password}" \
-              '{username: $username, password: $password}' \
-            | curl --show-error --silent \
-                --cookie /tmp/frontend-auth.cookies \
+            csrf_code="$(
+              curl --show-error --silent \
                 --cookie-jar /tmp/frontend-auth.cookies \
-                --header 'Content-Type: application/json' \
-                --header "X-CSRFToken: ${csrf_cookie}" \
-                --data @- \
-                --output /tmp/frontend-login.json \
+                --output /tmp/frontend-csrf.json \
                 --write-out '%{http_code}' \
-                "${frontend_origin}/authn/login/"
-          )"
+                "${frontend_origin}/authn/csrf/"
+            )"
 
-          if [ "${login_code}" != "200" ] || ! grep -q '"Login successful"' /tmp/frontend-login.json; then
-            echo "::error::Frontend login smoke test failed with HTTP ${login_code}"
+            csrf_cookie="$(awk '/csrftoken/ {print $7}' /tmp/frontend-auth.cookies | tail -1)"
+
+            login_code="$(
+              jq -nc \
+                --arg username "${DJANGO_SUPERUSER_USERNAME}" \
+                --arg password "${admin_password}" \
+                '{username: $username, password: $password}' \
+              | curl --show-error --silent \
+                  --cookie /tmp/frontend-auth.cookies \
+                  --cookie-jar /tmp/frontend-auth.cookies \
+                  --header 'Content-Type: application/json' \
+                  --header "X-CSRFToken: ${csrf_cookie}" \
+                  --data @- \
+                  --output /tmp/frontend-login.json \
+                  --write-out '%{http_code}' \
+                  "${frontend_origin}/authn/login/"
+            )"
+
+            user_code="$(
+              curl --show-error --silent \
+                --cookie /tmp/frontend-auth.cookies \
+                --output /tmp/frontend-user.json \
+                --write-out '%{http_code}' \
+                "${frontend_origin}/authn/user_info/"
+            )"
+
+            if [ "${csrf_code}" = "200" ] \
+              && [ -n "${csrf_cookie}" ] \
+              && [ "${login_code}" = "200" ] \
+              && grep -q '"Login successful"' /tmp/frontend-login.json \
+              && [ "${user_code}" = "200" ] \
+              && jq -e \
+                --arg username "${DJANGO_SUPERUSER_USERNAME}" \
+                '.username == $username' \
+                /tmp/frontend-user.json >/dev/null; then
+              exit 0
+            fi
+
+            echo "Auth smoke test attempt ${attempt}/12 not ready yet"
+            echo "CSRF HTTP ${csrf_code}, login HTTP ${login_code}, user_info HTTP ${user_code}"
+            cat /tmp/frontend-csrf.json || true
             cat /tmp/frontend-login.json || true
-            exit 1
-          fi
-
-          user_code="$(
-            curl --show-error --silent \
-              --cookie /tmp/frontend-auth.cookies \
-              --output /tmp/frontend-user.json \
-              --write-out '%{http_code}' \
-              "${frontend_origin}/authn/user_info/"
-          )"
-
-          if [ "${user_code}" != "200" ]; then
-            echo "::error::Frontend user_info smoke test failed with HTTP ${user_code}"
             cat /tmp/frontend-user.json || true
-            exit 1
-          fi
 
-          jq -e \
-            --arg username "${DJANGO_SUPERUSER_USERNAME}" \
-            '.username == $username' \
-            /tmp/frontend-user.json >/dev/null
+            if [ "${attempt}" -lt 12 ]; then
+              sleep 15
+            fi
+          done
+
+          echo "::error::Frontend same-origin auth smoke test did not stabilize after deployment"
+          exit 1
