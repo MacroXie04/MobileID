@@ -55,6 +55,12 @@ class AdminAvailabilityTest(TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertIn("Django admin is unavailable", response.content.decode())
 
+    @override_settings(PERSISTENCE_MODE="hybrid")
+    def test_admin_login_page_available_when_sql_backing_present(self):
+        response = self.client.get(reverse("admin:login"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Log in")
+
 
 class AdminLoginThrottleTest(TestCase):
     """Test admin login throttle behavior"""

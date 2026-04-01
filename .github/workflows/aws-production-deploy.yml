@@ -33,6 +33,7 @@ jobs:
           ECS_EXECUTION_ROLE_ARN: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
           ECS_TASK_ROLE_ARN: ${{ secrets.ECS_TASK_ROLE_ARN }}
           DJANGO_SECRET_KEY_ARN: ${{ secrets.DJANGO_SECRET_KEY_ARN }}
+          DJANGO_SUPERUSER_PASSWORD_ARN: ${{ secrets.DJANGO_SUPERUSER_PASSWORD_ARN }}
           ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
           ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
           ECS_SERVICE: ${{ vars.ECS_SERVICE }}
@@ -42,6 +43,11 @@ jobs:
           CORS_ALLOWED_ORIGINS: ${{ vars.CORS_ALLOWED_ORIGINS }}
           CSRF_TRUSTED_ORIGINS: ${{ vars.CSRF_TRUSTED_ORIGINS }}
           ADMIN_URL_PATH: ${{ vars.ADMIN_URL_PATH }}
+          DJANGO_SUPERUSER_USERNAME: ${{ vars.DJANGO_SUPERUSER_USERNAME }}
+          DJANGO_SUPERUSER_EMAIL: ${{ vars.DJANGO_SUPERUSER_EMAIL }}
+          EFS_FILE_SYSTEM_ID: ${{ vars.EFS_FILE_SYSTEM_ID }}
+          EFS_ACCESS_POINT_ID: ${{ vars.EFS_ACCESS_POINT_ID }}
+          SQLITE_DB_PATH: ${{ vars.SQLITE_DB_PATH }}
         run: |
           set -euo pipefail
 
@@ -50,6 +56,7 @@ jobs:
             ECS_EXECUTION_ROLE_ARN
             ECS_TASK_ROLE_ARN
             DJANGO_SECRET_KEY_ARN
+            DJANGO_SUPERUSER_PASSWORD_ARN
             ECR_REPOSITORY
             ECS_CLUSTER
             ECS_SERVICE
@@ -59,6 +66,11 @@ jobs:
             CORS_ALLOWED_ORIGINS
             CSRF_TRUSTED_ORIGINS
             ADMIN_URL_PATH
+            DJANGO_SUPERUSER_USERNAME
+            DJANGO_SUPERUSER_EMAIL
+            EFS_FILE_SYSTEM_ID
+            EFS_ACCESS_POINT_ID
+            SQLITE_DB_PATH
           )
 
           for name in "${required[@]}"; do
@@ -107,6 +119,16 @@ jobs:
           CSRF_TRUSTED_ORIGINS: ${{ vars.CSRF_TRUSTED_ORIGINS }}
           ADMIN_URL_PATH: ${{ vars.ADMIN_URL_PATH }}
           SECRET_KEY_ARN: ${{ secrets.DJANGO_SECRET_KEY_ARN }}
+          DJANGO_SUPERUSER_USERNAME: ${{ vars.DJANGO_SUPERUSER_USERNAME }}
+          DJANGO_SUPERUSER_EMAIL: ${{ vars.DJANGO_SUPERUSER_EMAIL }}
+          DJANGO_SUPERUSER_PASSWORD_ARN: ${{ secrets.DJANGO_SUPERUSER_PASSWORD_ARN }}
+          DB_ENGINE: sqlite3
+          DB_NAME: ${{ vars.SQLITE_DB_PATH }}
+          PERSISTENCE_MODE: hybrid
+          RUN_DATABASE_MIGRATIONS: "true"
+          RUN_INITADMIN: "true"
+          EFS_FILE_SYSTEM_ID: ${{ vars.EFS_FILE_SYSTEM_ID }}
+          EFS_ACCESS_POINT_ID: ${{ vars.EFS_ACCESS_POINT_ID }}
           DYNAMODB_TABLE_PREFIX: ${{ env.DYNAMODB_TABLE_PREFIX }}
           AWS_REGION: ${{ env.AWS_REGION }}
         run: |
@@ -168,6 +190,36 @@ jobs:
           done
 
           echo "::error::Backend health endpoint did not return the expected MobileID health payload"
+          exit 1
+
+      - name: Smoke test Django admin login page
+        run: |
+          set -euo pipefail
+          admin_url="https://${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}/${{ vars.ADMIN_URL_PATH }}/login/"
+
+          for attempt in {1..20}; do
+            http_code="$(
+              curl --show-error --silent \
+                --output /tmp/admin-login.html \
+                --write-out '%{http_code}' \
+                "${admin_url}"
+            )"
+
+            if [ "${http_code}" = "200" ] \
+              && grep -qi "Django administration\|Log in" /tmp/admin-login.html \
+              && ! grep -q "Django admin is unavailable" /tmp/admin-login.html; then
+              exit 0
+            fi
+
+            echo "Admin smoke test attempt ${attempt} returned HTTP ${http_code}"
+            cat /tmp/admin-login.html || true
+
+            if [ "${attempt}" -lt 20 ]; then
+              sleep 15
+            fi
+          done
+
+          echo "::error::Django admin login page did not become available"
           exit 1
 
   frontend-deploy:

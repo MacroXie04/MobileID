@@ -5,6 +5,12 @@ PERSISTENCE_MODE="${PERSISTENCE_MODE:-hybrid}"
 RUN_DATABASE_MIGRATIONS="${RUN_DATABASE_MIGRATIONS:-}"
 RUN_INITADMIN="${RUN_INITADMIN:-}"
 CREATE_DYNAMODB_TABLES="${CREATE_DYNAMODB_TABLES:-false}"
+DB_ENGINE="${DB_ENGINE:-}"
+DB_NAME="${DB_NAME:-}"
+
+if [ "${DB_ENGINE}" = "sqlite3" ] && [ -n "${DB_NAME}" ]; then
+  mkdir -p "$(dirname "${DB_NAME}")"
+fi
 
 if [ -z "${RUN_DATABASE_MIGRATIONS}" ]; then
   if [ "${PERSISTENCE_MODE}" = "dynamodb" ]; then

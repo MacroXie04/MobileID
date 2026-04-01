@@ -74,7 +74,7 @@ Next steps that still need AWS account-specific values:
   2. Create a CloudFront distribution in front of the backend ALB to get an AWS-managed HTTPS domain.
      - Use CloudFront viewer policy `redirect-to-https` and keep the origin protocol policy `http-only` for the low-cost setup.
   3. Create an Amplify app + branch for the frontend.
-  4. Store the Django SECRET_KEY in SSM Parameter Store or Secrets Manager and note its ARN.
+  4. Store the Django SECRET_KEY and Django admin bootstrap password in Secrets Manager and note their ARNs.
   5. Configure these GitHub repository variables:
      - ECR_REPOSITORY=${ECR_REPOSITORY}
      - ECS_CLUSTER=${ECS_CLUSTER}
@@ -85,6 +85,11 @@ Next steps that still need AWS account-specific values:
      - CORS_ALLOWED_ORIGINS=<comma-separated-origins>
      - CSRF_TRUSTED_ORIGINS=<comma-separated-origins>
      - ADMIN_URL_PATH=<non-default-admin-path>
+     - EFS_FILE_SYSTEM_ID=<efs-file-system-id>
+     - EFS_ACCESS_POINT_ID=<efs-access-point-id>
+     - SQLITE_DB_PATH=/var/lib/mobileid/sqlite/db.sqlite3
+     - DJANGO_SUPERUSER_USERNAME=<bootstrap-admin-username>
+     - DJANGO_SUPERUSER_EMAIL=<bootstrap-admin-email>
      - AMPLIFY_APP_ID=<amplify-app-id>
      - AMPLIFY_BRANCH=<amplify-branch>
   6. Configure these GitHub secrets:
@@ -92,6 +97,7 @@ Next steps that still need AWS account-specific values:
      - ECS_EXECUTION_ROLE_ARN
      - ECS_TASK_ROLE_ARN
      - DJANGO_SECRET_KEY_ARN
+     - DJANGO_SUPERUSER_PASSWORD_ARN
   7. Create DynamoDB tables with:
      cd src && python manage.py create_dynamodb_tables
 

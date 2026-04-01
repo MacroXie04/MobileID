@@ -47,15 +47,23 @@
         },
         {
           "name": "PERSISTENCE_MODE",
-          "value": "dynamodb"
+          "value": "__PERSISTENCE_MODE__"
         },
         {
           "name": "RUN_DATABASE_MIGRATIONS",
-          "value": "false"
+          "value": "__RUN_DATABASE_MIGRATIONS__"
         },
         {
           "name": "RUN_INITADMIN",
-          "value": "false"
+          "value": "__RUN_INITADMIN__"
+        },
+        {
+          "name": "DB_ENGINE",
+          "value": "__DB_ENGINE__"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "__DB_NAME__"
         },
         {
           "name": "BACKEND_ORIGIN",
@@ -76,6 +84,14 @@
         {
           "name": "ADMIN_URL_PATH",
           "value": "__ADMIN_URL_PATH__"
+        },
+        {
+          "name": "DJANGO_SUPERUSER_USERNAME",
+          "value": "__DJANGO_SUPERUSER_USERNAME__"
+        },
+        {
+          "name": "DJANGO_SUPERUSER_EMAIL",
+          "value": "__DJANGO_SUPERUSER_EMAIL__"
         },
         {
           "name": "SESSION_COOKIE_SECURE",
@@ -114,6 +130,17 @@
         {
           "name": "SECRET_KEY",
           "valueFrom": "__SECRET_KEY_ARN__"
+        },
+        {
+          "name": "DJANGO_SUPERUSER_PASSWORD",
+          "valueFrom": "__DJANGO_SUPERUSER_PASSWORD_ARN__"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "sqlite-data",
+          "containerPath": "/var/lib/mobileid/sqlite",
+          "readOnly": false
         }
       ],
       "healthCheck": {
@@ -132,6 +159,19 @@
           "awslogs-group": "__LOG_GROUP__",
           "awslogs-region": "__AWS_REGION__",
           "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "sqlite-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "__EFS_FILE_SYSTEM_ID__",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "__EFS_ACCESS_POINT_ID__",
+          "iam": "DISABLED"
         }
       }
     }
