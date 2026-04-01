@@ -133,14 +133,25 @@ class BarcodePullBasicTest(BarcodePullTestBase):
             last_used=recent_time,
         )
 
-        # bc_owned is still available
+        # Create another valid shared candidate that hasn't been used
+        owner_alt = User.objects.create_user("owner_alt")
+        BarcodeRepository.create(
+            user_id=owner_alt.id,
+            barcode_value="male_alt_shareable",
+            barcode_type="DynamicBarcode",
+            owner_username=owner_alt.username,
+            share_with_others=True,
+            profile_gender="Male",
+        )
+
         with patch(
-            "index.services.barcode.generator._timestamp", return_value="20230101000000"
+            "index.services.barcode.generator._timestamp",
+            return_value="20230101000000",
         ):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")
-        self.assertIn("male_owned", result["barcode"])
+        self.assertIn("male_alt_shareable", result["barcode"])
         self.assertNotIn("male_shareable", result["barcode"])
 
     def test_pull_sticky_user_history(self):
@@ -177,6 +188,17 @@ class BarcodePullBasicTest(BarcodePullTestBase):
         """Test that stickiness expires after 10 mins"""
         now = timezone.now()
 
+        # Create another valid shared candidate
+        owner_alt = User.objects.create_user("owner_alt2")
+        BarcodeRepository.create(
+            user_id=owner_alt.id,
+            barcode_value="male_alt2_shareable",
+            barcode_type="DynamicBarcode",
+            owner_username=owner_alt.username,
+            share_with_others=True,
+            profile_gender="Male",
+        )
+
         # User used bc_male 12 mins ago
         old_time = (now - timedelta(minutes=12)).isoformat()
         TransactionRepository.create(
@@ -194,11 +216,12 @@ class BarcodePullBasicTest(BarcodePullTestBase):
             last_used=recent_time,
         )
 
-        # Only bc_owned should be available
+        # bc_male excluded (recently used), bc_alt2 should be picked
         with patch(
-            "index.services.barcode.generator._timestamp", return_value="20230101000000"
+            "index.services.barcode.generator._timestamp",
+            return_value="20230101000000",
         ):
             result = generate_barcode(self.school_user)
 
         self.assertEqual(result["status"], "success")
-        self.assertIn("male_owned", result["barcode"])
+        self.assertIn("male_alt2_shareable", result["barcode"])
