@@ -46,6 +46,16 @@ class AdminIPWhitelistTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class AdminAvailabilityTest(TestCase):
+    """Test admin availability behavior in DynamoDB-only deployments."""
+
+    @override_settings(PERSISTENCE_MODE="dynamodb")
+    def test_admin_returns_service_unavailable_when_dynamodb_only(self):
+        response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("Django admin is unavailable", response.content.decode())
+
+
 class AdminLoginThrottleTest(TestCase):
     """Test admin login throttle behavior"""
 

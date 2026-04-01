@@ -1,5 +1,6 @@
 """
-Admin security middleware: IP whitelist, session expiry, and login throttling.
+Admin security middleware: availability, IP whitelist, session expiry, and login
+throttling.
 """
 
 from django.conf import settings
@@ -36,6 +37,40 @@ class AdminIPWhitelistMiddleware:
                     "Access denied. Your IP address is not authorized to "
                     "access this resource."
                 )
+
+        return self.get_response(request)
+
+
+class AdminAvailabilityMiddleware:
+    """
+    Short-circuit Django admin in DynamoDB-only deployments.
+
+    The current production DynamoDB-only topology does not provision the
+    relational database tables required by Django's built-in admin, auth, and
+    session stack. Returning an explicit 503 avoids opaque 500s from session
+    writes or ORM access.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.admin_path = f"/{settings.ADMIN_URL_PATH}/"
+
+    def __call__(self, request):
+        if (
+            getattr(settings, "PERSISTENCE_MODE", "hybrid") == "dynamodb"
+            and request.path.startswith(self.admin_path)
+        ):
+            response = HttpResponse(
+                (
+                    "Django admin is unavailable in DynamoDB-only deployments. "
+                    "This environment does not provision the relational auth and "
+                    "session tables required by the built-in admin."
+                ),
+                status=503,
+                content_type="text/plain; charset=utf-8",
+            )
+            response["Cache-Control"] = "no-store"
+            return response
 
         return self.get_response(request)
 

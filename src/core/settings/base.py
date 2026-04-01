@@ -105,6 +105,7 @@ MIDDLEWARE = [
     # Default Django middleware
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "core.middleware.admin_security.AdminAvailabilityMiddleware",
     "core.middleware.admin_security.AdminIPWhitelistMiddleware",
     "core.middleware.admin_security.AdminLoginThrottleMiddleware",
     "core.middleware.csp.ContentSecurityPolicyMiddleware",
