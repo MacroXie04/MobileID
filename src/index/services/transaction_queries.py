@@ -1,33 +1,29 @@
 from __future__ import annotations
 
+from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Optional, Sequence, Tuple, Dict, Any
 
-from django.contrib.auth.models import User
-from django.db.models import Count, QuerySet
-from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
-from index.models import Transaction, Barcode
+from index.repositories import TransactionRepository
 
 
 class TransactionQueryMixin:
-    """Read/query operations for Transaction service."""
+    """Read/query operations for Transaction service (DynamoDB-backed)."""
 
     @staticmethod
     def for_user(
-        user: User,
+        user,
         *,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
-        select_related: bool = True,
-    ) -> QuerySet[Transaction]:
-        qs = Transaction.objects.filter(user=user)
-        if since:
-            qs = qs.filter(time_created__gte=since)
-        if until:
-            qs = qs.filter(time_created__lt=until)
-        if select_related:
-            qs = qs.select_related("user", "barcode_used")
-        return qs.order_by("-time_created")
+    ) -> list[dict]:
+        since_str = since.isoformat() if since else None
+        until_str = until.isoformat() if until else None
+        return TransactionRepository.for_user(
+            user_id=user.id if hasattr(user, "id") else user,
+            since=since_str,
+            until=until_str,
+        )
 
     @staticmethod
     def top_barcodes(
@@ -35,20 +31,39 @@ class TransactionQueryMixin:
         limit: int = 10,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
-    ) -> Sequence[Tuple[Optional[int], int]]:
+    ) -> Sequence[Tuple[Optional[str], int]]:
         """
-        Return [(barcode_id, count), ...] ordered by count desc.
-        """
-        qs = Transaction.objects.all()
-        if since:
-            qs = qs.filter(time_created__gte=since)
-        if until:
-            qs = qs.filter(time_created__lt=until)
+        Return [(barcode_uuid, count), ...] ordered by count desc.
 
-        agg = (
-            qs.values("barcode_used_id").annotate(c=Count("id")).order_by("-c")[:limit]
-        )
-        return [(row["barcode_used_id"], row["c"]) for row in agg]
+        NOTE: This requires a table scan. Acceptable for admin analytics,
+        not for hot-path queries.
+        """
+        # Scan-based aggregation — acceptable for low-frequency admin queries
+        from core.dynamodb.client import get_table
+
+        table = get_table("transactions")
+        counter: Counter = Counter()
+
+        kwargs = {}
+        last_key = None
+        while True:
+            if last_key:
+                kwargs["ExclusiveStartKey"] = last_key
+            resp = table.scan(**kwargs)
+            for item in resp.get("Items", []):
+                tc = item.get("time_created", "")
+                if since and tc < since.isoformat():
+                    continue
+                if until and tc >= until.isoformat():
+                    continue
+                bc_uuid = item.get("barcode_uuid")
+                counter[bc_uuid] += 1
+
+            last_key = resp.get("LastEvaluatedKey")
+            if not last_key:
+                break
+
+        return counter.most_common(limit)
 
     @staticmethod
     def usage_over_time(
@@ -56,33 +71,54 @@ class TransactionQueryMixin:
         granularity: str = "day",
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
-    ) -> Sequence[Tuple[datetime, int]]:
+    ) -> Sequence[Tuple[str, int]]:
         """
         Group usage counts by time bucket.
-        granularity: 'day' | 'week' | 'month'
+
+        Returns [(bucket_key, count), ...] where bucket_key is a date string.
+        NOTE: Scan-based — admin-only.
         """
-        trunc_map = {
-            "day": TruncDay,
-            "week": TruncWeek,
-            "month": TruncMonth,
-        }
-        if granularity not in trunc_map:
-            raise ValueError("granularity must be 'day', 'week', or 'month'.")
+        from core.dynamodb.client import get_table
 
-        qs = Transaction.objects.all()
-        if since:
-            qs = qs.filter(time_created__gte=since)
-        if until:
-            qs = qs.filter(time_created__lt=until)
+        table = get_table("transactions")
+        buckets: Counter = Counter()
 
-        TruncFn = trunc_map[granularity]
-        agg = (
-            qs.annotate(bucket=TruncFn("time_created"))
-            .values("bucket")
-            .annotate(c=Count("id"))
-            .order_by("bucket")
-        )
-        return [(row["bucket"], row["c"]) for row in agg]
+        kwargs = {}
+        last_key = None
+        while True:
+            if last_key:
+                kwargs["ExclusiveStartKey"] = last_key
+            resp = table.scan(**kwargs)
+            for item in resp.get("Items", []):
+                tc = item.get("time_created", "")
+                if since and tc < since.isoformat():
+                    continue
+                if until and tc >= until.isoformat():
+                    continue
+
+                # Truncate to bucket
+                if granularity == "day":
+                    bucket = tc[:10]  # YYYY-MM-DD
+                elif granularity == "week":
+                    try:
+                        dt = datetime.fromisoformat(tc)
+                        # ISO week start (Monday)
+                        week_start = dt - __import__("datetime").timedelta(days=dt.weekday())
+                        bucket = week_start.strftime("%Y-%m-%d")
+                    except (ValueError, TypeError):
+                        continue
+                elif granularity == "month":
+                    bucket = tc[:7]  # YYYY-MM
+                else:
+                    raise ValueError("granularity must be 'day', 'week', or 'month'.")
+
+                buckets[bucket] += 1
+
+            last_key = resp.get("LastEvaluatedKey")
+            if not last_key:
+                break
+
+        return sorted(buckets.items())
 
     @staticmethod
     def barcode_usage_stats(
@@ -91,54 +127,54 @@ class TransactionQueryMixin:
         until: Optional[datetime] = None,
         only_valid_barcodes: bool = False,
     ) -> Dict[str, Any]:
-        """
-        Static-style summary of barcode usage across the dataset.
+        """Scan-based barcode usage stats — admin-only."""
+        from core.dynamodb.client import get_table
 
-        Returns a dict with:
-          - total: total transactions in window
-          - with_fk: count with a Barcode FK
-          - per_barcode: {<barcode_id>: count}
-        """
-        qs = Transaction.objects.all()
-        if since:
-            qs = qs.filter(time_created__gte=since)
-        if until:
-            qs = qs.filter(time_created__lt=until)
+        table = get_table("transactions")
+        total = 0
+        with_fk = 0
+        per_barcode: Counter = Counter()
 
-        total = qs.count()
-        with_fk = qs.filter(barcode_used__isnull=False).count()
+        kwargs = {}
+        last_key = None
+        while True:
+            if last_key:
+                kwargs["ExclusiveStartKey"] = last_key
+            resp = table.scan(**kwargs)
+            for item in resp.get("Items", []):
+                tc = item.get("time_created", "")
+                if since and tc < since.isoformat():
+                    continue
+                if until and tc >= until.isoformat():
+                    continue
 
-        # Optionally exclude rows whose FK points to a deleted/missing Barcode
-        # (unlikely with SET_NULL)
-        per_barcode_qs = qs
-        if only_valid_barcodes:
-            per_barcode_qs = per_barcode_qs.filter(barcode_used__isnull=False)
+                total += 1
+                bc_uuid = item.get("barcode_uuid")
+                if bc_uuid:
+                    with_fk += 1
+                    per_barcode[bc_uuid] += 1
 
-        per_barcode_rows = (
-            per_barcode_qs.values("barcode_used_id")
-            .annotate(c=Count("id"))
-            .order_by("-c")
-        )
-        per_barcode = {
-            str(row["barcode_used_id"]): row["c"] for row in per_barcode_rows
-        }
+            last_key = resp.get("LastEvaluatedKey")
+            if not last_key:
+                break
 
         return {
             "total": total,
             "with_fk": with_fk,
-            "per_barcode": per_barcode,
+            "per_barcode": dict(per_barcode),
         }
 
     @staticmethod
     def for_barcode(
-        barcode: Barcode,
+        barcode_uuid: str,
         *,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
-    ) -> QuerySet[Transaction]:
-        qs = Transaction.objects.filter(barcode_used=barcode)
-        if since:
-            qs = qs.filter(time_created__gte=since)
-        if until:
-            qs = qs.filter(time_created__lt=until)
-        return qs.select_related("user", "barcode_used").order_by("-time_created")
+    ) -> list[dict]:
+        since_str = since.isoformat() if since else None
+        until_str = until.isoformat() if until else None
+        return TransactionRepository.for_barcode(
+            barcode_uuid=barcode_uuid,
+            since=since_str,
+            until=until_str,
+        )

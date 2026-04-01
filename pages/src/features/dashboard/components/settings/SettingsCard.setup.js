@@ -29,11 +29,10 @@ export function useSettingsCardSetup({ props } = {}) {
   const hasErrors = computed(() => Object.keys(componentProps.errors || {}).length > 0);
 
   const activeIcon = computed(() => {
-    const id = componentProps.settings?.barcode ? Number(componentProps.settings.barcode) : null;
-    const current = (componentProps.barcodeChoices || []).find((c) => Number(c.id) === id);
+    const id = componentProps.settings?.barcode || null;
+    const current = (componentProps.barcodeChoices || []).find((c) => c.id === id);
     if (!current) return 'barcode';
     if (current.barcode_type === 'DynamicBarcode') return 'qr_code_2';
-    if (current.barcode_type === 'Identification') return 'badge';
     return 'barcode';
   });
 

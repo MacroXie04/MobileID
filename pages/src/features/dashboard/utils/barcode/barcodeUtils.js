@@ -13,8 +13,6 @@ export function getBarcodeDisplayTitle(barcodeType) {
       return 'Dynamic Barcode';
     case 'Others':
       return 'Barcode';
-    case 'Identification':
-      return 'Identification Barcode';
     default:
       return 'Barcode';
   }
@@ -31,8 +29,6 @@ export function getBarcodeDisplayId(barcode) {
       return `Dynamic •••• ${barcode.barcode.slice(-4)}`;
     case 'Others':
       return `Barcode ending with ${barcode.barcode.slice(-4)}`;
-    case 'Identification':
-      return 'Identification Barcode';
     default:
       return `•••• ${barcode.barcode.slice(-4)}`;
   }
@@ -45,7 +41,6 @@ export function getBarcodeDisplayId(barcode) {
  */
 export function getBarcodeTypeLabel(type) {
   if (type === 'DynamicBarcode') return 'Dynamic';
-  if (type === 'Identification') return 'Identification';
   return 'Static';
 }
 

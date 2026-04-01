@@ -1,5 +1,5 @@
 from authn.authentication import CookieJWTAuthentication
-from authn.models import LoginAuditLog
+from authn.repositories import SecurityRepository
 from authn.services import create_user_profile
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -15,18 +15,16 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class LoginSecurityTestBase(APITestCase):
     """Base class with shared setUp for LoginSecurityTests split."""
 
-    @classmethod
-    def setUpTestData(cls):
-        cls.user_password = "testpass123"
-        cls.user = User.objects.create_user(
-            username="secureuser", password=cls.user_password
-        )
-        create_user_profile(cls.user, "Secure User", "SECURE123", None)
-
     def setUp(self):
+        from index.tests.dynamodb_cleanup import clear_all_dynamodb_tables
+        clear_all_dynamodb_tables()
         super().setUp()
         cache.clear()
-        LoginAuditLog.objects.all().delete()
+        self.user_password = "testpass123"
+        self.user = User.objects.create_user(
+            username="secureuser", password=self.user_password
+        )
+        create_user_profile(self.user, "Secure User", "SECURE123", None)
 
     def _perform_login(self):
         url = reverse("authn:api_login")
@@ -87,11 +85,12 @@ class LoginSecurityBasicTests(LoginSecurityTestBase):
     def test_login_creates_audit_log_entry(self):
         response = self._perform_login()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        log = LoginAuditLog.objects.filter(username=self.user.username).first()
-        self.assertIsNotNone(log)
-        self.assertTrue(log.success)
-        self.assertEqual(log.user, self.user)
-        self.assertEqual(log.ip_address, "127.0.0.1")
+        logs = SecurityRepository.get_audit_logs_for_user(self.user.username)
+        self.assertGreaterEqual(len(logs), 1)
+        log = logs[0]
+        self.assertTrue(log["success"])
+        self.assertEqual(int(log["user_id"]), self.user.id)
+        self.assertEqual(log["ip_address"], "127.0.0.1")
 
     def test_login_rate_throttle_triggers(self):
         url = reverse("authn:api_login")

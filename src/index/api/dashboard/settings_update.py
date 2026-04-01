@@ -1,8 +1,7 @@
-from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 
-from index.models import UserBarcodeSettings, UserBarcodePullSettings
+from index.repositories import SettingsRepository
 from index.serializers import (
     UserBarcodeSettingsSerializer,
     UserBarcodePullSettingsSerializer,
@@ -13,39 +12,29 @@ class DashboardSettingsUpdateMixin:
     """POST handler: update user barcode settings and/or pull settings."""
 
     def post(self, request):
-        with transaction.atomic():
-            return self._post_inner(request)
-
-    def _post_inner(self, request):
         user = request.user
-        settings, _ = UserBarcodeSettings.objects.get_or_create(user=user)
+        settings = SettingsRepository.get_or_create(user.id)
 
-        # Create a copy of request data to potentially modify
         data = request.data.copy()
         barcode_requested = "barcode" in data
 
-        # Track pull setting state changes
-        existing_pull_settings = UserBarcodePullSettings.objects.filter(
-            user=user
-        ).first()
-        pull_settings_enabled_before = (
-            existing_pull_settings.pull_setting == "Enable"
-            if existing_pull_settings
-            else False
-        )
+        pull_settings_enabled_before = settings.get("pull_setting") == "Enable"
         pull_settings_enabled_after = pull_settings_enabled_before
 
         # Handle pull_settings if provided
         pull_settings_data = data.pop("pull_settings", None)
         if pull_settings_data:
-            pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(user=user)
-            pull_serializer = UserBarcodePullSettingsSerializer(
-                pull_settings, data=pull_settings_data, partial=True
-            )
+            pull_serializer = UserBarcodePullSettingsSerializer(data=pull_settings_data)
             if pull_serializer.is_valid():
-                pull_serializer.save()
-                pull_settings.refresh_from_db()
-                pull_settings_enabled_after = pull_settings.pull_setting == "Enable"
+                validated = pull_serializer.validated_data
+                SettingsRepository.update(
+                    user.id,
+                    pull_setting=validated.get("pull_setting", settings.get("pull_setting")),
+                    pull_gender_setting=validated.get("gender_setting", settings.get("pull_gender_setting")),
+                )
+                # Refresh settings
+                settings = SettingsRepository.get_or_create(user.id)
+                pull_settings_enabled_after = settings.get("pull_setting") == "Enable"
             else:
                 return Response(
                     {
@@ -54,8 +43,6 @@ class DashboardSettingsUpdateMixin:
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-        else:
-            pull_settings = existing_pull_settings
 
         pull_setting_enabled_now = (
             pull_settings_data is not None
@@ -83,31 +70,49 @@ class DashboardSettingsUpdateMixin:
 
         # If pull_setting is enabled, auto-clear barcode selection
         if pull_settings_enabled_after:
-            data.pop("barcode", None)  # Remove from incoming data
-            if settings.barcode is not None:
-                settings.barcode = None
-                settings.save()
+            data.pop("barcode", None)
+            if settings.get("active_barcode_uuid"):
+                SettingsRepository.set_active_barcode(user.id, None)
+                settings["active_barcode_uuid"] = None
 
-        # Let the serializer handle automatic setting of associate_user_profile_with_barcode  # noqa: E501
-        # based on barcode type. No manual intervention needed here.
+        # Build pull_settings dict for serializer context
+        pull_settings_dict = {
+            "pull_setting": settings.get("pull_setting", "Disable"),
+            "gender_setting": settings.get("pull_gender_setting", "Unknow"),
+        }
 
         serializer = UserBarcodeSettingsSerializer(
-            settings, data=data, context={"request": request}, partial=True
+            settings, data=data, context={"request": request, "pull_settings": pull_settings_dict}, partial=True
         )
 
         if serializer.is_valid():
-            serializer.save()
+            validated = serializer.validated_data
+            updates = {}
+            if "active_barcode_uuid" in validated:
+                updates["active_barcode_uuid"] = validated["active_barcode_uuid"]
+            if "associate_user_profile_with_barcode" in validated:
+                updates["associate_user_profile_with_barcode"] = validated["associate_user_profile_with_barcode"]
+            if "scanner_detection_enabled" in validated:
+                updates["scanner_detection_enabled"] = validated["scanner_detection_enabled"]
+            if "prefer_front_camera" in validated:
+                updates["prefer_front_camera"] = validated["prefer_front_camera"]
 
-            # Get updated pull settings for response
-            pull_settings, _ = UserBarcodePullSettings.objects.get_or_create(user=user)
-            pull_settings_serializer = UserBarcodePullSettingsSerializer(pull_settings)
+            if updates:
+                SettingsRepository.update(user.id, **updates)
+
+            # Refresh for response
+            settings = SettingsRepository.get_or_create(user.id)
+
+            response_settings = UserBarcodeSettingsSerializer(
+                settings, context={"request": request, "pull_settings": pull_settings_dict}
+            )
 
             return Response(
                 {
                     "status": "success",
                     "message": "Barcode settings updated successfully",
-                    "settings": serializer.data,
-                    "pull_settings": pull_settings_serializer.data,
+                    "settings": response_settings.data,
+                    "pull_settings": pull_settings_dict,
                 }
             )
 

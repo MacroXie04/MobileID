@@ -155,7 +155,11 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Use custom test runner that sets up moto-mocked DynamoDB
+TEST_RUNNER = "core.test_runner.DynamoDBTestRunner"
+
 # Import settings from sub-modules
 from core.settings.database import *  # noqa: E402, F401, F403
 from core.settings.auth import *  # noqa: E402, F401, F403
 from core.settings.security import *  # noqa: E402, F401, F403
+from core.settings.dynamodb import *  # noqa: E402, F401, F403

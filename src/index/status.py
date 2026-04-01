@@ -32,6 +32,19 @@ def health_check(request):
         response_data["error"] = "Database connection failed"
         return JsonResponse(response_data, status=503)
 
+    # Check DynamoDB connectivity (non-critical)
+    try:
+        from django.conf import settings as django_settings
+        if not getattr(django_settings, "TESTING", False):
+            from core.dynamodb.client import get_client
+            client = get_client()
+            table_name = django_settings.DYNAMODB_TABLES["barcodes"]
+            client.describe_table(TableName=table_name)
+            response_data["dynamodb"] = "connected"
+    except Exception:
+        response_data["dynamodb"] = "disconnected"
+        warnings.append("DynamoDB connection failed")
+
     # Check cache round-trip (non-critical)
     try:
         cache.set("_health_check", "ok", timeout=5)

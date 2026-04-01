@@ -6,17 +6,18 @@ from typing import Iterable, Optional, Sequence, Dict, Any
 
 from django.contrib.auth.models import User
 from django.utils import timezone
-from index.models import Transaction, Barcode
+
+from index.repositories import TransactionRepository
 
 
 @dataclass(frozen=True)
 class CreatedTransaction:
     """Lightweight return type for bulk_create summaries."""
 
-    id: int
+    txn_id: str
     user_id: int
-    barcode_id: Optional[int]
-    time_created: datetime
+    barcode_uuid: Optional[str]
+    time_created: str
 
 
 class TransactionWriteMixin:
@@ -26,69 +27,57 @@ class TransactionWriteMixin:
     def create_transaction(
         *,
         user: User,
-        barcode: Optional[Barcode] = None,
+        barcode: object = None,
         time_created: Optional[datetime] = None,
         save: bool = True,
-    ) -> Transaction:
+    ) -> dict:
         """
-        Create and (optionally) persist a Transaction.
+        Create and persist a Transaction in DynamoDB.
 
-        Rules:
-        - `user` must be a valid User.
-        - `barcode` must be provided.
-        - time_created defaults to now() if omitted.
+        Accepts either a Django Barcode model or a dict from DynamoDB.
         """
-        # Validate user instance
         if not isinstance(user, User):
             raise ValueError("Provide valid `user`.")
-
-        # Disallow anonymous users
         if getattr(user, "is_anonymous", False):
             raise PermissionError("Anonymous user not allowed.")
-
-        # Validate barcode instance
         if barcode is None:
             raise ValueError("Provide `barcode`.")
-        if not isinstance(barcode, Barcode):
-            raise ValueError("`barcode` must be a Barcode instance.")
-        # Ownership is not enforced here; allow recording transactions
-        # even when the acting user differs from the barcode owner.
 
-        instance = Transaction(
-            user=user,
-            barcode_used=barcode,
+        # Support both dict (from DynamoDB) and Django model objects
+        if isinstance(barcode, dict):
+            barcode_uuid = barcode.get("barcode_uuid")
+            barcode_value = barcode.get("barcode")
+        else:
+            barcode_uuid = str(barcode.barcode_uuid) if hasattr(barcode, "barcode_uuid") else None
+            barcode_value = barcode.barcode if hasattr(barcode, "barcode") else None
+
+        when = time_created.isoformat() if time_created else None
+
+        item = TransactionRepository.create(
+            user_id=user.id,
+            barcode_uuid=barcode_uuid,
+            barcode_value=barcode_value,
+            time_created=when,
         )
-        # Let auto_now_add handle normal case; allow override for backfills.
-        if time_created is not None:
-            # Assigning to the field directly so we can override auto_now_add.
-            instance.time_created = time_created
-
-        if save:
-            instance.save()
-
-        return instance
+        return item
 
     @staticmethod
     def bulk_ingest(
         rows: Iterable[Dict[str, Any]],
         *,
-        batch_size: int = 500,
+        batch_size: int = 25,
         default_time: Optional[datetime] = None,
     ) -> Sequence[CreatedTransaction]:
         """
         Bulk create Transactions from iterable of dict rows.
 
         Each row may contain:
-          - 'user' (User instance)  [required]
-          - 'barcode' (Barcode instance) [optional]
+          - 'user' (User instance) [required]
+          - 'barcode' (dict or Barcode instance) [required]
           - 'time_created' (datetime) [optional]
-
-        Validation:
-          - Requires 'barcode'.
-          - 'user' must be a User instance.
         """
-        to_create: list[Transaction] = []
-        now = default_time or timezone.now()
+        items = []
+        now = (default_time or timezone.now()).isoformat()
 
         for i, r in enumerate(rows):
             user = r.get("user")
@@ -98,32 +87,34 @@ class TransactionWriteMixin:
                 raise PermissionError(f"Row {i}: anonymous user not allowed.")
 
             barcode = r.get("barcode")
-            if barcode is not None and not isinstance(barcode, Barcode):
-                raise ValueError(
-                    f"Row {i}: `barcode` must be a Barcode instance or None."
-                )
             if barcode is None:
                 raise ValueError(f"Row {i}: provide `barcode`.")
-            # Ownership is not required; allow recording transactions where the
-            # acting user differs from the barcode owner.
 
-            when = r.get("time_created") or now
+            if isinstance(barcode, dict):
+                barcode_uuid = barcode.get("barcode_uuid")
+                barcode_value = barcode.get("barcode")
+            else:
+                barcode_uuid = str(barcode.barcode_uuid) if hasattr(barcode, "barcode_uuid") else None
+                barcode_value = barcode.barcode if hasattr(barcode, "barcode") else None
 
-            t = Transaction(
-                user=user,
-                barcode_used=barcode,
-                time_created=when,
-            )
-            to_create.append(t)
+            when = r.get("time_created")
+            when_str = when.isoformat() if when else now
 
-        created = Transaction.objects.bulk_create(to_create, batch_size=batch_size)
+            items.append({
+                "user_id": user.id,
+                "barcode_uuid": barcode_uuid,
+                "barcode_value": barcode_value,
+                "time_created": when_str,
+            })
+
+        created = TransactionRepository.bulk_create(items)
 
         return [
             CreatedTransaction(
-                id=obj.id,
-                user_id=obj.user_id,
-                barcode_id=obj.barcode_used_id,
-                time_created=obj.time_created,
+                txn_id=obj["sk"],
+                user_id=int(obj["user_id"]),
+                barcode_uuid=obj.get("barcode_uuid"),
+                time_created=obj["time_created"],
             )
             for obj in created
         ]

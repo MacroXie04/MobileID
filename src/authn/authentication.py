@@ -6,7 +6,7 @@ from rest_framework.permissions import SAFE_METHODS
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
-from authn.models import AccessTokenBlacklist
+from authn.repositories import SecurityRepository
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,6 @@ class CookieJWTAuthentication(JWTAuthentication):
         if reason:
             header_token = request.META.get("HTTP_X_CSRFTOKEN", "")
 
-            # If token is "null" or "undefined" (common frontend issues),
-            # provide clearer error
             if header_token in ("null", "undefined", ""):
                 raise exceptions.PermissionDenied(
                     f"CSRF Failed: Token missing or invalid ({header_token}). "
@@ -62,28 +60,20 @@ class CookieJWTAuthentication(JWTAuthentication):
 
             # Check if this access token has been blacklisted (session revoked)
             jti = validated_token.get("jti")
-            if jti and AccessTokenBlacklist.is_blacklisted(jti):
-                # Token has been revoked - raise authentication error
+            if jti and SecurityRepository.is_blacklisted(jti):
                 logger.warning("Rejecting blacklisted token JTI: %s...", jti[:8])
                 raise exceptions.AuthenticationFailed("Session has been revoked")
 
             user = self.get_user(validated_token)
 
             # Check if session has been revoked by matching user + token time.
-            # Uses a single IN query on the indexed jti field instead of
-            # fetching all revoked sessions and iterating in Python.
             SESSION_REVOCATION_WINDOW_SECONDS = 10
             iat = validated_token.get("iat")
             if user and iat:
                 token_iat = int(iat)
-                possible_jtis = [
-                    f"session_{user.id}_{ts}"
-                    for ts in range(
-                        token_iat - SESSION_REVOCATION_WINDOW_SECONDS,
-                        token_iat + SESSION_REVOCATION_WINDOW_SECONDS + 1,
-                    )
-                ]
-                if AccessTokenBlacklist.objects.filter(jti__in=possible_jtis).exists():
+                if SecurityRepository.check_session_revocation(
+                    user.id, token_iat, SESSION_REVOCATION_WINDOW_SECONDS
+                ):
                     logger.info("Rejecting revoked session for user %s", user.id)
                     raise exceptions.AuthenticationFailed(
                         "Session has been revoked. Please log in again."

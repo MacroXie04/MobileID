@@ -1,21 +1,23 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
-from index.models import (
-    Barcode,
-    BarcodeUsage,
-    BarcodeUserProfile,
-)
+
+from index.repositories import BarcodeRepository
+from index.tests.dynamodb_cleanup import DynamoDBCleanupMixin as DynamoDBTestMixin
 
 
-class BarcodeSerializerTest(TestCase):
+class BarcodeSerializerTest(DynamoDBTestMixin, TestCase):
     """Test BarcodeSerializer"""
 
     def setUp(self):
+        super().setUp()
         self.user = User.objects.create_user(
             username="testuser", password="testpass123"
         )
-        self.barcode = Barcode.objects.create(
-            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        self.barcode = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="1234567890123456",
+            barcode_type="Others",
+            owner_username=self.user.username,
         )
 
     def test_serializer_fields(self):
@@ -26,7 +28,7 @@ class BarcodeSerializerTest(TestCase):
         data = serializer.data
 
         expected_fields = [
-            "id",
+            "barcode_uuid",
             "barcode_type",
             "barcode",
             "time_created",
@@ -42,40 +44,41 @@ class BarcodeSerializerTest(TestCase):
             self.assertIn(field, data)
 
     def test_usage_count_with_usage_record(self):
-        """Test usage_count field with existing usage record"""
+        """Test usage_count field with existing usage data"""
         from index.serializers import BarcodeSerializer
 
-        BarcodeUsage.objects.create(barcode=self.barcode, total_usage=10)
+        BarcodeRepository.update(
+            user_id=self.barcode["user_id"],
+            barcode_uuid=self.barcode["barcode_uuid"],
+            total_usage=10,
+        )
+        # Re-fetch the barcode to get updated data
+        barcode = BarcodeRepository.get_by_uuid(
+            self.barcode["user_id"], self.barcode["barcode_uuid"]
+        )
 
-        serializer = BarcodeSerializer(self.barcode)
+        serializer = BarcodeSerializer(barcode)
         self.assertEqual(serializer.data["usage_count"], 10)
 
     def test_usage_count_without_usage_record(self):
-        """Test usage_count field without usage record"""
+        """Test usage_count field with default (0) usage"""
         from index.serializers import BarcodeSerializer
 
         serializer = BarcodeSerializer(self.barcode)
         self.assertEqual(serializer.data["usage_count"], 0)
 
-    def test_display_name_identification(self):
-        """Test display name for identification barcode"""
-        from index.serializers import BarcodeSerializer
-
-        self.barcode.barcode_type = "Identification"
-        self.barcode.save()
-
-        serializer = BarcodeSerializer(self.barcode)
-        expected = "testuser's identification barcode"
-        self.assertEqual(serializer.data["display_name"], expected)
-
     def test_display_name_dynamic(self):
         """Test display name for dynamic barcode"""
         from index.serializers import BarcodeSerializer
 
-        self.barcode.barcode_type = "DynamicBarcode"
-        self.barcode.save()
+        dynamic_barcode = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="9876543210123456",
+            barcode_type="DynamicBarcode",
+            owner_username=self.user.username,
+        )
 
-        serializer = BarcodeSerializer(self.barcode)
+        serializer = BarcodeSerializer(dynamic_barcode)
         expected = "Dynamic Barcode ending with 3456"
         self.assertEqual(serializer.data["display_name"], expected)
 
@@ -83,13 +86,16 @@ class BarcodeSerializerTest(TestCase):
         """Test has_profile_addon when profile exists"""
         from index.serializers import BarcodeSerializer
 
-        BarcodeUserProfile.objects.create(
-            linked_barcode=self.barcode,
-            name="Test User",
-            information_id="TEST123",
+        barcode_with_profile = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="withprofile12345",
+            barcode_type="Others",
+            owner_username=self.user.username,
+            profile_name="Test User",
+            profile_info_id="TEST123",
         )
 
-        serializer = BarcodeSerializer(self.barcode)
+        serializer = BarcodeSerializer(barcode_with_profile)
         self.assertTrue(serializer.data["has_profile_addon"])
 
     def test_has_profile_addon_false(self):

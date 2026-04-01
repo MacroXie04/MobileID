@@ -1,63 +1,76 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
-from index.models import (
-    Barcode,
-    BarcodeUsage,
-    Transaction,
-)
+
+from index.repositories import BarcodeRepository, TransactionRepository
 from index.services.usage_limit import UsageLimitService
 from index.services.transfer_barcode import TransferBarcodeParser
+from index.tests.dynamodb_cleanup import DynamoDBCleanupMixin as DynamoDBTestMixin
 
 
-class UsageLimitServiceTest(TestCase):
+class UsageLimitServiceTest(DynamoDBTestMixin, TestCase):
     """Unit tests for UsageLimitService"""
 
     def setUp(self):
+        super().setUp()
         self.user = User.objects.create_user(
             username="limituser", password="testpass123"
         )
-        self.barcode = Barcode.objects.create(
-            user=self.user, barcode="limit-123456", barcode_type="Others"
+        self.barcode = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="limit-123456",
+            barcode_type="Others",
+            owner_username=self.user.username,
         )
 
     def test_check_daily_limit_no_record_or_zero_limit(self):
-        allowed, msg = UsageLimitService.check_daily_limit(self.barcode)
-        self.assertTrue(allowed)
-        self.assertIsNone(msg)
-        # Create usage with zero limit
-        BarcodeUsage.objects.create(barcode=self.barcode, daily_usage_limit=0)
+        # Default daily_usage_limit is 0
         allowed, msg = UsageLimitService.check_daily_limit(self.barcode)
         self.assertTrue(allowed)
         self.assertIsNone(msg)
 
     def test_check_daily_limit_enforced(self):
-        _ = BarcodeUsage.objects.create(
-            barcode=self.barcode, daily_usage_limit=2, total_usage=0
+        # Set daily limit to 2
+        barcode = BarcodeRepository.update(
+            user_id=self.barcode["user_id"],
+            barcode_uuid=self.barcode["barcode_uuid"],
+            daily_usage_limit=2,
         )
         # No transactions yet
-        allowed, msg = UsageLimitService.check_daily_limit(self.barcode)
+        allowed, msg = UsageLimitService.check_daily_limit(barcode)
         self.assertTrue(allowed)
         # Create two transactions for today
-        Transaction.objects.create(user=self.user, barcode_used=self.barcode)
-        Transaction.objects.create(user=self.user, barcode_used=self.barcode)
-        allowed, msg = UsageLimitService.check_daily_limit(self.barcode)
+        TransactionRepository.create(
+            user_id=self.user.id,
+            barcode_uuid=barcode["barcode_uuid"],
+        )
+        TransactionRepository.create(
+            user_id=self.user.id,
+            barcode_uuid=barcode["barcode_uuid"],
+        )
+        allowed, msg = UsageLimitService.check_daily_limit(barcode)
         self.assertFalse(allowed)
         self.assertIn("Daily usage limit of 2", msg)
 
     def test_check_total_limit(self):
-        # No record allows
+        # No limit allows
         allowed, msg = UsageLimitService.check_total_limit(self.barcode)
         self.assertTrue(allowed)
         # With limit not reached
-        usage = BarcodeUsage.objects.create(
-            barcode=self.barcode, total_usage_limit=3, total_usage=2
+        barcode = BarcodeRepository.update(
+            user_id=self.barcode["user_id"],
+            barcode_uuid=self.barcode["barcode_uuid"],
+            total_usage_limit=3,
+            total_usage=2,
         )
-        allowed, msg = UsageLimitService.check_total_limit(self.barcode)
+        allowed, msg = UsageLimitService.check_total_limit(barcode)
         self.assertTrue(allowed)
         # Reached
-        usage.total_usage = 3
-        usage.save()
-        allowed, msg = UsageLimitService.check_total_limit(self.barcode)
+        barcode = BarcodeRepository.update(
+            user_id=self.barcode["user_id"],
+            barcode_uuid=self.barcode["barcode_uuid"],
+            total_usage=3,
+        )
+        allowed, msg = UsageLimitService.check_total_limit(barcode)
         self.assertFalse(allowed)
         self.assertIn("Total usage limit of 3", msg)
 
@@ -66,15 +79,19 @@ class UsageLimitServiceTest(TestCase):
         self.assertEqual(stats["daily_used"], 0)
         self.assertEqual(stats["daily_limit"], 0)
         self.assertIsNone(stats["daily_remaining"])
-        # Create usage and transactions
-        BarcodeUsage.objects.create(
-            barcode=self.barcode,
+        # Update barcode with usage and limits
+        barcode = BarcodeRepository.update(
+            user_id=self.barcode["user_id"],
+            barcode_uuid=self.barcode["barcode_uuid"],
             daily_usage_limit=5,
             total_usage_limit=10,
             total_usage=7,
         )
-        Transaction.objects.create(user=self.user, barcode_used=self.barcode)
-        stats = UsageLimitService.get_usage_stats(self.barcode)
+        TransactionRepository.create(
+            user_id=self.user.id,
+            barcode_uuid=barcode["barcode_uuid"],
+        )
+        stats = UsageLimitService.get_usage_stats(barcode)
         self.assertEqual(stats["daily_used"], 1)
         self.assertEqual(stats["daily_remaining"], 4)
         self.assertEqual(stats["total_used"], 7)
@@ -82,63 +99,81 @@ class UsageLimitServiceTest(TestCase):
 
     def test_check_daily_limit_boundary_exactly_at_limit(self):
         """Exactly at limit (3 transactions, limit=3) should be blocked."""
-        BarcodeUsage.objects.create(
-            barcode=self.barcode, daily_usage_limit=3, total_usage=0
+        barcode = BarcodeRepository.update(
+            user_id=self.barcode["user_id"],
+            barcode_uuid=self.barcode["barcode_uuid"],
+            daily_usage_limit=3,
         )
         for _ in range(3):
-            Transaction.objects.create(user=self.user, barcode_used=self.barcode)
-        allowed, msg = UsageLimitService.check_daily_limit(self.barcode)
+            TransactionRepository.create(
+                user_id=self.user.id,
+                barcode_uuid=barcode["barcode_uuid"],
+            )
+        allowed, msg = UsageLimitService.check_daily_limit(barcode)
         self.assertFalse(allowed)
         self.assertIn("3", msg)
 
     def test_check_daily_limit_one_below_limit(self):
         """One below limit (2 transactions, limit=3) should be allowed."""
-        BarcodeUsage.objects.create(
-            barcode=self.barcode, daily_usage_limit=3, total_usage=0
+        barcode = BarcodeRepository.update(
+            user_id=self.barcode["user_id"],
+            barcode_uuid=self.barcode["barcode_uuid"],
+            daily_usage_limit=3,
         )
         for _ in range(2):
-            Transaction.objects.create(user=self.user, barcode_used=self.barcode)
-        allowed, msg = UsageLimitService.check_daily_limit(self.barcode)
+            TransactionRepository.create(
+                user_id=self.user.id,
+                barcode_uuid=barcode["barcode_uuid"],
+            )
+        allowed, msg = UsageLimitService.check_daily_limit(barcode)
         self.assertTrue(allowed)
         self.assertIsNone(msg)
 
     def test_check_all_limits_daily_blocks_before_total(self):
         """When daily limit is hit but total is not, daily error is returned."""
-        BarcodeUsage.objects.create(
-            barcode=self.barcode,
+        barcode = BarcodeRepository.update(
+            user_id=self.barcode["user_id"],
+            barcode_uuid=self.barcode["barcode_uuid"],
             daily_usage_limit=1,
             total_usage_limit=100,
-            total_usage=0,
         )
-        Transaction.objects.create(user=self.user, barcode_used=self.barcode)
-        allowed, msg = UsageLimitService.check_all_limits(self.barcode)
+        TransactionRepository.create(
+            user_id=self.user.id,
+            barcode_uuid=barcode["barcode_uuid"],
+        )
+        allowed, msg = UsageLimitService.check_all_limits(barcode)
         self.assertFalse(allowed)
         self.assertIn("Daily", msg)
 
     def test_check_all_limits_total_blocks_when_daily_ok(self):
         """When daily is ok but total is hit, total error is returned."""
-        BarcodeUsage.objects.create(
-            barcode=self.barcode,
+        barcode = BarcodeRepository.update(
+            user_id=self.barcode["user_id"],
+            barcode_uuid=self.barcode["barcode_uuid"],
             daily_usage_limit=0,  # no daily limit
             total_usage_limit=5,
             total_usage=5,
         )
-        allowed, msg = UsageLimitService.check_all_limits(self.barcode)
+        allowed, msg = UsageLimitService.check_all_limits(barcode)
         self.assertFalse(allowed)
         self.assertIn("Total", msg)
 
     def test_get_usage_stats_remaining_clamped_to_zero(self):
         """When usage exceeds limit (e.g. limit lowered), remaining should be 0."""
-        BarcodeUsage.objects.create(
-            barcode=self.barcode,
+        barcode = BarcodeRepository.update(
+            user_id=self.barcode["user_id"],
+            barcode_uuid=self.barcode["barcode_uuid"],
             daily_usage_limit=2,
             total_usage_limit=3,
             total_usage=10,  # exceeds total limit
         )
         # Create 5 transactions today (exceeds daily limit of 2)
         for _ in range(5):
-            Transaction.objects.create(user=self.user, barcode_used=self.barcode)
-        stats = UsageLimitService.get_usage_stats(self.barcode)
+            TransactionRepository.create(
+                user_id=self.user.id,
+                barcode_uuid=barcode["barcode_uuid"],
+            )
+        stats = UsageLimitService.get_usage_stats(barcode)
         self.assertEqual(stats["daily_remaining"], 0)
         self.assertEqual(stats["total_remaining"], 0)
 

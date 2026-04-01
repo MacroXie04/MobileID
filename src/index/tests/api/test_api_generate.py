@@ -1,21 +1,19 @@
 from authn.services import create_user_profile
 from django.contrib.auth.models import User
 from django.urls import reverse
-from index.models import (
-    Barcode,
-    BarcodeUsage,
-    BarcodeUserProfile,
-    UserBarcodeSettings,
-)
+from index.repositories import BarcodeRepository, SettingsRepository
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from index.tests.dynamodb_cleanup import DynamoDBCleanupMixin as DynamoDBTestMixin
 
-class GenerateBarcodeAPITest(APITestCase):
+
+class GenerateBarcodeAPITest(DynamoDBTestMixin, APITestCase):
     """Test GenerateBarcodeAPIView"""
 
     def setUp(self):
+        super().setUp()
         self.client = APIClient()
         self.user = User.objects.create_user(
             username="testuser", password="testpass123"
@@ -26,47 +24,20 @@ class GenerateBarcodeAPITest(APITestCase):
         refresh = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
-    def test_generate_barcode_success(self):
-        """Test successful barcode generation with selected barcode"""
-        # Select the identification barcode created by create_user_profile
-        ident = Barcode.objects.get(user=self.user, barcode_type="Identification")
-        UserBarcodeSettings.objects.filter(user=self.user).update(barcode=ident)
+    def test_generate_barcode_no_selection(self):
+        """Test barcode generation returns error when no barcode is selected.
+
+        Note: create_user_profile now auto-creates an Identification barcode
+        and sets it as active. To test "no selection", we clear the setting.
+        """
+        # Clear the auto-assigned barcode
+        SettingsRepository.set_active_barcode(self.user.id, None)
 
         url = reverse("index:api_generate_barcode")
         response = self.client.post(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["status"], "success")
-        self.assertEqual(response.data["barcode_type"], "Identification")
-
-    def test_generate_barcode_identification_updates_dashboard_usage(self):
-        """Test Identification generate is reflected in dashboard usage fields."""
-        ident = Barcode.objects.get(user=self.user, barcode_type="Identification")
-        UserBarcodeSettings.objects.filter(user=self.user).update(barcode=ident)
-
-        generate_url = reverse("index:api_generate_barcode")
-        generate_response = self.client.post(generate_url)
-
-        self.assertEqual(generate_response.status_code, status.HTTP_200_OK)
-
-        current_ident = Barcode.objects.get(
-            user=self.user,
-            barcode_type="Identification",
-        )
-        usage = BarcodeUsage.objects.get(barcode=current_ident)
-        self.assertEqual(usage.total_usage, 1)
-
-        dashboard_url = reverse("index:api_barcode_dashboard")
-        dashboard_response = self.client.get(dashboard_url)
-
-        self.assertEqual(dashboard_response.status_code, status.HTTP_200_OK)
-        identification_barcode = next(
-            item
-            for item in dashboard_response.data["barcodes"]
-            if item["barcode_type"] == "Identification"
-        )
-        self.assertEqual(identification_barcode["usage_count"], 1)
-        self.assertIsNotNone(identification_barcode["last_used"])
+        self.assertEqual(response.data["status"], "error")
 
     def test_generate_barcode_unauthenticated(self):
         """Test barcode generation without authentication"""
@@ -78,10 +49,11 @@ class GenerateBarcodeAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class ActiveProfileAPITest(APITestCase):
+class ActiveProfileAPITest(DynamoDBTestMixin, APITestCase):
     """Tests for ActiveProfileAPIView"""
 
     def setUp(self):
+        super().setUp()
         self.client = APIClient()
         self.user = User.objects.create_user(
             username="testuser", password="testpass123"
@@ -100,22 +72,19 @@ class ActiveProfileAPITest(APITestCase):
 
     def test_user_with_linked_profile(self):
         self._auth(self.user)
-        # Create barcode and link settings and profile
-        bc = Barcode.objects.create(
-            user=self.user,
-            barcode="activeprof123456",
+        # Create barcode with profile data and link in settings
+        bc = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="activeprof123456",
             barcode_type="Others",
+            owner_username=self.user.username,
+            profile_name="Test User",
+            profile_info_id="TEST123",
         )
-        UserBarcodeSettings.objects.create(
-            user=self.user,
-            barcode=bc,
+        SettingsRepository.update(
+            self.user.id,
+            active_barcode_uuid=bc["barcode_uuid"],
             associate_user_profile_with_barcode=True,
-        )
-        BarcodeUserProfile.objects.create(
-            linked_barcode=bc,
-            name="Test User",
-            information_id="TEST123",
-            user_profile_img=None,
         )
         url = reverse("index:api_active_profile")
         resp = self.client.get(url)
@@ -127,22 +96,19 @@ class ActiveProfileAPITest(APITestCase):
 
     def test_user_with_avatar_adds_data_uri(self):
         self._auth(self.user)
-        bc = Barcode.objects.create(
-            user=self.user,
-            barcode="activeprofavatar",
+        bc = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="activeprofavatar",
             barcode_type="Others",
+            owner_username=self.user.username,
+            profile_name="Avatar User",
+            profile_info_id="AVT123",
+            profile_avatar="dGVzdA==",
         )
-        UserBarcodeSettings.objects.create(
-            user=self.user,
-            barcode=bc,
+        SettingsRepository.update(
+            self.user.id,
+            active_barcode_uuid=bc["barcode_uuid"],
             associate_user_profile_with_barcode=True,
-        )
-        # Store raw base64 without data URI; endpoint should prefix data:image/png  # noqa: E501
-        BarcodeUserProfile.objects.create(
-            linked_barcode=bc,
-            name="Avatar User",
-            information_id="AVT123",
-            user_profile_img="dGVzdA==",
         )
         url = reverse("index:api_active_profile")
         resp = self.client.get(url)

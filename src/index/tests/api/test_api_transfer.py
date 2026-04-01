@@ -1,18 +1,18 @@
 from django.contrib.auth.models import User
 from django.urls import reverse
-from index.models import (
-    Barcode,
-    BarcodeUserProfile,
-)
+from index.repositories import BarcodeRepository
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from index.tests.dynamodb_cleanup import DynamoDBCleanupMixin as DynamoDBTestMixin
 
-class TransferDynamicBarcodeAPITest(APITestCase):
+
+class TransferDynamicBarcodeAPITest(DynamoDBTestMixin, APITestCase):
     """Tests for TransferDynamicBarcodeAPIView"""
 
     def setUp(self):
+        super().setUp()
         self.client = APIClient()
         self.user = User.objects.create_user(
             username="testuser", password="testpass123"
@@ -48,16 +48,16 @@ class TransferDynamicBarcodeAPITest(APITestCase):
         self.assertEqual(response.data["status"], "success")
         self.assertIn("barcode", response.data)
 
-        # Check barcode was created
-        barcode = Barcode.objects.get(barcode="12345678901234")
-        self.assertEqual(barcode.user, self.user)
-        self.assertEqual(barcode.barcode_type, "DynamicBarcode")
+        # Check barcode was created in DynamoDB
+        barcode = BarcodeRepository.get_by_barcode_value("12345678901234")
+        self.assertIsNotNone(barcode)
+        self.assertEqual(barcode["user_id"], str(self.user.id))
+        self.assertEqual(barcode["barcode_type"], "DynamicBarcode")
 
-        # Check profile was created
-        profile = BarcodeUserProfile.objects.get(linked_barcode=barcode)
-        self.assertEqual(profile.name, "John Doe")
-        self.assertEqual(profile.information_id, "12345")
-        self.assertEqual(profile.user_profile_img, "dGVzdGltYWdl")
+        # Check profile data was denormalized into barcode item
+        self.assertEqual(barcode.get("profile_name"), "John Doe")
+        self.assertEqual(barcode.get("profile_info_id"), "12345")
+        self.assertEqual(barcode.get("profile_avatar"), "dGVzdGltYWdl")
 
     def test_transfer_missing_html(self):
         """Test that missing HTML returns error"""
@@ -92,11 +92,12 @@ class TransferDynamicBarcodeAPITest(APITestCase):
         """Test that transferring duplicate barcode fails"""
         self._auth(self.user)
 
-        # Create existing barcode
-        Barcode.objects.create(
-            user=self.user,
-            barcode="12345678901234",
+        # Create existing barcode in DynamoDB
+        BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="12345678901234",
             barcode_type="DynamicBarcode",
+            owner_username=self.user.username,
         )
 
         url = reverse("index:api_transfer_dynamic_barcode")

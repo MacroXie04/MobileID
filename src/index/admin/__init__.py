@@ -6,12 +6,6 @@ admin.site.site_title = "MobileID Admin Portal"
 admin.site.index_title = "Administration"
 admin.site.empty_value_display = "—"
 
-# Import all admin classes so @admin.register() decorators execute
-from .barcode import BarcodeAdmin  # noqa: F401, E402
-from .barcode_usage import BarcodeUsageAdmin  # noqa: F401, E402
-from .user_settings import (  # noqa: F401, E402
-    UserBarcodeSettingsAdmin,
-    UserBarcodePullSettingsAdmin,
-)
-from .barcode_profile import BarcodeUserProfileAdmin  # noqa: F401, E402
-from .transaction import TransactionAdmin  # noqa: F401, E402
+# Note: Index app models have been migrated to DynamoDB.
+# Django admin registrations for barcode, transaction, and settings models
+# have been removed. These are now managed via the API.

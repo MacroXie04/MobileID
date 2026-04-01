@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 
-from index.models import Barcode, BarcodeUsage, UserBarcodeSettings
+from index.repositories import BarcodeRepository, SettingsRepository
 from index.serializers import BarcodeSerializer, BarcodeCreateSerializer
 from index.services.transactions import TransactionService
 
@@ -17,7 +17,7 @@ class DashboardBarcodeCRUDMixin:
 
         if serializer.is_valid():
             barcode = serializer.save()
-            # Record a transaction for barcode creation via service layer
+            # Record a transaction for barcode creation
             TransactionService.create_transaction(user=request.user, barcode=barcode)
             return Response(
                 {
@@ -36,7 +36,7 @@ class DashboardBarcodeCRUDMixin:
         )
 
     def patch(self, request):
-        """Update properties of a barcode owned by the current user (share flag and daily limit)"""  # noqa: E501
+        """Update properties of a barcode owned by the current user."""
         barcode_id = request.data.get("barcode_id")
         share_with_others = request.data.get("share_with_others")
         daily_usage_limit = request.data.get("daily_usage_limit")
@@ -47,9 +47,9 @@ class DashboardBarcodeCRUDMixin:
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        try:
-            barcode = Barcode.objects.get(pk=barcode_id, user=request.user)
-        except Barcode.DoesNotExist:
+        # Look up barcode by UUID (barcode_id is now UUID)
+        barcode = BarcodeRepository.get_by_uuid(request.user.id, barcode_id)
+        if not barcode:
             return Response(
                 {
                     "status": "error",
@@ -59,49 +59,29 @@ class DashboardBarcodeCRUDMixin:
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Identification barcodes cannot be updated
-        if barcode.barcode_type == "Identification":
-            return Response(
-                {
-                    "status": "error",
-                    "message": "Identification barcodes cannot be modified",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        updates = {}
 
         # Update share_with_others if provided
         if share_with_others is not None:
-            # Coerce to boolean if sent as string
             if isinstance(share_with_others, str):
                 share_with_others = share_with_others.lower() in [
-                    "1",
-                    "true",
-                    "yes",
-                    "on",
+                    "1", "true", "yes", "on",
                 ]
-            barcode.share_with_others = bool(share_with_others)
-            barcode.save()
+            updates["share_with_others"] = bool(share_with_others)
 
         # Update daily_usage_limit if provided
         if daily_usage_limit is not None:
             try:
-                # Ensure it's a non-negative integer
                 limit_value = int(daily_usage_limit)
                 if limit_value < 0:
                     return Response(
                         {
                             "status": "error",
-                            "message": "Daily usage limit must be 0 or " "greater",
+                            "message": "Daily usage limit must be 0 or greater",
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-
-                # Get or create BarcodeUsage record
-                usage, _ = BarcodeUsage.objects.get_or_create(
-                    barcode=barcode, defaults={"total_usage": 0}
-                )
-                usage.daily_usage_limit = limit_value
-                usage.save()
+                updates["daily_usage_limit"] = limit_value
             except (ValueError, TypeError):
                 return Response(
                     {
@@ -110,6 +90,13 @@ class DashboardBarcodeCRUDMixin:
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+
+        if updates:
+            barcode = BarcodeRepository.update(
+                user_id=request.user.id,
+                barcode_uuid=barcode_id,
+                **updates,
+            )
 
         return Response(
             {
@@ -122,10 +109,7 @@ class DashboardBarcodeCRUDMixin:
         )
 
     def delete(self, request):
-        """
-        Delete barcode - users may delete only their own barcodes
-        (DynamicBarcode and Others types)
-        """
+        """Delete barcode - users may only delete their own DynamicBarcode/Others."""
         barcode_id = request.data.get("barcode_id")
 
         if not barcode_id:
@@ -134,14 +118,11 @@ class DashboardBarcodeCRUDMixin:
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # All users can only delete barcodes they own
-        try:
-            barcode = Barcode.objects.get(
-                pk=barcode_id,
-                user=request.user,
-                barcode_type__in=["DynamicBarcode", "Others"],
-            )
-        except Barcode.DoesNotExist:
+        # Look up barcode by UUID
+        barcode = BarcodeRepository.get_by_uuid(request.user.id, barcode_id)
+        if not barcode or barcode.get("barcode_type") not in [
+            "DynamicBarcode", "Others",
+        ]:
             return Response(
                 {
                     "status": "error",
@@ -151,16 +132,13 @@ class DashboardBarcodeCRUDMixin:
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Check if this barcode is currently selected in settings
-        settings = UserBarcodeSettings.objects.filter(
-            user=request.user, barcode=barcode
-        ).first()
+        # Clear from settings if currently selected
+        SettingsRepository.clear_barcode_if_matches(request.user.id, barcode_id)
 
-        if settings:
-            settings.barcode = None
-            settings.save()
-
-        barcode.delete()
+        BarcodeRepository.delete(
+            user_id=request.user.id,
+            barcode_uuid=barcode_id,
+        )
 
         return Response(
             {"status": "success", "message": "Barcode deleted successfully"}

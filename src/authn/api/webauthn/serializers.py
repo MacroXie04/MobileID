@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 
-from authn.models import FailedLoginAttempt, LoginAuditLog
+from authn.repositories import SecurityRepository
 from django.conf import settings
 from django.utils import timezone
 from rest_framework import serializers
@@ -24,78 +24,38 @@ class _BaseLoginSerializer(TokenObtainPairSerializer):
             return forwarded.split(",")[0].strip()
         return request.META.get("REMOTE_ADDR")
 
-    def _get_or_create_attempt(self, username, client_ip):
+    def _enforce_account_lock(self, username, client_ip):
         if not username:
-            return None
-        attempt, _ = FailedLoginAttempt.objects.get_or_create(
-            username=username,
-            defaults={"ip_address": client_ip},
-        )
-        return attempt
-
-    def _enforce_account_lock(self, attempt, client_ip):
-        if not attempt or not attempt.locked_until:
             return
 
-        if attempt.locked_until <= timezone.now():
-            attempt.locked_until = None
-            attempt.attempt_count = 0
-            attempt.save()
-            return
-
-        logger.warning(
-            "Login attempt blocked due to lock",
-            extra={"username": attempt.username},
-        )
-        self._log_auth_event(
-            attempt.username,
-            client_ip or attempt.ip_address,
-            "blocked",
-            reason="locked",
-        )
-        raise serializers.ValidationError({"detail": self.generic_error_message})
-
-    def _record_failed_attempt(self, attempt, client_ip):
-        if not attempt:
-            return
-
-        attempt.attempt_count = min(
-            self._max_failed_attempts(), attempt.attempt_count + 1
-        )
-        if client_ip:
-            attempt.ip_address = client_ip
-
-        if attempt.attempt_count >= self._max_failed_attempts():
-            attempt.locked_until = timezone.now() + self._lockout_duration()
+        if SecurityRepository.is_account_locked(username):
             logger.warning(
-                "Account locked due to repeated failures",
-                extra={"username": attempt.username},
+                "Login attempt blocked due to lock",
+                extra={"username": username},
             )
             self._log_auth_event(
-                username=attempt.username,
-                client_ip=client_ip or attempt.ip_address,
-                result="blocked",
+                username,
+                client_ip,
+                "blocked",
                 reason="locked",
             )
+            raise serializers.ValidationError({"detail": self.generic_error_message})
 
-        attempt.save()
-
-    def _reset_failed_attempts(self, attempt, client_ip):
-        if not attempt:
+    def _record_failed_attempt(self, username, client_ip):
+        if not username:
             return
 
-        updated = False
-        if attempt.attempt_count or attempt.locked_until:
-            attempt.attempt_count = 0
-            attempt.locked_until = None
-            updated = True
+        SecurityRepository.increment_failed_attempt(
+            username=username,
+            ip_address=client_ip,
+            max_attempts=self._max_failed_attempts(),
+            lockout_duration=self._lockout_duration(),
+        )
 
-        if client_ip and attempt.ip_address != client_ip:
-            attempt.ip_address = client_ip
-            updated = True
-
-        if updated:
-            attempt.save()
+    def _reset_failed_attempts(self, username, client_ip):
+        if not username:
+            return
+        SecurityRepository.reset_failed_attempts(username, client_ip)
 
     def _max_failed_attempts(self):
         return getattr(settings, "MAX_FAILED_LOGIN_ATTEMPTS", 5)
@@ -106,7 +66,7 @@ class _BaseLoginSerializer(TokenObtainPairSerializer):
 
     def _log_auth_event(self, username, client_ip, result, reason=None):
         user_agent = self._get_user_agent()
-        success_flag = result == LoginAuditLog.SUCCESS
+        success_flag = result == "success"
         related_user = getattr(self, "user", None) if success_flag else None
         logger.info(
             "Login attempt",
@@ -118,14 +78,14 @@ class _BaseLoginSerializer(TokenObtainPairSerializer):
             },
         )
         try:
-            LoginAuditLog.objects.create(
+            SecurityRepository.create_audit_log(
                 username=username or "",
+                user_id=related_user.id if related_user else None,
                 ip_address=client_ip,
                 user_agent=user_agent or "",
                 result=result,
                 reason=reason or "",
                 success=success_flag,
-                user=related_user,
             )
         except Exception:
             logger.exception("Failed to persist login audit log")
@@ -149,8 +109,7 @@ class PlaintextLoginSerializer(_BaseLoginSerializer):
 
         logger.debug("Login attempt for username: %s", username)
 
-        attempt_record = self._get_or_create_attempt(username, client_ip)
-        self._enforce_account_lock(attempt_record, client_ip)
+        self._enforce_account_lock(username, client_ip)
 
         if not password:
             logger.warning("Login attempt with missing password")
@@ -162,16 +121,16 @@ class PlaintextLoginSerializer(_BaseLoginSerializer):
         try:
             data = super().validate(attrs)
         except AuthenticationFailed as exc:
-            self._record_failed_attempt(attempt_record, client_ip)
+            self._record_failed_attempt(username, client_ip)
             self._log_auth_event(
                 username, client_ip, "failure", reason="invalid_credentials"
             )
             raise AuthenticationFailed(detail=self.generic_error_message) from exc
         except TokenError as exc:
-            self._record_failed_attempt(attempt_record, client_ip)
+            self._record_failed_attempt(username, client_ip)
             self._log_auth_event(username, client_ip, "failure", reason="token_error")
             raise AuthenticationFailed(detail=self.generic_error_message) from exc
 
-        self._reset_failed_attempts(attempt_record, client_ip)
+        self._reset_failed_attempts(username, client_ip)
         self._log_auth_event(username, client_ip, "success")
         return data

@@ -13,7 +13,7 @@ from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
 )
 
-from authn.models import AccessTokenBlacklist
+from authn.repositories import SecurityRepository
 
 from .utils import _get_current_session_iat
 
@@ -43,13 +43,11 @@ def _blacklist_session_access_tokens(user, session_created_at):
     session_ts = int(session_created_at.timestamp())
     session_key = f"session_{user.id}_{session_ts}"
 
-    # Create a blacklist entry using session creation time as identifier
-    AccessTokenBlacklist.objects.get_or_create(
+    # Create a blacklist entry using DynamoDB
+    SecurityRepository.blacklist_token(
         jti=session_key,
-        defaults={
-            "user": user,
-            "expires_at": expires_at,
-        },
+        user_id=user.id,
+        expires_at=expires_at,
     )
 
 

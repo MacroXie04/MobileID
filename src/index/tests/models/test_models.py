@@ -39,14 +39,6 @@ class BarcodeModelTest(TestCase):
         )
         self.assertEqual(str(dynamic_barcode), "Dynamic barcode ending with 3456")
 
-        # Identification barcode - use different barcode value
-        ident_barcode = Barcode.objects.create(
-            user=self.user,
-            barcode="9876543210987654",
-            barcode_type="Identification",
-        )
-        self.assertEqual(str(ident_barcode), "testuser's identification Barcode")
-
         # Others barcode - use different barcode value
         other_barcode = Barcode.objects.create(
             user=self.user, barcode="5678901234567890", barcode_type="Others"

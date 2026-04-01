@@ -1,7 +1,4 @@
-from django.db import transaction
-from django.db.models import Max, Sum
-
-from index.models import Barcode, BarcodeUsage
+from index.repositories import BarcodeRepository
 
 from .constants import BARCODE_IDENTIFICATION
 from .utils import _random_digits
@@ -14,7 +11,7 @@ def generate_unique_identification_barcode(max_attempts: int = 50) -> str:
     """
     for _ in range(max_attempts):
         code = _random_digits(28)
-        if not Barcode.objects.filter(barcode=code).exists():
+        if not BarcodeRepository.barcode_exists(code):
             return code
     raise RuntimeError(
         f"Unable to generate unique Identification barcode after "
@@ -23,53 +20,53 @@ def generate_unique_identification_barcode(max_attempts: int = 50) -> str:
 
 
 def _carry_forward_identification_usage(
-    old_barcode_ids: list[int], new_barcode: Barcode
+    old_barcodes: list[dict], new_barcode: dict
 ) -> None:
-    """Merge prior Identification usage rows onto *new_barcode*."""
-    usage_rows = BarcodeUsage.objects.filter(barcode_id__in=old_barcode_ids)
-    if not usage_rows.exists():
+    """Merge prior Identification usage onto *new_barcode*."""
+    if not old_barcodes:
         return
 
-    summary = usage_rows.aggregate(
-        total_usage=Sum("total_usage"),
-        total_usage_limit=Max("total_usage_limit"),
-        daily_usage_limit=Max("daily_usage_limit"),
-        last_used=Max("last_used"),
+    total_usage = sum(int(b.get("total_usage", 0)) for b in old_barcodes)
+    max_total_limit = max(int(b.get("total_usage_limit", 0)) for b in old_barcodes)
+    max_daily_limit = max(int(b.get("daily_usage_limit", 0)) for b in old_barcodes)
+
+    last_used_values = [b.get("last_used") for b in old_barcodes if b.get("last_used")]
+    last_used = max(last_used_values) if last_used_values else None
+
+    updates = {
+        "total_usage": total_usage,
+        "total_usage_limit": max_total_limit,
+        "daily_usage_limit": max_daily_limit,
+    }
+    if last_used:
+        updates["last_used"] = last_used
+
+    BarcodeRepository.update(
+        user_id=new_barcode["user_id"],
+        barcode_uuid=new_barcode["barcode_uuid"],
+        **updates,
     )
 
-    new_usage = BarcodeUsage.objects.create(
-        barcode=new_barcode,
-        total_usage=summary["total_usage"] or 0,
-        total_usage_limit=summary["total_usage_limit"] or 0,
-        daily_usage_limit=summary["daily_usage_limit"] or 0,
-    )
 
-    if summary["last_used"] is not None:
-        # auto_now would overwrite a direct save(); keep the carried-forward
-        # timestamp with a queryset update instead.
-        BarcodeUsage.objects.filter(pk=new_usage.pk).update(
-            last_used=summary["last_used"]
-        )
-
-
-def _create_identification_barcode(user) -> Barcode:
+def _create_identification_barcode(user) -> dict:
     """Rotate a user's Identification barcode while preserving usage state."""
-    with transaction.atomic():
-        old_barcode_ids = list(
-            Barcode.objects.filter(
-                user=user,
-                barcode_type=BARCODE_IDENTIFICATION,
-            ).values_list("pk", flat=True)
-        )
+    old_barcodes = BarcodeRepository.get_user_barcodes_by_type(
+        user.id, BARCODE_IDENTIFICATION
+    )
 
-        new_barcode = Barcode.objects.create(
-            user=user,
-            barcode_type=BARCODE_IDENTIFICATION,
-            barcode=generate_unique_identification_barcode(),
-        )
+    new_barcode = BarcodeRepository.create(
+        user_id=user.id,
+        barcode_value=generate_unique_identification_barcode(),
+        barcode_type=BARCODE_IDENTIFICATION,
+        owner_username=user.username,
+    )
 
-        if old_barcode_ids:
-            _carry_forward_identification_usage(old_barcode_ids, new_barcode)
-            Barcode.objects.filter(pk__in=old_barcode_ids).delete()
+    if old_barcodes:
+        _carry_forward_identification_usage(old_barcodes, new_barcode)
+        for old_bc in old_barcodes:
+            BarcodeRepository.delete(
+                user_id=old_bc["user_id"],
+                barcode_uuid=old_bc["barcode_uuid"],
+            )
 
-        return new_barcode
+    return new_barcode

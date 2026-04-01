@@ -5,86 +5,72 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
-from index.models import (
-    Barcode,
-    BarcodeUsage,
-    UserBarcodeSettings,
-    UserBarcodePullSettings,
-    BarcodeUserProfile,
-    Transaction,
-)
+from index.repositories import BarcodeRepository, SettingsRepository, TransactionRepository
 from index.services.barcode import generate_barcode
+from index.tests.dynamodb_cleanup import DynamoDBCleanupMixin as DynamoDBTestMixin
 
 
-class BarcodePullTestBase(TestCase):
+class BarcodePullTestBase(DynamoDBTestMixin, TestCase):
     def setUp(self):
+        super().setUp()
         self.school_user = User.objects.create_user(
             username="schooluser", password="testpass123"
         )
 
-        # Setup pull settings
-        self.pull_settings = UserBarcodePullSettings.objects.create(
-            user=self.school_user,
+        # Setup settings with pull enabled
+        SettingsRepository.update(
+            self.school_user.id,
             pull_setting="Enable",
-            gender_setting="Male",
+            pull_gender_setting="Male",
         )
 
-        # Setup user settings
-        self.user_settings = UserBarcodeSettings.objects.create(
-            user=self.school_user, barcode=None
-        )
-
-        # Create some barcodes
         # 1. Male, Shareable, Dynamic (Candidate)
-        self.bc_male = Barcode.objects.create(
-            user=User.objects.create_user("owner1"),
-            barcode="male_shareable",
+        owner1 = User.objects.create_user("owner1")
+        self.bc_male = BarcodeRepository.create(
+            user_id=owner1.id,
+            barcode_value="male_shareable",
             barcode_type="DynamicBarcode",
+            owner_username=owner1.username,
             share_with_others=True,
-        )
-        BarcodeUserProfile.objects.create(
-            linked_barcode=self.bc_male, gender_barcode="Male"
+            profile_gender="Male",
         )
 
         # 2. Female, Shareable, Dynamic (Wrong Gender)
-        self.bc_female = Barcode.objects.create(
-            user=User.objects.create_user("owner2"),
-            barcode="female_shareable",
+        owner2 = User.objects.create_user("owner2")
+        self.bc_female = BarcodeRepository.create(
+            user_id=owner2.id,
+            barcode_value="female_shareable",
             barcode_type="DynamicBarcode",
+            owner_username=owner2.username,
             share_with_others=True,
-        )
-        BarcodeUserProfile.objects.create(
-            linked_barcode=self.bc_female, gender_barcode="Female"
+            profile_gender="Female",
         )
 
         # 3. Male, Not Shareable (Wrong Permission)
-        self.bc_private = Barcode.objects.create(
-            user=User.objects.create_user("owner3"),
-            barcode="male_private",
+        owner3 = User.objects.create_user("owner3")
+        self.bc_private = BarcodeRepository.create(
+            user_id=owner3.id,
+            barcode_value="male_private",
             barcode_type="DynamicBarcode",
+            owner_username=owner3.username,
             share_with_others=False,
-        )
-        BarcodeUserProfile.objects.create(
-            linked_barcode=self.bc_private, gender_barcode="Male"
+            profile_gender="Male",
         )
 
         # 4. Male, Owned by user (Candidate)
-        self.bc_owned = Barcode.objects.create(
-            user=self.school_user,
-            barcode="male_owned",
-            barcode_type="Others",  # Owned can be any type
+        self.bc_owned = BarcodeRepository.create(
+            user_id=self.school_user.id,
+            barcode_value="male_owned",
+            barcode_type="Others",
+            owner_username=self.school_user.username,
             share_with_others=False,
-        )
-        BarcodeUserProfile.objects.create(
-            linked_barcode=self.bc_owned, gender_barcode="Male"
+            profile_gender="Male",
         )
 
 
 class BarcodePullBasicTest(BarcodePullTestBase):
     def test_pull_basic_candidate(self):
         """Test pulling a valid candidate (Male, Shareable)"""
-        # Ensure no usage history
-
         with patch(
             "index.services.barcode.generator._timestamp", return_value="20230101000000"
         ):
@@ -92,11 +78,6 @@ class BarcodePullBasicTest(BarcodePullTestBase):
 
         self.assertEqual(result["status"], "success")
         # Should pick bc_male or bc_owned.
-        # Since random, could be either. But let's check if it's one of them.
-        # Note: generate_barcode returns full barcode string.
-        # For Dynamic: timestamp + barcode
-        # For Others: barcode
-
         valid_barcodes = []
         if "male_shareable" in result["barcode"]:
             valid_barcodes.append("male_shareable")
@@ -106,17 +87,34 @@ class BarcodePullBasicTest(BarcodePullTestBase):
         self.assertTrue(len(valid_barcodes) > 0, f"Got {result['barcode']}")
 
         # Check settings updated
-        self.user_settings.refresh_from_db()
+        settings = SettingsRepository.get(self.school_user.id)
+        active_uuid = settings.get("active_barcode_uuid")
+        active_barcode = BarcodeRepository.get_by_uuid(
+            self.school_user.id, active_uuid
+        )
+        if not active_barcode:
+            # Could be a shared barcode from another user
+            shared = BarcodeRepository.get_shared_dynamic_barcodes()
+            active_barcode = next(
+                (b for b in shared if b["barcode_uuid"] == active_uuid), None
+            )
+        self.assertIsNotNone(active_barcode)
         self.assertIn(
-            self.user_settings.barcode.barcode,
+            active_barcode["barcode"],
             ["male_shareable", "male_owned"],
         )
 
     def test_pull_wrong_gender(self):
         """Test that female barcode is not pulled"""
         # Delete other candidates to isolate
-        self.bc_male.delete()
-        self.bc_owned.delete()
+        BarcodeRepository.delete(
+            user_id=self.bc_male["user_id"],
+            barcode_uuid=self.bc_male["barcode_uuid"],
+        )
+        BarcodeRepository.delete(
+            user_id=self.bc_owned["user_id"],
+            barcode_uuid=self.bc_owned["barcode_uuid"],
+        )
 
         result = generate_barcode(self.school_user)
         # Should fail as no candidates
@@ -125,11 +123,12 @@ class BarcodePullBasicTest(BarcodePullTestBase):
 
     def test_pull_exclude_recently_used_global(self):
         """Test that barcode used by others < 5 mins ago is excluded"""
-        # Mark bc_male as used 2 mins ago
-        now = timezone.now()
-        bu = BarcodeUsage.objects.create(barcode=self.bc_male)
-        BarcodeUsage.objects.filter(pk=bu.pk).update(
-            last_used=now - timedelta(minutes=2)
+        # Mark bc_male as used 2 mins ago by setting last_used
+        recent_time = (timezone.now() - timedelta(minutes=2)).isoformat()
+        BarcodeRepository.update(
+            user_id=self.bc_male["user_id"],
+            barcode_uuid=self.bc_male["barcode_uuid"],
+            last_used=recent_time,
         )
 
         # bc_owned is still available
@@ -147,17 +146,20 @@ class BarcodePullBasicTest(BarcodePullTestBase):
         now = timezone.now()
 
         # User used bc_male 8 mins ago
-        txn = Transaction.objects.create(
-            user=self.school_user, barcode_used=self.bc_male
-        )
-        Transaction.objects.filter(pk=txn.pk).update(
-            time_created=now - timedelta(minutes=8)
+        old_time = (now - timedelta(minutes=8)).isoformat()
+        TransactionRepository.create(
+            user_id=self.school_user.id,
+            barcode_uuid=self.bc_male["barcode_uuid"],
+            barcode_value=self.bc_male["barcode"],
+            time_created=old_time,
         )
 
-        # Also mark it as used globally 2 mins ago (which would normally exclude it)  # noqa: E501
-        bu = BarcodeUsage.objects.create(barcode=self.bc_male)
-        BarcodeUsage.objects.filter(pk=bu.pk).update(
-            last_used=now - timedelta(minutes=2)
+        # Also mark it as used globally 2 mins ago (which would normally exclude it)
+        recent_time = (now - timedelta(minutes=2)).isoformat()
+        BarcodeRepository.update(
+            user_id=self.bc_male["user_id"],
+            barcode_uuid=self.bc_male["barcode_uuid"],
+            last_used=recent_time,
         )
 
         with patch(
@@ -174,17 +176,20 @@ class BarcodePullBasicTest(BarcodePullTestBase):
         now = timezone.now()
 
         # User used bc_male 12 mins ago
-        txn = Transaction.objects.create(
-            user=self.school_user, barcode_used=self.bc_male
-        )
-        Transaction.objects.filter(pk=txn.pk).update(
-            time_created=now - timedelta(minutes=12)
+        old_time = (now - timedelta(minutes=12)).isoformat()
+        TransactionRepository.create(
+            user_id=self.school_user.id,
+            barcode_uuid=self.bc_male["barcode_uuid"],
+            barcode_value=self.bc_male["barcode"],
+            time_created=old_time,
         )
 
         # And it's used globally 2 mins ago (so should be excluded)
-        bu = BarcodeUsage.objects.create(barcode=self.bc_male)
-        BarcodeUsage.objects.filter(pk=bu.pk).update(
-            last_used=now - timedelta(minutes=2)
+        recent_time = (now - timedelta(minutes=2)).isoformat()
+        BarcodeRepository.update(
+            user_id=self.bc_male["user_id"],
+            barcode_uuid=self.bc_male["barcode_uuid"],
+            last_used=recent_time,
         )
 
         # Only bc_owned should be available

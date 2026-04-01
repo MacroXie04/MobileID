@@ -12,7 +12,8 @@ from rest_framework_simplejwt.token_blacklist.models import (
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from authn.api.webauthn.views.tokens import _ensure_outstanding_token
-from authn.models import AccessTokenBlacklist, LoginAuditLog
+from authn.models import LoginAuditLog
+from authn.repositories import SecurityRepository
 
 
 class _DeviceTestMixin:
@@ -196,7 +197,10 @@ class DeviceRevocationTests(_DeviceTestMixin, APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(BlacklistedToken.objects.filter(token=token2).exists())
-        self.assertTrue(AccessTokenBlacklist.objects.filter(user=self.user).exists())
+        # Verify session access token blacklist entry was created in DynamoDB
+        session_ts = int(token2.created_at.timestamp())
+        session_key = f"session_{self.user.id}_{session_ts}"
+        self.assertTrue(SecurityRepository.is_blacklisted(session_key))
 
     def test_revoke_device_prevents_revoking_current_session(self):
         refresh, token = self._create_session(self.user)
@@ -288,19 +292,22 @@ class RevokeAllOtherDevicesTests(_DeviceTestMixin, APITestCase):
 
     def test_revoke_all_creates_access_token_blacklist_entries(self):
         refresh1, _ = self._create_session(self.user)
-        self._create_session(self.user, time_offset=timedelta(minutes=-10))
-        self._create_session(self.user, time_offset=timedelta(minutes=-20))
+        _, token2 = self._create_session(
+            self.user, time_offset=timedelta(minutes=-10)
+        )
+        _, token3 = self._create_session(
+            self.user, time_offset=timedelta(minutes=-20)
+        )
 
         self._auth_with_session(self.client, refresh1)
 
-        blacklist_count_before = AccessTokenBlacklist.objects.filter(
-            user=self.user
-        ).count()
-
         self.client.delete(self.url)
 
-        blacklist_count_after = AccessTokenBlacklist.objects.filter(
-            user=self.user
-        ).count()
-
-        self.assertEqual(blacklist_count_after - blacklist_count_before, 2)
+        # Verify that access token blacklist entries were created in DynamoDB
+        # for the two revoked sessions (not the current one)
+        session_ts_2 = int(token2.created_at.timestamp())
+        session_ts_3 = int(token3.created_at.timestamp())
+        session_key_2 = f"session_{self.user.id}_{session_ts_2}"
+        session_key_3 = f"session_{self.user.id}_{session_ts_3}"
+        self.assertTrue(SecurityRepository.is_blacklisted(session_key_2))
+        self.assertTrue(SecurityRepository.is_blacklisted(session_key_3))

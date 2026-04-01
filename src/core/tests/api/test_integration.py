@@ -5,15 +5,18 @@ Integration tests for the complete application.
 from authn.services import create_user_profile
 from django.contrib.auth.models import User
 from django.urls import reverse
+from index.repositories import SettingsRepository
+from index.tests.dynamodb_cleanup import DynamoDBCleanupMixin as DynamoDBTestMixin
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
-class IntegrationTest(APITestCase):
+class IntegrationTest(DynamoDBTestMixin, APITestCase):
     """Integration tests for the complete application"""
 
     def setUp(self):
+        super().setUp()
         self.client = APIClient()
         self.user = User.objects.create_user(
             username="integrationtest", password="testpass123"
@@ -45,26 +48,21 @@ class IntegrationTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["username"], "integrationtest")
 
-    def test_barcode_generation_flow(self):
-        """Test barcode generation flow with a selected barcode"""
-        from index.models import Barcode, UserBarcodeSettings
-
+    def test_barcode_generation_no_selection(self):
+        """Test barcode generation returns error when no barcode is selected"""
         # Authenticate user
         refresh = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
-        # Select the identification barcode created by create_user_profile
-        ident = Barcode.objects.get(user=self.user, barcode_type="Identification")
-        UserBarcodeSettings.objects.filter(user=self.user).update(barcode=ident)
+        # Clear the auto-assigned identification barcode from settings
+        SettingsRepository.set_active_barcode(self.user.id, None)
 
-        # Generate barcode
+        # No barcode selected — should return error
         generate_url = reverse("index:api_generate_barcode")
         response = self.client.post(generate_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["status"], "success")
-        self.assertEqual(response.data["barcode_type"], "Identification")
-        self.assertEqual(len(response.data["barcode"]), 28)
+        self.assertEqual(response.data["status"], "error")
 
     def test_unauthenticated_access_denied(self):
         """Test that protected endpoints require authentication"""

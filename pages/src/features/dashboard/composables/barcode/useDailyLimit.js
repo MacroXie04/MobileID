@@ -22,13 +22,13 @@ export function useDailyLimit(apiUpdateBarcodeDailyLimit, showMessage) {
     if (!barcode || !barcode.is_owned_by_current_user) return;
 
     // Clear previous timeout for this specific barcode
-    if (dailyLimitTimeouts.has(barcode.id)) {
-      clearTimeout(dailyLimitTimeouts.get(barcode.id));
+    if (dailyLimitTimeouts.has(barcode.barcode_uuid)) {
+      clearTimeout(dailyLimitTimeouts.get(barcode.barcode_uuid));
     }
 
     // Debounce for 1 second per barcode
     const timeoutId = setTimeout(async () => {
-      dailyLimitTimeouts.delete(barcode.id);
+      dailyLimitTimeouts.delete(barcode.barcode_uuid);
       try {
         const limit = parseInt(value) || 0;
         if (limit < 0) {
@@ -36,12 +36,12 @@ export function useDailyLimit(apiUpdateBarcodeDailyLimit, showMessage) {
           return;
         }
 
-        updatingLimit.value = { ...updatingLimit.value, [barcode.id]: true };
-        const res = await apiUpdateBarcodeDailyLimit(barcode.id, limit);
+        updatingLimit.value = { ...updatingLimit.value, [barcode.barcode_uuid]: true };
+        const res = await apiUpdateBarcodeDailyLimit(barcode.barcode_uuid, limit);
 
         if (res?.status === 'success' && res?.barcode) {
           // Update local barcode data
-          const idx = barcodes.value.findIndex((b) => Number(b.id) === Number(barcode.id));
+          const idx = barcodes.value.findIndex((b) => b.barcode_uuid === barcode.barcode_uuid);
           if (idx !== -1) {
             barcodes.value[idx] = {
               ...barcodes.value[idx],
@@ -54,10 +54,10 @@ export function useDailyLimit(apiUpdateBarcodeDailyLimit, showMessage) {
       } catch (e) {
         showMessage('Failed to update daily limit: ' + (e?.message || 'Unknown error'), 'danger');
       } finally {
-        updatingLimit.value = { ...updatingLimit.value, [barcode.id]: false };
+        updatingLimit.value = { ...updatingLimit.value, [barcode.barcode_uuid]: false };
       }
     }, 1000);
-    dailyLimitTimeouts.set(barcode.id, timeoutId);
+    dailyLimitTimeouts.set(barcode.barcode_uuid, timeoutId);
   }
 
   /**

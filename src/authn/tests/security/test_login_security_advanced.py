@@ -1,4 +1,4 @@
-from authn.models import LoginAuditLog
+from authn.repositories import SecurityRepository
 from authn.services import create_user_profile
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -25,11 +25,10 @@ class LoginSecurityAdvancedTests(LoginSecurityTestBase):
             [status.HTTP_400_BAD_REQUEST, status.HTTP_401_UNAUTHORIZED],
         )
 
-        log = LoginAuditLog.objects.filter(
-            username=self.user.username, success=False
-        ).first()
-        self.assertIsNotNone(log)
-        self.assertFalse(log.success)
+        logs = SecurityRepository.get_audit_logs_for_user(self.user.username)
+        failed_logs = [log for log in logs if not log.get("success", True)]
+        self.assertGreaterEqual(len(failed_logs), 1)
+        self.assertFalse(failed_logs[0]["success"])
 
     def test_login_with_nonexistent_user_fails(self):
         """Test that login with non-existent user fails gracefully"""
@@ -135,17 +134,16 @@ class LoginSecurityAdvancedTests(LoginSecurityTestBase):
 class CookieSecurityTests(APITestCase):
     """Test cookie security attributes"""
 
-    @classmethod
-    def setUpTestData(cls):
-        cls.user_password = "testpass123"
-        cls.user = User.objects.create_user(
-            username="cookieuser", password=cls.user_password
-        )
-        create_user_profile(cls.user, "Cookie User", "COOKIE123", None)
-
     def setUp(self):
+        from index.tests.dynamodb_cleanup import clear_all_dynamodb_tables
+        clear_all_dynamodb_tables()
         super().setUp()
         cache.clear()
+        self.user_password = "testpass123"
+        self.user = User.objects.create_user(
+            username="cookieuser", password=self.user_password
+        )
+        create_user_profile(self.user, "Cookie User", "COOKIE123", None)
 
     def test_refresh_token_httponly(self):
         """Test that refresh token cookie is HttpOnly"""

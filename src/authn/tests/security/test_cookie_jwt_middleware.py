@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from authn.models import AccessTokenBlacklist
+from authn.repositories import SecurityRepository
 
 
 @override_settings(THROTTLES_ENABLED=False)
@@ -48,8 +48,10 @@ class CookieJWTAuthenticationTests(APITestCase):
 
         # Blacklist the access token's JTI
         jti = access_token["jti"]
-        AccessTokenBlacklist.blacklist_token(
-            jti, self.user, timezone.now() + timedelta(hours=1)
+        SecurityRepository.blacklist_token(
+            jti=jti,
+            user_id=self.user.id,
+            expires_at=timezone.now() + timedelta(hours=1),
         )
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
@@ -70,8 +72,10 @@ class CookieJWTAuthenticationTests(APITestCase):
         # Create a session revocation entry matching the token's iat
         iat = int(access_token["iat"])
         session_key = f"session_{self.user.id}_{iat}"
-        AccessTokenBlacklist.blacklist_token(
-            session_key, self.user, timezone.now() + timedelta(hours=1)
+        SecurityRepository.blacklist_token(
+            jti=session_key,
+            user_id=self.user.id,
+            expires_at=timezone.now() + timedelta(hours=1),
         )
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")

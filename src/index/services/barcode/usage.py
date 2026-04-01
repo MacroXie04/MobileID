@@ -1,69 +1,61 @@
 from datetime import timedelta
 
-from django.db.models import F
 from django.utils import timezone
 
-from index.models import Barcode, BarcodeUsage, Transaction
-from index.services.transactions import TransactionService
+from index.repositories import BarcodeRepository, TransactionRepository
 
 from .constants import BARCODE_IDENTIFICATION, USAGE_COOLDOWN_MINUTES
 
 
 def _has_recent_duplicate_usage(
-    barcode: Barcode,
+    barcode: dict,
     *,
     request_user,
-    cutoff_5m,
+    cutoff_5m: str,
 ) -> bool:
     """Return True when usage should be suppressed by the cooldown window."""
-    if barcode.barcode_type == BARCODE_IDENTIFICATION:
-        return BarcodeUsage.objects.filter(
-            barcode=barcode,
-            last_used__gte=cutoff_5m,
-        ).exists()
+    if barcode.get("barcode_type") == BARCODE_IDENTIFICATION:
+        last_used = barcode.get("last_used")
+        return bool(last_used and last_used >= cutoff_5m)
 
-    return Transaction.objects.filter(
-        user=request_user,
-        barcode_used=barcode,
-        time_created__gte=cutoff_5m,
-    ).exists()
+    return TransactionRepository.recent_user_barcode_usage(
+        user_id=request_user.id,
+        barcode_uuid=barcode["barcode_uuid"],
+        since=cutoff_5m,
+    )
 
 
-def _touch_barcode_usage(barcode: Barcode, *, request_user=None) -> None:
+def _touch_barcode_usage(barcode: dict, *, request_user=None) -> None:
     """Increment usage counters for *barcode* atomically.
 
     If the same user has used this barcode within the last 5 minutes,
     we skip recording a new transaction and do not increment usage counters.
 
     If a barcode is being used by someone other than its owner, we still
-    update the `BarcodeUsage` counters but we do NOT create a `Transaction`.
+    update the usage counters but we do NOT create a Transaction.
     """
     now = timezone.now()
 
     # Check for duplicate usage within 5 minutes for the same user and barcode
     if request_user is not None:
-        cutoff_5m = now - timedelta(minutes=USAGE_COOLDOWN_MINUTES)
+        cutoff_5m = (now - timedelta(minutes=USAGE_COOLDOWN_MINUTES)).isoformat()
         if _has_recent_duplicate_usage(
             barcode,
             request_user=request_user,
             cutoff_5m=cutoff_5m,
         ):
-            # Skip recording - user already used this barcode within 5 minutes
             return
 
-    # Try to update existing record first
-    updated = BarcodeUsage.objects.filter(barcode=barcode).update(
-        total_usage=F("total_usage") + 1, last_used=now
+    # Atomic increment: total_usage += 1, last_used = now
+    BarcodeRepository.increment_usage(
+        user_id=barcode["user_id"],
+        barcode_uuid=barcode["barcode_uuid"],
     )
 
-    # If no rows were updated, create a new record
-    if not updated:
-        BarcodeUsage.objects.create(barcode=barcode, total_usage=1, last_used=now)
-
     if request_user is not None:
-        TransactionService.create_transaction(
-            user=request_user,
-            barcode=barcode,
-            time_created=now,
-            save=True,
+        TransactionRepository.create(
+            user_id=request_user.id,
+            barcode_uuid=barcode["barcode_uuid"],
+            barcode_value=barcode.get("barcode"),
+            time_created=now.isoformat(),
         )

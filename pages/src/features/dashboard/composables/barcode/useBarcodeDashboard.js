@@ -31,7 +31,7 @@ export default function useBarcodeDashboard() {
   const isDynamicSelected = computed(() => {
     if (!settings.value.barcode) return false;
     const current = barcodeChoices.value.find(
-      (c) => Number(c.id) === Number(settings.value.barcode)
+      (c) => c.id === settings.value.barcode
     );
     return current?.barcode_type === 'DynamicBarcode';
   });
@@ -39,7 +39,7 @@ export default function useBarcodeDashboard() {
   const currentBarcodeHasProfile = computed(() => {
     if (!settings.value.barcode) return false;
     const current = barcodeChoices.value.find(
-      (c) => Number(c.id) === Number(settings.value.barcode)
+      (c) => c.id === settings.value.barcode
     );
     return current?.has_profile_addon || false;
   });
@@ -47,8 +47,7 @@ export default function useBarcodeDashboard() {
   // Selected barcode (full object)
   const selectedBarcode = computed(() => {
     if (!settings.value.barcode) return null;
-    const id = Number(settings.value.barcode);
-    return (barcodes.value || []).find((b) => Number(b.id) === id) || null;
+    return (barcodes.value || []).find((b) => b.barcode_uuid === settings.value.barcode) || null;
   });
 
   // Form state
@@ -104,7 +103,7 @@ export default function useBarcodeDashboard() {
         associate_user_profile_with_barcode: Boolean(
           data.settings.associate_user_profile_with_barcode
         ),
-        barcode: data.settings.barcode ? Number(data.settings.barcode) : null,
+        barcode: data.settings.barcode || null,
       };
 
       barcodes.value = data.barcodes || [];
@@ -126,7 +125,7 @@ export default function useBarcodeDashboard() {
 
       const settingsToSend = {
         ...settings.value,
-        barcode: settings.value.barcode ? Number(settings.value.barcode) : null,
+        barcode: settings.value.barcode || null,
       };
 
       const response = await apiUpdateBarcodeSettings(settingsToSend);
@@ -136,9 +135,7 @@ export default function useBarcodeDashboard() {
           barcodeChoices.value = response.settings.barcode_choices;
         }
         if (response.settings && response.settings.barcode !== undefined) {
-          settings.value.barcode = response.settings.barcode
-            ? Number(response.settings.barcode)
-            : null;
+          settings.value.barcode = response.settings.barcode || null;
         }
         if (
           response.settings &&
@@ -181,8 +178,6 @@ export default function useBarcodeDashboard() {
         result = result.filter((b) => b.barcode_type === 'DynamicBarcode');
       } else if (filterType.value === 'Static') {
         result = result.filter((b) => b.barcode_type === 'Others');
-      } else if (filterType.value === 'Identification') {
-        result = result.filter((b) => b.barcode_type === 'Identification');
       }
     }
     return result;
@@ -236,7 +231,7 @@ export default function useBarcodeDashboard() {
       showMessage('You can only delete your own barcode', 'danger');
       return;
     }
-    barcodeToDelete.value = barcode.id;
+    barcodeToDelete.value = barcode.barcode_uuid;
     showConfirmDialog.value = true;
   }
 
@@ -260,9 +255,9 @@ export default function useBarcodeDashboard() {
     if (!barcode || !barcode.is_owned_by_current_user) return;
     try {
       const nextValue = !barcode.share_with_others;
-      const res = await apiUpdateBarcodeShare(barcode.id, nextValue);
+      const res = await apiUpdateBarcodeShare(barcode.barcode_uuid, nextValue);
       if (res?.status === 'success' && res?.barcode) {
-        const idx = barcodes.value.findIndex((b) => Number(b.id) === Number(barcode.id));
+        const idx = barcodes.value.findIndex((b) => b.barcode_uuid === barcode.barcode_uuid);
         if (idx !== -1) {
           barcodes.value[idx] = {
             ...barcodes.value[idx],
@@ -289,9 +284,9 @@ export default function useBarcodeDashboard() {
           showMessage('Daily limit must be 0 or greater', 'danger');
           return;
         }
-        const res = await apiUpdateBarcodeDailyLimit(barcode.id, limit);
+        const res = await apiUpdateBarcodeDailyLimit(barcode.barcode_uuid, limit);
         if (res?.status === 'success' && res?.barcode) {
-          const idx = barcodes.value.findIndex((b) => Number(b.id) === Number(barcode.id));
+          const idx = barcodes.value.findIndex((b) => b.barcode_uuid === barcode.barcode_uuid);
           if (idx !== -1) {
             barcodes.value[idx] = {
               ...barcodes.value[idx],
@@ -339,8 +334,6 @@ export default function useBarcodeDashboard() {
         return 'Dynamic Barcode';
       case 'Others':
         return 'Barcode';
-      case 'Identification':
-        return 'Identification Barcode';
       default:
         return 'Barcode';
     }
@@ -352,8 +345,6 @@ export default function useBarcodeDashboard() {
         return `Dynamic •••• ${barcode.barcode.slice(-4)}`;
       case 'Others':
         return `Barcode ending with ${barcode.barcode.slice(-4)}`;
-      case 'Identification':
-        return 'Identification Barcode';
       default:
         return `•••• ${barcode.barcode.slice(-4)}`;
     }
@@ -361,7 +352,6 @@ export default function useBarcodeDashboard() {
 
   function getBarcodeTypeLabel(type) {
     if (type === 'DynamicBarcode') return 'Dynamic';
-    if (type === 'Identification') return 'Identification';
     return 'Static';
   }
 
@@ -397,8 +387,8 @@ export default function useBarcodeDashboard() {
 
   async function setActiveBarcode(barcode) {
     if (!barcode) return;
-    if (Number(settings.value.barcode) === Number(barcode.id)) return;
-    settings.value.barcode = Number(barcode.id);
+    if (settings.value.barcode === barcode.barcode_uuid) return;
+    settings.value.barcode = barcode.barcode_uuid;
     await autoSaveSettings();
   }
 
@@ -516,12 +506,9 @@ export default function useBarcodeDashboard() {
   const currentBarcodeInfo = computed(() => {
     if (!settings.value.barcode) return null;
     const current = barcodeChoices.value.find(
-      (c) => Number(c.id) === Number(settings.value.barcode)
+      (c) => c.id === settings.value.barcode
     );
     if (!current) return null;
-    if (current.barcode_type === 'Identification') {
-      return `${current.barcode_type}`;
-    }
     return `${current.barcode_type} ending with ...${current.barcode.slice(-4)}`;
   });
 

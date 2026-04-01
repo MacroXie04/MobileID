@@ -67,8 +67,6 @@ class TransactionAdmin(admin.ModelAdmin):
         b = obj.barcode_used
         if not b:
             return "-"
-        if b.barcode_type == "Identification":
-            return f"{b.user.username}'s identification barcode"
         if b.barcode_type == "DynamicBarcode":
             return f"Dynamic Barcode ending with {b.barcode[-4:]}"
         return f"Barcode ending with {b.barcode[-4:]}"

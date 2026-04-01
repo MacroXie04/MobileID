@@ -1,7 +1,6 @@
 export function useBarcodesListLogic() {
   function iconForType(type) {
     if (type === 'DynamicBarcode') return 'qr_code_2';
-    if (type === 'Identification') return 'badge';
     return 'barcode';
   }
 
@@ -11,8 +10,6 @@ export function useBarcodesListLogic() {
         return 'Dynamic Barcode';
       case 'Others':
         return 'Barcode';
-      case 'Identification':
-        return 'Identification Barcode';
       default:
         return 'Barcode';
     }
@@ -20,7 +17,6 @@ export function useBarcodesListLogic() {
 
   function getBarcodeTypeLabel(type) {
     if (type === 'DynamicBarcode') return 'Dynamic';
-    if (type === 'Identification') return 'Identification';
     return 'Static';
   }
 
@@ -52,8 +48,6 @@ export function useBarcodesListLogic() {
         return `Dynamic •••• ${barcode.barcode.slice(-4)}`;
       case 'Others':
         return `Barcode ending with ${barcode.barcode.slice(-4)}`;
-      case 'Identification':
-        return 'Identification Barcode';
       default:
         return `•••• ${barcode.barcode.slice(-4)}`;
     }

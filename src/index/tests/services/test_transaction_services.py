@@ -4,38 +4,45 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase
 from django.utils import timezone
 
-from index.models import Barcode, Transaction
+from index.repositories import BarcodeRepository, TransactionRepository
 from index.services.transactions import TransactionService
 from index.services.transaction_writes import TransactionWriteMixin, CreatedTransaction
 from index.services.transaction_queries import TransactionQueryMixin
+from index.tests.dynamodb_cleanup import DynamoDBCleanupMixin as DynamoDBTestMixin
 
 
-class TransactionWriteServiceTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.user = User.objects.create_user(username="txwriter", password="pass123")
-        cls.barcode = Barcode.objects.create(
-            user=cls.user, barcode="1234567890123456", barcode_type="DynamicBarcode"
+class TransactionWriteServiceTests(DynamoDBTestMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        self.user = User.objects.create_user(username="txwriter", password="pass123")
+        self.barcode = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="1234567890123456",
+            barcode_type="DynamicBarcode",
+            owner_username=self.user.username,
         )
 
     def test_create_transaction_success(self):
         tx = TransactionWriteMixin.create_transaction(
             user=self.user, barcode=self.barcode
         )
-        self.assertIsNotNone(tx.pk)
-        self.assertEqual(tx.user, self.user)
-        self.assertEqual(tx.barcode_used, self.barcode)
+        self.assertIsNotNone(tx)
+        self.assertIn("sk", tx)
+        self.assertEqual(tx["user_id"], str(self.user.id))
+        self.assertEqual(tx["barcode_uuid"], self.barcode["barcode_uuid"])
 
     def test_create_transaction_requires_barcode(self):
         with self.assertRaises(ValueError) as ctx:
             TransactionWriteMixin.create_transaction(user=self.user, barcode=None)
         self.assertIn("barcode", str(ctx.exception).lower())
 
-    def test_create_transaction_rejects_non_barcode_instance(self):
-        with self.assertRaises(ValueError):
-            TransactionWriteMixin.create_transaction(
-                user=self.user, barcode="not-a-barcode"
-            )
+    def test_create_transaction_accepts_dict_barcode(self):
+        """Dict barcodes (from DynamoDB) are the primary input type."""
+        tx = TransactionWriteMixin.create_transaction(
+            user=self.user, barcode=self.barcode
+        )
+        self.assertIsNotNone(tx)
+        self.assertEqual(tx["barcode_uuid"], self.barcode["barcode_uuid"])
 
     def test_create_transaction_rejects_invalid_user(self):
         with self.assertRaises(ValueError):
@@ -49,17 +56,13 @@ class TransactionWriteServiceTests(TestCase):
                 user=AnonymousUser(), barcode=self.barcode
             )
 
-    def test_create_transaction_save_false(self):
-        tx = TransactionWriteMixin.create_transaction(
-            user=self.user, barcode=self.barcode, save=False
-        )
-        self.assertIsNone(tx.pk)
-        self.assertEqual(Transaction.objects.filter(user=self.user).count(), 0)
-
     def test_bulk_ingest_success(self):
         user2 = User.objects.create_user(username="txwriter2", password="pass123")
-        barcode2 = Barcode.objects.create(
-            user=user2, barcode="9876543210123456", barcode_type="Others"
+        barcode2 = BarcodeRepository.create(
+            user_id=user2.id,
+            barcode_value="9876543210123456",
+            barcode_type="Others",
+            owner_username=user2.username,
         )
         rows = [
             {"user": self.user, "barcode": self.barcode},
@@ -78,29 +81,33 @@ class TransactionWriteServiceTests(TestCase):
         self.assertIn("Row 0", str(ctx.exception))
 
 
-class TransactionQueryServiceTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.user = User.objects.create_user(username="txreader", password="pass123")
-        cls.user2 = User.objects.create_user(username="txreader2", password="pass123")
-        cls.barcode1 = Barcode.objects.create(
-            user=cls.user, barcode="1111111111111111", barcode_type="DynamicBarcode"
-        )
-        cls.barcode2 = Barcode.objects.create(
-            user=cls.user, barcode="2222222222222222", barcode_type="Others"
-        )
-
+class TransactionQueryServiceTests(DynamoDBTestMixin, TestCase):
     def setUp(self):
-        Transaction.objects.all().delete()
+        super().setUp()
+        self.user = User.objects.create_user(username="txreader", password="pass123")
+        self.user2 = User.objects.create_user(username="txreader2", password="pass123")
+        self.barcode1 = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="1111111111111111",
+            barcode_type="DynamicBarcode",
+            owner_username=self.user.username,
+        )
+        self.barcode2 = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="2222222222222222",
+            barcode_type="Others",
+            owner_username=self.user.username,
+        )
 
     def _create_tx(self, user, barcode, time_created=None):
-        """Create a transaction, optionally overriding auto_now_add timestamp."""
-        tx = Transaction.objects.create(user=user, barcode_used=barcode)
-        if time_created:
-            # auto_now_add prevents direct assignment, so use queryset update
-            Transaction.objects.filter(pk=tx.pk).update(time_created=time_created)
-            tx.refresh_from_db()
-        return tx
+        """Create a transaction, optionally with a specific timestamp."""
+        when = time_created.isoformat() if time_created else None
+        return TransactionRepository.create(
+            user_id=user.id,
+            barcode_uuid=barcode["barcode_uuid"],
+            barcode_value=barcode.get("barcode"),
+            time_created=when,
+        )
 
     def test_for_user_returns_ordered_transactions(self):
         now = timezone.now()
@@ -109,33 +116,33 @@ class TransactionQueryServiceTests(TestCase):
         # Other user's transaction should not appear
         self._create_tx(self.user2, self.barcode2, now)
 
-        results = list(TransactionQueryMixin.for_user(self.user))
+        results = TransactionQueryMixin.for_user(self.user)
         self.assertEqual(len(results), 2)
         # Most recent first
-        self.assertEqual(results[0].pk, tx2.pk)
-        self.assertEqual(results[1].pk, tx1.pk)
+        self.assertEqual(results[0]["sk"], tx2["sk"])
+        self.assertEqual(results[1]["sk"], tx1["sk"])
 
     def test_for_user_with_since_filter(self):
         now = timezone.now()
         self._create_tx(self.user, self.barcode1, now - timedelta(days=2))
         tx_recent = self._create_tx(self.user, self.barcode1, now - timedelta(hours=1))
 
-        results = list(
-            TransactionQueryMixin.for_user(self.user, since=now - timedelta(days=1))
+        results = TransactionQueryMixin.for_user(
+            self.user, since=now - timedelta(days=1)
         )
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].pk, tx_recent.pk)
+        self.assertEqual(results[0]["sk"], tx_recent["sk"])
 
     def test_for_user_with_until_filter(self):
         now = timezone.now()
         tx_old = self._create_tx(self.user, self.barcode1, now - timedelta(days=2))
         self._create_tx(self.user, self.barcode1, now - timedelta(hours=1))
 
-        results = list(
-            TransactionQueryMixin.for_user(self.user, until=now - timedelta(days=1))
+        results = TransactionQueryMixin.for_user(
+            self.user, until=now - timedelta(days=1)
         )
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].pk, tx_old.pk)
+        self.assertEqual(results[0]["sk"], tx_old["sk"])
 
     def test_top_barcodes_returns_ranked_list(self):
         now = timezone.now()
@@ -146,9 +153,9 @@ class TransactionQueryServiceTests(TestCase):
 
         results = TransactionQueryMixin.top_barcodes()
         self.assertEqual(len(results), 2)
-        self.assertEqual(results[0][0], self.barcode1.pk)
+        self.assertEqual(results[0][0], self.barcode1["barcode_uuid"])
         self.assertEqual(results[0][1], 3)
-        self.assertEqual(results[1][0], self.barcode2.pk)
+        self.assertEqual(results[1][0], self.barcode2["barcode_uuid"])
         self.assertEqual(results[1][1], 1)
 
     def test_top_barcodes_with_limit(self):
@@ -159,7 +166,7 @@ class TransactionQueryServiceTests(TestCase):
 
         results = TransactionQueryMixin.top_barcodes(limit=1)
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0][0], self.barcode1.pk)
+        self.assertEqual(results[0][0], self.barcode1["barcode_uuid"])
 
     def test_usage_over_time_day_granularity(self):
         now = timezone.now()
@@ -176,6 +183,10 @@ class TransactionQueryServiceTests(TestCase):
         self.assertEqual(total, 2)
 
     def test_usage_over_time_invalid_granularity_raises(self):
+        # Create at least one transaction so the scan has items to process
+        now = timezone.now()
+        self._create_tx(self.user, self.barcode1, now)
+
         with self.assertRaises(ValueError) as ctx:
             TransactionQueryMixin.usage_over_time(granularity="hour")
         self.assertIn("granularity", str(ctx.exception))
@@ -189,17 +200,17 @@ class TransactionQueryServiceTests(TestCase):
         stats = TransactionQueryMixin.barcode_usage_stats()
         self.assertEqual(stats["total"], 3)
         self.assertEqual(stats["with_fk"], 3)
-        self.assertEqual(stats["per_barcode"][str(self.barcode1.pk)], 2)
-        self.assertEqual(stats["per_barcode"][str(self.barcode2.pk)], 1)
+        self.assertEqual(stats["per_barcode"][self.barcode1["barcode_uuid"]], 2)
+        self.assertEqual(stats["per_barcode"][self.barcode2["barcode_uuid"]], 1)
 
     def test_for_barcode_returns_filtered_transactions(self):
         now = timezone.now()
         tx1 = self._create_tx(self.user, self.barcode1, now)
         self._create_tx(self.user, self.barcode2, now)
 
-        results = list(TransactionQueryMixin.for_barcode(self.barcode1))
+        results = TransactionQueryMixin.for_barcode(self.barcode1["barcode_uuid"])
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].pk, tx1.pk)
+        self.assertEqual(results[0]["sk"], tx1["sk"])
 
 
 class TransactionServiceCompositeTests(TestCase):

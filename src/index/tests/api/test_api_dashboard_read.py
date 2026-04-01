@@ -1,30 +1,29 @@
 from django.urls import reverse
-from index.models import (
-    Barcode,
-    UserBarcodePullSettings,
-)
+from index.repositories import BarcodeRepository, SettingsRepository
 from rest_framework import status
 
 from index.tests.api.test_api_dashboard_base import BarcodeDashboardTestBase
 
 
 class BarcodeDashboardReadTest(BarcodeDashboardTestBase):
-    """Test BarcodeDashboardAPIView — GET requests and field states."""
+    """Test BarcodeDashboardAPIView -- GET requests and field states."""
 
     def test_dashboard_get(self):
         """Test getting dashboard data"""
         self._authenticate_user(self.user)
 
         # Create some barcodes
-        _ = Barcode.objects.create(
-            user=self.user,
-            barcode="12345678901234",
+        BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="12345678901234",
             barcode_type="DynamicBarcode",
+            owner_username=self.user.username,
         )
-        _ = Barcode.objects.create(
-            user=self.user,
-            barcode="static123456789",
+        BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="static123456789",
             barcode_type="Others",
+            owner_username=self.user.username,
         )
 
         url = reverse("index:api_barcode_dashboard")
@@ -52,14 +51,14 @@ class BarcodeDashboardReadTest(BarcodeDashboardTestBase):
     def test_dashboard_get_field_states_barcode_disabled_when_pull_enabled(
         self,
     ):
-        """Test that field_states shows barcode_disabled when pull_setting is enabled"""  # noqa: E501
+        """Test that field_states shows barcode_disabled when pull_setting is enabled"""
         self._authenticate_user(self.user)
 
-        # Enable pull setting
-        UserBarcodePullSettings.objects.create(
-            user=self.user,
+        # Enable pull setting via SettingsRepository
+        SettingsRepository.update(
+            self.user.id,
             pull_setting="Enable",
-            gender_setting="Female",
+            pull_gender_setting="Female",
         )
 
         url = reverse("index:api_barcode_dashboard")
@@ -72,14 +71,14 @@ class BarcodeDashboardReadTest(BarcodeDashboardTestBase):
     def test_dashboard_get_field_states_barcode_enabled_when_pull_disabled(
         self,
     ):
-        """Test that field_states shows barcode_disabled=False when pull_setting is disabled"""  # noqa: E501
+        """Test that field_states shows barcode_disabled=False when pull_setting is disabled"""
         self._authenticate_user(self.user)
 
-        # Ensure pull setting is disabled
-        UserBarcodePullSettings.objects.create(
-            user=self.user,
+        # Ensure pull setting is disabled via SettingsRepository
+        SettingsRepository.update(
+            self.user.id,
             pull_setting="Disable",
-            gender_setting="Unknow",
+            pull_gender_setting="Unknow",
         )
 
         url = reverse("index:api_barcode_dashboard")

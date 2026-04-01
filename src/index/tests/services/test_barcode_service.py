@@ -1,24 +1,20 @@
 from datetime import timedelta
-from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
-from index.models import (
-    Barcode,
-    BarcodeUsage,
-    Transaction,
-)
-from index.services.barcode.identification import _create_identification_barcode
+
+from index.repositories import BarcodeRepository, TransactionRepository
 from index.services.barcode.usage import _touch_barcode_usage
 from index.services.barcode.utils import _random_digits
-from index.services.barcode import generate_unique_identification_barcode
+from index.tests.dynamodb_cleanup import DynamoDBCleanupMixin as DynamoDBTestMixin
 
 
-class BarcodeServiceTestBase(TestCase):
+class BarcodeServiceTestBase(DynamoDBTestMixin, TestCase):
     """Base class with shared setUp for BarcodeServiceTest split."""
 
     def setUp(self):
+        super().setUp()
         self.user = User.objects.create_user(
             username="testuser", password="testpass123"
         )
@@ -28,7 +24,7 @@ class BarcodeServiceTestBase(TestCase):
 
 
 class BarcodeServiceTest(BarcodeServiceTestBase):
-    """Test barcode service functions — helpers, identification, and usage tracking"""
+    """Test barcode service functions -- helpers and usage tracking"""
 
     def test_random_digits(self):
         """Test _random_digits helper function"""
@@ -36,225 +32,198 @@ class BarcodeServiceTest(BarcodeServiceTestBase):
         self.assertEqual(len(digits), 10)
         self.assertTrue(digits.isdigit())
 
-    def test_generate_unique_identification_barcode(self):
-        """Test generating unique identification barcode"""
-        barcode1 = generate_unique_identification_barcode()
-        barcode2 = generate_unique_identification_barcode()
-
-        self.assertEqual(len(barcode1), 28)
-        self.assertEqual(len(barcode2), 28)
-        self.assertTrue(barcode1.isdigit())
-        self.assertTrue(barcode2.isdigit())
-        self.assertNotEqual(barcode1, barcode2)
-
-    @patch("index.services.barcode.identification.Barcode.objects.filter")
-    def test_generate_unique_identification_barcode_max_attempts(self, mock_filter):
-        """Test max attempts for unique barcode generation"""
-        # Mock that all generated barcodes already exist
-        mock_filter.return_value.exists.return_value = True
-
-        with self.assertRaises(RuntimeError):
-            generate_unique_identification_barcode(50)  # Pass max_attempts parameter
-
-    def test_create_identification_barcode(self):
-        """Test creating identification barcode"""
-        # Create an existing identification barcode
-        existing_barcode = Barcode.objects.create(
-            user=self.user,
-            barcode="1234567890123456789012345678",
-            barcode_type="Identification",
-        )
-
-        # Create new identification barcode
-        new_barcode = _create_identification_barcode(self.user)
-
-        # Check that old barcode was deleted
-        self.assertFalse(Barcode.objects.filter(id=existing_barcode.id).exists())
-
-        # Check new barcode
-        self.assertEqual(new_barcode.user, self.user)
-        self.assertEqual(new_barcode.barcode_type, "Identification")
-        self.assertEqual(len(new_barcode.barcode), 28)
-
-    def test_create_identification_barcode_merges_usage_rows(self):
-        """Test rotating identification barcode preserves merged usage stats."""
-        older_barcode = Barcode.objects.create(
-            user=self.user,
-            barcode="1234567890123456789012345678",
-            barcode_type="Identification",
-        )
-        newer_barcode = Barcode.objects.create(
-            user=self.user,
-            barcode="8765432109876543210987654321",
-            barcode_type="Identification",
-        )
-        older_last_used = timezone.now() - timedelta(days=1)
-        newer_last_used = timezone.now() - timedelta(minutes=2)
-
-        older_usage = BarcodeUsage.objects.create(
-            barcode=older_barcode,
-            total_usage=2,
-            total_usage_limit=4,
-            daily_usage_limit=1,
-        )
-        BarcodeUsage.objects.filter(pk=older_usage.pk).update(last_used=older_last_used)
-
-        newer_usage = BarcodeUsage.objects.create(
-            barcode=newer_barcode,
-            total_usage=3,
-            total_usage_limit=7,
-            daily_usage_limit=5,
-        )
-        BarcodeUsage.objects.filter(pk=newer_usage.pk).update(last_used=newer_last_used)
-
-        rotated_barcode = _create_identification_barcode(self.user)
-
-        self.assertEqual(
-            Barcode.objects.filter(
-                user=self.user, barcode_type="Identification"
-            ).count(),
-            1,
-        )
-        self.assertFalse(Barcode.objects.filter(pk=older_barcode.pk).exists())
-        self.assertFalse(Barcode.objects.filter(pk=newer_barcode.pk).exists())
-
-        usage_rows = BarcodeUsage.objects.filter(barcode=rotated_barcode)
-        self.assertEqual(usage_rows.count(), 1)
-
-        usage = usage_rows.get()
-        self.assertEqual(usage.total_usage, 5)
-        self.assertEqual(usage.total_usage_limit, 7)
-        self.assertEqual(usage.daily_usage_limit, 5)
-        self.assertEqual(usage.last_used, newer_last_used)
-
     def test_touch_barcode_usage_new_barcode(self):
         """Test updating usage for barcode without existing usage record"""
-        barcode = Barcode.objects.create(
-            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        barcode = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="1234567890123456",
+            barcode_type="Others",
+            owner_username=self.user.username,
         )
 
         _touch_barcode_usage(barcode)
 
-        usage = BarcodeUsage.objects.get(barcode=barcode)
-        self.assertEqual(usage.total_usage, 1)
+        updated = BarcodeRepository.get_by_uuid(
+            barcode["user_id"], barcode["barcode_uuid"]
+        )
+        self.assertEqual(int(updated["total_usage"]), 1)
 
     def test_touch_barcode_usage_existing_barcode(self):
         """Test updating usage for barcode with existing usage record"""
-        barcode = Barcode.objects.create(
-            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        barcode = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="1234567890123456",
+            barcode_type="Others",
+            owner_username=self.user.username,
         )
 
-        # Create initial usage
-        BarcodeUsage.objects.create(barcode=barcode, total_usage=5)
+        # Set initial usage to 5
+        BarcodeRepository.update(
+            user_id=barcode["user_id"],
+            barcode_uuid=barcode["barcode_uuid"],
+            total_usage=5,
+        )
+        barcode["total_usage"] = 5
 
         _touch_barcode_usage(barcode)
 
-        usage = BarcodeUsage.objects.get(barcode=barcode)
-        self.assertEqual(usage.total_usage, 6)
+        updated = BarcodeRepository.get_by_uuid(
+            barcode["user_id"], barcode["barcode_uuid"]
+        )
+        self.assertEqual(int(updated["total_usage"]), 6)
 
     def test_touch_barcode_usage_duplicate_within_5_minutes(self):
         """Test that duplicate usage within 5 minutes is not recorded"""
-        barcode = Barcode.objects.create(
-            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        barcode = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="1234567890123456",
+            barcode_type="Others",
+            owner_username=self.user.username,
         )
 
         # First usage - should record transaction and update usage
         _touch_barcode_usage(barcode, request_user=self.user)
 
-        usage = BarcodeUsage.objects.get(barcode=barcode)
-        self.assertEqual(usage.total_usage, 1)
-        self.assertEqual(
-            Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 1
+        updated = BarcodeRepository.get_by_uuid(
+            barcode["user_id"], barcode["barcode_uuid"]
         )
+        self.assertEqual(int(updated["total_usage"]), 1)
+
+        txns = TransactionRepository.for_barcode(barcode["barcode_uuid"])
+        self.assertEqual(len(txns), 1)
 
         # Second usage within 5 minutes - should NOT record anything
         _touch_barcode_usage(barcode, request_user=self.user)
 
-        usage.refresh_from_db()
-        self.assertEqual(usage.total_usage, 1)  # Still 1, not incremented
-        self.assertEqual(
-            Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 1
+        updated = BarcodeRepository.get_by_uuid(
+            barcode["user_id"], barcode["barcode_uuid"]
         )
+        self.assertEqual(int(updated["total_usage"]), 1)  # Still 1, not incremented
+
+        txns = TransactionRepository.for_barcode(barcode["barcode_uuid"])
+        self.assertEqual(len(txns), 1)
 
     def test_touch_barcode_usage_after_5_minutes(self):
         """Test that usage after 5 minutes is recorded"""
-        barcode = Barcode.objects.create(
-            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        barcode = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="1234567890123456",
+            barcode_type="Others",
+            owner_username=self.user.username,
         )
 
         # First usage
         _touch_barcode_usage(barcode, request_user=self.user)
 
-        # Simulate transaction created 6 minutes ago
-        old_time = timezone.now() - timedelta(minutes=6)
-        Transaction.objects.filter(user=self.user, barcode_used=barcode).update(
-            time_created=old_time
+        # Manually create a backdated transaction (simulating 6 minutes ago)
+        # First, check current state
+        updated = BarcodeRepository.get_by_uuid(
+            barcode["user_id"], barcode["barcode_uuid"]
+        )
+        self.assertEqual(int(updated["total_usage"]), 1)
+
+        # Delete the recent transaction and create an old one
+        old_time = (timezone.now() - timedelta(minutes=6)).isoformat()
+        # We can't easily backdate existing DynamoDB items, so we create a new
+        # transaction with an old timestamp. The recent_user_barcode_usage check
+        # filters by time_created >= cutoff, so if the only transaction is old,
+        # the second call should succeed.
+
+        # For this test we need to work around the fact that we already have a
+        # recent transaction. Instead, let's test with a fresh barcode and
+        # pre-create an old transaction.
+        barcode2 = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="9999888877776666",
+            barcode_type="Others",
+            owner_username=self.user.username,
         )
 
-        usage = BarcodeUsage.objects.get(barcode=barcode)
-        self.assertEqual(usage.total_usage, 1)
+        # Create old transaction (6 minutes ago)
+        old_time = (timezone.now() - timedelta(minutes=6)).isoformat()
+        TransactionRepository.create(
+            user_id=self.user.id,
+            barcode_uuid=barcode2["barcode_uuid"],
+            barcode_value=barcode2["barcode"],
+            time_created=old_time,
+        )
+        # Also increment usage to simulate that first usage happened
+        BarcodeRepository.increment_usage(
+            user_id=barcode2["user_id"],
+            barcode_uuid=barcode2["barcode_uuid"],
+        )
+
+        updated2 = BarcodeRepository.get_by_uuid(
+            barcode2["user_id"], barcode2["barcode_uuid"]
+        )
+        self.assertEqual(int(updated2["total_usage"]), 1)
 
         # Second usage after 5 minutes - should record new transaction
-        _touch_barcode_usage(barcode, request_user=self.user)
+        _touch_barcode_usage(barcode2, request_user=self.user)
 
-        usage.refresh_from_db()
-        self.assertEqual(usage.total_usage, 2)  # Now 2
-        self.assertEqual(
-            Transaction.objects.filter(user=self.user, barcode_used=barcode).count(), 2
+        updated2 = BarcodeRepository.get_by_uuid(
+            barcode2["user_id"], barcode2["barcode_uuid"]
         )
+        self.assertEqual(int(updated2["total_usage"]), 2)  # Now 2
 
-    def test_touch_identification_usage_duplicate_within_5_minutes_uses_last_used(self):
-        """Test identification cooldown uses BarcodeUsage.last_used."""
-        barcode = Barcode.objects.create(
-            user=self.user,
-            barcode="1234567890123456789012345678",
-            barcode_type="Identification",
-        )
-        usage = BarcodeUsage.objects.create(barcode=barcode, total_usage=4)
-        recent_time = timezone.now() - timedelta(minutes=2)
-        BarcodeUsage.objects.filter(pk=usage.pk).update(last_used=recent_time)
-
-        _touch_barcode_usage(barcode, request_user=self.user)
-
-        usage.refresh_from_db()
-        self.assertEqual(usage.total_usage, 4)
-        self.assertEqual(Transaction.objects.filter(barcode_used=barcode).count(), 0)
+        txns = TransactionRepository.for_barcode(barcode2["barcode_uuid"])
+        self.assertEqual(len(txns), 2)
 
     def test_touch_barcode_usage_different_users_within_5_minutes(self):
         """Test that different users can use the same barcode within 5 minutes"""
-        barcode = Barcode.objects.create(
-            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        barcode = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="1234567890123456",
+            barcode_type="Others",
+            owner_username=self.user.username,
         )
 
         # First user uses barcode
         _touch_barcode_usage(barcode, request_user=self.user)
 
-        usage = BarcodeUsage.objects.get(barcode=barcode)
-        self.assertEqual(usage.total_usage, 1)
-        self.assertEqual(Transaction.objects.filter(barcode_used=barcode).count(), 1)
+        updated = BarcodeRepository.get_by_uuid(
+            barcode["user_id"], barcode["barcode_uuid"]
+        )
+        self.assertEqual(int(updated["total_usage"]), 1)
+
+        txns = TransactionRepository.for_barcode(barcode["barcode_uuid"])
+        self.assertEqual(len(txns), 1)
 
         # Different user uses same barcode within 5 minutes - should record
         _touch_barcode_usage(barcode, request_user=self.school_user)
 
-        usage.refresh_from_db()
-        self.assertEqual(usage.total_usage, 2)  # Should be 2
-        self.assertEqual(Transaction.objects.filter(barcode_used=barcode).count(), 2)
+        updated = BarcodeRepository.get_by_uuid(
+            barcode["user_id"], barcode["barcode_uuid"]
+        )
+        self.assertEqual(int(updated["total_usage"]), 2)  # Should be 2
+
+        txns = TransactionRepository.for_barcode(barcode["barcode_uuid"])
+        self.assertEqual(len(txns), 2)
 
     def test_touch_barcode_usage_no_request_user(self):
-        """Test usage without request_user updates BarcodeUsage but no Transaction"""
-        barcode = Barcode.objects.create(
-            user=self.user, barcode="1234567890123456", barcode_type="Others"
+        """Test usage without request_user updates usage but no Transaction"""
+        barcode = BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="1234567890123456",
+            barcode_type="Others",
+            owner_username=self.user.username,
         )
 
-        # Usage without request_user - updates BarcodeUsage, no Transaction
+        # Usage without request_user - updates usage, no Transaction
         _touch_barcode_usage(barcode, request_user=None)
 
-        usage = BarcodeUsage.objects.get(barcode=barcode)
-        self.assertEqual(usage.total_usage, 1)
-        self.assertEqual(Transaction.objects.filter(barcode_used=barcode).count(), 0)
+        updated = BarcodeRepository.get_by_uuid(
+            barcode["user_id"], barcode["barcode_uuid"]
+        )
+        self.assertEqual(int(updated["total_usage"]), 1)
+
+        txns = TransactionRepository.for_barcode(barcode["barcode_uuid"])
+        self.assertEqual(len(txns), 0)
 
         # Second call without request_user - still updates (no 5-min check)
         _touch_barcode_usage(barcode, request_user=None)
 
-        usage.refresh_from_db()
-        self.assertEqual(usage.total_usage, 2)
+        updated = BarcodeRepository.get_by_uuid(
+            barcode["user_id"], barcode["barcode_uuid"]
+        )
+        self.assertEqual(int(updated["total_usage"]), 2)

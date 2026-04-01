@@ -41,7 +41,7 @@ export function useDashboardLogic() {
   const barcodeChoices = ref([]);
 
   // Filter state
-  const filterType = ref('All'); // All | Dynamic | Static | Identification
+  const filterType = ref('All'); // All | Dynamic | Static
   const ownedOnly = ref(false);
 
   // Dialog state
@@ -84,7 +84,7 @@ export function useDashboardLogic() {
   const isDynamicSelected = computed(() => {
     if (!settings.value.barcode) return false;
     const current = barcodeChoices.value.find(
-      (c) => Number(c.id) === Number(settings.value.barcode)
+      (c) => c.id === settings.value.barcode
     );
     return current?.barcode_type === 'DynamicBarcode';
   });
@@ -92,15 +92,14 @@ export function useDashboardLogic() {
   const currentBarcodeHasProfile = computed(() => {
     if (!settings.value.barcode) return false;
     const current = barcodeChoices.value.find(
-      (c) => Number(c.id) === Number(settings.value.barcode)
+      (c) => c.id === settings.value.barcode
     );
     return current?.has_profile_addon || false;
   });
 
   const selectedBarcode = computed(() => {
     if (!settings.value.barcode) return null;
-    const id = Number(settings.value.barcode);
-    return (barcodes.value || []).find((b) => Number(b.id) === id) || null;
+    return (barcodes.value || []).find((b) => b.barcode_uuid === settings.value.barcode) || null;
   });
 
   const filteredBarcodes = computed(() => {
@@ -115,8 +114,6 @@ export function useDashboardLogic() {
         result = result.filter((b) => b.barcode_type === 'DynamicBarcode');
       } else if (filterType.value === 'Static') {
         result = result.filter((b) => b.barcode_type === 'Others');
-      } else if (filterType.value === 'Identification') {
-        result = result.filter((b) => b.barcode_type === 'Identification');
       }
     }
 
@@ -130,16 +127,10 @@ export function useDashboardLogic() {
   const currentBarcodeInfo = computed(() => {
     if (!settings.value.barcode) return null;
     const current = barcodeChoices.value.find(
-      (c) => Number(c.id) === Number(settings.value.barcode)
+      (c) => c.id === settings.value.barcode
     );
     if (!current) return null;
 
-    // Check if it's an Identification barcode
-    if (current.barcode_type === 'Identification') {
-      return `${current.barcode_type}`;
-    }
-
-    // For other barcode types, show last 4 digits
     return `${current.barcode_type} ending with ...${current.barcode.slice(-4)}`;
   });
 
@@ -177,7 +168,7 @@ export function useDashboardLogic() {
           data.settings.prefer_front_camera !== undefined
             ? Boolean(data.settings.prefer_front_camera)
             : true,
-        barcode: data.settings.barcode ? Number(data.settings.barcode) : null,
+        barcode: data.settings.barcode || null,
       };
 
       // Set pull settings if provided
@@ -204,10 +195,9 @@ export function useDashboardLogic() {
       isSaving.value = true;
       errors.value = {};
 
-      // ensure barcode ID is a number
       const settingsToSend = {
         ...settings.value,
-        barcode: settings.value.barcode ? Number(settings.value.barcode) : null,
+        barcode: settings.value.barcode || null,
         pull_settings: pullSettings.value,
       };
 
@@ -220,9 +210,7 @@ export function useDashboardLogic() {
         }
         // Ensure the updated barcode value is properly typed
         if (response.settings && response.settings.barcode !== undefined) {
-          settings.value.barcode = response.settings.barcode
-            ? Number(response.settings.barcode)
-            : null;
+          settings.value.barcode = response.settings.barcode || null;
         }
         // Update association status from backend
         if (
@@ -299,8 +287,8 @@ export function useDashboardLogic() {
       return;
     }
     // No-op if already active
-    if (Number(settings.value.barcode) === Number(barcode.id)) return;
-    settings.value.barcode = Number(barcode.id);
+    if (settings.value.barcode === barcode.barcode_uuid) return;
+    settings.value.barcode = barcode.barcode_uuid;
     await autoSaveSettings();
   }
 
@@ -310,7 +298,7 @@ export function useDashboardLogic() {
       showMessage('You can only delete your own barcode', 'danger');
       return;
     }
-    barcodeToDelete.value = barcode.id;
+    barcodeToDelete.value = barcode.barcode_uuid;
     showConfirmDialog.value = true;
   }
 
@@ -337,10 +325,10 @@ export function useDashboardLogic() {
     if (!barcode || !barcode.is_owned_by_current_user) return;
     try {
       const next = !barcode.share_with_others;
-      const res = await apiUpdateBarcodeShare(barcode.id, next);
+      const res = await apiUpdateBarcodeShare(barcode.barcode_uuid, next);
       if (res?.status === 'success' && res?.barcode) {
         // Update local list entry optimistically with server echo
-        const idx = barcodes.value.findIndex((b) => Number(b.id) === Number(barcode.id));
+        const idx = barcodes.value.findIndex((b) => b.barcode_uuid === barcode.barcode_uuid);
         if (idx !== -1) {
           barcodes.value[idx] = {
             ...barcodes.value[idx],

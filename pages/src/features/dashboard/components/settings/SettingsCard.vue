@@ -120,7 +120,7 @@
             <div class="barcode-details">
               <h3 class="md-typescale-title-medium md-m-0">{{ currentBarcodeInfo }}</h3>
               <p
-                v-if="selectedBarcode && selectedBarcode.barcode_type !== 'Identification'"
+                v-if="selectedBarcode"
                 class="md-typescale-body-small md-m-0 md-mt-1"
               >
                 {{ selectedBarcode.usage_count || 0 }} total scans
@@ -135,11 +135,7 @@
 
       <!--barcode usage statistics-->
       <div
-        v-if="
-          selectedBarcode &&
-          selectedBarcode.barcode_type !== 'Identification' &&
-          selectedBarcode.usage_count > 0
-        "
+        v-if="selectedBarcode && selectedBarcode.usage_count > 0"
         class="settings-section md-mb-6"
       >
         <div class="stats-header md-mb-4">

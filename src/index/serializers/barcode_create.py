@@ -1,13 +1,12 @@
-from index.models import Barcode, BarcodeUserProfile
 from rest_framework import serializers
 
+from index.repositories import BarcodeRepository
 
-class BarcodeCreateSerializer(serializers.ModelSerializer):
+
+class BarcodeCreateSerializer(serializers.Serializer):
     """Serializer for creating new barcodes"""
 
-    class Meta:
-        model = Barcode
-        fields = ["barcode"]
+    barcode = serializers.CharField()
 
     def validate_barcode(self, value):
         """Clean and validate barcode"""
@@ -18,23 +17,23 @@ class BarcodeCreateSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
         barcode_value = validated_data["barcode"]
 
-        # Check if 28-digit numeric → DynamicBarcode
+        # Check if 28-digit numeric -> DynamicBarcode
         is_28_digit = len(barcode_value) == 28 and barcode_value.isdigit()
 
         if is_28_digit:
-            # Dynamic barcode - save only last 14 digits
             barcode_type = "DynamicBarcode"
             barcode_value = barcode_value[-14:]
         else:
-            # Other barcode type
             barcode_type = "Others"
 
-        barcode_obj = Barcode.objects.create(
-            user=user, barcode=barcode_value, barcode_type=barcode_type
+        barcode_item = BarcodeRepository.create(
+            user_id=user.id,
+            barcode_value=barcode_value,
+            barcode_type=barcode_type,
+            owner_username=user.username,
         )
 
-        # Transaction creation is handled in the view/service layer
-        return barcode_obj
+        return barcode_item
 
 
 class DynamicBarcodeWithProfileSerializer(serializers.Serializer):
@@ -61,42 +60,29 @@ class DynamicBarcodeWithProfileSerializer(serializers.Serializer):
         return value
 
     def validate_name(self, value):
-        """Clean name field"""
         return value.strip()
 
     def validate_information_id(self, value):
-        """Clean information ID field"""
         return value.strip()
 
     def validate_avatar(self, value):
-        """Validate and clean avatar Base64 string.
-
-        Accepts formats like:
-        - data:image/jpeg;base64,xxxxx
-        - data:image/png;base64,xxxxx
-        - Pure base64 string without prefix
-        """
+        """Validate and clean avatar Base64 string."""
         if not value:
             return None
         value = value.strip()
 
-        # Remove data URI prefix if present (e.g., data:image/jpeg;base64,)
         if value.startswith("data:"):
-            # Extract base64 part after comma
             if "," in value:
                 value = value.split(",", 1)[1]
             else:
-                # Invalid data URI format
                 raise serializers.ValidationError(
                     "Invalid image format. Expected data URI with base64 content."
                 )
 
-        # Basic validation: check if it looks like base64
         if value:
             import base64
 
             try:
-                # Try to decode to verify it's valid base64
                 base64.b64decode(value, validate=True)
             except Exception:
                 raise serializers.ValidationError(
@@ -106,30 +92,25 @@ class DynamicBarcodeWithProfileSerializer(serializers.Serializer):
         return value if value else None
 
     def create(self, validated_data):
-        """Create dynamic barcode with profile"""
+        """Create dynamic barcode with profile (denormalized into single item)."""
         user = self.context["request"].user
         barcode_value = validated_data["barcode"]
 
         # Check if barcode already exists
-        if Barcode.objects.filter(barcode=barcode_value).exists():
+        if BarcodeRepository.barcode_exists(barcode_value):
             raise serializers.ValidationError(
                 {"barcode": "This barcode already exists"}
             )
 
-        # Create barcode
-        barcode_obj = Barcode.objects.create(
-            user=user,
-            barcode=barcode_value,
+        barcode_item = BarcodeRepository.create(
+            user_id=user.id,
+            barcode_value=barcode_value,
             barcode_type="DynamicBarcode",
+            owner_username=user.username,
+            profile_name=validated_data["name"],
+            profile_info_id=validated_data["information_id"],
+            profile_gender=validated_data.get("gender", "Unknow"),
+            profile_avatar=validated_data.get("avatar"),
         )
 
-        # Create profile with optional avatar
-        BarcodeUserProfile.objects.create(
-            linked_barcode=barcode_obj,
-            name=validated_data["name"],
-            information_id=validated_data["information_id"],
-            gender_barcode=validated_data.get("gender", "Unknow"),
-            user_profile_img=validated_data.get("avatar"),
-        )
-
-        return barcode_obj
+        return barcode_item

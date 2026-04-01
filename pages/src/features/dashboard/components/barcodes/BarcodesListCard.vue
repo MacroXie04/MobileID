@@ -22,12 +22,6 @@
           @click="$emit('update-filter', 'Static')"
           >Static
         </md-filter-chip>
-        <md-filter-chip
-          :selected="filterType === 'Identification'"
-          @click="$emit('update-filter', 'Identification')"
-        >
-          Identification
-        </md-filter-chip>
         <md-divider vertical></md-divider>
         <md-filter-chip :selected="ownedOnly" @click="$emit('toggle-owned')">
           <md-icon slot="icon">person</md-icon>
@@ -43,9 +37,9 @@
     >
       <article
         v-for="barcode in filteredBarcodes"
-        :key="barcode.id"
+        :key="barcode.barcode_uuid"
         :class="{
-          'is-active': Number(settings.barcode) === Number(barcode.id),
+          'is-active': settings.barcode === barcode.barcode_uuid,
           'is-shared': !barcode.is_owned_by_current_user,
         }"
         class="barcode-card"
@@ -65,7 +59,7 @@
             <p class="barcode-id">{{ getBarcodeDisplayId(barcode) }}</p>
           </div>
           <!-- Active Badge -->
-          <div v-if="Number(settings.barcode) === Number(barcode.id)" class="active-badge">
+          <div v-if="settings.barcode === barcode.barcode_uuid" class="active-badge">
             <md-icon>check_circle</md-icon>
             <span>Active</span>
           </div>
@@ -101,7 +95,7 @@
         </div>
 
         <!-- Usage Stats -->
-        <div v-if="barcode.barcode_type !== 'Identification'" class="barcode-stats-row">
+        <div class="barcode-stats-row">
           <div class="stat-item">
             <md-icon>trending_up</md-icon>
             <span class="stat-value">{{ barcode.usage_count || 0 }}</span>
@@ -120,7 +114,7 @@
 
         <!-- Daily Limit Section -->
         <div
-          v-if="barcode.is_owned_by_current_user && barcode.barcode_type !== 'Identification'"
+          v-if="barcode.is_owned_by_current_user"
           class="barcode-limit-section"
         >
           <div class="limit-row">
@@ -167,7 +161,7 @@
                 >
               </div>
               <md-circular-progress
-                v-if="updatingLimit[barcode.id]"
+                v-if="updatingLimit[barcode.barcode_uuid]"
                 indeterminate
               ></md-circular-progress>
             </div>
@@ -177,7 +171,7 @@
         <!-- Card Actions -->
         <div class="barcode-card-actions">
           <md-filled-tonal-button
-            v-if="Number(settings.barcode) !== Number(barcode.id)"
+            v-if="settings.barcode !== barcode.barcode_uuid"
             :disabled="pullSettings.pull_setting === 'Enable'"
             :title="
               pullSettings.pull_setting === 'Enable'
@@ -190,14 +184,14 @@
             Set Active
           </md-filled-tonal-button>
           <md-outlined-button
-            v-if="barcode.is_owned_by_current_user && barcode.barcode_type !== 'Identification'"
+            v-if="barcode.is_owned_by_current_user"
             @click="$emit('toggle-share', barcode)"
           >
             <md-icon slot="icon">{{ barcode.share_with_others ? 'lock_open' : 'lock' }}</md-icon>
             {{ barcode.share_with_others ? 'Public' : 'Private' }}
           </md-outlined-button>
           <md-icon-button
-            v-if="barcode.is_owned_by_current_user && barcode.barcode_type !== 'Identification'"
+            v-if="barcode.is_owned_by_current_user"
             @click="$emit('delete', barcode)"
           >
             <md-icon>delete</md-icon>

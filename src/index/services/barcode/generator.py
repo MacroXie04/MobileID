@@ -1,15 +1,8 @@
 from datetime import timedelta
 
-from django.db import transaction
-from django.db.models import Q
 from django.utils import timezone
 
-from index.models import (
-    Barcode,
-    Transaction,
-    UserBarcodePullSettings,
-    UserBarcodeSettings,
-)
+from index.repositories import BarcodeRepository, SettingsRepository, TransactionRepository
 from index.services.usage_limit import UsageLimitService
 
 from .constants import (
@@ -29,151 +22,135 @@ def generate_barcode(user) -> dict:
     """Generate or refresh a barcode for *user*."""
     result = RESULT_TEMPLATE.copy()
 
-    # Wrap DB operations in an explicit transaction for select_for_update
-    with transaction.atomic():
-        (
-            settings,
-            _,
-        ) = UserBarcodeSettings.objects.select_for_update().get_or_create(
-            user=user,
-            defaults={
-                "barcode": None,
-                "associate_user_profile_with_barcode": False,
-            },
-        )
+    settings = SettingsRepository.get_or_create(user.id)
 
-        # handle barcode pull settings
-        (
-            pull_settings,
-            _,
-        ) = UserBarcodePullSettings.objects.select_for_update().get_or_create(
-            user=user,
-            defaults={
-                "pull_setting": "Disable",
-                "gender_setting": "Unknow",
-            },
-        )
+    if settings.get("pull_setting") == "Enable":
+        # 1. Check for recent personal usage (Stickiness)
+        cutoff_10m = (timezone.now() - timedelta(minutes=STICKINESS_MINUTES)).isoformat()
+        recent_txn = TransactionRepository.recent_user_usage(user.id, since=cutoff_10m)
 
-        if pull_settings.pull_setting == "Enable":
-            # 1. Check for recent personal usage (Stickiness)
-            cutoff_10m = timezone.now() - timedelta(minutes=STICKINESS_MINUTES)
-            recent_txn = (
-                Transaction.objects.filter(user=user, time_created__gte=cutoff_10m)
-                .order_by("-time_created")
-                .first()
+        candidate = None
+        if recent_txn and recent_txn.get("barcode_uuid"):
+            bc_uuid = recent_txn["barcode_uuid"]
+            # Look up the barcode to get full data
+            user_barcodes = BarcodeRepository.get_user_barcodes(user.id)
+            candidate = next(
+                (b for b in user_barcodes if b["barcode_uuid"] == bc_uuid), None
             )
-
-            candidate = None
-            if recent_txn and recent_txn.barcode_used:
-                candidate = recent_txn.barcode_used
-
-            # 2. Pull from pool if no candidate
             if not candidate:
-                cutoff_5m = timezone.now() - timedelta(minutes=USAGE_COOLDOWN_MINUTES)
-
-                # Base query: User's own barcodes OR Shareable Dynamic barcodes
-                qs = Barcode.objects.filter(
-                    Q(user=user)
-                    | Q(share_with_others=True, barcode_type=BARCODE_DYNAMIC)
+                # Might be a shared barcode from another user
+                candidate = BarcodeRepository.get_by_barcode_value(
+                    recent_txn.get("barcode_value", "")
                 )
 
-                # Gender filter
-                qs = qs.filter(
-                    barcodeuserprofile__gender_barcode=pull_settings.gender_setting  # noqa: E501
-                )
+        # 2. Pull from pool if no candidate
+        if not candidate:
+            cutoff_5m = (
+                timezone.now() - timedelta(minutes=USAGE_COOLDOWN_MINUTES)
+            ).isoformat()
 
-                # Usage filter: Exclude if used by ANYONE in last 5 mins
-                qs = qs.exclude(barcodeusage__last_used__gte=cutoff_5m)
-
-                # Pick one (randomly)
-                if qs.exists():
-                    candidate = qs.order_by("?").first()
-
-            # 3. Apply selection
-            if candidate:
-                settings.barcode = candidate
-                settings.save()
-
-        # Use the user-selected barcode
-        selected = settings.barcode
-
-        if not selected:
-            result.update(status="error", message="No barcode selected.")
-            return result
-
-        # Permission check:
-        # - Users can always use their own barcodes
-        # - For barcodes owned by others:
-        #   * Only DynamicBarcode is eligible, and only if share_with_others=True  # noqa: E501
-        if selected.user != user:
-            if selected.barcode_type != BARCODE_DYNAMIC:
-                result.update(status="error", message="Permission Denied.")
-                return result
-            if not getattr(selected, "share_with_others", False):
-                result.update(status="error", message="Permission Denied.")
-                return result
-
-        # Handle by barcode type
-        if selected.barcode_type == BARCODE_IDENTIFICATION:
-            # Create fresh identification barcode
-            new_bc = _create_identification_barcode(user)
-            settings.barcode = new_bc
-            settings.save(update_fields=["barcode"])
-
-            # Check usage limits for the new barcode
-            allowed, limit_error = UsageLimitService.check_all_limits(new_bc)
-            if not allowed:
-                result.update(status="error", message=limit_error)
-                return result
-
-            # Track usage for identification barcodes
-            _touch_barcode_usage(new_bc, request_user=user)
-
-            result.update(
-                status="success",
-                message="Identification barcode",
-                barcode_type=BARCODE_IDENTIFICATION,
-                barcode=new_bc.barcode,
+            candidates = BarcodeRepository.get_pull_candidates(
+                gender_setting=settings.get("pull_gender_setting", "Unknow"),
+                exclude_user_id=user.id,
+                cooldown_cutoff=cutoff_5m,
             )
-            return result
 
-        if selected.barcode_type == BARCODE_DYNAMIC:
-            # Check usage limits before generating
-            allowed, limit_error = UsageLimitService.check_all_limits(selected)
-            if not allowed:
-                result.update(status="error", message=limit_error)
-                return result
+            if candidates:
+                import random
+                candidate = random.choice(candidates)
 
-            # Update usage stats
-            _touch_barcode_usage(selected, request_user=user)
+        # 3. Apply selection
+        if candidate:
+            SettingsRepository.set_active_barcode(user.id, candidate["barcode_uuid"])
+            settings["active_barcode_uuid"] = candidate["barcode_uuid"]
 
-            full = f"{_timestamp()}{selected.barcode}"
-            result.update(
-                status="success",
-                message=f"Dynamic: {selected.barcode[-4:]}",
-                barcode_type=BARCODE_DYNAMIC,
-                barcode=full,
-            )
-            return result
+    # Use the user-selected barcode
+    active_uuid = settings.get("active_barcode_uuid")
 
-        if selected.barcode_type == BARCODE_OTHERS:
-            # Check usage limits before generating
-            allowed, limit_error = UsageLimitService.check_all_limits(selected)
-            if not allowed:
-                result.update(status="error", message=limit_error)
-                return result
-
-            # Track usage for other barcode types
-            _touch_barcode_usage(selected, request_user=user)
-
-            result.update(
-                status="success",
-                message=f"Barcode ending with {selected.barcode[-4:]}",
-                barcode_type=BARCODE_OTHERS,
-                barcode=selected.barcode,
-            )
-            return result
-
-        # Fallback error
-        result.update(status="error", message="Invalid barcode type.")
+    if not active_uuid:
+        result.update(status="error", message="No barcode selected.")
         return result
+
+    # Look up the selected barcode
+    selected = None
+    user_barcodes = BarcodeRepository.get_user_barcodes(user.id)
+    selected = next(
+        (b for b in user_barcodes if b["barcode_uuid"] == active_uuid), None
+    )
+    if not selected:
+        # Could be a shared barcode from another user
+        shared = BarcodeRepository.get_shared_dynamic_barcodes()
+        selected = next(
+            (b for b in shared if b["barcode_uuid"] == active_uuid), None
+        )
+
+    if not selected:
+        result.update(status="error", message="No barcode selected.")
+        return result
+
+    # Permission check
+    if selected["user_id"] != str(user.id):
+        if selected.get("barcode_type") != BARCODE_DYNAMIC:
+            result.update(status="error", message="Permission Denied.")
+            return result
+        if not selected.get("share_with_others", False):
+            result.update(status="error", message="Permission Denied.")
+            return result
+
+    barcode_type = selected.get("barcode_type")
+
+    # Handle by barcode type
+    if barcode_type == BARCODE_IDENTIFICATION:
+        new_bc = _create_identification_barcode(user)
+        SettingsRepository.set_active_barcode(user.id, new_bc["barcode_uuid"])
+
+        allowed, limit_error = UsageLimitService.check_all_limits(new_bc)
+        if not allowed:
+            result.update(status="error", message=limit_error)
+            return result
+
+        _touch_barcode_usage(new_bc, request_user=user)
+
+        result.update(
+            status="success",
+            message="Identification barcode",
+            barcode_type=BARCODE_IDENTIFICATION,
+            barcode=new_bc["barcode"],
+        )
+        return result
+
+    if barcode_type == BARCODE_DYNAMIC:
+        allowed, limit_error = UsageLimitService.check_all_limits(selected)
+        if not allowed:
+            result.update(status="error", message=limit_error)
+            return result
+
+        _touch_barcode_usage(selected, request_user=user)
+
+        full = f"{_timestamp()}{selected['barcode']}"
+        result.update(
+            status="success",
+            message=f"Dynamic: {selected['barcode'][-4:]}",
+            barcode_type=BARCODE_DYNAMIC,
+            barcode=full,
+        )
+        return result
+
+    if barcode_type == BARCODE_OTHERS:
+        allowed, limit_error = UsageLimitService.check_all_limits(selected)
+        if not allowed:
+            result.update(status="error", message=limit_error)
+            return result
+
+        _touch_barcode_usage(selected, request_user=user)
+
+        result.update(
+            status="success",
+            message=f"Barcode ending with {selected['barcode'][-4:]}",
+            barcode_type=BARCODE_OTHERS,
+            barcode=selected["barcode"],
+        )
+        return result
+
+    result.update(status="error", message="Invalid barcode type.")
+    return result

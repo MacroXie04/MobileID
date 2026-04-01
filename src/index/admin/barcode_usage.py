@@ -35,8 +35,6 @@ class BarcodeUsageAdmin(admin.ModelAdmin):
     @admin.display(description="Barcode")
     def barcode_display(self, obj):
         """Display barcode ending"""
-        if obj.barcode.barcode_type == "Identification":
-            return f"{obj.barcode.user.username}'s identification barcode"
         if obj.barcode.barcode_type == "DynamicBarcode":
             return f"dynamic barcode ending with {obj.barcode.barcode[-4:]}"
         if obj.barcode.barcode_type == "Others":
