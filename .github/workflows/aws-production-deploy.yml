@@ -238,6 +238,8 @@ jobs:
           AMPLIFY_APP_ID: ${{ vars.AMPLIFY_APP_ID }}
           AMPLIFY_BRANCH: ${{ vars.AMPLIFY_BRANCH }}
           BACKEND_CLOUDFRONT_DOMAIN: ${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}
+          DJANGO_SUPERUSER_USERNAME: ${{ vars.DJANGO_SUPERUSER_USERNAME }}
+          DJANGO_SUPERUSER_PASSWORD_ARN: ${{ secrets.DJANGO_SUPERUSER_PASSWORD_ARN }}
         run: |
           set -euo pipefail
 
@@ -246,6 +248,8 @@ jobs:
             AMPLIFY_APP_ID
             AMPLIFY_BRANCH
             BACKEND_CLOUDFRONT_DOMAIN
+            DJANGO_SUPERUSER_USERNAME
+            DJANGO_SUPERUSER_PASSWORD_ARN
           )
 
           for name in "${required[@]}"; do
@@ -269,7 +273,9 @@ jobs:
       - name: Build frontend bundle
         working-directory: ./pages
         env:
-          VITE_API_BASE_URL: https://${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}
+          # Build the SPA against same-origin API paths so Amplify can reverse
+          # proxy them as first-party requests and Safari/iOS can keep cookies.
+          VITE_API_BASE_URL: /
         run: yarn build
 
       - name: Configure AWS credentials
@@ -277,6 +283,22 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Render Amplify custom rules
+        env:
+          BACKEND_ORIGIN: https://${{ vars.BACKEND_CLOUDFRONT_DOMAIN }}
+        run: |
+          set -euo pipefail
+          python ops/aws/render_amplify_custom_rules.py \
+            --template ops/aws/amplify-custom-rules.template.json \
+            --output ops/aws/amplify-custom-rules.rendered.json
+
+      - name: Sync Amplify custom rules
+        run: |
+          set -euo pipefail
+          aws amplify update-app \
+            --app-id "${{ vars.AMPLIFY_APP_ID }}" \
+            --custom-rules file://ops/aws/amplify-custom-rules.rendered.json >/dev/null
 
       - name: Package frontend artifact
         working-directory: ./pages/dist
@@ -355,3 +377,96 @@ jobs:
 
           echo "::error::Timed out waiting for Amplify deployment"
           exit 1
+
+      - name: Smoke test frontend home page
+        run: |
+          set -euo pipefail
+          frontend_origin="https://${{ vars.AMPLIFY_BRANCH }}.${{ vars.AMPLIFY_APP_ID }}.amplifyapp.com"
+
+          http_code="$(
+            curl --show-error --silent \
+              --output /tmp/frontend-home.html \
+              --write-out '%{http_code}' \
+              "${frontend_origin}/"
+          )"
+
+          if [ "${http_code}" != "200" ]; then
+            echo "::error::Frontend home page returned HTTP ${http_code}"
+            cat /tmp/frontend-home.html || true
+            exit 1
+          fi
+
+      - name: Smoke test same-origin auth session
+        env:
+          DJANGO_SUPERUSER_USERNAME: ${{ vars.DJANGO_SUPERUSER_USERNAME }}
+          DJANGO_SUPERUSER_PASSWORD_ARN: ${{ secrets.DJANGO_SUPERUSER_PASSWORD_ARN }}
+        run: |
+          set -euo pipefail
+          frontend_origin="https://${{ vars.AMPLIFY_BRANCH }}.${{ vars.AMPLIFY_APP_ID }}.amplifyapp.com"
+          admin_password="$(
+            aws secretsmanager get-secret-value \
+              --secret-id "${DJANGO_SUPERUSER_PASSWORD_ARN}" \
+              --query 'SecretString' \
+              --output text
+          )"
+
+          csrf_code="$(
+            curl --show-error --silent \
+              --cookie-jar /tmp/frontend-auth.cookies \
+              --output /tmp/frontend-csrf.json \
+              --write-out '%{http_code}' \
+              "${frontend_origin}/authn/csrf/"
+          )"
+
+          if [ "${csrf_code}" != "200" ]; then
+            echo "::error::Frontend CSRF endpoint returned HTTP ${csrf_code}"
+            cat /tmp/frontend-csrf.json || true
+            exit 1
+          fi
+
+          csrf_cookie="$(awk '/csrftoken/ {print $7}' /tmp/frontend-auth.cookies | tail -1)"
+          if [ -z "${csrf_cookie}" ]; then
+            echo "::error::Frontend auth smoke test did not receive a csrftoken cookie"
+            exit 1
+          fi
+
+          login_code="$(
+            jq -nc \
+              --arg username "${DJANGO_SUPERUSER_USERNAME}" \
+              --arg password "${admin_password}" \
+              '{username: $username, password: $password}' \
+            | curl --show-error --silent \
+                --cookie /tmp/frontend-auth.cookies \
+                --cookie-jar /tmp/frontend-auth.cookies \
+                --header 'Content-Type: application/json' \
+                --header "X-CSRFToken: ${csrf_cookie}" \
+                --data @- \
+                --output /tmp/frontend-login.json \
+                --write-out '%{http_code}' \
+                "${frontend_origin}/authn/login/"
+          )"
+
+          if [ "${login_code}" != "200" ] || ! grep -q '"Login successful"' /tmp/frontend-login.json; then
+            echo "::error::Frontend login smoke test failed with HTTP ${login_code}"
+            cat /tmp/frontend-login.json || true
+            exit 1
+          fi
+
+          user_code="$(
+            curl --show-error --silent \
+              --cookie /tmp/frontend-auth.cookies \
+              --output /tmp/frontend-user.json \
+              --write-out '%{http_code}' \
+              "${frontend_origin}/authn/user_info/"
+          )"
+
+          if [ "${user_code}" != "200" ]; then
+            echo "::error::Frontend user_info smoke test failed with HTTP ${user_code}"
+            cat /tmp/frontend-user.json || true
+            exit 1
+          fi
+
+          jq -e \
+            --arg username "${DJANGO_SUPERUSER_USERNAME}" \
+            '.username == $username' \
+            /tmp/frontend-user.json >/dev/null

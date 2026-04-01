@@ -7,6 +7,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from authn.repositories import SecurityRepository
+from authn.session_revocation import SESSION_REVOCATION_MATCH_WINDOW_SECONDS
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +68,11 @@ class CookieJWTAuthentication(JWTAuthentication):
             user = self.get_user(validated_token)
 
             # Check if session has been revoked by matching user + token time.
-            SESSION_REVOCATION_WINDOW_SECONDS = 10
             iat = validated_token.get("iat")
             if user and iat:
                 token_iat = int(iat)
                 if SecurityRepository.check_session_revocation(
-                    user.id, token_iat, SESSION_REVOCATION_WINDOW_SECONDS
+                    user.id, token_iat, SESSION_REVOCATION_MATCH_WINDOW_SECONDS
                 ):
                     logger.info("Rejecting revoked session for user %s", user.id)
                     raise exceptions.AuthenticationFailed(

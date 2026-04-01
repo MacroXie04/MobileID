@@ -17,6 +17,7 @@ from typing import Optional
 from boto3.dynamodb.conditions import Attr, Key
 from django.utils import timezone
 
+from authn.session_revocation import SESSION_REVOCATION_MATCH_WINDOW_SECONDS
 from core.dynamodb.client import get_table, query_all
 
 
@@ -75,7 +76,9 @@ class SecurityRepository:
 
     @staticmethod
     def check_session_revocation(
-        user_id: int, token_iat: int, window: int = 10
+        user_id: int,
+        token_iat: int,
+        window: int = SESSION_REVOCATION_MATCH_WINDOW_SECONDS,
     ) -> bool:
         """
         Check if a session has been revoked by matching possible session JTIs.

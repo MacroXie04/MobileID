@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
 from authn.models import LoginAuditLog
+from authn.session_revocation import CURRENT_SESSION_IAT_LEEWAY_SECONDS
 
 from .utils import _get_current_session_iat, _parse_device_info
 
@@ -87,7 +88,11 @@ def list_devices(request):
         # Check if this is the current session by comparing iat timestamps
         # Access token and refresh token share the same iat when created together
         token_iat = int(token.created_at.timestamp())
-        is_current = current_iat is not None and abs(token_iat - int(current_iat)) <= 2
+        is_current = (
+            current_iat is not None
+            and abs(token_iat - int(current_iat))
+            <= CURRENT_SESSION_IAT_LEEWAY_SECONDS
+        )
 
         devices.append(
             {

@@ -38,6 +38,21 @@ export async function userInfo() {
   }
 }
 
+export async function establishAuthenticatedSession() {
+  const user = await userInfo();
+  if (user) {
+    return user;
+  }
+
+  const { refreshToken } = await import('@shared/utils/tokenRefresh');
+  const refreshed = await refreshToken();
+  if (!refreshed) {
+    return null;
+  }
+
+  return await userInfo();
+}
+
 export async function logout() {
   try {
     // The original implementation ignored errors. We'll log a warning.

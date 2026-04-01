@@ -14,6 +14,7 @@ from rest_framework_simplejwt.token_blacklist.models import (
 )
 
 from authn.repositories import SecurityRepository
+from authn.session_revocation import CURRENT_SESSION_IAT_LEEWAY_SECONDS
 
 from .utils import _get_current_session_iat
 
@@ -75,7 +76,10 @@ def revoke_device(request, token_id):
 
     # Prevent revoking current session (compare iat timestamps)
     token_iat = int(token.created_at.timestamp())
-    if current_iat is not None and abs(token_iat - int(current_iat)) <= 2:
+    if (
+        current_iat is not None
+        and abs(token_iat - int(current_iat)) <= CURRENT_SESSION_IAT_LEEWAY_SECONDS
+    ):
         return Response(
             {"error": "Cannot revoke current device session"},
             status=status.HTTP_400_BAD_REQUEST,
@@ -118,7 +122,11 @@ def revoke_all_other_devices(request):
     tokens_to_revoke = []
     for token in tokens:
         token_iat = int(token.created_at.timestamp())
-        if current_iat is not None and abs(token_iat - int(current_iat)) <= 2:
+        if (
+            current_iat is not None
+            and abs(token_iat - int(current_iat))
+            <= CURRENT_SESSION_IAT_LEEWAY_SECONDS
+        ):
             continue
         tokens_to_revoke.append(token)
 

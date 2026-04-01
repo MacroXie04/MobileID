@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  establishAuthenticatedSession,
   login,
   userInfo,
   logout,
@@ -28,6 +29,11 @@ const mockClearAuthStorage = vi.fn();
 vi.mock('@shared/utils/cookie', () => ({
   clearAuthCookies: () => mockClearAuthCookies(),
   clearAuthStorage: () => mockClearAuthStorage(),
+}));
+
+const mockRefreshToken = vi.fn();
+vi.mock('@shared/utils/tokenRefresh', () => ({
+  refreshToken: () => mockRefreshToken(),
 }));
 
 describe('auth API', () => {
@@ -115,6 +121,50 @@ describe('auth API', () => {
       mockApiRequest.mockRejectedValue(networkError);
 
       await expect(userInfo()).rejects.toThrow('Network error');
+    });
+  });
+
+  describe('establishAuthenticatedSession', () => {
+    it('should return the current user when session is already available', async () => {
+      const mockUser = { id: 1, username: 'testuser' };
+      mockApiRequest.mockResolvedValueOnce(mockUser);
+
+      const result = await establishAuthenticatedSession();
+
+      expect(result).toEqual(mockUser);
+      expect(mockRefreshToken).not.toHaveBeenCalled();
+    });
+
+    it('should refresh once when the first session lookup returns unauthenticated', async () => {
+      const mockUser = { id: 1, username: 'testuser' };
+      mockApiRequest
+        .mockRejectedValueOnce(new ApiError('Unauthorized', 401, {}))
+        .mockResolvedValueOnce(mockUser);
+      mockRefreshToken.mockResolvedValueOnce(true);
+
+      const result = await establishAuthenticatedSession();
+
+      expect(mockRefreshToken).toHaveBeenCalledTimes(1);
+      expect(mockApiRequest).toHaveBeenNthCalledWith(1, '/authn/user_info/');
+      expect(mockApiRequest).toHaveBeenNthCalledWith(2, '/authn/user_info/');
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should return null when refresh cannot restore the session', async () => {
+      mockApiRequest.mockRejectedValueOnce(new ApiError('Unauthorized', 401, {}));
+      mockRefreshToken.mockResolvedValueOnce(false);
+
+      const result = await establishAuthenticatedSession();
+
+      expect(mockRefreshToken).toHaveBeenCalledTimes(1);
+      expect(result).toBeNull();
+    });
+
+    it('should re-throw server errors from the initial session lookup', async () => {
+      mockApiRequest.mockRejectedValueOnce(new ApiError('Server error', 500, {}));
+
+      await expect(establishAuthenticatedSession()).rejects.toThrow('Server error');
+      expect(mockRefreshToken).not.toHaveBeenCalled();
     });
   });
 

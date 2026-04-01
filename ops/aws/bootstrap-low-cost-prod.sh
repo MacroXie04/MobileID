@@ -74,6 +74,10 @@ Next steps that still need AWS account-specific values:
   2. Create a CloudFront distribution in front of the backend ALB to get an AWS-managed HTTPS domain.
      - Use CloudFront viewer policy `redirect-to-https` and keep the origin protocol policy `http-only` for the low-cost setup.
   3. Create an Amplify app + branch for the frontend.
+     - Configure Amplify custom rewrite rules so `/authn/*`, `/health/`, and
+       the barcode API endpoints reverse-proxy to the backend CloudFront domain.
+       The production workflow now renders these from
+       `ops/aws/amplify-custom-rules.template.json`.
   4. Store the Django SECRET_KEY and Django admin bootstrap password in Secrets Manager and note their ARNs.
   5. Configure these GitHub repository variables:
      - ECR_REPOSITORY=${ECR_REPOSITORY}

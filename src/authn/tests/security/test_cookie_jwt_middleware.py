@@ -9,6 +9,7 @@ from rest_framework.test import APIClient, APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from authn.repositories import SecurityRepository
+from authn.session_revocation import CURRENT_SESSION_IAT_LEEWAY_SECONDS
 
 
 @override_settings(THROTTLES_ENABLED=False)
@@ -87,6 +88,25 @@ class CookieJWTAuthenticationTests(APITestCase):
                 status.HTTP_403_FORBIDDEN,
             ],
         )
+
+    def test_session_revocation_window_allows_nearby_nonmatching_session(self):
+        refresh = RefreshToken.for_user(self.user)
+        access_token = refresh.access_token
+
+        nearby_other_session_iat = (
+            int(access_token["iat"]) + CURRENT_SESSION_IAT_LEEWAY_SECONDS + 1
+        )
+        session_key = f"session_{self.user.id}_{nearby_other_session_iat}"
+        SecurityRepository.blacklist_token(
+            jti=session_key,
+            user_id=self.user.id,
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+        response = self.client.get(self.auth_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["username"], "cookieuser")
 
     def test_cookie_auth_post_requires_csrf(self):
         """POST with cookie auth but no CSRF token should fail."""
