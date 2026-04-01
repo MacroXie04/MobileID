@@ -29,8 +29,12 @@ class DashboardSettingsUpdateMixin:
                 validated = pull_serializer.validated_data
                 SettingsRepository.update(
                     user.id,
-                    pull_setting=validated.get("pull_setting", settings.get("pull_setting")),
-                    pull_gender_setting=validated.get("gender_setting", settings.get("pull_gender_setting")),
+                    pull_setting=validated.get(
+                        "pull_setting", settings.get("pull_setting")
+                    ),
+                    pull_gender_setting=validated.get(
+                        "gender_setting", settings.get("pull_gender_setting")
+                    ),
                 )
                 # Refresh settings
                 settings = SettingsRepository.get_or_create(user.id)
@@ -82,7 +86,10 @@ class DashboardSettingsUpdateMixin:
         }
 
         serializer = UserBarcodeSettingsSerializer(
-            settings, data=data, context={"request": request, "pull_settings": pull_settings_dict}, partial=True
+            settings,
+            data=data,
+            context={"request": request, "pull_settings": pull_settings_dict},
+            partial=True,
         )
 
         if serializer.is_valid():
@@ -91,9 +98,13 @@ class DashboardSettingsUpdateMixin:
             if "active_barcode_uuid" in validated:
                 updates["active_barcode_uuid"] = validated["active_barcode_uuid"]
             if "associate_user_profile_with_barcode" in validated:
-                updates["associate_user_profile_with_barcode"] = validated["associate_user_profile_with_barcode"]
+                updates["associate_user_profile_with_barcode"] = validated[
+                    "associate_user_profile_with_barcode"
+                ]
             if "scanner_detection_enabled" in validated:
-                updates["scanner_detection_enabled"] = validated["scanner_detection_enabled"]
+                updates["scanner_detection_enabled"] = validated[
+                    "scanner_detection_enabled"
+                ]
             if "prefer_front_camera" in validated:
                 updates["prefer_front_camera"] = validated["prefer_front_camera"]
 
@@ -104,7 +115,8 @@ class DashboardSettingsUpdateMixin:
             settings = SettingsRepository.get_or_create(user.id)
 
             response_settings = UserBarcodeSettingsSerializer(
-                settings, context={"request": request, "pull_settings": pull_settings_dict}
+                settings,
+                context={"request": request, "pull_settings": pull_settings_dict},
             )
 
             return Response(

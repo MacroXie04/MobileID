@@ -65,7 +65,10 @@ class DashboardBarcodeCRUDMixin:
         if share_with_others is not None:
             if isinstance(share_with_others, str):
                 share_with_others = share_with_others.lower() in [
-                    "1", "true", "yes", "on",
+                    "1",
+                    "true",
+                    "yes",
+                    "on",
                 ]
             updates["share_with_others"] = bool(share_with_others)
 
@@ -121,7 +124,8 @@ class DashboardBarcodeCRUDMixin:
         # Look up barcode by UUID
         barcode = BarcodeRepository.get_by_uuid(request.user.id, barcode_id)
         if not barcode or barcode.get("barcode_type") not in [
-            "DynamicBarcode", "Others",
+            "DynamicBarcode",
+            "Others",
         ]:
             return Response(
                 {

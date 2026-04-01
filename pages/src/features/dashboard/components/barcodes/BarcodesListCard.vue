@@ -113,10 +113,7 @@
         </div>
 
         <!-- Daily Limit Section -->
-        <div
-          v-if="barcode.is_owned_by_current_user"
-          class="barcode-limit-section"
-        >
+        <div v-if="barcode.is_owned_by_current_user" class="barcode-limit-section">
           <div class="limit-row">
             <div class="limit-label">
               <md-icon>event</md-icon>
@@ -190,10 +187,7 @@
             <md-icon slot="icon">{{ barcode.share_with_others ? 'lock_open' : 'lock' }}</md-icon>
             {{ barcode.share_with_others ? 'Public' : 'Private' }}
           </md-outlined-button>
-          <md-icon-button
-            v-if="barcode.is_owned_by_current_user"
-            @click="$emit('delete', barcode)"
-          >
+          <md-icon-button v-if="barcode.is_owned_by_current_user" @click="$emit('delete', barcode)">
             <md-icon>delete</md-icon>
           </md-icon-button>
         </div>

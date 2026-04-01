@@ -30,17 +30,13 @@ export default function useBarcodeDashboard() {
 
   const isDynamicSelected = computed(() => {
     if (!settings.value.barcode) return false;
-    const current = barcodeChoices.value.find(
-      (c) => c.id === settings.value.barcode
-    );
+    const current = barcodeChoices.value.find((c) => c.id === settings.value.barcode);
     return current?.barcode_type === 'DynamicBarcode';
   });
 
   const currentBarcodeHasProfile = computed(() => {
     if (!settings.value.barcode) return false;
-    const current = barcodeChoices.value.find(
-      (c) => c.id === settings.value.barcode
-    );
+    const current = barcodeChoices.value.find((c) => c.id === settings.value.barcode);
     return current?.has_profile_addon || false;
   });
 
@@ -505,9 +501,7 @@ export default function useBarcodeDashboard() {
   // Derived
   const currentBarcodeInfo = computed(() => {
     if (!settings.value.barcode) return null;
-    const current = barcodeChoices.value.find(
-      (c) => c.id === settings.value.barcode
-    );
+    const current = barcodeChoices.value.find((c) => c.id === settings.value.barcode);
     if (!current) return null;
     return `${current.barcode_type} ending with ...${current.barcode.slice(-4)}`;
   });

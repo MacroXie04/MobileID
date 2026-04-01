@@ -103,7 +103,9 @@ class TransactionQueryMixin:
                     try:
                         dt = datetime.fromisoformat(tc)
                         # ISO week start (Monday)
-                        week_start = dt - __import__("datetime").timedelta(days=dt.weekday())
+                        week_start = dt - __import__("datetime").timedelta(
+                            days=dt.weekday()
+                        )
                         bucket = week_start.strftime("%Y-%m-%d")
                     except (ValueError, TypeError):
                         continue

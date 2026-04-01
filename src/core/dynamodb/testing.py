@@ -43,6 +43,7 @@ class DynamoDBTestMixin:
         try:
             from core.dynamodb.tables import _table_exists
             from django.conf import settings
+
             table_name = settings.DYNAMODB_TABLES["barcodes"]
             _table_exists(table_name)
             cls._owns_mock = False
@@ -53,6 +54,7 @@ class DynamoDBTestMixin:
             reset()
 
             from core.dynamodb.tables import create_all_tables
+
             create_all_tables(wait=True)
 
     @classmethod
@@ -60,6 +62,7 @@ class DynamoDBTestMixin:
         if cls._owns_mock:
             cls._mock_aws.stop()
             from core.dynamodb.client import reset
+
             reset()
 
         super().tearDownClass()

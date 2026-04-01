@@ -119,10 +119,7 @@
             </div>
             <div class="barcode-details">
               <h3 class="md-typescale-title-medium md-m-0">{{ currentBarcodeInfo }}</h3>
-              <p
-                v-if="selectedBarcode"
-                class="md-typescale-body-small md-m-0 md-mt-1"
-              >
+              <p v-if="selectedBarcode" class="md-typescale-body-small md-m-0 md-mt-1">
                 {{ selectedBarcode.usage_count || 0 }} total scans
                 <span v-if="selectedBarcode.last_used"
                   >• Last used {{ formatRelativeTime(selectedBarcode.last_used) }}</span

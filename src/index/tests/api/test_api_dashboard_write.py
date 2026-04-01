@@ -91,9 +91,7 @@ class BarcodeDashboardWriteTest(BarcodeDashboardTestBase):
         self.assertEqual(response.data["status"], "success")
 
         # Check barcode was deleted
-        deleted = BarcodeRepository.get_by_uuid(
-            self.user.id, barcode["barcode_uuid"]
-        )
+        deleted = BarcodeRepository.get_by_uuid(self.user.id, barcode["barcode_uuid"])
         self.assertIsNone(deleted)
 
     def test_dashboard_delete_barcode_not_found(self):
@@ -128,9 +126,7 @@ class BarcodeDashboardWriteTest(BarcodeDashboardTestBase):
         response = self.client.patch(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        updated = BarcodeRepository.get_by_uuid(
-            self.user.id, barcode["barcode_uuid"]
-        )
+        updated = BarcodeRepository.get_by_uuid(self.user.id, barcode["barcode_uuid"])
         self.assertTrue(updated["share_with_others"])
         self.assertEqual(int(updated["daily_usage_limit"]), 5)
 
@@ -156,7 +152,10 @@ class BarcodeDashboardWriteTest(BarcodeDashboardTestBase):
         # Non-integer
         response = self.client.patch(
             url,
-            {"barcode_id": barcode["barcode_uuid"], "daily_usage_limit": "not-a-number"},
+            {
+                "barcode_id": barcode["barcode_uuid"],
+                "daily_usage_limit": "not-a-number",
+            },
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

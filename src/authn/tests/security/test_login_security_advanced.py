@@ -136,6 +136,7 @@ class CookieSecurityTests(APITestCase):
 
     def setUp(self):
         from index.tests.dynamodb_cleanup import clear_all_dynamodb_tables
+
         clear_all_dynamodb_tables()
         super().setUp()
         cache.clear()

@@ -16,65 +16,158 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='FailedLoginAttempt',
+            name="FailedLoginAttempt",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('username', models.CharField(max_length=150, unique=True)),
-                ('ip_address', models.GenericIPAddressField(blank=True, null=True)),
-                ('attempt_count', models.PositiveIntegerField(default=0)),
-                ('locked_until', models.DateTimeField(blank=True, db_index=True, null=True)),
-                ('last_attempt', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("username", models.CharField(max_length=150, unique=True)),
+                ("ip_address", models.GenericIPAddressField(blank=True, null=True)),
+                ("attempt_count", models.PositiveIntegerField(default=0)),
+                (
+                    "locked_until",
+                    models.DateTimeField(blank=True, db_index=True, null=True),
+                ),
+                ("last_attempt", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Failed Login Attempt',
-                'verbose_name_plural': 'Failed Login Attempts',
-                'ordering': ['-last_attempt'],
+                "verbose_name": "Failed Login Attempt",
+                "verbose_name_plural": "Failed Login Attempts",
+                "ordering": ["-last_attempt"],
             },
         ),
         migrations.CreateModel(
-            name='UserProfile',
+            name="UserProfile",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('information_id', models.CharField(max_length=100)),
-                ('profile_uuid', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ('user_profile_img', models.TextField(blank=True, help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.", null=True, verbose_name='avatar (Base64)')),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("information_id", models.CharField(max_length=100)),
+                (
+                    "profile_uuid",
+                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                ),
+                (
+                    "user_profile_img",
+                    models.TextField(
+                        blank=True,
+                        help_text="Base64 encoded PNG of the user's 128*128 avatar. No data-URI prefix.",
+                        null=True,
+                        verbose_name="avatar (Base64)",
+                    ),
+                ),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='AccessTokenBlacklist',
+            name="AccessTokenBlacklist",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('jti', models.CharField(db_index=True, max_length=255, unique=True)),
-                ('blacklisted_at', models.DateTimeField(auto_now_add=True)),
-                ('expires_at', models.DateTimeField()),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='blacklisted_access_tokens', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("jti", models.CharField(db_index=True, max_length=255, unique=True)),
+                ("blacklisted_at", models.DateTimeField(auto_now_add=True)),
+                ("expires_at", models.DateTimeField()),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="blacklisted_access_tokens",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Blacklisted Access Token',
-                'verbose_name_plural': 'Blacklisted Access Tokens',
-                'indexes': [models.Index(fields=['jti'], name='authn_acces_jti_7753aa_idx'), models.Index(fields=['expires_at'], name='authn_acces_expires_755b0d_idx')],
+                "verbose_name": "Blacklisted Access Token",
+                "verbose_name_plural": "Blacklisted Access Tokens",
+                "indexes": [
+                    models.Index(fields=["jti"], name="authn_acces_jti_7753aa_idx"),
+                    models.Index(
+                        fields=["expires_at"], name="authn_acces_expires_755b0d_idx"
+                    ),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='LoginAuditLog',
+            name="LoginAuditLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('username', models.CharField(blank=True, max_length=150)),
-                ('ip_address', models.GenericIPAddressField(blank=True, null=True)),
-                ('user_agent', models.TextField(blank=True)),
-                ('result', models.CharField(choices=[('success', 'Success'), ('failure', 'Failure'), ('blocked', 'Blocked')], max_length=20)),
-                ('reason', models.CharField(blank=True, max_length=64)),
-                ('success', models.BooleanField(db_index=True, default=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='login_audit_logs', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("username", models.CharField(blank=True, max_length=150)),
+                ("ip_address", models.GenericIPAddressField(blank=True, null=True)),
+                ("user_agent", models.TextField(blank=True)),
+                (
+                    "result",
+                    models.CharField(
+                        choices=[
+                            ("success", "Success"),
+                            ("failure", "Failure"),
+                            ("blocked", "Blocked"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("reason", models.CharField(blank=True, max_length=64)),
+                ("success", models.BooleanField(db_index=True, default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="login_audit_logs",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Login Audit Log',
-                'verbose_name_plural': 'Login Audit Logs',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['username'], name='authn_login_usernam_3db403_idx'), models.Index(fields=['success'], name='authn_login_success_d86091_idx'), models.Index(fields=['created_at'], name='authn_login_created_db2868_idx')],
+                "verbose_name": "Login Audit Log",
+                "verbose_name_plural": "Login Audit Logs",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["username"], name="authn_login_usernam_3db403_idx"
+                    ),
+                    models.Index(
+                        fields=["success"], name="authn_login_success_d86091_idx"
+                    ),
+                    models.Index(
+                        fields=["created_at"], name="authn_login_created_db2868_idx"
+                    ),
+                ],
             },
         ),
     ]

@@ -292,12 +292,8 @@ class RevokeAllOtherDevicesTests(_DeviceTestMixin, APITestCase):
 
     def test_revoke_all_creates_access_token_blacklist_entries(self):
         refresh1, _ = self._create_session(self.user)
-        _, token2 = self._create_session(
-            self.user, time_offset=timedelta(minutes=-10)
-        )
-        _, token3 = self._create_session(
-            self.user, time_offset=timedelta(minutes=-20)
-        )
+        _, token2 = self._create_session(self.user, time_offset=timedelta(minutes=-10))
+        _, token3 = self._create_session(self.user, time_offset=timedelta(minutes=-20))
 
         self._auth_with_session(self.client, refresh1)
 

@@ -74,7 +74,9 @@ class SecurityRepository:
         )
 
     @staticmethod
-    def check_session_revocation(user_id: int, token_iat: int, window: int = 10) -> bool:
+    def check_session_revocation(
+        user_id: int, token_iat: int, window: int = 10
+    ) -> bool:
         """
         Check if a session has been revoked by matching possible session JTIs.
 
@@ -121,9 +123,7 @@ class SecurityRepository:
     @staticmethod
     def get_failed_attempt(username: str) -> Optional[dict]:
         """Get failed login attempt record for a username."""
-        resp = _table().get_item(
-            Key={"pk": f"FAILED#{username}", "sk": "ATTEMPT"}
-        )
+        resp = _table().get_item(Key={"pk": f"FAILED#{username}", "sk": "ATTEMPT"})
         return resp.get("Item")
 
     @staticmethod
@@ -264,10 +264,7 @@ class SecurityRepository:
     ) -> list[dict]:
         """Get login audit logs for a username, most recent first."""
         if since:
-            key_expr = (
-                Key("pk").eq(f"AUDIT#{username}")
-                & Key("sk").gte(f"LOG#{since}")
-            )
+            key_expr = Key("pk").eq(f"AUDIT#{username}") & Key("sk").gte(f"LOG#{since}")
         else:
             key_expr = Key("pk").eq(f"AUDIT#{username}") & Key("sk").begins_with("LOG#")
 

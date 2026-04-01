@@ -35,9 +35,7 @@ class SettingsRepository:
     @staticmethod
     def get(user_id: int) -> Optional[dict]:
         """Get user settings. Returns None if not found."""
-        resp = _table().get_item(
-            Key={"user_id": str(user_id), "sk": "SETTINGS"}
-        )
+        resp = _table().get_item(Key={"user_id": str(user_id), "sk": "SETTINGS"})
         return resp.get("Item")
 
     @staticmethod

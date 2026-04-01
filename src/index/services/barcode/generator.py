@@ -2,7 +2,11 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from index.repositories import BarcodeRepository, SettingsRepository, TransactionRepository
+from index.repositories import (
+    BarcodeRepository,
+    SettingsRepository,
+    TransactionRepository,
+)
 from index.services.usage_limit import UsageLimitService
 
 from .constants import (
@@ -26,7 +30,9 @@ def generate_barcode(user) -> dict:
 
     if settings.get("pull_setting") == "Enable":
         # 1. Check for recent personal usage (Stickiness)
-        cutoff_10m = (timezone.now() - timedelta(minutes=STICKINESS_MINUTES)).isoformat()
+        cutoff_10m = (
+            timezone.now() - timedelta(minutes=STICKINESS_MINUTES)
+        ).isoformat()
         recent_txn = TransactionRepository.recent_user_usage(user.id, since=cutoff_10m)
 
         candidate = None
@@ -57,6 +63,7 @@ def generate_barcode(user) -> dict:
 
             if candidates:
                 import random
+
                 candidate = random.choice(candidates)
 
         # 3. Apply selection
@@ -80,9 +87,7 @@ def generate_barcode(user) -> dict:
     if not selected:
         # Could be a shared barcode from another user
         shared = BarcodeRepository.get_shared_dynamic_barcodes()
-        selected = next(
-            (b for b in shared if b["barcode_uuid"] == active_uuid), None
-        )
+        selected = next((b for b in shared if b["barcode_uuid"] == active_uuid), None)
 
     if not selected:
         result.update(status="error", message="No barcode selected.")

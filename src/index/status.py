@@ -35,8 +35,10 @@ def health_check(request):
     # Check DynamoDB connectivity (non-critical)
     try:
         from django.conf import settings as django_settings
+
         if not getattr(django_settings, "TESTING", False):
             from core.dynamodb.client import get_client
+
             client = get_client()
             table_name = django_settings.DYNAMODB_TABLES["barcodes"]
             client.describe_table(TableName=table_name)

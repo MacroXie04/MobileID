@@ -48,7 +48,9 @@ class TransactionWriteMixin:
             barcode_uuid = barcode.get("barcode_uuid")
             barcode_value = barcode.get("barcode")
         else:
-            barcode_uuid = str(barcode.barcode_uuid) if hasattr(barcode, "barcode_uuid") else None
+            barcode_uuid = (
+                str(barcode.barcode_uuid) if hasattr(barcode, "barcode_uuid") else None
+            )
             barcode_value = barcode.barcode if hasattr(barcode, "barcode") else None
 
         when = time_created.isoformat() if time_created else None
@@ -94,18 +96,24 @@ class TransactionWriteMixin:
                 barcode_uuid = barcode.get("barcode_uuid")
                 barcode_value = barcode.get("barcode")
             else:
-                barcode_uuid = str(barcode.barcode_uuid) if hasattr(barcode, "barcode_uuid") else None
+                barcode_uuid = (
+                    str(barcode.barcode_uuid)
+                    if hasattr(barcode, "barcode_uuid")
+                    else None
+                )
                 barcode_value = barcode.barcode if hasattr(barcode, "barcode") else None
 
             when = r.get("time_created")
             when_str = when.isoformat() if when else now
 
-            items.append({
-                "user_id": user.id,
-                "barcode_uuid": barcode_uuid,
-                "barcode_value": barcode_value,
-                "time_created": when_str,
-            })
+            items.append(
+                {
+                    "user_id": user.id,
+                    "barcode_uuid": barcode_uuid,
+                    "barcode_value": barcode_value,
+                    "time_created": when_str,
+                }
+            )
 
         created = TransactionRepository.bulk_create(items)
 

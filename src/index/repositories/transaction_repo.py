@@ -184,9 +184,7 @@ class TransactionRepository:
         return resp.get("Count", 0)
 
     @staticmethod
-    def recent_user_barcode_usage(
-        user_id: int, barcode_uuid: str, since: str
-    ) -> bool:
+    def recent_user_barcode_usage(user_id: int, barcode_uuid: str, since: str) -> bool:
         """
         Check if user used a specific barcode recently.
 
@@ -198,8 +196,7 @@ class TransactionRepository:
 
         resp = _table().query(
             KeyConditionExpression=(
-                Key("user_id").eq(str(user_id))
-                & Key("sk").begins_with("TXN#")
+                Key("user_id").eq(str(user_id)) & Key("sk").begins_with("TXN#")
             ),
             FilterExpression=(
                 Attr("barcode_uuid").eq(str(barcode_uuid))
@@ -223,8 +220,7 @@ class TransactionRepository:
 
         resp = _table().query(
             KeyConditionExpression=(
-                Key("user_id").eq(str(user_id))
-                & Key("sk").begins_with("TXN#")
+                Key("user_id").eq(str(user_id)) & Key("sk").begins_with("TXN#")
             ),
             FilterExpression=Attr("time_created").gte(since),
             Limit=1,

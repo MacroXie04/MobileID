@@ -5,7 +5,11 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
-from index.repositories import BarcodeRepository, SettingsRepository, TransactionRepository
+from index.repositories import (
+    BarcodeRepository,
+    SettingsRepository,
+    TransactionRepository,
+)
 from index.services.barcode import generate_barcode
 from index.tests.dynamodb_cleanup import DynamoDBCleanupMixin as DynamoDBTestMixin
 
@@ -89,9 +93,7 @@ class BarcodePullBasicTest(BarcodePullTestBase):
         # Check settings updated
         settings = SettingsRepository.get(self.school_user.id)
         active_uuid = settings.get("active_barcode_uuid")
-        active_barcode = BarcodeRepository.get_by_uuid(
-            self.school_user.id, active_uuid
-        )
+        active_barcode = BarcodeRepository.get_by_uuid(self.school_user.id, active_uuid)
         if not active_barcode:
             # Could be a shared barcode from another user
             shared = BarcodeRepository.get_shared_dynamic_barcodes()

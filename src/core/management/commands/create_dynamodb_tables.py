@@ -18,7 +18,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write(f"Region: {settings.DYNAMODB_REGION}")
-        self.stdout.write(f"Endpoint: {settings.DYNAMODB_ENDPOINT_URL or 'AWS default'}")
+        self.stdout.write(
+            f"Endpoint: {settings.DYNAMODB_ENDPOINT_URL or 'AWS default'}"
+        )
         self.stdout.write(f"Table prefix: {settings.DYNAMODB_TABLE_PREFIX}")
         self.stdout.write("")
 
