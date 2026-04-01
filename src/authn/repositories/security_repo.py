@@ -95,10 +95,7 @@ class SecurityRepository:
         resource = get_resource()
 
         # Use high-level resource API (simplified key format)
-        keys = [
-            {"pk": f"JTI#{jti}", "sk": "BLACKLIST"}
-            for jti in possible_jtis
-        ]
+        keys = [{"pk": f"JTI#{jti}", "sk": "BLACKLIST"} for jti in possible_jtis]
 
         resp = resource.batch_get_item(
             RequestItems={
