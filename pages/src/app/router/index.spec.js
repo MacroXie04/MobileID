@@ -152,7 +152,7 @@ describe('router beforeEach guard', () => {
         fullPath: '/pending',
       }),
       {},
-      next,
+      next
     );
 
     expect(next).toHaveBeenCalledWith();
@@ -169,7 +169,7 @@ describe('router beforeEach guard', () => {
         fullPath: '/pending',
       }),
       {},
-      next,
+      next
     );
 
     expect(next).toHaveBeenCalledWith({ path: '/' });
@@ -226,7 +226,7 @@ describe('router route table', () => {
         'pending-activation',
         'home',
         'dashboard',
-      ]),
+      ])
     );
 
     const catchAll = capturedRoutes.find((r) => r.path === '/:pathMatch(.*)*');

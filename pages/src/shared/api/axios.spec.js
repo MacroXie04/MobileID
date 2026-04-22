@@ -120,7 +120,7 @@ describe('axios response error handler', () => {
 
     expect(mockRefreshToken).toHaveBeenCalledTimes(1);
     expect(apiCallMock).toHaveBeenCalledWith(
-      expect.objectContaining({ _retry: true, url: '/authn/user_info/' }),
+      expect.objectContaining({ _retry: true, url: '/authn/user_info/' })
     );
     expect(result).toEqual({ data: 'retry ok' });
   });

@@ -18,7 +18,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from authn.api.webauthn.views.tokens import _ensure_outstanding_token
 
-
 User = get_user_model()
 
 
