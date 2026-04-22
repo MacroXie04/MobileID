@@ -108,7 +108,7 @@ describe('useLoginLogic', () => {
 
   it('surfaces the server-provided detail on ApiError (e.g. 401)', async () => {
     mockLogin.mockRejectedValue(
-      new ApiError('Unauthorized', 401, { detail: 'Invalid credentials' }),
+      new ApiError('Unauthorized', 401, { detail: 'Invalid credentials' })
     );
     const login = useLoginLogic();
     fillCreds(login);
@@ -145,7 +145,7 @@ describe('useLoginLogic', () => {
       () =>
         new Promise((resolve) => {
           releaseLogin = resolve;
-        }),
+        })
     );
     const login = useLoginLogic();
     fillCreds(login);

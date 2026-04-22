@@ -44,9 +44,7 @@ describe('useLoginValidation', () => {
     });
 
     expect(isValid).toBe(false);
-    expect(validation.errors.username).toBe(
-      'Username must be at least 3 characters',
-    );
+    expect(validation.errors.username).toBe('Username must be at least 3 characters');
   });
 
   it('rejects an empty password', () => {

@@ -175,7 +175,7 @@ describe('useCameraPermission — ensureCameraPermission', () => {
     expect(getUserMedia).toHaveBeenCalledWith(
       expect.objectContaining({
         video: expect.objectContaining({ facingMode: 'user' }),
-      }),
+      })
     );
   });
 
