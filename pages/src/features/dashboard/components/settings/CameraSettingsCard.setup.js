@@ -1,8 +1,8 @@
 import { computed, ref, watch, onUnmounted } from 'vue';
-import { useScannerDetection } from '@/features/useScannerDetection.js';
+import { useScannerDetection } from '@shared/composables/scanner/useScannerDetection.js';
 
 // CSS - use shared dashboard styles
-import '@/assets/styles/dashboard/BarcodeDashboard.css';
+import '@dashboard/styles/BarcodeDashboard.css';
 
 export const propsDefinition = {
   scannerDetectionEnabled: {

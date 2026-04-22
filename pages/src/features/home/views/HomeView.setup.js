@@ -1,12 +1,12 @@
 import { computed, onMounted, ref } from 'vue';
 import { getUserInfo, getApiError } from '@shared/state/authState';
 import { useHomeLogic } from '@home/composables/useHomeLogic.js';
-import Header from '@/features/header/Header.vue';
-import UserProfile from '@/features/user-profile/UserProfile.vue';
-import BarcodeDisplay from '@/features/barcode-display/BarcodeDisplay.vue';
-import GridMenu from '@/features/grid-menu/GridMenu.vue';
-import '@/assets/styles/home/home-merged.css';
-import '@/assets/styles/home/Home.css';
+import Header from '@school/components/header/Header.vue';
+import UserProfile from '@school/components/user-profile/UserProfile.vue';
+import BarcodeDisplay from '@school/components/barcode-display/BarcodeDisplay.vue';
+import GridMenu from '@school/components/grid-menu/GridMenu.vue';
+import '@home/styles/HomeShell.css';
+import '@home/styles/Home.css';
 
 export { Header, UserProfile, BarcodeDisplay, GridMenu };
 

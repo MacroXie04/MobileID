@@ -1,4 +1,4 @@
-import '@/assets/styles/dashboard/BarcodeDashboard.css';
+import '@dashboard/styles/BarcodeDashboard.css';
 
 import { useDevicesLogic } from '@dashboard/composables/useDevicesLogic';
 

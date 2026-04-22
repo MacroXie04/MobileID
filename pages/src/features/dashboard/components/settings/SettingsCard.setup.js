@@ -1,7 +1,7 @@
 import { computed } from 'vue';
 
 // CSS - use shared dashboard styles
-import '@/assets/styles/dashboard/BarcodeDashboard.css';
+import '@dashboard/styles/BarcodeDashboard.css';
 
 export const propsDefinition = {
   isSaving: { type: Boolean, default: false },
