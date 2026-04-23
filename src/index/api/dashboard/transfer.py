@@ -7,8 +7,8 @@ from index.serializers import (
     BarcodeSerializer,
     DynamicBarcodeWithProfileSerializer,
 )
+from index.services.transfer import TransferBarcodeParser
 from index.services.transactions import TransactionService
-from index.services.transfer_barcode import TransferBarcodeParser
 
 
 class TransferDynamicBarcodeAPIView(APIView):

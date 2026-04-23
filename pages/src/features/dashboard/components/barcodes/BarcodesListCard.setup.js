@@ -1,7 +1,7 @@
 import { useBarcodesListLogic } from '@dashboard/composables/useBarcodesListLogic.js';
 
 // CSS - use shared dashboard styles
-import '@/assets/styles/dashboard/BarcodeDashboard.css';
+import '@dashboard/styles/BarcodeDashboard.css';
 
 export const emitsDefinition = [
   'update-filter',

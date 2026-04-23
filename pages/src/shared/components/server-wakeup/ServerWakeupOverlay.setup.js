@@ -1,5 +1,5 @@
 import { useServerWakeup } from '@shared/composables/useServerWakeup';
-import '@/assets/styles/shared/server-wakeup.css';
+import '@shared/styles/server-wakeup.css';
 
 export function useServerWakeupOverlaySetup() {
   const { isWakingUp, isChecking, elapsedMs, errorMessage, retryHealthCheck } = useServerWakeup();

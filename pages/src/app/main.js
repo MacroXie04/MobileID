@@ -6,7 +6,7 @@ import router from '@app/router';
 import { baseURL } from '@app/config/config';
 
 // Global Material 3 Styles
-import '@/assets/styles/shared/tokens.css';
+import '@shared/styles/tokens.css';
 
 // Material Web - Import only the components actually used
 import '@shared/material-web.js';
