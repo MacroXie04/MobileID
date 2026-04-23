@@ -29,7 +29,7 @@ env:
 #   1. Lint        — fast gate, catches style issues
 #   2. Test        — unit / integration / e2e (needs lint)
 #   3. Build       — Docker image + frontend dist (needs test)
-#   4. Security    — dependency & image scans (needs build, main only)
+#   4. Security    — dependency & image scans (needs build)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 jobs:
@@ -243,12 +243,11 @@ jobs:
         working-directory: ./pages
         run: yarn build
 
-  # ── Stage 4: Security (main branch + schedule only) ────
+  # ── Stage 4: Security ──────────────────────────────────
 
   python-security:
     name: "4 · Python Security"
     needs: [django-test]
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -312,7 +311,6 @@ jobs:
   nodejs-security:
     name: "4 · Node.js Security"
     needs: [npm-test]
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -365,7 +363,6 @@ jobs:
   docker-security:
     name: "4 · Docker Security (Trivy)"
     needs: [docker-build]
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
