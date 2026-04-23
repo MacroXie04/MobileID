@@ -1,7 +1,7 @@
 import { getCookie } from '@shared/utils/cookie';
 import { useToken } from '@auth/composables/useToken';
 import { baseURL } from '@app/config/config';
-import { useServerWakeup } from '@shared/composables/useServerWakeup';
+import { useServerWakeup } from '@shared/composables/api/useServerWakeup';
 import { ensureCsrfToken } from '@shared/api/csrf';
 
 export function useApi() {

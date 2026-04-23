@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 import { userInfo } from '@shared/api/auth';
-import { useApi } from '@shared/composables/useApi';
+import { useApi } from '@shared/composables/api/useApi';
 import { hasAuthTokens } from '@shared/utils/cookie';
 import { getUserInfo } from '@shared/state/authState';
 import { useToken } from '@auth/composables/useToken';
