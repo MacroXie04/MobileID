@@ -1,4 +1,4 @@
-import { useServerWakeup } from '@shared/composables/useServerWakeup';
+import { useServerWakeup } from '@shared/composables/api/useServerWakeup';
 import '@shared/styles/server-wakeup.css';
 
 export function useServerWakeupOverlaySetup() {

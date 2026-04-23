@@ -33,7 +33,7 @@ vi.mock('@auth/composables/useToken', () => ({
   }),
 }));
 
-vi.mock('@shared/composables/useApi', () => ({
+vi.mock('@shared/composables/api/useApi', () => ({
   useApi: () => ({
     apiGenerateBarcode: mockApiGenerateBarcode,
     apiGetActiveProfile: mockApiGetActiveProfile,

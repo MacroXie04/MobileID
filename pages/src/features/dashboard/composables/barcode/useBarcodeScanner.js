@@ -1,5 +1,5 @@
 import { nextTick, onUnmounted, ref, watch } from 'vue';
-import { useCameraPermission } from '@shared/composables/useCameraPermission.js';
+import { useCameraPermission } from '@shared/composables/device/useCameraPermission.js';
 
 /**
  * Composable for handling barcode/QR code scanning functionality

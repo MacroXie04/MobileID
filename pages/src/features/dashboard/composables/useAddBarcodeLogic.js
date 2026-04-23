@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { useApi } from '@shared/composables/useApi';
+import { useApi } from '@shared/composables/api/useApi';
 import { useBarcodeScanner } from '@dashboard/composables/barcode/useBarcodeScanner.js';
 
 export function useAddBarcodeLogic(emit) {

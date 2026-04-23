@@ -1,6 +1,6 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useApi } from '@shared/composables/useApi';
+import { useApi } from '@shared/composables/api/useApi';
 import { useDailyLimit } from '@dashboard/composables/barcode/useDailyLimit';
 
 export function useDashboardLogic() {

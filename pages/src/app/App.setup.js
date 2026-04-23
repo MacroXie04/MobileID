@@ -1,7 +1,7 @@
 import { onMounted } from 'vue';
 import ServerWakeupOverlay from '@shared/components/server-wakeup/ServerWakeupOverlay.vue';
 import LoadingOverlay from '@shared/components/loading/LoadingOverlay.vue';
-import { useServerWakeup } from '@shared/composables/useServerWakeup';
+import { useServerWakeup } from '@shared/composables/api/useServerWakeup';
 
 export { ServerWakeupOverlay, LoadingOverlay };
 
