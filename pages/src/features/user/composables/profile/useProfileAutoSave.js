@@ -1,4 +1,4 @@
-import { useAutoSave } from '@shared/composables/useAutoSave.js';
+import { useAutoSave } from '@shared/composables/persistence/useAutoSave.js';
 import { updateUserProfile } from '@shared/api/auth';
 import { fileToBase64 } from '@user/utils/imageUtils.js';
 

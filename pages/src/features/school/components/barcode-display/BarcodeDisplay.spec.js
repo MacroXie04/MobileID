@@ -13,7 +13,7 @@ vi.mock('@dashboard/composables/barcode/usePdf417.js', () => ({
   }),
 }));
 
-vi.mock('@shared/composables/scanner/useScannerDetection.js', () => ({
+vi.mock('@shared/composables/device/useScannerDetection.js', () => ({
   useScannerDetection: () => ({
     isDetectionActive: ref(false),
     isModelLoading: ref(false),

@@ -4,7 +4,7 @@ vi.mock('@app/config/config', () => ({
   baseURL: 'https://api.example.com',
 }));
 
-import { useServerWakeup } from '@shared/composables/useServerWakeup';
+import { useServerWakeup } from '@shared/composables/api/useServerWakeup';
 
 describe('useServerWakeup', () => {
   let wakeup;

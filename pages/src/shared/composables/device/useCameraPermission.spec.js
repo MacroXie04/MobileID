@@ -41,7 +41,7 @@ function fakeStream() {
 
 async function loadComposable() {
   vi.resetModules();
-  const mod = await import('@shared/composables/useCameraPermission.js');
+  const mod = await import('@shared/composables/device/useCameraPermission.js');
   // Let the side-effectful checkExistingPermission() microtask settle.
   await Promise.resolve();
   await Promise.resolve();

@@ -3,7 +3,7 @@ import { userInfo } from '@shared/api/auth';
 import { getUserInfo, setUserInfo } from '@shared/state/authState';
 import { useUserInfo } from '@user/composables/useUserInfo';
 import { useToken } from '@auth/composables/useToken';
-import { useApi } from '@shared/composables/useApi';
+import { useApi } from '@shared/composables/api/useApi';
 
 export function useHomeLogic() {
   // State

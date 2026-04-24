@@ -1,4 +1,4 @@
-import { useLoading } from '@shared/composables/useLoading';
+import { useLoading } from '@shared/composables/api/useLoading';
 
 export function useLoadingOverlaySetup() {
   const { isLoading, loadingMessage } = useLoading();

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useLoading } from '@shared/composables/useLoading';
+import { useLoading } from '@shared/composables/api/useLoading';
 
 describe('useLoading', () => {
   let loading;

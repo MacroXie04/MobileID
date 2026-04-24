@@ -23,6 +23,9 @@ concurrency:
 
 env:
   YARN_NETWORK_TIMEOUT: 120000
+  # Opt-in to Node.js 24 for JS-based actions; silences the Node.js 20
+  # deprecation warnings until actions/* publish Node-24 major releases.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Pipeline stages:
@@ -261,7 +264,7 @@ jobs:
         working-directory: ./src
         run: |
           safety scan --target requirements.txt --output json 2>/dev/null > safety-report.json || \
-            safety check -r requirements.txt --output json > safety-report.json 2>&1 || true
+            safety check -r requirements.txt --output json 2>/dev/null > safety-report.json || true
           safety scan --target requirements.txt 2>/dev/null || \
             safety check -r requirements.txt || true
       - name: Enforce Safety baseline

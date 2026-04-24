@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { useApi } from '@shared/composables/useApi.js';
+import { useApi } from '@shared/composables/api/useApi.js';
 
 // Mock dependencies
 vi.mock('@app/config/config', () => ({
@@ -23,7 +23,7 @@ vi.mock('@auth/composables/useToken', () => ({
 }));
 
 const mockTriggerWakeup = vi.fn();
-vi.mock('@shared/composables/useServerWakeup', () => ({
+vi.mock('@shared/composables/api/useServerWakeup', () => ({
   useServerWakeup: () => ({
     triggerWakeup: mockTriggerWakeup,
   }),

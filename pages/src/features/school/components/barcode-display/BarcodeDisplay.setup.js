@@ -7,7 +7,7 @@ import '@school/styles/school.css';
 
 // Composable
 import { usePdf417 } from '@dashboard/composables/barcode/usePdf417.js';
-import { useScannerDetection } from '@shared/composables/scanner/useScannerDetection.js';
+import { useScannerDetection } from '@shared/composables/device/useScannerDetection.js';
 
 export const propsDefinition = {
   scannerDetectionEnabled: {

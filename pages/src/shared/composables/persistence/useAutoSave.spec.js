@@ -9,7 +9,7 @@ vi.mock('vue', async () => {
   };
 });
 
-import { useAutoSave } from '@shared/composables/useAutoSave';
+import { useAutoSave } from '@shared/composables/persistence/useAutoSave';
 
 describe('useAutoSave', () => {
   let saveFn;

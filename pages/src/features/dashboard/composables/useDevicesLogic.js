@@ -1,5 +1,5 @@
 import { computed, onMounted, ref } from 'vue';
-import { useApi } from '@shared/composables/useApi';
+import { useApi } from '@shared/composables/api/useApi';
 
 /**
  * Composable for managing user devices/sessions.
