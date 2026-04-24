@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from index.repositories import BarcodeRepository
+from index.repositories import BarcodeRepository, TransactionRepository
 from index.tests.dynamodb_cleanup import DynamoDBCleanupMixin as DynamoDBTestMixin
 
 
@@ -104,3 +104,31 @@ class BarcodeSerializerTest(DynamoDBTestMixin, TestCase):
 
         serializer = BarcodeSerializer(self.barcode)
         self.assertFalse(serializer.data["has_profile_addon"])
+
+    def test_recent_transactions_caps_at_three(self):
+        """recent_transactions must cap at 3 items, most-recent-first."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from index.serializers import BarcodeSerializer
+
+        now = timezone.now()
+        for i in range(5):
+            TransactionRepository.create(
+                user_id=self.user.id,
+                barcode_uuid=self.barcode["barcode_uuid"],
+                barcode_value=self.barcode.get("barcode"),
+                time_created=(now - timedelta(minutes=i)).isoformat(),
+            )
+
+        serializer = BarcodeSerializer(self.barcode)
+        recent = serializer.data["recent_transactions"]
+
+        self.assertEqual(len(recent), 3)
+        times = [r["time_created"] for r in recent]
+        self.assertEqual(times, sorted(times, reverse=True))
+        for entry in recent:
+            self.assertIn("id", entry)
+            self.assertIn("user", entry)
+            self.assertIn("time_created", entry)

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase
@@ -211,6 +212,107 @@ class TransactionQueryServiceTests(DynamoDBTestMixin, TestCase):
         results = TransactionQueryMixin.for_barcode(self.barcode1["barcode_uuid"])
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["sk"], tx1["sk"])
+
+    def test_for_user_limit_bounds_result(self):
+        now = timezone.now()
+        for i in range(5):
+            self._create_tx(self.user, self.barcode1, now - timedelta(minutes=i))
+
+        results = TransactionRepository.for_user(self.user.id, limit=3)
+        self.assertEqual(len(results), 3)
+        # Ordering preserved (most recent first)
+        times = [r["time_created"] for r in results]
+        self.assertEqual(times, sorted(times, reverse=True))
+
+    def test_for_user_no_limit_returns_all(self):
+        now = timezone.now()
+        for i in range(5):
+            self._create_tx(self.user, self.barcode1, now - timedelta(minutes=i))
+
+        results = TransactionRepository.for_user(self.user.id)
+        self.assertEqual(len(results), 5)
+
+    def test_for_barcode_limit_bounds_result(self):
+        now = timezone.now()
+        for i in range(5):
+            self._create_tx(self.user, self.barcode1, now - timedelta(minutes=i))
+
+        results = TransactionRepository.for_barcode(
+            self.barcode1["barcode_uuid"], limit=2
+        )
+        self.assertEqual(len(results), 2)
+        times = [r["time_created"] for r in results]
+        self.assertEqual(times, sorted(times, reverse=True))
+
+    def test_for_barcode_no_limit_returns_all(self):
+        now = timezone.now()
+        for i in range(5):
+            self._create_tx(self.user, self.barcode1, now - timedelta(minutes=i))
+
+        results = TransactionRepository.for_barcode(self.barcode1["barcode_uuid"])
+        self.assertEqual(len(results), 5)
+
+
+class TransactionRepositoryRoutingTests(TestCase):
+    """
+    Verify the bounded path uses query_limited and unbounded path uses
+    query_all — guards against accidentally routing unlimited reads through
+    the bounded helper (which would cap them at max_items).
+    """
+
+    def test_for_user_with_limit_routes_through_query_limited(self):
+        with patch(
+            "index.repositories.transaction_repo.query_limited",
+            return_value=[],
+        ) as mock_limited, patch(
+            "index.repositories.transaction_repo.query_all",
+            return_value=[],
+        ) as mock_all:
+            TransactionRepository.for_user(user_id=1, limit=5)
+
+        mock_limited.assert_called_once()
+        self.assertEqual(mock_limited.call_args.args[1], 5)
+        mock_all.assert_not_called()
+
+    def test_for_user_without_limit_routes_through_query_all(self):
+        with patch(
+            "index.repositories.transaction_repo.query_limited",
+            return_value=[],
+        ) as mock_limited, patch(
+            "index.repositories.transaction_repo.query_all",
+            return_value=[],
+        ) as mock_all:
+            TransactionRepository.for_user(user_id=1)
+
+        mock_all.assert_called_once()
+        mock_limited.assert_not_called()
+
+    def test_for_barcode_with_limit_routes_through_query_limited(self):
+        with patch(
+            "index.repositories.transaction_repo.query_limited",
+            return_value=[],
+        ) as mock_limited, patch(
+            "index.repositories.transaction_repo.query_all",
+            return_value=[],
+        ) as mock_all:
+            TransactionRepository.for_barcode(barcode_uuid="bc", limit=3)
+
+        mock_limited.assert_called_once()
+        self.assertEqual(mock_limited.call_args.args[1], 3)
+        mock_all.assert_not_called()
+
+    def test_for_barcode_without_limit_routes_through_query_all(self):
+        with patch(
+            "index.repositories.transaction_repo.query_limited",
+            return_value=[],
+        ) as mock_limited, patch(
+            "index.repositories.transaction_repo.query_all",
+            return_value=[],
+        ) as mock_all:
+            TransactionRepository.for_barcode(barcode_uuid="bc")
+
+        mock_all.assert_called_once()
+        mock_limited.assert_not_called()
 
 
 class TransactionServiceCompositeTests(TestCase):

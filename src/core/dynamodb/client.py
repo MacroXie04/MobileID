@@ -69,6 +69,34 @@ def query_all(table, **kwargs):
     return items
 
 
+def query_limited(table, max_items, **kwargs):
+    """
+    Paginating query that stops once max_items items have been collected.
+
+    Sets per-page Limit as an optimization hint (unless the caller passed
+    a smaller Limit). With FilterExpression, Limit bounds pre-filter rows,
+    so callers using filters may want to pass a larger per-page Limit.
+    """
+    if max_items <= 0:
+        raise ValueError("max_items must be positive")
+
+    per_page = kwargs.get("Limit")
+    if per_page is None or per_page > max_items:
+        kwargs["Limit"] = max_items
+
+    items = []
+    while True:
+        resp = table.query(**kwargs)
+        items.extend(resp.get("Items", []))
+        if len(items) >= max_items:
+            return items[:max_items]
+        last_key = resp.get("LastEvaluatedKey")
+        if not last_key:
+            break
+        kwargs["ExclusiveStartKey"] = last_key
+    return items
+
+
 def reset():
     """Reset cached clients (useful for testing)."""
     global _resource, _client

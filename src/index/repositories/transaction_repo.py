@@ -12,7 +12,7 @@ from typing import Optional
 from boto3.dynamodb.conditions import Key
 from django.utils import timezone
 
-from core.dynamodb.client import get_table, query_all
+from core.dynamodb.client import get_table, query_all, query_limited
 
 
 def _now_iso() -> str:
@@ -123,14 +123,8 @@ class TransactionRepository:
         }
 
         if limit:
-            kwargs["Limit"] = limit
-
-        items = query_all(_table(), **kwargs)
-
-        if limit:
-            items = items[:limit]
-
-        return items
+            return query_limited(_table(), limit, **kwargs)
+        return query_all(_table(), **kwargs)
 
     @staticmethod
     def for_barcode(
@@ -155,14 +149,8 @@ class TransactionRepository:
         }
 
         if limit:
-            kwargs["Limit"] = limit
-
-        items = query_all(_table(), **kwargs)
-
-        if limit:
-            items = items[:limit]
-
-        return items
+            return query_limited(_table(), limit, **kwargs)
+        return query_all(_table(), **kwargs)
 
     @staticmethod
     def count_for_barcode_since(barcode_uuid: str, since: str) -> int:

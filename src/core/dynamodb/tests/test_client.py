@@ -137,6 +137,107 @@ class QueryAllTest(TestCase):
         self.assertEqual(kwargs["ExpressionAttributeValues"], {":pk": "abc"})
 
 
+class QueryLimitedTest(TestCase):
+    def test_stops_after_max_items_mid_first_page(self):
+        fake_table = MagicMock()
+        fake_table.query.side_effect = [
+            {
+                "Items": [{"id": i} for i in range(1, 6)],
+                "LastEvaluatedKey": {"id": 5},
+            },
+        ]
+
+        items = client_mod.query_limited(
+            fake_table, 3, KeyConditionExpression="placeholder"
+        )
+
+        self.assertEqual(items, [{"id": 1}, {"id": 2}, {"id": 3}])
+        fake_table.query.assert_called_once()
+        first_call_kwargs = fake_table.query.call_args.kwargs
+        self.assertNotIn("ExclusiveStartKey", first_call_kwargs)
+
+    def test_accumulates_across_pages_until_max(self):
+        fake_table = MagicMock()
+        fake_table.query.side_effect = [
+            {"Items": [{"id": 1}, {"id": 2}], "LastEvaluatedKey": {"id": 2}},
+            {"Items": [{"id": 3}, {"id": 4}], "LastEvaluatedKey": {"id": 4}},
+        ]
+
+        items = client_mod.query_limited(
+            fake_table, 3, KeyConditionExpression="placeholder"
+        )
+
+        self.assertEqual(items, [{"id": 1}, {"id": 2}, {"id": 3}])
+        self.assertEqual(fake_table.query.call_count, 2)
+        second_call_kwargs = fake_table.query.call_args_list[1].kwargs
+        self.assertEqual(second_call_kwargs["ExclusiveStartKey"], {"id": 2})
+
+    def test_returns_all_when_fewer_than_max(self):
+        fake_table = MagicMock()
+        fake_table.query.return_value = {"Items": [{"id": 1}, {"id": 2}]}
+
+        items = client_mod.query_limited(
+            fake_table, 10, KeyConditionExpression="placeholder"
+        )
+
+        self.assertEqual(items, [{"id": 1}, {"id": 2}])
+        fake_table.query.assert_called_once()
+
+    def test_sets_per_page_limit_when_caller_unset(self):
+        fake_table = MagicMock()
+        fake_table.query.return_value = {"Items": []}
+
+        client_mod.query_limited(fake_table, 5, KeyConditionExpression="placeholder")
+
+        kwargs = fake_table.query.call_args.kwargs
+        self.assertEqual(kwargs["Limit"], 5)
+
+    def test_preserves_smaller_caller_limit(self):
+        fake_table = MagicMock()
+        fake_table.query.side_effect = [
+            {"Items": [{"id": 1}], "LastEvaluatedKey": {"id": 1}},
+            {"Items": [{"id": 2}], "LastEvaluatedKey": {"id": 2}},
+            {"Items": [{"id": 3}]},
+        ]
+
+        items = client_mod.query_limited(
+            fake_table,
+            5,
+            KeyConditionExpression="placeholder",
+            Limit=1,
+        )
+
+        self.assertEqual(items, [{"id": 1}, {"id": 2}, {"id": 3}])
+        for call in fake_table.query.call_args_list:
+            self.assertEqual(call.kwargs["Limit"], 1)
+
+    def test_passes_kwargs_through_to_table_query(self):
+        fake_table = MagicMock()
+        fake_table.query.return_value = {"Items": []}
+
+        client_mod.query_limited(
+            fake_table,
+            4,
+            KeyConditionExpression="pk = :pk",
+            ExpressionAttributeValues={":pk": "abc"},
+            ScanIndexForward=False,
+        )
+
+        kwargs = fake_table.query.call_args.kwargs
+        self.assertEqual(kwargs["KeyConditionExpression"], "pk = :pk")
+        self.assertEqual(kwargs["ExpressionAttributeValues"], {":pk": "abc"})
+        self.assertFalse(kwargs["ScanIndexForward"])
+
+    def test_raises_on_nonpositive_max_items(self):
+        fake_table = MagicMock()
+
+        with self.assertRaises(ValueError):
+            client_mod.query_limited(fake_table, 0)
+        with self.assertRaises(ValueError):
+            client_mod.query_limited(fake_table, -3)
+        fake_table.query.assert_not_called()
+
+
 class BotoConstructionTest(TestCase):
     """Verify the cached path actually invokes boto3 when cache is empty."""
 

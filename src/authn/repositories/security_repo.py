@@ -18,7 +18,7 @@ from boto3.dynamodb.conditions import Attr, Key
 from django.utils import timezone
 
 from authn.session_revocation import SESSION_REVOCATION_MATCH_WINDOW_SECONDS
-from core.dynamodb.client import get_table, query_all
+from core.dynamodb.client import get_table, query_limited
 
 
 def _now_iso() -> str:
@@ -269,11 +269,9 @@ class SecurityRepository:
         else:
             key_expr = Key("pk").eq(f"AUDIT#{username}") & Key("sk").begins_with("LOG#")
 
-        kwargs = {
-            "KeyConditionExpression": key_expr,
-            "ScanIndexForward": False,
-            "Limit": limit,
-        }
-
-        items = query_all(_table(), **kwargs)
-        return items[:limit]
+        return query_limited(
+            _table(),
+            limit,
+            KeyConditionExpression=key_expr,
+            ScanIndexForward=False,
+        )
