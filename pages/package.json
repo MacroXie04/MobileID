@@ -12,7 +12,8 @@
     "test": "vitest",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:ci": "playwright test --reporter=list"
+    "test:e2e:ci": "playwright test --reporter=list",
+    "test:e2e:preview": "playwright test --config=playwright.preview.config.ts"
   },
   "dependencies": {
     "@fontsource/material-symbols-outlined": "^5.2.39",
@@ -24,9 +25,7 @@
     "@tensorflow/tfjs": "^4.22.0",
     "@zxing/library": "^0.21.3",
     "axios": "^1.13.6",
-    "bootstrap": "^5.3.7",
     "cropperjs": "^1.6.1",
-    "jwt-decode": "^4.0.0",
     "vue": "^3.5.31",
     "vue-router": "^5.0.4"
   },

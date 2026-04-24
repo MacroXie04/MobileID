@@ -50,7 +50,6 @@ export default defineConfig(({ mode }) => ({
             '@material/web/switch/switch.js',
             '@material/web/textfield/outlined-text-field.js',
           ],
-          'vendor-cropper': ['cropperjs'],
         },
       },
     },

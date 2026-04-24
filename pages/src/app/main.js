@@ -12,15 +12,15 @@ import '@shared/styles/tokens.css';
 import '@shared/material-web.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
 
-// Local fonts (replace Google Fonts CDN)
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
-import '@fontsource/open-sans/400.css';
-import '@fontsource/open-sans/600.css';
-import '@fontsource/roboto-mono/400.css';
-// Optional: Material Symbols Outlined as local font (if <md-icon> uses glyphs)
-import '@fontsource/material-symbols-outlined/400.css';
+// Local fonts (replace Google Fonts CDN) — latin subset only; UI is English-only
+import '@fontsource/roboto/latin-400.css';
+import '@fontsource/roboto/latin-500.css';
+import '@fontsource/roboto/latin-700.css';
+import '@fontsource/open-sans/latin-400.css';
+import '@fontsource/open-sans/latin-600.css';
+import '@fontsource/roboto-mono/latin-400.css';
+// Material Symbols Outlined (latin-only; used by <md-icon>)
+import '@fontsource/material-symbols-outlined/latin-400.css';
 
 const app = createApp(App);
 

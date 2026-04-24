@@ -1,5 +1,5 @@
 from datetime import timedelta
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -225,3 +225,151 @@ class BarcodePullBasicTest(BarcodePullTestBase):
 
         self.assertEqual(result["status"], "success")
         self.assertIn("male_alt2_shareable", result["barcode"])
+
+
+class BarcodeRepositoryBoundedSharedReadTest(TestCase):
+    def test_get_pull_candidates_stops_after_limit_and_preserves_filters(self):
+        cutoff = "2026-04-23T00:05:00+00:00"
+        eligible_1 = {
+            "user_id": "20",
+            "barcode_uuid": "eligible-1",
+            "share_with_others": True,
+            "profile_gender": "Male",
+        }
+        private = {
+            "user_id": "21",
+            "barcode_uuid": "private",
+            "share_with_others": False,
+            "profile_gender": "Male",
+        }
+        wrong_gender = {
+            "user_id": "22",
+            "barcode_uuid": "wrong-gender",
+            "share_with_others": True,
+            "profile_gender": "Female",
+        }
+        recent = {
+            "user_id": "23",
+            "barcode_uuid": "recent",
+            "share_with_others": True,
+            "profile_gender": "Male",
+            "last_used": "2026-04-23T00:06:00+00:00",
+        }
+        self_owned = {
+            "user_id": "10",
+            "barcode_uuid": "self-owned",
+            "share_with_others": True,
+            "profile_gender": "Male",
+        }
+        eligible_2 = {
+            "user_id": "24",
+            "barcode_uuid": "eligible-2",
+            "share_with_others": True,
+            "profile_gender": "Male",
+        }
+        eligible_3 = {
+            "user_id": "25",
+            "barcode_uuid": "eligible-3",
+            "share_with_others": True,
+            "profile_gender": "Male",
+        }
+
+        fake_table = MagicMock()
+        fake_table.query.side_effect = [
+            {
+                "Items": [eligible_1, private, wrong_gender],
+                "LastEvaluatedKey": {"page": 1},
+            },
+            {
+                "Items": [recent, self_owned, eligible_2],
+                "LastEvaluatedKey": {"page": 2},
+            },
+            {"Items": [eligible_3]},
+        ]
+
+        with patch("index.repositories.barcode_repo._table", return_value=fake_table):
+            candidates = BarcodeRepository.get_pull_candidates(
+                gender_setting="Male",
+                exclude_user_id=10,
+                cooldown_cutoff=cutoff,
+                limit=2,
+                page_size=3,
+            )
+
+        self.assertEqual(
+            [item["barcode_uuid"] for item in candidates],
+            ["eligible-1", "eligible-2"],
+        )
+        self.assertEqual(fake_table.query.call_count, 2)
+        self.assertEqual(fake_table.query.call_args_list[0].kwargs["Limit"], 3)
+        self.assertEqual(
+            fake_table.query.call_args_list[1].kwargs["ExclusiveStartKey"],
+            {"page": 1},
+        )
+
+    def test_dashboard_barcodes_caps_shared_pages_and_deduplicates(self):
+        own_dynamic = {
+            "user_id": "10",
+            "barcode_uuid": "own-dynamic",
+            "share_with_others": True,
+            "time_created": "2026-04-23T00:05:00+00:00",
+        }
+        own_static = {
+            "user_id": "10",
+            "barcode_uuid": "own-static",
+            "share_with_others": False,
+            "time_created": "2026-04-23T00:04:00+00:00",
+        }
+        shared_1 = {
+            "user_id": "20",
+            "barcode_uuid": "shared-1",
+            "share_with_others": True,
+            "time_created": "2026-04-23T00:03:00+00:00",
+        }
+        shared_2 = {
+            "user_id": "21",
+            "barcode_uuid": "shared-2",
+            "share_with_others": True,
+            "time_created": "2026-04-23T00:02:00+00:00",
+        }
+        shared_3 = {
+            "user_id": "22",
+            "barcode_uuid": "shared-3",
+            "share_with_others": True,
+            "time_created": "2026-04-23T00:01:00+00:00",
+        }
+
+        fake_table = MagicMock()
+        fake_table.query.side_effect = [
+            {
+                "Items": [own_dynamic, shared_1],
+                "LastEvaluatedKey": {"page": 1},
+            },
+            {
+                "Items": [shared_2],
+                "LastEvaluatedKey": {"page": 2},
+            },
+            {"Items": [shared_3]},
+        ]
+
+        with (
+            patch("index.repositories.barcode_repo._table", return_value=fake_table),
+            patch(
+                "index.repositories.barcode_repo.query_all",
+                return_value=[own_dynamic, own_static],
+            ),
+        ):
+            barcodes = BarcodeRepository.get_dashboard_barcodes(
+                user_id=10,
+                shared_limit=2,
+                shared_page_size=2,
+            )
+
+        uuids = [item["barcode_uuid"] for item in barcodes]
+        self.assertEqual(fake_table.query.call_count, 2)
+        self.assertEqual(len(uuids), len(set(uuids)))
+        self.assertIn("own-dynamic", uuids)
+        self.assertIn("own-static", uuids)
+        self.assertIn("shared-1", uuids)
+        self.assertIn("shared-2", uuids)
+        self.assertNotIn("shared-3", uuids)

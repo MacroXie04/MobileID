@@ -1,6 +1,16 @@
 import { nextTick, onUnmounted, ref } from 'vue';
-import Cropper from 'cropperjs';
-import 'cropperjs/dist/cropper.css';
+
+let cropperModulePromise = null;
+
+function loadCropperModule() {
+  if (!cropperModulePromise) {
+    cropperModulePromise = Promise.all([
+      import('cropperjs'),
+      import('cropperjs/dist/cropper.css'),
+    ]).then(([mod]) => mod.default);
+  }
+  return cropperModulePromise;
+}
 
 /**
  * Composable for handling image cropping functionality
@@ -38,7 +48,7 @@ export function useImageCropper(options = {}) {
     cropperLoading.value = true;
     tempImageUrl.value = imageUrl;
 
-    await nextTick();
+    const [Cropper] = await Promise.all([loadCropperModule(), nextTick()]);
 
     if (!cropperImage.value || !tempImageUrl.value) return;
 

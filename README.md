@@ -93,16 +93,15 @@ yarn test:e2e:ci
 
 ## CI
 
-`pipeline.yml` is the active workflow. It currently runs:
+`pipeline.yml` is the active workflow. It runs:
 
-- backend lint
-- frontend lint
+- backend lint (Black, Flake8, Ruff) and frontend lint (Prettier, ESLint) in parallel
 - migration file guard on pull requests
-- Django migration checks
-- Django tests with coverage
-- frontend unit and Playwright e2e tests
-- backend Docker build
-- follow-on security scans on the main branch
+- Django migration checks and Django tests with coverage (`--fail-under=70`)
+- frontend unit tests and Playwright E2E tests
+- backend Docker build and frontend Vite build
+- dependency and image security scans: Safety, Yarn audit, Trivy
+- a `Pipeline Passed` summary gate that fails if any required job — build, test, or security — does not succeed
 
 ## Configuration Notes
 
