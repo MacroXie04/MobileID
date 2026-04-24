@@ -291,8 +291,7 @@ describe('useUserInfo', () => {
         profile: { name: 'Fresh', information_id: 'F-1' },
       });
 
-      const { loadUserProfile, clearUserProfile, profile, isLoaded, avatarSrc } =
-        useUserInfo();
+      const { loadUserProfile, clearUserProfile, profile, isLoaded, avatarSrc } = useUserInfo();
       await loadUserProfile();
       const createdUrl = avatarSrc.value;
 

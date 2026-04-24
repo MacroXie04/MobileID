@@ -12,7 +12,6 @@ worth pinning down explicitly.
 """
 
 from datetime import timedelta
-from decimal import Decimal
 
 from django.test import TestCase
 from django.utils import timezone
@@ -27,7 +26,9 @@ class BlacklistOperationsTests(DynamoDBCleanupMixin, TestCase):
 
     def test_is_blacklisted_returns_true_after_blacklist(self):
         expires = timezone.now() + timedelta(hours=1)
-        SecurityRepository.blacklist_token("jti-abc-123", user_id=42, expires_at=expires)
+        SecurityRepository.blacklist_token(
+            "jti-abc-123", user_id=42, expires_at=expires
+        )
         self.assertTrue(SecurityRepository.is_blacklisted("jti-abc-123"))
 
     def test_blacklist_token_is_idempotent(self):
@@ -100,7 +101,9 @@ class FailedLoginAttemptTests(DynamoDBCleanupMixin, TestCase):
         self.assertIsNone(SecurityRepository.get_failed_attempt("nobody"))
 
     def test_increment_creates_new_record_on_first_attempt(self):
-        item = SecurityRepository.increment_failed_attempt("alice", ip_address="10.0.0.1")
+        item = SecurityRepository.increment_failed_attempt(
+            "alice", ip_address="10.0.0.1"
+        )
         self.assertEqual(int(item["attempt_count"]), 1)
         self.assertEqual(item["username"], "alice")
         self.assertEqual(item["ip_address"], "10.0.0.1")
@@ -203,9 +206,15 @@ class LoginAuditLogTests(DynamoDBCleanupMixin, TestCase):
         self.assertEqual(SecurityRepository.get_audit_logs_for_user("ghost"), [])
 
     def test_get_audit_logs_returns_most_recent_first(self):
-        SecurityRepository.create_audit_log(username="alice", success=True, reason="one")
-        SecurityRepository.create_audit_log(username="alice", success=True, reason="two")
-        SecurityRepository.create_audit_log(username="alice", success=True, reason="three")
+        SecurityRepository.create_audit_log(
+            username="alice", success=True, reason="one"
+        )
+        SecurityRepository.create_audit_log(
+            username="alice", success=True, reason="two"
+        )
+        SecurityRepository.create_audit_log(
+            username="alice", success=True, reason="three"
+        )
 
         logs = SecurityRepository.get_audit_logs_for_user("alice")
         self.assertEqual(len(logs), 3)

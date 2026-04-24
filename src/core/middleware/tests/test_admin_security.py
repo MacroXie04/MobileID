@@ -86,9 +86,7 @@ class AdminIPWhitelistMiddlewareTest(SimpleTestCase):
 
     def test_blocks_nested_admin_paths(self):
         mw = self._middleware()
-        response = mw(
-            RequestFactory().get("/admin/login/", REMOTE_ADDR="1.2.3.4")
-        )
+        response = mw(RequestFactory().get("/admin/login/", REMOTE_ADDR="1.2.3.4"))
         self.assertEqual(response.status_code, 403)
 
 
@@ -220,18 +218,14 @@ class AdminLoginThrottleMiddlewareTest(TestCase):
     def test_allows_under_threshold(self):
         mw = AdminLoginThrottleMiddleware(_ok_response)
         for _ in range(2):
-            response = mw(
-                RequestFactory().post("/admin/login/", REMOTE_ADDR="1.2.3.4")
-            )
+            response = mw(RequestFactory().post("/admin/login/", REMOTE_ADDR="1.2.3.4"))
             self.assertEqual(response.status_code, 200)
 
     def test_throttles_when_threshold_exceeded(self):
         mw = AdminLoginThrottleMiddleware(_ok_response)
         for _ in range(2):
             mw(RequestFactory().post("/admin/login/", REMOTE_ADDR="1.2.3.4"))
-        response = mw(
-            RequestFactory().post("/admin/login/", REMOTE_ADDR="1.2.3.4")
-        )
+        response = mw(RequestFactory().post("/admin/login/", REMOTE_ADDR="1.2.3.4"))
         self.assertEqual(response.status_code, 429)
 
     def test_throttle_is_per_ip(self):
@@ -240,9 +234,7 @@ class AdminLoginThrottleMiddlewareTest(TestCase):
         for _ in range(2):
             mw(RequestFactory().post("/admin/login/", REMOTE_ADDR="1.2.3.4"))
         # A different IP should still be allowed
-        response = mw(
-            RequestFactory().post("/admin/login/", REMOTE_ADDR="5.6.7.8")
-        )
+        response = mw(RequestFactory().post("/admin/login/", REMOTE_ADDR="5.6.7.8"))
         self.assertEqual(response.status_code, 200)
 
     def test_missing_client_ip_is_not_throttled(self):

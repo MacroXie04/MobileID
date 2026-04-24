@@ -10,7 +10,6 @@ from django.test import SimpleTestCase
 
 from index.services.transfer import TransferBarcodeParser
 
-
 FULL_HTML = """
 <div>
   <h4 class="white-h4" style="margin-top:10px;">  Alice Example  </h4>
