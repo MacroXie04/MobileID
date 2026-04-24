@@ -9,9 +9,7 @@ test.describe('Auth guard redirects', () => {
   test('unauthenticated /dashboard is redirected to /login', async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForURL((url) => url.pathname === '/login');
-    await expect(
-      page.getByRole('button', { name: 'Sign In', exact: true })
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign In', exact: true })).toBeVisible();
   });
 
   test('unknown route falls through / catch-all to /login', async ({ page }) => {

@@ -10,12 +10,8 @@ test.describe('Dashboard for activated users', () => {
   test('activated user reaches /dashboard', async ({ page }) => {
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(
-      page.getByRole('heading', { name: 'MobileID Dashboard', level: 3 })
-    ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: /back to home/i })
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'MobileID Dashboard', level: 3 })).toBeVisible();
+    await expect(page.getByRole('button', { name: /back to home/i })).toBeVisible();
   });
 
   test('activated user visiting /pending bounces to /', async ({ page }) => {

@@ -46,19 +46,14 @@ export async function mockUnauthenticated(page: Page): Promise<void> {
   await mockHealth(page);
   await mockCsrf(page);
   await page.route('**/authn/user_info/', async (route) =>
-    route.fulfill(
-      jsonResponse(401, { detail: 'Authentication credentials were not provided.' })
-    )
+    route.fulfill(jsonResponse(401, { detail: 'Authentication credentials were not provided.' }))
   );
   await page.route('**/authn/token/refresh/', async (route) =>
     route.fulfill(jsonResponse(401, { detail: 'Token invalid' }))
   );
 }
 
-export async function mockAuthenticated(
-  page: Page,
-  user: Partial<MockUser> = {}
-): Promise<void> {
+export async function mockAuthenticated(page: Page, user: Partial<MockUser> = {}): Promise<void> {
   const merged = { ...DEFAULT_USER, ...user };
   await mockHealth(page);
   await mockCsrf(page);

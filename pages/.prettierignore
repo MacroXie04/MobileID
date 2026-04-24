@@ -1,2 +1,4 @@
 **/*.css
 dist
+test-results
+playwright-report
