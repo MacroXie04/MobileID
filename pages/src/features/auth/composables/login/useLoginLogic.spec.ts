@@ -20,7 +20,7 @@ vi.mock('vue-router', () => ({
 }));
 
 // Import after mocks are registered.
-import { useLoginLogic } from '@auth/composables/useLoginLogic';
+import { useLoginLogic } from '@auth/composables/login/useLoginLogic';
 import { ApiError } from '@shared/api/client';
 
 function fillCreds(login) {

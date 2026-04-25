@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { useRegisterValidation } from '@auth/composables/useRegisterValidation';
+import { useRegisterValidation } from '@auth/composables/register/useRegisterValidation';
 
 describe('useRegisterValidation', () => {
   let validation;

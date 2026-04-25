@@ -32,7 +32,7 @@ vi.mock('@profile', () => ({
   clearUserProfile: vi.fn(),
 }));
 
-import { useToken } from '@auth/composables/useToken';
+import { useToken } from '@auth/composables/token/useToken';
 
 describe('useToken', () => {
   beforeEach(() => {

@@ -2,7 +2,7 @@ import { getCookie } from '@shared/utils/cookie';
 import { baseURL } from '@shared/config/config';
 import { useServerWakeup } from '@shared/composables/api/useServerWakeup';
 import { ensureCsrfToken } from '@shared/api/csrf';
-import { useToken } from '@auth/composables/useToken';
+import { useToken } from '@auth/composables/token/useToken';
 
 export interface AuthenticatedRequestOptions extends RequestInit {
   timeoutMs?: number;

@@ -1,6 +1,6 @@
 import { onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useRegisterValidation } from '@auth/composables/useRegisterValidation';
+import { useRegisterValidation } from '@auth/composables/register/useRegisterValidation';
 import { useRegisterAvatar } from '@auth/composables/register/useRegisterAvatar';
 import { useRegisterSubmit } from '@auth/composables/register/useRegisterSubmit';
 

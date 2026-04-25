@@ -15,7 +15,7 @@ vi.mock('@shared/utils/cookie', () => ({
 const mockCheckAuthenticationError = vi.fn();
 const mockRefreshToken = vi.fn();
 const mockHandleTokenExpired = vi.fn();
-vi.mock('@auth/composables/useToken', () => ({
+vi.mock('@auth/composables/token/useToken', () => ({
   useToken: () => ({
     checkAuthenticationError: mockCheckAuthenticationError,
     refreshToken: mockRefreshToken,

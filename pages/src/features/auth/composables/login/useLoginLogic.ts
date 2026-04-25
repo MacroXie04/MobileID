@@ -3,7 +3,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { establishAuthenticatedSession, login } from '@auth';
 import { ApiError } from '@shared/api/client';
 import { setUserInfo } from '@auth';
-import { useLoginValidation } from '@auth/composables/useLoginValidation';
+import { useLoginValidation } from '@auth/composables/login/useLoginValidation';
 
 export function useLoginLogic() {
   const router = useRouter();
