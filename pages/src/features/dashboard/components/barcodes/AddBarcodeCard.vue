@@ -288,12 +288,12 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   emitsDefinition,
   propsDefinition,
   useAddBarcodeCardSetup,
-} from './AddBarcodeCard.setup.js';
+} from './AddBarcodeCard.setup';
 
 defineProps(propsDefinition);
 const emit = defineEmits(emitsDefinition);

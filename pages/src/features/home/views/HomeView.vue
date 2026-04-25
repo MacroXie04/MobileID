@@ -64,14 +64,14 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   Header,
   UserProfile,
   BarcodeDisplay,
   GridMenu,
   useHomeViewSetup,
-} from './HomeView.setup.js';
+} from './HomeView.setup';
 
 const {
   pageLoading,

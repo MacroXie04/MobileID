@@ -230,8 +230,8 @@
   </md-dialog>
 </template>
 
-<script setup>
-import { useRegisterViewSetup } from './RegisterView.setup.js';
+<script setup lang="ts">
+import { useRegisterViewSetup } from './RegisterView.setup';
 
 const {
   fileInput,

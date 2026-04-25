@@ -138,12 +138,12 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   propsDefinition,
   emitsDefinition,
   useCameraSettingsCardSetup,
-} from './CameraSettingsCard.setup.js';
+} from './CameraSettingsCard.setup';
 
 const props = defineProps(propsDefinition);
 defineEmits(emitsDefinition);

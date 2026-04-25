@@ -189,7 +189,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   SettingsCard,
   CameraSettingsCard,
@@ -198,7 +198,7 @@ import {
   DevicesCard,
   ProfileTabCard,
   useBarcodeDashboardViewSetup,
-} from './MobileIDDashboardView.setup.js';
+} from './MobileIDDashboardView.setup';
 
 const {
   router,

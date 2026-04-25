@@ -209,12 +209,12 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   emitsDefinition,
   propsDefinition,
   useBarcodesListCardSetup,
-} from './BarcodesListCard.setup.js';
+} from './BarcodesListCard.setup';
 
 defineProps(propsDefinition);
 defineEmits(emitsDefinition);

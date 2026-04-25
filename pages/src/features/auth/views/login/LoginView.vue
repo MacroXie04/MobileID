@@ -86,8 +86,8 @@
   </div>
 </template>
 
-<script setup>
-import { useLoginViewSetup } from './LoginView.setup.js';
+<script setup lang="ts">
+import { useLoginViewSetup } from './LoginView.setup';
 
 const {
   formData,

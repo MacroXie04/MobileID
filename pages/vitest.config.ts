@@ -22,9 +22,10 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
     exclude: ['tests/e2e/**', 'node_modules', 'dist', 'playwright-report'],
     coverage: {
+      provider: 'v8',
       reporter: ['text', 'html'],
       include: ['src/**/*.{js,jsx,ts,tsx,vue}'],
-      exclude: ['src/app/main.js', 'src/**/*.spec.{js,ts,jsx,tsx}', 'src/test/**'],
+      exclude: ['src/app/main.ts', 'src/**/*.spec.{js,ts,jsx,tsx}', 'src/test/**'],
     },
   },
 });

@@ -32,8 +32,8 @@
   </Teleport>
 </template>
 
-<script setup>
-import { useServerWakeupOverlaySetup } from './ServerWakeupOverlay.setup.js';
+<script setup lang="ts">
+import { useServerWakeupOverlaySetup } from './ServerWakeupOverlay.setup';
 
 const { isWakingUp, elapsedMs, errorMessage, formatElapsedTime } = useServerWakeupOverlaySetup();
 </script>
