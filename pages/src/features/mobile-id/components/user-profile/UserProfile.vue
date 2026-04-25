@@ -51,11 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  emitsDefinition,
-  propsDefinition,
-  useSchoolUserProfileSetup,
-} from './UserProfile.setup';
+import { emitsDefinition, propsDefinition, useSchoolUserProfileSetup } from './UserProfile.setup';
 
 const props = defineProps(propsDefinition);
 const emit = defineEmits(emitsDefinition);

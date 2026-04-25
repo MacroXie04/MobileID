@@ -1,10 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  clearAuthCookies,
-  clearAuthStorage,
-  getCookie,
-  hasAuthTokens,
-} from '@shared/utils/cookie';
+import { clearAuthCookies, clearAuthStorage, getCookie, hasAuthTokens } from '@shared/utils/cookie';
 
 const clearAllCookies = () => {
   document.cookie.split(';').forEach((cookie) => {

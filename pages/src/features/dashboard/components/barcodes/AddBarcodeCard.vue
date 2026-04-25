@@ -289,11 +289,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  emitsDefinition,
-  propsDefinition,
-  useAddBarcodeCardSetup,
-} from './AddBarcodeCard.setup';
+import { emitsDefinition, propsDefinition, useAddBarcodeCardSetup } from './AddBarcodeCard.setup';
 
 defineProps(propsDefinition);
 const emit = defineEmits(emitsDefinition);

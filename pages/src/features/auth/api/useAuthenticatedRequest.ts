@@ -92,7 +92,11 @@ export function useAuthenticatedRequest() {
       }
 
       if (!response.ok) {
-        const payload = data as { detail?: string; message?: string; errors?: Record<string, unknown> } | null;
+        const payload = data as {
+          detail?: string;
+          message?: string;
+          errors?: Record<string, unknown>;
+        } | null;
         const error = new Error(
           `API call failed: ${response.status} - ${payload?.detail || payload?.message || 'Unknown error'}`
         ) as AuthenticatedRequestError;

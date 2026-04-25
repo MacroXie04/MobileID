@@ -1,6 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
-import { getUserInfo, isUserInfoStale, refreshToken, setApiError, setUserInfo, userInfo } from '@auth';
+import {
+  getUserInfo,
+  isUserInfoStale,
+  refreshToken,
+  setApiError,
+  setUserInfo,
+  userInfo,
+} from '@auth';
 
 const routes: RouteRecordRaw[] = [
   {

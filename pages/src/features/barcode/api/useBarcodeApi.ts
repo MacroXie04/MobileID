@@ -64,16 +64,13 @@ export function useBarcodeApi() {
   }
 
   async function apiUpdateBarcodeShare(barcodeId: string | number, share: boolean) {
-    return apiCallWithAutoRefresh<BarcodeShareResponse>(
-      `${baseURL}/barcode_dashboard/`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({
-          barcode_id: barcodeId,
-          share_with_others: !!share,
-        }),
-      }
-    );
+    return apiCallWithAutoRefresh<BarcodeShareResponse>(`${baseURL}/barcode_dashboard/`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        barcode_id: barcodeId,
+        share_with_others: !!share,
+      }),
+    });
   }
 
   async function apiUpdateBarcodeDailyLimit(barcodeId: string | number, dailyLimit: number | null) {

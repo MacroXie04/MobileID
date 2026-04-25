@@ -19,9 +19,7 @@ const appLayerPattern = {
   message: 'Feature code must not depend on the app layer.',
 };
 const featureDeepImportPattern = (currentAlias) => ({
-  group: featureAliases
-    .filter((alias) => alias !== currentAlias)
-    .map((alias) => `${alias}/*`),
+  group: featureAliases.filter((alias) => alias !== currentAlias).map((alias) => `${alias}/*`),
   message:
     'Cross-feature imports must use the feature public entrypoint, for example @auth instead of @auth/...',
 });
@@ -101,7 +99,8 @@ export default [
                 ...featureAliases,
                 ...featureAliases.map((alias) => `${alias}/*`),
               ],
-              message: 'Shared code must remain domain-neutral; move feature-specific logic into a feature.',
+              message:
+                'Shared code must remain domain-neutral; move feature-specific logic into a feature.',
             },
           ],
         },

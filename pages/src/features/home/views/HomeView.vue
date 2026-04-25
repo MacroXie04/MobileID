@@ -65,13 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  Header,
-  UserProfile,
-  BarcodeDisplay,
-  GridMenu,
-  useHomeViewSetup,
-} from './HomeView.setup';
+import { Header, UserProfile, BarcodeDisplay, GridMenu, useHomeViewSetup } from './HomeView.setup';
 
 const {
   pageLoading,

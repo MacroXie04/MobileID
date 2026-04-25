@@ -40,7 +40,7 @@ async function checkServerHealth(timeoutMs = HEALTH_CHECK_TIMEOUT_MS): Promise<b
       return data.status === 'healthy';
     }
     return false;
-    } catch (error) {
+  } catch (error) {
     clearTimeout(timeoutId);
 
     const err = error as Error;

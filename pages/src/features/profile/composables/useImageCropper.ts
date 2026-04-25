@@ -1,16 +1,16 @@
 import { nextTick, onUnmounted, ref } from 'vue';
 
 type CropperInstance = any;
-type CropperConstructor = new (element: HTMLImageElement, options: Record<string, any>) => CropperInstance;
+type CropperConstructor = new (
+  element: HTMLImageElement,
+  options: Record<string, any>
+) => CropperInstance;
 
 let cropperModulePromise: Promise<CropperConstructor> | null = null;
 
 function loadCropperModule() {
   if (!cropperModulePromise) {
-    cropperModulePromise = Promise.all([
-      import('cropperjs'),
-      import('cropperjs/dist/cropper.css'),
-    ])
+    cropperModulePromise = Promise.all([import('cropperjs'), import('cropperjs/dist/cropper.css')])
       .then(([mod]) => mod.default as CropperConstructor)
       .catch((error) => {
         cropperModulePromise = null;

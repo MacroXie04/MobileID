@@ -1,9 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  checkAuthenticationError,
-  refreshToken,
-  isRefreshing,
-} from '@auth/api/tokenRefresh';
+import { checkAuthenticationError, refreshToken, isRefreshing } from '@auth/api/tokenRefresh';
 
 // Mock dependencies
 vi.mock('@shared/config/config', () => ({
