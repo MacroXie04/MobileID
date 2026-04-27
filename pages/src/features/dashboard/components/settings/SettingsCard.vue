@@ -202,8 +202,8 @@
   </section>
 </template>
 
-<script setup>
-import { emitsDefinition, propsDefinition, useSettingsCardSetup } from './SettingsCard.setup.js';
+<script setup lang="ts">
+import { emitsDefinition, propsDefinition, useSettingsCardSetup } from './SettingsCard.setup';
 
 const props = defineProps(propsDefinition);
 defineEmits(emitsDefinition);

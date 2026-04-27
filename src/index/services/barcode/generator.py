@@ -7,6 +7,10 @@ from index.repositories import (
     SettingsRepository,
     TransactionRepository,
 )
+from index.repositories.barcode_repo import (
+    PULL_CANDIDATE_LIMIT,
+    SHARED_DYNAMIC_QUERY_PAGE_SIZE,
+)
 from index.services.usage_limit import UsageLimitService
 
 from .constants import (
@@ -25,6 +29,7 @@ from .utils import _timestamp
 def generate_barcode(user) -> dict:
     """Generate or refresh a barcode for *user*."""
     result = RESULT_TEMPLATE.copy()
+    selected = None
 
     settings = SettingsRepository.get_or_create(user.id)
 
@@ -59,6 +64,8 @@ def generate_barcode(user) -> dict:
                 gender_setting=settings.get("pull_gender_setting", "Unknow"),
                 exclude_user_id=user.id,
                 cooldown_cutoff=cutoff_5m,
+                limit=PULL_CANDIDATE_LIMIT,
+                page_size=SHARED_DYNAMIC_QUERY_PAGE_SIZE,
             )
 
             if candidates:
@@ -70,6 +77,7 @@ def generate_barcode(user) -> dict:
         if candidate:
             SettingsRepository.set_active_barcode(user.id, candidate["barcode_uuid"])
             settings["active_barcode_uuid"] = candidate["barcode_uuid"]
+            selected = candidate
 
     # Use the user-selected barcode
     active_uuid = settings.get("active_barcode_uuid")
@@ -78,12 +86,15 @@ def generate_barcode(user) -> dict:
         result.update(status="error", message="No barcode selected.")
         return result
 
-    # Look up the selected barcode
-    selected = None
-    user_barcodes = BarcodeRepository.get_user_barcodes(user.id)
-    selected = next(
-        (b for b in user_barcodes if b["barcode_uuid"] == active_uuid), None
-    )
+    # Look up the selected barcode unless pull logic already selected it.
+    if selected and selected.get("barcode_uuid") != active_uuid:
+        selected = None
+
+    if not selected:
+        user_barcodes = BarcodeRepository.get_user_barcodes(user.id)
+        selected = next(
+            (b for b in user_barcodes if b["barcode_uuid"] == active_uuid), None
+        )
     if not selected:
         # Could be a shared barcode from another user
         shared = BarcodeRepository.get_shared_dynamic_barcodes()

@@ -11,8 +11,8 @@
   </Teleport>
 </template>
 
-<script setup>
-import { useLoadingOverlaySetup } from './LoadingOverlay.setup.js';
+<script setup lang="ts">
+import { useLoadingOverlaySetup } from './LoadingOverlay.setup';
 
 const { isLoading, message } = useLoadingOverlaySetup();
 </script>

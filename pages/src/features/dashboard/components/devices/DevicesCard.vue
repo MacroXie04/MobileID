@@ -143,8 +143,8 @@
   </section>
 </template>
 
-<script setup>
-import { useDevicesCardSetup } from './DevicesCard.setup.js';
+<script setup lang="ts">
+import { useDevicesCardSetup } from './DevicesCard.setup';
 
 const {
   loading,

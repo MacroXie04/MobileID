@@ -23,10 +23,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { logout } from '@shared/api/auth';
-import '@/assets/styles/auth/auth-merged.css';
+import { logout } from '@auth';
+import '@auth/styles/auth.css';
 
 const router = useRouter();
 

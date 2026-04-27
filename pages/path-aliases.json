@@ -2,9 +2,10 @@
   "@": "./src",
   "@app": "./src/app",
   "@auth": "./src/features/auth",
+  "@barcode": "./src/features/barcode",
   "@dashboard": "./src/features/dashboard",
   "@home": "./src/features/home",
-  "@school": "./src/features/school",
-  "@user": "./src/features/user",
+  "@mobile-id": "./src/features/mobile-id",
+  "@profile": "./src/features/profile",
   "@shared": "./src/shared"
 }

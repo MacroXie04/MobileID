@@ -16,6 +16,10 @@ from django.utils import timezone
 
 from core.dynamodb.client import get_table, query_all
 
+SHARED_DYNAMIC_QUERY_PAGE_SIZE = 50
+DASHBOARD_SHARED_BARCODE_LIMIT = 100
+PULL_CANDIDATE_LIMIT = 25
+
 
 def _now_iso() -> str:
     return timezone.now().isoformat()
@@ -23,6 +27,90 @@ def _now_iso() -> str:
 
 def _table():
     return get_table("barcodes")
+
+
+def _shared_dynamic_item_matches(
+    item: dict,
+    *,
+    exclude_user_id: int = None,
+    gender_setting: str = None,
+    cooldown_cutoff: str = None,
+) -> bool:
+    """Mirror DynamoDB filters so tests and callers are protected from stale data."""
+    if not item.get("share_with_others", False):
+        return False
+
+    if exclude_user_id is not None and item.get("user_id") == str(exclude_user_id):
+        return False
+
+    if gender_setting is not None and item.get("profile_gender") != gender_setting:
+        return False
+
+    last_used = item.get("last_used")
+    if cooldown_cutoff is not None and last_used and last_used >= cooldown_cutoff:
+        return False
+
+    return True
+
+
+def _query_shared_dynamic_barcodes(
+    *,
+    exclude_user_id: int = None,
+    gender_setting: str = None,
+    cooldown_cutoff: str = None,
+    limit: int = None,
+    page_size: int = None,
+) -> list[dict]:
+    """
+    Query shared DynamicBarcodes and stop paginating after enough usable items.
+
+    DynamoDB applies FilterExpression after reading matching index rows, so this
+    helper also rechecks the filters in Python before counting an item toward the
+    caller's limit.
+    """
+    if limit is not None and limit <= 0:
+        return []
+
+    filter_expr = Attr("share_with_others").eq(True)
+    if exclude_user_id is not None:
+        filter_expr = filter_expr & Attr("user_id").ne(str(exclude_user_id))
+    if gender_setting is not None:
+        filter_expr = filter_expr & Attr("profile_gender").eq(gender_setting)
+    if cooldown_cutoff is not None:
+        filter_expr = filter_expr & (
+            Attr("last_used").not_exists() | Attr("last_used").lt(cooldown_cutoff)
+        )
+
+    query_kwargs = {
+        "IndexName": "SharedBarcodeTypeIndex",
+        "KeyConditionExpression": Key("barcode_type").eq("DynamicBarcode"),
+        "FilterExpression": filter_expr,
+        "ScanIndexForward": False,
+    }
+    if page_size:
+        query_kwargs["Limit"] = page_size
+
+    table = _table()
+    items = []
+    while True:
+        resp = table.query(**query_kwargs)
+        for item in resp.get("Items", []):
+            if not _shared_dynamic_item_matches(
+                item,
+                exclude_user_id=exclude_user_id,
+                gender_setting=gender_setting,
+                cooldown_cutoff=cooldown_cutoff,
+            ):
+                continue
+
+            items.append(item)
+            if limit is not None and len(items) >= limit:
+                return items
+
+        last_key = resp.get("LastEvaluatedKey")
+        if not last_key:
+            return items
+        query_kwargs["ExclusiveStartKey"] = last_key
 
 
 class BarcodeRepository:
@@ -87,21 +175,24 @@ class BarcodeRepository:
         )
 
     @staticmethod
-    def get_shared_dynamic_barcodes(exclude_user_id: int = None) -> list[dict]:
+    def get_shared_dynamic_barcodes(
+        exclude_user_id: int = None,
+        limit: int = None,
+        page_size: int = None,
+    ) -> list[dict]:
         """GSI2 query: shared DynamicBarcodes for pull pool / dashboard."""
-        items = query_all(
-            _table(),
-            IndexName="SharedBarcodeTypeIndex",
-            KeyConditionExpression=Key("barcode_type").eq("DynamicBarcode"),
-            FilterExpression=Attr("share_with_others").eq(True),
-            ScanIndexForward=False,
+        return _query_shared_dynamic_barcodes(
+            exclude_user_id=exclude_user_id,
+            limit=limit,
+            page_size=page_size,
         )
-        if exclude_user_id is not None:
-            items = [i for i in items if i.get("user_id") != str(exclude_user_id)]
-        return items
 
     @staticmethod
-    def get_dashboard_barcodes(user_id: int) -> list[dict]:
+    def get_dashboard_barcodes(
+        user_id: int,
+        shared_limit: int = DASHBOARD_SHARED_BARCODE_LIMIT,
+        shared_page_size: int = SHARED_DYNAMIC_QUERY_PAGE_SIZE,
+    ) -> list[dict]:
         """
         Composite query replacing the complex Q() filter in retrieve.py.
 
@@ -116,16 +207,14 @@ class BarcodeRepository:
             KeyConditionExpression=Key("user_id").eq(user_id_str),
         )
 
-        # Query 2: Shared DynamicBarcodes (may include user's own)
-        shared = query_all(
-            _table(),
-            IndexName="SharedBarcodeTypeIndex",
-            KeyConditionExpression=Key("barcode_type").eq("DynamicBarcode"),
-            FilterExpression=Attr("share_with_others").eq(True),
-            ScanIndexForward=False,
+        # Query 2: Newest shared DynamicBarcodes from other users.
+        shared = BarcodeRepository.get_shared_dynamic_barcodes(
+            exclude_user_id=user_id,
+            limit=shared_limit,
+            page_size=shared_page_size,
         )
 
-        # Merge and deduplicate (user's own DynamicBarcodes may appear in both)
+        # Merge and deduplicate defensively.
         seen = set()
         merged = []
         for item in own + shared:
@@ -143,6 +232,8 @@ class BarcodeRepository:
         gender_setting: str,
         exclude_user_id: int,
         cooldown_cutoff: str,
+        limit: int = None,
+        page_size: int = None,
     ) -> list[dict]:
         """
         Get barcode candidates for the pull pool.
@@ -150,34 +241,13 @@ class BarcodeRepository:
         Returns shared DynamicBarcodes matching gender from other users,
         excluding recently used ones (cooldown filter).
         """
-        # Get all shared DynamicBarcodes
-        all_shared = query_all(
-            _table(),
-            IndexName="SharedBarcodeTypeIndex",
-            KeyConditionExpression=Key("barcode_type").eq("DynamicBarcode"),
-            FilterExpression=Attr("share_with_others").eq(True),
-            ScanIndexForward=False,
+        return _query_shared_dynamic_barcodes(
+            exclude_user_id=exclude_user_id,
+            gender_setting=gender_setting,
+            cooldown_cutoff=cooldown_cutoff,
+            limit=limit,
+            page_size=page_size,
         )
-
-        exclude_str = str(exclude_user_id)
-        candidates = []
-        for item in all_shared:
-            # Exclude the requesting user's own barcodes
-            if item.get("user_id") == exclude_str:
-                continue
-
-            # Gender filter
-            if item.get("profile_gender") != gender_setting:
-                continue
-
-            # Usage cooldown filter
-            last_used = item.get("last_used")
-            if last_used and last_used >= cooldown_cutoff:
-                continue
-
-            candidates.append(item)
-
-        return candidates
 
     # ------------------------------------------------------------------
     # Write operations

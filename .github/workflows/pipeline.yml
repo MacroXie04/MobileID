@@ -244,6 +244,8 @@ jobs:
         run: yarn install --frozen-lockfile --network-timeout 120000
       - name: Build
         working-directory: ./pages
+        env:
+          VITE_API_BASE_URL: https://api.example.com
         run: yarn build
 
   # ── Stage 4: Security ──────────────────────────────────
@@ -423,15 +425,39 @@ jobs:
   pipeline-passed:
     name: Pipeline Passed
     if: always()
-    needs: [docker-build, frontend-build]
+    needs:
+      - docker-build
+      - frontend-build
+      - python-security
+      - nodejs-security
+      - docker-security
+      - migration-file-guard
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - name: Check results
+        env:
+          DOCKER_BUILD: ${{ needs.docker-build.result }}
+          FRONTEND_BUILD: ${{ needs.frontend-build.result }}
+          PYTHON_SECURITY: ${{ needs.python-security.result }}
+          NODEJS_SECURITY: ${{ needs.nodejs-security.result }}
+          DOCKER_SECURITY: ${{ needs.docker-security.result }}
+          MIGRATION_FILE_GUARD: ${{ needs.migration-file-guard.result }}
         run: |
-          if [ "${{ needs.docker-build.result }}" != "success" ] || \
-             [ "${{ needs.frontend-build.result }}" != "success" ]; then
-            echo "::error::Pipeline failed — check upstream jobs"
-            exit 1
+          fail=0
+          for name in DOCKER_BUILD FRONTEND_BUILD PYTHON_SECURITY NODEJS_SECURITY DOCKER_SECURITY; do
+            val="${!name}"
+            if [ "$val" != "success" ]; then
+              echo "::error::$name = $val"
+              fail=1
+            fi
+          done
+          # migration-file-guard runs only on pull_request; "skipped" on push/workflow_dispatch is expected.
+          if [ "$MIGRATION_FILE_GUARD" != "success" ] && [ "$MIGRATION_FILE_GUARD" != "skipped" ]; then
+            echo "::error::MIGRATION_FILE_GUARD = $MIGRATION_FILE_GUARD"
+            fail=1
           fi
-          echo "All stages passed"
+          if [ "$fail" -eq 0 ]; then
+            echo "All required jobs passed"
+          fi
+          exit $fail

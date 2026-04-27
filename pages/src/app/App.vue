@@ -4,8 +4,8 @@
   <router-view />
 </template>
 
-<script setup>
-import { LoadingOverlay, ServerWakeupOverlay, useAppSetup } from './App.setup.js';
+<script setup lang="ts">
+import { LoadingOverlay, ServerWakeupOverlay, useAppSetup } from './App.setup';
 
 useAppSetup();
 </script>

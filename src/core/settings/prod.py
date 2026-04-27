@@ -192,10 +192,17 @@ LOGGING = {
     },
 }
 
-# Warn if production is using LocMemCache (cache won't be shared with >1 worker)
+# Warn if production is using LocMemCache. The cache backs DRF throttle
+# counters and the AdminLoginThrottleMiddleware, so with >1 Gunicorn worker
+# LocMemCache means each worker has its own counters and login rate limits
+# are effectively multiplied by worker count.
 if CACHE_BACKEND == "django.core.cache.backends.locmem.LocMemCache":
     warnings.warn(
-        "Production is using LocMemCache. Throttle counters and session state "
-        "will not be shared across workers. Set CACHE_BACKEND to a shared backend.",
+        "Production is using LocMemCache. DRF throttle counters and "
+        "admin-login rate limits will NOT be shared across Gunicorn "
+        "workers. Configure a shared cache (Redis or Valkey) via:\n"
+        "    CACHE_BACKEND=django.core.cache.backends.redis.RedisCache\n"
+        "    CACHE_LOCATION=redis://<host>:6379/1\n"
+        "Valkey is wire-compatible with Redis; the same redis:// URL works.",
         stacklevel=1,
     )

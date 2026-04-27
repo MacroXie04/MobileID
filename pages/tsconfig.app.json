@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "useUnknownInCatchVariables": false,
+    "jsx": "preserve",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "allowJs": false,
+    "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@app/*": ["src/app/*"],
+      "@auth": ["src/features/auth/index.ts"],
+      "@auth/*": ["src/features/auth/*"],
+      "@barcode": ["src/features/barcode/index.ts"],
+      "@barcode/*": ["src/features/barcode/*"],
+      "@dashboard": ["src/features/dashboard/index.ts"],
+      "@dashboard/*": ["src/features/dashboard/*"],
+      "@home": ["src/features/home/index.ts"],
+      "@home/*": ["src/features/home/*"],
+      "@mobile-id": ["src/features/mobile-id/index.ts"],
+      "@mobile-id/*": ["src/features/mobile-id/*"],
+      "@profile": ["src/features/profile/index.ts"],
+      "@profile/*": ["src/features/profile/*"],
+      "@shared": ["src/shared/index.ts"],
+      "@shared/*": ["src/shared/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue"],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/test/**"]
+}
