@@ -1,6 +1,6 @@
 import logging
 
-from index.repositories import BarcodeRepository, SettingsRepository
+from index.repositories import SettingsRepository
 from index.services.barcode import generate_barcode
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -32,13 +32,7 @@ class ActiveProfileAPIView(APIView):
 
         active_uuid = settings.get("active_barcode_uuid")
         if settings.get("associate_user_profile_with_barcode") and active_uuid:
-            barcode = BarcodeRepository.get_by_uuid(request.user.id, active_uuid)
-            if not barcode:
-                # Could be a shared barcode from another user
-                shared = BarcodeRepository.get_shared_dynamic_barcodes()
-                barcode = next(
-                    (b for b in shared if b["barcode_uuid"] == active_uuid), None
-                )
+            barcode = SettingsRepository.get_active_barcode(request.user.id, settings)
 
             if barcode and barcode.get("profile_name"):
                 logger.info("BarcodeUserProfile found: %s", barcode.get("profile_name"))

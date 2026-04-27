@@ -80,6 +80,7 @@ python manage.py test -v 2
 black --check .
 flake8 .
 ruff check .
+bandit -r authn core index -x '*/tests/*,*/migrations/*' -ll
 ```
 
 Frontend:
@@ -100,7 +101,7 @@ yarn test:e2e:ci
 - Django migration checks and Django tests with coverage (`--fail-under=70`)
 - frontend unit tests and Playwright E2E tests
 - backend Docker build and frontend Vite build
-- dependency and image security scans: Safety, Yarn audit, Trivy
+- dependency, static-analysis, and image security scans: Safety, Bandit, Yarn audit, Trivy
 - a `Pipeline Passed` summary gate that fails if any required job — build, test, or security — does not succeed
 
 ## Configuration Notes
@@ -108,6 +109,9 @@ yarn test:e2e:ci
 - Backend environment examples live in `src/.env.example`.
 - The frontend base URL logic lives in `pages/src/app/config/config.js`.
 - SPA rewrites for Vercel are defined in `pages/vercel.json`.
+- Backend health endpoints are `GET /health/`, readiness `GET /readyz/`, and liveness `GET /livez/`.
+- The backend OpenAPI document is exposed at `GET /openapi.json`.
+- Production deployment and rollback notes live in `docs/RUNBOOK.md`.
 
 ## License
 

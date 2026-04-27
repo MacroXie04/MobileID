@@ -9,7 +9,7 @@ describe('useRegisterValidation', () => {
     validation = useRegisterValidation();
   });
 
-  it('allows a single-character password during registration', () => {
+  it('rejects a single-character password during registration', () => {
     const formData = {
       username: 'testuser',
       name: 'Test User',
@@ -19,8 +19,8 @@ describe('useRegisterValidation', () => {
 
     const isValid = validation.validateForm(formData);
 
-    expect(isValid).toBe(true);
-    expect(validation.errors.password1).toBeUndefined();
+    expect(isValid).toBe(false);
+    expect(validation.errors.password1).toBe('Password must be at least 10 characters');
     expect(validation.errors.password2).toBeUndefined();
   });
 

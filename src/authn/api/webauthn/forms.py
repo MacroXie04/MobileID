@@ -4,6 +4,7 @@ from io import BytesIO
 from PIL import Image
 from django import forms
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator
 from django.utils.translation import gettext_lazy as _
@@ -86,6 +87,13 @@ class UserRegisterForm(forms.Form):
                 "password2",
                 ValidationError(_("Passwords do not match"), code="password_mismatch"),
             )
+
+        if password1:
+            candidate_user = User(username=cleaned_data.get("username") or "")
+            try:
+                validate_password(password1, user=candidate_user)
+            except ValidationError as exc:
+                self.add_error("password1", exc)
 
         return cleaned_data
 

@@ -19,6 +19,11 @@ from core.dynamodb.client import get_table, query_all
 SHARED_DYNAMIC_QUERY_PAGE_SIZE = 50
 DASHBOARD_SHARED_BARCODE_LIMIT = 100
 PULL_CANDIDATE_LIMIT = 25
+UNIQUE_BARCODE_USER_ID = "__barcode_unique__"
+
+
+class DuplicateBarcodeError(ValueError):
+    """Raised when a barcode value already has a uniqueness lock."""
 
 
 def _now_iso() -> str:
@@ -27,6 +32,27 @@ def _now_iso() -> str:
 
 def _table():
     return get_table("barcodes")
+
+
+def _unique_lock_key(barcode_value: str) -> dict:
+    return {"user_id": UNIQUE_BARCODE_USER_ID, "barcode_uuid": str(barcode_value)}
+
+
+def _acquire_unique_barcode_lock(barcode_value: str) -> None:
+    try:
+        _table().put_item(
+            Item={
+                **_unique_lock_key(barcode_value),
+                "created_at": _now_iso(),
+            },
+            ConditionExpression=Attr("user_id").not_exists(),
+        )
+    except _table().meta.client.exceptions.ConditionalCheckFailedException as exc:
+        raise DuplicateBarcodeError("This barcode already exists") from exc
+
+
+def _release_unique_barcode_lock(barcode_value: str) -> None:
+    _table().delete_item(Key=_unique_lock_key(barcode_value))
 
 
 def _shared_dynamic_item_matches(
@@ -270,10 +296,10 @@ class BarcodeRepository:
         """
         Create a new barcode item.
 
-        Callers must check barcode_exists() beforehand to enforce value
-        uniqueness — DynamoDB GSIs do not enforce unique constraints.
-        A ConditionExpression on the primary key prevents duplicate items
-        for the same (user_id, barcode_uuid) pair.
+        A conditional lock item enforces barcode value uniqueness because DynamoDB
+        GSIs do not provide unique constraints. A ConditionExpression on the
+        primary key prevents duplicate items for the same (user_id, barcode_uuid)
+        pair.
         """
         bc_uuid = barcode_uuid or str(uuid.uuid4())
         now = time_created or _now_iso()
@@ -301,10 +327,15 @@ class BarcodeRepository:
         if profile_gender:
             item["profile_gender"] = profile_gender
 
-        _table().put_item(
-            Item=item,
-            ConditionExpression=Attr("user_id").not_exists(),
-        )
+        _acquire_unique_barcode_lock(barcode_value)
+        try:
+            _table().put_item(
+                Item=item,
+                ConditionExpression=Attr("user_id").not_exists(),
+            )
+        except Exception:
+            _release_unique_barcode_lock(barcode_value)
+            raise
         return item
 
     @staticmethod
@@ -336,9 +367,12 @@ class BarcodeRepository:
     @staticmethod
     def delete(user_id: int, barcode_uuid: str) -> bool:
         """Delete a barcode item."""
+        existing = BarcodeRepository.get_by_uuid(user_id, barcode_uuid)
         _table().delete_item(
             Key={"user_id": str(user_id), "barcode_uuid": str(barcode_uuid)}
         )
+        if existing and existing.get("barcode"):
+            _release_unique_barcode_lock(existing["barcode"])
         return True
 
     @staticmethod

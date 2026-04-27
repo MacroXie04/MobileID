@@ -102,6 +102,7 @@ STATICFILES_FINDERS = [
 MIDDLEWARE = [
     # CORS middleware must be placed before Django's security middleware
     "corsheaders.middleware.CorsMiddleware",
+    "core.middleware.request_id.RequestIdMiddleware",
     # Default Django middleware
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",

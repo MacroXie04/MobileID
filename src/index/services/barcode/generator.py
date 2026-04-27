@@ -75,8 +75,13 @@ def generate_barcode(user) -> dict:
 
         # 3. Apply selection
         if candidate:
-            SettingsRepository.set_active_barcode(user.id, candidate["barcode_uuid"])
+            SettingsRepository.set_active_barcode(
+                user.id,
+                candidate["barcode_uuid"],
+                owner_user_id=candidate.get("user_id"),
+            )
             settings["active_barcode_uuid"] = candidate["barcode_uuid"]
+            settings["active_barcode_owner_id"] = str(candidate.get("user_id"))
             selected = candidate
 
     # Use the user-selected barcode
@@ -91,14 +96,7 @@ def generate_barcode(user) -> dict:
         selected = None
 
     if not selected:
-        user_barcodes = BarcodeRepository.get_user_barcodes(user.id)
-        selected = next(
-            (b for b in user_barcodes if b["barcode_uuid"] == active_uuid), None
-        )
-    if not selected:
-        # Could be a shared barcode from another user
-        shared = BarcodeRepository.get_shared_dynamic_barcodes()
-        selected = next((b for b in shared if b["barcode_uuid"] == active_uuid), None)
+        selected = SettingsRepository.get_active_barcode(user.id, settings)
 
     if not selected:
         result.update(status="error", message="No barcode selected.")

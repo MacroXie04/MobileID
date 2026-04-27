@@ -51,6 +51,8 @@ export function useRegisterValidation() {
       case 'password1':
         if (!formData.password1) {
           errors.password1 = 'Password is required';
+        } else if (formData.password1.length < 10) {
+          errors.password1 = 'Password must be at least 10 characters';
         }
         break;
 

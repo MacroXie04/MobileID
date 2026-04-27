@@ -41,6 +41,35 @@ class URLConfigurationTest(TestCase):
         resolver_match = resolve(url)
         self.assertEqual(resolver_match.url_name, "health_check")
 
+    def test_readiness_url_resolves(self):
+        """Test that readiness URL resolves correctly"""
+        url = reverse("readiness_check")
+        self.assertEqual(url, "/readyz/")
+        resolver_match = resolve(url)
+        self.assertEqual(resolver_match.url_name, "readiness_check")
+
+    def test_liveness_url_resolves(self):
+        """Test that liveness URL resolves correctly"""
+        url = reverse("liveness_check")
+        self.assertEqual(url, "/livez/")
+        resolver_match = resolve(url)
+        self.assertEqual(resolver_match.url_name, "liveness_check")
+
+    def test_openapi_schema_url_resolves(self):
+        """Test that OpenAPI schema URL resolves correctly"""
+        url = reverse("openapi_schema")
+        self.assertEqual(url, "/openapi.json")
+        resolver_match = resolve(url)
+        self.assertEqual(resolver_match.url_name, "openapi_schema")
+
+    def test_openapi_schema_returns_document(self):
+        """Test that OpenAPI schema endpoint returns a JSON document"""
+        response = self.client.get(reverse("openapi_schema"))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("openapi", data)
+        self.assertIn("paths", data)
+
     def test_authn_urls_included(self):
         """Test that authentication URLs are included"""
         # Test login endpoint

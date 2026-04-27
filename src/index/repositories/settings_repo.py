@@ -22,6 +22,7 @@ _DEFAULTS = {
     "pull_setting": "Disable",
     "pull_gender_setting": "Unknow",
     "barcode_pull_gender_setting": "Unknow",
+    "active_barcode_owner_id": None,
 }
 
 
@@ -104,13 +105,81 @@ class SettingsRepository:
         return resp.get("Attributes", {})
 
     @staticmethod
-    def set_active_barcode(user_id: int, barcode_uuid: str = None) -> dict:
+    def set_active_barcode(
+        user_id: int, barcode_uuid: str = None, owner_user_id: int | str = None
+    ) -> dict:
         """Set or clear the active barcode."""
         if barcode_uuid:
+            updates = {"active_barcode_uuid": str(barcode_uuid)}
+            if owner_user_id is not None:
+                updates["active_barcode_owner_id"] = str(owner_user_id)
+            else:
+                updates["active_barcode_owner_id"] = str(user_id)
+            return SettingsRepository.update(user_id, **updates)
+        return SettingsRepository.update(
+            user_id, active_barcode_uuid=None, active_barcode_owner_id=None
+        )
+
+    @staticmethod
+    def get_active_barcode(user_id: int, settings: dict) -> Optional[dict]:
+        """Resolve the active barcode using stored owner metadata when present."""
+        from index.repositories.barcode_repo import (
+            DASHBOARD_SHARED_BARCODE_LIMIT,
+            SHARED_DYNAMIC_QUERY_PAGE_SIZE,
+            BarcodeRepository,
+        )
+
+        barcode_uuid = settings.get("active_barcode_uuid")
+        if not barcode_uuid:
+            return None
+
+        owner_id = settings.get("active_barcode_owner_id") or user_id
+        barcode = BarcodeRepository.get_by_uuid(owner_id, barcode_uuid)
+        if barcode:
+            return barcode
+
+        if settings.get("active_barcode_owner_id"):
+            return None
+
+        # Legacy settings may only contain the UUID. Search a bounded slice of
+        # the shared pool as a compatibility fallback, then persist owner context
+        # if the active shared barcode is found.
+        for shared in BarcodeRepository.get_shared_dynamic_barcodes(
+            limit=DASHBOARD_SHARED_BARCODE_LIMIT,
+            page_size=SHARED_DYNAMIC_QUERY_PAGE_SIZE,
+        ):
+            if shared.get("barcode_uuid") == barcode_uuid:
+                SettingsRepository.set_active_barcode(
+                    user_id,
+                    barcode_uuid,
+                    owner_user_id=shared.get("user_id"),
+                )
+                return shared
+        return None
+
+    @staticmethod
+    def set_active_barcode_owner(
+        user_id: int, barcode_uuid: str, owner_user_id
+    ) -> dict:
+        """Backfill active barcode owner metadata after validation."""
+        if not barcode_uuid:
+            return SettingsRepository.set_active_barcode(user_id, None)
+        return SettingsRepository.update(
+            user_id,
+            active_barcode_uuid=str(barcode_uuid),
+            active_barcode_owner_id=str(owner_user_id),
+        )
+
+    @staticmethod
+    def set_active_own_barcode(user_id: int, barcode_uuid: str = None) -> dict:
+        """Set an active barcode owned by the same user."""
+        if barcode_uuid:
             return SettingsRepository.update(
-                user_id, active_barcode_uuid=str(barcode_uuid)
+                user_id,
+                active_barcode_uuid=str(barcode_uuid),
+                active_barcode_owner_id=str(user_id),
             )
-        return SettingsRepository.update(user_id, active_barcode_uuid=None)
+        return SettingsRepository.set_active_barcode(user_id, None)
 
     @staticmethod
     def clear_barcode_if_matches(user_id: int, barcode_uuid: str) -> bool:
@@ -125,9 +194,12 @@ class SettingsRepository:
         try:
             _table().update_item(
                 Key={"user_id": str(user_id), "sk": "SETTINGS"},
-                UpdateExpression="REMOVE #abc",
+                UpdateExpression="REMOVE #abc, #owner",
                 ConditionExpression=Attr("active_barcode_uuid").eq(str(barcode_uuid)),
-                ExpressionAttributeNames={"#abc": "active_barcode_uuid"},
+                ExpressionAttributeNames={
+                    "#abc": "active_barcode_uuid",
+                    "#owner": "active_barcode_owner_id",
+                },
             )
             return True
         except _table().meta.client.exceptions.ConditionalCheckFailedException:

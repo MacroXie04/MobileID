@@ -29,6 +29,14 @@ DYNAMODB_WRITE_CAPACITY_UNITS = int(os.getenv("DYNAMODB_WRITE_CAPACITY_UNITS", "
 # Leave empty/unset for production (uses default AWS endpoint)
 DYNAMODB_ENDPOINT_URL = os.getenv("DYNAMODB_ENDPOINT_URL", "") or None
 
+# Client behavior. These defaults keep request latency bounded and let botocore
+# retry common transient DynamoDB throttling/network errors.
+DYNAMODB_CONNECT_TIMEOUT_SECONDS = float(
+    os.getenv("DYNAMODB_CONNECT_TIMEOUT_SECONDS", "2")
+)
+DYNAMODB_READ_TIMEOUT_SECONDS = float(os.getenv("DYNAMODB_READ_TIMEOUT_SECONDS", "5"))
+DYNAMODB_MAX_ATTEMPTS = int(os.getenv("DYNAMODB_MAX_ATTEMPTS", "3"))
+
 # AWS credentials (optional — prefer IAM roles in production)
 # These are only used when explicitly set; boto3 will otherwise use the
 # standard credential chain (env vars, ~/.aws/credentials, instance profile).

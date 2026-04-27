@@ -101,10 +101,20 @@ class UserBarcodeSettingsSerializer(serializers.Serializer):
         if barcode_uuid is not None and not pull_settings_enabled:
             barcode_item = BarcodeRepository.get_by_uuid(user.id, barcode_uuid)
             if not barcode_item:
-                # Try looking it up as a shared barcode from another user
-                shared = BarcodeRepository.get_shared_dynamic_barcodes()
+                # Dashboard choices are bounded. If a shared barcode is not in
+                # that choice set, it is not selectable from this request.
+                dashboard_barcodes = self.context.get("barcodes")
+                if dashboard_barcodes is None:
+                    dashboard_barcodes = BarcodeRepository.get_dashboard_barcodes(
+                        user.id
+                    )
                 barcode_item = next(
-                    (b for b in shared if b["barcode_uuid"] == barcode_uuid), None
+                    (
+                        b
+                        for b in dashboard_barcodes
+                        if b.get("barcode_uuid") == barcode_uuid
+                    ),
+                    None,
                 )
 
             if not barcode_item:
@@ -120,5 +130,7 @@ class UserBarcodeSettingsSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     {"barcode": "Selected barcode is not shared by its owner."}
                 )
+
+            data["active_barcode_owner_id"] = barcode_item.get("user_id", str(user.id))
 
         return data

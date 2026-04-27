@@ -80,9 +80,14 @@ CSP_DEFAULT_POLICY = env(
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "request_id": {
+            "()": "core.logging.RequestIdFilter",
+        },
+    },
     "formatters": {
         "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",  # noqa: E501
+            "format": "{levelname} {asctime} [{request_id}] {module} {process:d} {thread:d} {message}",  # noqa: E501
             "style": "{",
         },
     },
@@ -90,6 +95,7 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
+            "filters": ["request_id"],
         },
     },
     "root": {

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from index.repositories import BarcodeRepository
+from index.repositories import BarcodeRepository, DuplicateBarcodeError
 
 
 class BarcodeCreateSerializer(serializers.Serializer):
@@ -26,12 +26,17 @@ class BarcodeCreateSerializer(serializers.Serializer):
         else:
             barcode_type = "Others"
 
-        barcode_item = BarcodeRepository.create(
-            user_id=user.id,
-            barcode_value=barcode_value,
-            barcode_type=barcode_type,
-            owner_username=user.username,
-        )
+        try:
+            barcode_item = BarcodeRepository.create(
+                user_id=user.id,
+                barcode_value=barcode_value,
+                barcode_type=barcode_type,
+                owner_username=user.username,
+            )
+        except DuplicateBarcodeError:
+            raise serializers.ValidationError(
+                {"barcode": "This barcode already exists"}
+            )
 
         return barcode_item
 
@@ -102,15 +107,20 @@ class DynamicBarcodeWithProfileSerializer(serializers.Serializer):
                 {"barcode": "This barcode already exists"}
             )
 
-        barcode_item = BarcodeRepository.create(
-            user_id=user.id,
-            barcode_value=barcode_value,
-            barcode_type="DynamicBarcode",
-            owner_username=user.username,
-            profile_name=validated_data["name"],
-            profile_info_id=validated_data["information_id"],
-            profile_gender=validated_data.get("gender", "Unknow"),
-            profile_avatar=validated_data.get("avatar"),
-        )
+        try:
+            barcode_item = BarcodeRepository.create(
+                user_id=user.id,
+                barcode_value=barcode_value,
+                barcode_type="DynamicBarcode",
+                owner_username=user.username,
+                profile_name=validated_data["name"],
+                profile_info_id=validated_data["information_id"],
+                profile_gender=validated_data.get("gender", "Unknow"),
+                profile_avatar=validated_data.get("avatar"),
+            )
+        except DuplicateBarcodeError:
+            raise serializers.ValidationError(
+                {"barcode": "This barcode already exists"}
+            )
 
         return barcode_item

@@ -57,6 +57,28 @@ class HealthCheckTest(TestCase):
         # In test environment, database should be connected
         self.assertEqual(data["database"], "connected")
 
+    def test_liveness_check_does_not_check_dependencies(self):
+        url = reverse("liveness_check")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "alive")
+        self.assertEqual(data["probe"], "liveness")
+
+    @patch("core.health.views._describe_required_tables")
+    def test_readiness_check_dynamodb_failure_returns_503(self, mock_tables):
+        mock_tables.side_effect = Exception("DynamoDB unavailable")
+
+        url = reverse("readiness_check")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 503)
+        data = response.json()
+        self.assertEqual(data["status"], "unhealthy")
+        self.assertEqual(data["probe"], "readiness")
+        self.assertEqual(data["dynamodb"], "disconnected")
+
     @patch("django.db.connection.cursor")
     def test_health_check_database_failure(self, mock_cursor):
         """Test health check response when database is unavailable"""

@@ -7,6 +7,13 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
 
+def _check_sql_database():
+    from django.db import connection
+
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1")
+
+
 def _describe_required_tables():
     from django.conf import settings as django_settings
 
@@ -24,73 +31,78 @@ def _describe_required_tables():
     return statuses
 
 
-@require_http_methods(["GET", "HEAD"])
-def health_check(request):
-    """
-    Health check endpoint for monitoring and orchestration tools.
-
-    Checks database connectivity and cache round-trip.
-    Returns 503 only for database failure (critical).
-    Non-critical failures (cache) are reported as warnings
-    with a 200 status.
-    """
-    response_data = {"status": "healthy", "service": "MobileID"}
-    warnings = []
-
+def _build_dependency_status():
     from django.conf import settings as django_settings
 
+    response_data = {"status": "healthy", "service": "MobileID"}
     persistence_mode = getattr(django_settings, "PERSISTENCE_MODE", "hybrid")
     response_data["persistence_mode"] = persistence_mode
 
     if persistence_mode == "dynamodb":
         response_data["database"] = "disabled"
-        try:
-            table_statuses = _describe_required_tables()
-            response_data["dynamodb"] = "connected"
-            response_data["dynamodb_tables"] = table_statuses
-        except Exception:
-            response_data["status"] = "unhealthy"
-            response_data["dynamodb"] = "disconnected"
-            response_data["error"] = "DynamoDB table validation failed"
-            return JsonResponse(response_data, status=503)
     else:
-        from django.db import connection
-
-        # Check database connectivity (critical)
         try:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT 1")
+            _check_sql_database()
             response_data["database"] = "connected"
         except Exception:
             response_data["status"] = "unhealthy"
             response_data["database"] = "disconnected"
             response_data["error"] = "Database connection failed"
-            return JsonResponse(response_data, status=503)
+            return response_data, 503
 
-        # Check DynamoDB connectivity (non-critical)
-        try:
-            table_statuses = _describe_required_tables()
-            response_data["dynamodb"] = "connected"
-            response_data["dynamodb_tables"] = table_statuses
-        except Exception:
-            response_data["dynamodb"] = "disconnected"
-            warnings.append("DynamoDB connection failed")
+    try:
+        table_statuses = _describe_required_tables()
+        response_data["dynamodb"] = "connected"
+        response_data["dynamodb_tables"] = table_statuses
+    except Exception:
+        response_data["status"] = "unhealthy"
+        response_data["dynamodb"] = "disconnected"
+        response_data["error"] = "DynamoDB table validation failed"
+        return response_data, 503
 
-    # Check cache round-trip (non-critical)
     try:
         cache.set("_health_check", "ok", timeout=5)
         value = cache.get("_health_check")
         if value == "ok":
             response_data["cache"] = "connected"
         else:
+            response_data["status"] = "unhealthy"
             response_data["cache"] = "degraded"
-            warnings.append("Cache read-back mismatch")
+            response_data["error"] = "Cache read-back mismatch"
+            return response_data, 503
     except Exception:
+        response_data["status"] = "unhealthy"
         response_data["cache"] = "unavailable"
-        warnings.append("Cache connection failed")
+        response_data["error"] = "Cache connection failed"
+        return response_data, 503
 
-    if warnings:
-        response_data["status"] = "degraded"
-        response_data["warnings"] = warnings
+    return response_data, 200
 
-    return JsonResponse(response_data, status=200)
+
+@require_http_methods(["GET", "HEAD"])
+def health_check(request):
+    """
+    Health check endpoint for monitoring and orchestration tools.
+
+    Checks request-serving dependencies and returns 503 when any required
+    dependency is unavailable.
+    """
+    response_data, status_code = _build_dependency_status()
+    return JsonResponse(response_data, status=status_code)
+
+
+@require_http_methods(["GET", "HEAD"])
+def readiness_check(request):
+    """Readiness probe: all request-serving dependencies must be available."""
+    response_data, status_code = _build_dependency_status()
+    response_data["probe"] = "readiness"
+    return JsonResponse(response_data, status=status_code)
+
+
+@require_http_methods(["GET", "HEAD"])
+def liveness_check(request):
+    """Liveness probe: process is up without dependency checks."""
+    return JsonResponse(
+        {"status": "alive", "service": "MobileID", "probe": "liveness"},
+        status=200,
+    )

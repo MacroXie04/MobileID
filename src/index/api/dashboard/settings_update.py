@@ -97,6 +97,11 @@ class DashboardSettingsUpdateMixin:
             updates = {}
             if "active_barcode_uuid" in validated:
                 updates["active_barcode_uuid"] = validated["active_barcode_uuid"]
+                updates["active_barcode_owner_id"] = (
+                    validated.get("active_barcode_owner_id", str(user.id))
+                    if validated["active_barcode_uuid"]
+                    else None
+                )
             if "associate_user_profile_with_barcode" in validated:
                 updates["associate_user_profile_with_barcode"] = validated[
                     "associate_user_profile_with_barcode"

@@ -1,5 +1,5 @@
 from datetime import timedelta
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase
@@ -109,6 +109,41 @@ class TransactionQueryServiceTests(DynamoDBTestMixin, TestCase):
             barcode_value=barcode.get("barcode"),
             time_created=when,
         )
+
+    @patch("index.repositories.transaction_repo._table")
+    def test_count_for_barcode_since_accumulates_all_pages(self, mock_table_factory):
+        table = MagicMock()
+        mock_table_factory.return_value = table
+        table.query.side_effect = [
+            {"Count": 100, "LastEvaluatedKey": {"page": 1}},
+            {"Count": 7},
+        ]
+
+        count = TransactionRepository.count_for_barcode_since("bc", "2026-01-01")
+
+        self.assertEqual(count, 107)
+        self.assertEqual(table.query.call_count, 2)
+        self.assertEqual(
+            table.query.call_args_list[1].kwargs["ExclusiveStartKey"], {"page": 1}
+        )
+
+    @patch("index.repositories.transaction_repo._table")
+    def test_recent_user_barcode_usage_keeps_paging_until_match(
+        self, mock_table_factory
+    ):
+        table = MagicMock()
+        mock_table_factory.return_value = table
+        table.query.side_effect = [
+            {"Count": 0, "LastEvaluatedKey": {"page": 1}},
+            {"Count": 1, "Items": [{"barcode_uuid": "bc"}]},
+        ]
+
+        exists = TransactionRepository.recent_user_barcode_usage(
+            self.user.id, "bc", "2026-01-01"
+        )
+
+        self.assertTrue(exists)
+        self.assertEqual(table.query.call_count, 2)
 
     def test_for_user_returns_ordered_transactions(self):
         now = timezone.now()

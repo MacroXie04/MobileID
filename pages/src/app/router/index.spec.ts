@@ -178,14 +178,18 @@ describe('router beforeEach guard', () => {
     expect(next).toHaveBeenCalledWith({ path: '/' });
   });
 
-  it('reports API offline and passes through when guard throws', async () => {
+  it('reports API offline and redirects protected routes to login when guard throws', async () => {
     mockUserInfo.mockRejectedValue(new Error('network down'));
+    const to = makeTo({ fullPath: '/dashboard' });
     const next = vi.fn();
 
-    await guard(makeTo(), {}, next);
+    await guard(to, {}, next);
 
     expect(mockSetApiError).toHaveBeenCalledWith('API server is offline');
-    expect(next).toHaveBeenCalledWith();
+    expect(next).toHaveBeenCalledWith({
+      path: '/login',
+      query: { redirect: '/dashboard' },
+    });
   });
 
   it('does not persist userInfo when fetch returns falsy after refresh', async () => {

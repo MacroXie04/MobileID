@@ -5,6 +5,7 @@ Provides a singleton boto3 resource for connection reuse across the application.
 """
 
 import boto3
+from botocore.config import Config
 from django.conf import settings
 
 _resource = None
@@ -13,7 +14,17 @@ _client = None
 
 def _build_kwargs():
     """Build common boto3 kwargs from Django settings."""
-    kwargs = {"region_name": settings.DYNAMODB_REGION}
+    kwargs = {
+        "region_name": settings.DYNAMODB_REGION,
+        "config": Config(
+            connect_timeout=settings.DYNAMODB_CONNECT_TIMEOUT_SECONDS,
+            read_timeout=settings.DYNAMODB_READ_TIMEOUT_SECONDS,
+            retries={
+                "max_attempts": settings.DYNAMODB_MAX_ATTEMPTS,
+                "mode": "standard",
+            },
+        ),
+    }
     if settings.DYNAMODB_ENDPOINT_URL:
         kwargs["endpoint_url"] = settings.DYNAMODB_ENDPOINT_URL
     if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:

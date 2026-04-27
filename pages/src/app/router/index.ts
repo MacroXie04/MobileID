@@ -99,7 +99,7 @@ router.beforeEach(async (to, _from, next) => {
     return next();
   } catch (_err) {
     setApiError('API server is offline');
-    return next();
+    return next({ path: '/login', query: { redirect: to.fullPath } });
   }
 });
 

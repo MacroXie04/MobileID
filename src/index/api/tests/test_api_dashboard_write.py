@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.urls import reverse
 from index.repositories import BarcodeRepository, SettingsRepository
 from rest_framework import status
@@ -33,6 +34,31 @@ class BarcodeDashboardWriteTest(BarcodeDashboardTestBase):
         # Check settings were updated
         settings = SettingsRepository.get(self.user.id)
         self.assertEqual(settings["active_barcode_uuid"], barcode["barcode_uuid"])
+        self.assertEqual(settings["active_barcode_owner_id"], str(self.user.id))
+
+    def test_dashboard_post_shared_barcode_stores_owner_metadata(self):
+        """Selecting a shared barcode stores the owning user for direct lookup."""
+        self._authenticate_user(self.user)
+        owner = User.objects.create_user(username="shared-owner", password="pass123")
+        shared = BarcodeRepository.create(
+            user_id=owner.id,
+            barcode_value="sharedselect1234",
+            barcode_type="DynamicBarcode",
+            owner_username=owner.username,
+            share_with_others=True,
+        )
+
+        url = reverse("index:api_barcode_dashboard")
+        response = self.client.post(
+            url,
+            {"barcode": shared["barcode_uuid"]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        settings = SettingsRepository.get(self.user.id)
+        self.assertEqual(settings["active_barcode_uuid"], shared["barcode_uuid"])
+        self.assertEqual(settings["active_barcode_owner_id"], str(owner.id))
 
     def test_dashboard_put_create_barcode(self):
         """Test creating new barcode"""
@@ -93,6 +119,21 @@ class BarcodeDashboardWriteTest(BarcodeDashboardTestBase):
         # Check barcode was deleted
         deleted = BarcodeRepository.get_by_uuid(self.user.id, barcode["barcode_uuid"])
         self.assertIsNone(deleted)
+
+    def test_dashboard_put_duplicate_barcode_is_rejected(self):
+        """Uniqueness is enforced by the repository even with DynamoDB storage."""
+        self._authenticate_user(self.user)
+        BarcodeRepository.create(
+            user_id=self.user.id,
+            barcode_value="duplicate-value",
+            barcode_type="Others",
+            owner_username=self.user.username,
+        )
+
+        url = reverse("index:api_barcode_dashboard")
+        response = self.client.put(url, {"barcode": "duplicate-value"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_dashboard_delete_barcode_not_found(self):
         """Test deleting non-existent barcode"""

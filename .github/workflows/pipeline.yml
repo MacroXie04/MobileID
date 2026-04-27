@@ -260,8 +260,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: Install Safety
-        run: pip install safety
+      - name: Install security scanners
+        run: pip install safety bandit
+      - name: Run Bandit static analysis
+        working-directory: ./src
+        run: bandit -r authn core index -x '*/tests/*,*/migrations/*' -ll
       - name: Run Safety check
         working-directory: ./src
         run: |

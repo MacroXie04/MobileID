@@ -30,7 +30,7 @@ class UserFormTest(TestCase):
         form = UserRegisterForm(data=form_data)
         self.assertFalse(form.is_valid())
 
-    def test_form_allows_single_character_password(self):
+    def test_form_rejects_single_character_password(self):
         form_data = {
             "username": "weakpassuser",
             "password1": "1",
@@ -40,7 +40,8 @@ class UserFormTest(TestCase):
         }
 
         form = UserRegisterForm(data=form_data)
-        self.assertTrue(form.is_valid(), form.errors)
+        self.assertFalse(form.is_valid())
+        self.assertIn("password1", form.errors)
 
     def test_form_password_required(self):
         form_data = {
@@ -113,8 +114,8 @@ class UserFormTest(TestCase):
         User.objects.create_user(username="testuser", password="pass123")
         form_data = {
             "username": "testuser",
-            "password1": "1",
-            "password2": "1",
+            "password1": "testpass123",
+            "password2": "testpass123",
             "name": "Test User",
             "information_id": "TEST123",
         }

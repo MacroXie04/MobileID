@@ -22,6 +22,7 @@ class BuildKwargsTest(TestCase):
         self.assertEqual(kwargs["endpoint_url"], "http://localhost:8001")
         self.assertEqual(kwargs["aws_access_key_id"], "ak")
         self.assertEqual(kwargs["aws_secret_access_key"], "sk")
+        self.assertIn("config", kwargs)
 
     @override_settings(
         DYNAMODB_REGION="us-east-1",
@@ -32,7 +33,11 @@ class BuildKwargsTest(TestCase):
     def test_omits_optional_fields_when_empty(self):
         kwargs = client_mod._build_kwargs()
 
-        self.assertEqual(kwargs, {"region_name": "us-east-1"})
+        self.assertEqual(kwargs["region_name"], "us-east-1")
+        self.assertIn("config", kwargs)
+        self.assertNotIn("endpoint_url", kwargs)
+        self.assertNotIn("aws_access_key_id", kwargs)
+        self.assertNotIn("aws_secret_access_key", kwargs)
 
     @override_settings(
         DYNAMODB_REGION="us-east-1",

@@ -161,15 +161,22 @@ class TransactionRepository:
             barcode_used=barcode, time_created__gte=start_of_day
         ).count()
         """
-        resp = _table().query(
-            IndexName="BarcodeTransactionIndex",
-            KeyConditionExpression=(
+        query_kwargs = {
+            "IndexName": "BarcodeTransactionIndex",
+            "KeyConditionExpression": (
                 Key("barcode_uuid").eq(str(barcode_uuid))
                 & Key("time_created").gte(since)
             ),
-            Select="COUNT",
-        )
-        return resp.get("Count", 0)
+            "Select": "COUNT",
+        }
+        total = 0
+        while True:
+            resp = _table().query(**query_kwargs)
+            total += resp.get("Count", 0)
+            last_key = resp.get("LastEvaluatedKey")
+            if not last_key:
+                return total
+            query_kwargs["ExclusiveStartKey"] = last_key
 
     @staticmethod
     def recent_user_barcode_usage(user_id: int, barcode_uuid: str, since: str) -> bool:
@@ -182,18 +189,22 @@ class TransactionRepository:
         """
         from boto3.dynamodb.conditions import Attr
 
-        resp = _table().query(
-            KeyConditionExpression=(
-                Key("user_id").eq(str(user_id)) & Key("sk").begins_with("TXN#")
+        query_kwargs = {
+            "KeyConditionExpression": (
+                Key("user_id").eq(str(user_id)) & Key("sk").gte(f"TXN#{since}")
             ),
-            FilterExpression=(
-                Attr("barcode_uuid").eq(str(barcode_uuid))
-                & Attr("time_created").gte(since)
-            ),
-            Limit=1,
-            ScanIndexForward=False,
-        )
-        return resp.get("Count", 0) > 0
+            "FilterExpression": Attr("barcode_uuid").eq(str(barcode_uuid)),
+            "ProjectionExpression": "barcode_uuid",
+            "ScanIndexForward": False,
+        }
+        while True:
+            resp = _table().query(**query_kwargs)
+            if resp.get("Count", 0) > 0:
+                return True
+            last_key = resp.get("LastEvaluatedKey")
+            if not last_key:
+                return False
+            query_kwargs["ExclusiveStartKey"] = last_key
 
     @staticmethod
     def recent_user_usage(user_id: int, since: str) -> Optional[dict]:
@@ -204,13 +215,10 @@ class TransactionRepository:
             user=user, time_created__gte=cutoff
         ).order_by('-time_created').first()
         """
-        from boto3.dynamodb.conditions import Attr
-
         resp = _table().query(
             KeyConditionExpression=(
-                Key("user_id").eq(str(user_id)) & Key("sk").begins_with("TXN#")
+                Key("user_id").eq(str(user_id)) & Key("sk").gte(f"TXN#{since}")
             ),
-            FilterExpression=Attr("time_created").gte(since),
             Limit=1,
             ScanIndexForward=False,
         )
