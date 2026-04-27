@@ -25,7 +25,7 @@
     "@tensorflow-models/coco-ssd": "^2.2.3",
     "@tensorflow/tfjs": "^4.22.0",
     "@zxing/library": "^0.21.3",
-    "axios": "^1.13.6",
+    "axios": "^1.15.0",
     "cropperjs": "^1.6.1",
     "vue": "^3.5.31",
     "vue-router": "^5.0.4"
