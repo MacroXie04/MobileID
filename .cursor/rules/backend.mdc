@@ -1,0 +1,16 @@
+---
+description: Django backend conventions
+globs: src/**/*.py
+alwaysApply: false
+---
+
+- Apps: `authn` (auth/JWT/WebAuthn/RSA), `index` (PDF417 barcodes, dashboards), `core` (config, middleware, settings, dynamodb client, custom test runner).
+- Layered structure inside each app: `api/`, `services/`, `repositories/`, `models/`, `serializers/`. Project-wide middleware lives in `core/middleware/` only — apps do not have their own `middleware/` subdirectory.
+- `index/api/` has a `dashboard/` submodule. `authn/api/webauthn/views/` is split by concern (`tokens.py`, `registration.py`, `challenge.py`, `profile.py`, `avatar.py`, `devices/`).
+- Settings split across `src/core/settings/{base,database,auth,security,dynamodb,dev,prod}.py`. Don't blindly reorder `MIDDLEWARE` in `base.py` — ordering matters (CSP, admin IP whitelist, admin throttle, admin audit).
+- `DJANGO_SETTINGS_MODULE` for tests and CI is `core.settings.dev`. Prod enforces `SECRET_KEY` and `ALLOWED_HOSTS`.
+- DynamoDB-backed data (passkey credentials, RSA key material, security events) lives under `core/dynamodb/`, not in Django ORM models.
+- Custom management commands live at `src/core/management/commands/`: only `initadmin` and `create_dynamodb_tables`.
+- `src/run.sh` is the prod entrypoint: gated by `PERSISTENCE_MODE`, runs `create_dynamodb_tables` (when `CREATE_DYNAMODB_TABLES=true`), `migrate`, `initadmin`, then Gunicorn on `:8080`.
+- Cache backend: `LocMemCache` is per-process and unsafe with `GUNICORN_WORKERS > 1` — `core.E001` system check enforces this. For prod use Redis/Valkey.
+- Run before commit: `black --check . && ruff check . && flake8 .` from `src/`.

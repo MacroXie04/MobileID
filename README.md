@@ -94,7 +94,7 @@ yarn test:e2e:ci
 
 ## CI
 
-`pipeline.yml` is the active workflow. It runs:
+`pipeline.yml` appears in GitHub Actions as `MobileID CI`. It runs:
 
 - backend lint (Black, Flake8, Ruff) and frontend lint (Prettier, ESLint) in parallel
 - migration file guard on pull requests
@@ -102,7 +102,7 @@ yarn test:e2e:ci
 - frontend unit tests and Playwright E2E tests
 - backend Docker build and frontend Vite build
 - dependency, static-analysis, and image security scans: Safety, Bandit, Yarn audit, Trivy
-- a `Pipeline Passed` summary gate that fails if any required job — build, test, or security — does not succeed
+- a `Required Checks` summary gate that fails if any required job — build, test, or security — does not succeed
 
 ## Configuration Notes
 

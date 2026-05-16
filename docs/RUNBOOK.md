@@ -75,7 +75,7 @@ Any `/readyz/` 503 means the instance should not receive traffic.
 
 ## Deploy
 
-1. Verify CI `Pipeline Passed` and CodeQL are green for the release commit.
+1. Verify `MobileID CI` / `Required Checks` and `MobileID CodeQL` are green for the release commit.
 2. Build and publish the backend image from `src/Dockerfile`.
 3. Apply database migrations before shifting traffic:
 

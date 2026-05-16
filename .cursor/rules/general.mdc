@@ -1,0 +1,15 @@
+---
+description: MobileID project conventions (always-apply)
+globs:
+alwaysApply: true
+---
+
+MobileID is a dual-stack app: Django REST backend in `src/`, Vue 3 + TypeScript SPA in `pages/`. The authoritative architecture guide is `CLAUDE.md` at the repo root.
+
+- Backend tests: `cd src && python manage.py test -v 2`. CI uses `DJANGO_SETTINGS_MODULE=core.settings.dev` and enforces `coverage --fail-under=70`.
+- Frontend tests: `cd pages && yarn test:unit && yarn test:e2e`. Playwright requires `npx playwright install --with-deps` once.
+- Code style: Black (line length 88) + Ruff + Flake8 for backend; Prettier + ESLint for frontend.
+- Yarn 1.x is locked via `packageManager` in `pages/package.json` — never suggest npm or pnpm.
+- Use `localhost`, never `127.0.0.1`, for browser origins (CORS/CSRF config requires it).
+- **Migration discipline**: never edit an existing migration file in `src/*/migrations/`. Add a new migration on top instead. CI `migration-file-guard` rejects PRs that touch prior migrations.
+- No `ops/` directory and no production-deploy GitHub workflow exist in this repo. Don't reference them.
