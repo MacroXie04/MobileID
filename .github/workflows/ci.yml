@@ -1,5 +1,5 @@
-name: MobileID CI
-run-name: "Validate ${{ github.head_ref || github.ref_name }} (${{ github.event_name }})"
+name: CI
+run-name: "CI / ${{ github.head_ref || github.ref_name }} (${{ github.event_name }})"
 
 on:
   push:
@@ -7,12 +7,12 @@ on:
     paths:
       - "src/**"
       - "pages/**"
-      - ".github/workflows/pipeline.yml"
+      - ".github/workflows/ci.yml"
   pull_request:
     paths:
       - "src/**"
       - "pages/**"
-      - ".github/workflows/pipeline.yml"
+      - ".github/workflows/ci.yml"
   workflow_dispatch:
 
 permissions:
@@ -28,7 +28,7 @@ env:
   # deprecation warnings until actions/* publish Node-24 major releases.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
-# Pipeline stages:
+# CI stages:
 #   Lint     - fast style and static checks
 #   Test     - backend, frontend, migration, and browser checks
 #   Build    - backend image and frontend production assets
@@ -85,7 +85,6 @@ jobs:
   migration-file-guard:
     name: "Migrations / File Guard"
     needs: [backend-lint]
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -93,8 +92,26 @@ jobs:
         with:
           fetch-depth: 0
       - name: Check for modified migration files
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
-          CHANGED=$(git diff --diff-filter=M --name-only origin/${{ github.base_ref }}...HEAD -- \
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            BASE_SHA="$PR_BASE_SHA"
+          else
+            BASE_SHA="$PUSH_BEFORE_SHA"
+          fi
+
+          ZERO_SHA="0000000000000000000000000000000000000000"
+          if [ -n "$BASE_SHA" ] && [ "$BASE_SHA" != "$ZERO_SHA" ] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            DIFF_RANGE="$BASE_SHA...$HEAD_SHA"
+          else
+            DIFF_RANGE="$HEAD_SHA^!"
+          fi
+
+          CHANGED=$(git diff --diff-filter=M --name-only "$DIFF_RANGE" -- \
             'src/*/migrations/*.py' 'src/*/*/migrations/*.py' | grep -v '__init__.py' || true)
           if [ -n "$CHANGED" ]; then
             echo "::error::Migration files changed: $CHANGED"
@@ -424,7 +441,7 @@ jobs:
 
   # Summary gate
 
-  pipeline-passed:
+  ci-passed:
     name: Required Checks
     if: always()
     needs:
@@ -447,18 +464,13 @@ jobs:
           MIGRATION_FILE_GUARD: ${{ needs.migration-file-guard.result }}
         run: |
           fail=0
-          for name in DOCKER_BUILD FRONTEND_BUILD PYTHON_SECURITY NODEJS_SECURITY DOCKER_SECURITY; do
+          for name in DOCKER_BUILD FRONTEND_BUILD PYTHON_SECURITY NODEJS_SECURITY DOCKER_SECURITY MIGRATION_FILE_GUARD; do
             val="${!name}"
             if [ "$val" != "success" ]; then
               echo "::error::$name = $val"
               fail=1
             fi
           done
-          # migration-file-guard runs only on pull_request; "skipped" on push/workflow_dispatch is expected.
-          if [ "$MIGRATION_FILE_GUARD" != "success" ] && [ "$MIGRATION_FILE_GUARD" != "skipped" ]; then
-            echo "::error::MIGRATION_FILE_GUARD = $MIGRATION_FILE_GUARD"
-            fail=1
-          fi
           if [ "$fail" -eq 0 ]; then
             echo "All required jobs passed"
           fi

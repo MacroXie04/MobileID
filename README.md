@@ -7,7 +7,7 @@ MobileID is a monorepo for a Django API and a Vue/Vite single-page app used for 
 - `src/`: Django backend, settings, REST endpoints, DynamoDB helpers, and backend tests.
 - `pages/`: Vue 3 SPA, feature-organized frontend code, colocated unit tests, Playwright e2e tests, and `vercel.json` SPA rewrites.
 - `docker-compose.yml`: local backend stack with Django, Postgres, and DynamoDB Local.
-- `.github/workflows/pipeline.yml`: primary CI pipeline for lint, tests, builds, and security checks.
+- `.github/workflows/ci.yml`: primary CI workflow for lint, tests, builds, and security checks.
 
 ## Prerequisites
 
@@ -94,10 +94,10 @@ yarn test:e2e:ci
 
 ## CI
 
-`pipeline.yml` appears in GitHub Actions as `MobileID CI`. It runs:
+`ci.yml` appears in GitHub Actions as `CI`. It runs:
 
 - backend lint (Black, Flake8, Ruff) and frontend lint (Prettier, ESLint) in parallel
-- migration file guard on pull requests
+- migration file guard on pushes and pull requests
 - Django migration checks and Django tests with coverage (`--fail-under=70`)
 - frontend unit tests and Playwright E2E tests
 - backend Docker build and frontend Vite build
