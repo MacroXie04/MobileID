@@ -39,8 +39,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 #   libmariadb3 - mysqlclient loads this at runtime on Debian bookworm
 #   libpq5      - defensive, in case someone swaps psycopg2-binary for psycopg2
 #   curl        - used by docker-compose healthcheck (curl -sf /health/)
+#   libcap2/libsystemd0/libudev1 are explicitly upgraded to pick up Debian
+#   security fixes that may lag behind the floating python slim base layer.
 # tini gives us a proper PID 1 for Gunicorn signal handling.
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        libcap2 \
+        libsystemd0 \
+        libudev1 \
         libmariadb3 \
         libpq5 \
         curl \
