@@ -554,9 +554,17 @@ pages/.output/
 # ===================================================================
 
 # ===================================================================
-#  Claude Integration
+#  LOCAL AI ASSISTANT / AGENT METADATA
 # ===================================================================
+/AGENTS.md
 /CLAUDE.md
+/.agent/
+/.agents/
+/.claude/
+/.codex/
+/.cursor/
+/.continue/
+/.windsurf/
 /pages/.vite/deps/_metadata.json
 /pages/.vite/deps/package.json
 
