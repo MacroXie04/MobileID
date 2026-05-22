@@ -8,24 +8,23 @@ CREATE_DYNAMODB_TABLES="${CREATE_DYNAMODB_TABLES:-false}"
 DB_ENGINE="${DB_ENGINE:-}"
 DB_NAME="${DB_NAME:-}"
 
+if [ "${PERSISTENCE_MODE}" = "dynamodb" ]; then
+  echo "PERSISTENCE_MODE=dynamodb is not supported by the current runtime." >&2
+  echo "Auth, profile, session, token, and device-management flows still require SQL." >&2
+  echo "Use PERSISTENCE_MODE=hybrid until the full DynamoDB migration is implemented." >&2
+  exit 1
+fi
+
 if [ "${DB_ENGINE}" = "sqlite3" ] && [ -n "${DB_NAME}" ]; then
   mkdir -p "$(dirname "${DB_NAME}")"
 fi
 
 if [ -z "${RUN_DATABASE_MIGRATIONS}" ]; then
-  if [ "${PERSISTENCE_MODE}" = "dynamodb" ]; then
-    RUN_DATABASE_MIGRATIONS="false"
-  else
-    RUN_DATABASE_MIGRATIONS="true"
-  fi
+  RUN_DATABASE_MIGRATIONS="true"
 fi
 
 if [ -z "${RUN_INITADMIN}" ]; then
-  if [ "${PERSISTENCE_MODE}" = "dynamodb" ]; then
-    RUN_INITADMIN="false"
-  else
-    RUN_INITADMIN="true"
-  fi
+  RUN_INITADMIN="true"
 fi
 
 if [ "${CREATE_DYNAMODB_TABLES}" = "true" ]; then

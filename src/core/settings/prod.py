@@ -7,12 +7,25 @@ This file imports base settings and overrides them with production-specific valu
 import warnings
 
 from .base import *  # noqa: F403, F401
-from .base import env, csv_env, BACKEND_ORIGIN, CACHE_BACKEND  # noqa: F401
+from .base import (  # noqa: F401
+    BACKEND_ORIGIN,
+    CACHE_BACKEND,
+    PERSISTENCE_MODE,
+    csv_env,
+    env,
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG", "False").lower() == "true"
 ENVIRONMENT = env("ENVIRONMENT", "production").lower()
 IS_PRODUCTION = True
+
+if PERSISTENCE_MODE == "dynamodb":
+    raise ValueError(
+        "PERSISTENCE_MODE=dynamodb is not supported in production yet. "
+        "The current auth, profile, session, token, and device-management "
+        "flows still require SQL. Use PERSISTENCE_MODE=hybrid."
+    )
 
 # Production: Enable throttles by default (override base.py default)
 # Can be disabled with DISABLE_THROTTLES environment variable
@@ -53,19 +66,21 @@ if not ALLOWED_HOSTS:
 # Production CORS origins - MUST be set via environment variable
 FRONTEND_ORIGINS_PROD = csv_env("CORS_ALLOWED_ORIGINS")
 
-# Handle wildcard for CORS
-if "*" in FRONTEND_ORIGINS_PROD or '["*"]' in FRONTEND_ORIGINS_PROD:
-    CORS_ALLOW_ALL_ORIGINS = True
-    FRONTEND_ORIGINS = []  # Don't add wildcard to CSRF trusted origins
-else:
-    CORS_ALLOW_ALL_ORIGINS = False
-    FRONTEND_ORIGINS = FRONTEND_ORIGINS_PROD
-
-if not FRONTEND_ORIGINS_PROD and not CORS_ALLOW_ALL_ORIGINS:
+if not FRONTEND_ORIGINS_PROD:
     raise ValueError(
         "CORS_ALLOWED_ORIGINS must be set in production environment. "
         "This setting is required for CORS to work properly."
     )
+
+if "*" in FRONTEND_ORIGINS_PROD or '["*"]' in FRONTEND_ORIGINS_PROD:
+    raise ValueError(
+        "CORS_ALLOWED_ORIGINS cannot use '*' in production. MobileID uses "
+        "credentialed cookie authentication, so production must list explicit "
+        "frontend origins."
+    )
+
+FRONTEND_ORIGINS = FRONTEND_ORIGINS_PROD
+CORS_ALLOW_ALL_ORIGINS = False
 
 # Django 5 requires scheme://host[:port]
 CSRF_TRUSTED_ORIGINS = csv_env(
@@ -73,17 +88,8 @@ CSRF_TRUSTED_ORIGINS = csv_env(
 )
 
 # If using django-cors-headers:
-CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS if not CORS_ALLOW_ALL_ORIGINS else []
+CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
 CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", "True").lower() == "true"
-
-# CORS wildcard + credentials is invalid per the spec — browsers will reject it.
-if CORS_ALLOW_ALL_ORIGINS and CORS_ALLOW_CREDENTIALS:
-    warnings.warn(
-        "CORS_ALLOW_ALL_ORIGINS=True with CORS_ALLOW_CREDENTIALS=True is "
-        "invalid per the CORS specification. Forcing CORS_ALLOW_CREDENTIALS=False.",
-        stacklevel=1,
-    )
-    CORS_ALLOW_CREDENTIALS = False
 
 # Cookies - Production: cross-site frontend/backend requires SameSite=None.
 # Keep these configurable via env for emergency rollback.

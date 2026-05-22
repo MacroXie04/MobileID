@@ -284,44 +284,81 @@ jobs:
       - name: Run Safety check
         working-directory: ./src
         run: |
-          safety scan --target requirements.txt --output json 2>/dev/null > safety-report.json || \
-            safety check -r requirements.txt --output json 2>/dev/null > safety-report.json || true
-          safety scan --target requirements.txt 2>/dev/null || \
-            safety check -r requirements.txt || true
+          set +e
+          safety scan --target requirements.txt --output json > safety-report.json 2> safety-stderr.txt
+          status=$?
+          if [ "$status" -ne 0 ] && [ ! -s safety-report.json ]; then
+            safety check -r requirements.txt --output json > safety-report.json 2>> safety-stderr.txt
+            status=$?
+          fi
+          printf "%s\n" "$status" > safety-exit-code.txt
+          if [ -s safety-stderr.txt ]; then
+            cat safety-stderr.txt >&2
+          fi
       - name: Enforce Safety baseline
         working-directory: ./src
         run: |
           python - <<'PY'
           import json, pathlib, sys
 
+          def fail(message):
+              print(f"::error::{message}")
+              sys.exit(1)
+
           report = pathlib.Path("safety-report.json")
           if not report.exists():
-              print("::error::Safety report missing"); sys.exit(1)
+              fail("Safety report missing")
 
           content = report.read_text().strip()
           if not content:
-              print("Safety: report is empty, assuming no vulnerabilities"); sys.exit(0)
+              fail("Safety report is empty")
+
+          status_path = pathlib.Path("safety-exit-code.txt")
+          try:
+              scanner_status = int(status_path.read_text().strip())
+          except (OSError, ValueError):
+              fail("Safety scanner exit code missing or invalid")
 
           data = None
-          for line in content.split('\n'):
-              line = line.strip()
-              if line.startswith('{') or line.startswith('['):
-                  try: data = json.loads(line); break
-                  except json.JSONDecodeError: continue
+          try:
+              data = json.loads(content)
+          except json.JSONDecodeError:
+              for line in content.splitlines():
+                  line = line.strip()
+                  if not line.startswith(("{", "[")):
+                      continue
+                  try:
+                      data = json.loads(line)
+                      break
+                  except json.JSONDecodeError:
+                      continue
 
           if data is None:
-              try: data = json.loads(content)
-              except json.JSONDecodeError:
-                  print("::warning::Could not parse Safety JSON output"); sys.exit(0)
+              fail("Could not parse Safety JSON output")
 
-          vulns = []
-          if isinstance(data, dict):
-              vulns = data.get("vulnerabilities") or data.get("issues") or data.get("results", {}).get("vulnerabilities") or []
-          elif isinstance(data, list):
-              vulns = data
+          def extract_vulnerabilities(value):
+              if isinstance(value, list):
+                  return value
+              if not isinstance(value, dict):
+                  return []
+              candidates = []
+              for key in ("vulnerabilities", "issues"):
+                  if isinstance(value.get(key), list):
+                      candidates.extend(value[key])
+              results = value.get("results")
+              if isinstance(results, dict):
+                  candidates.extend(extract_vulnerabilities(results))
+              return candidates
+
+          vulns = extract_vulnerabilities(data)
+          if scanner_status != 0 and not vulns:
+              fail(
+                  "Safety scanner exited nonzero without a parseable "
+                  "vulnerability list"
+              )
 
           if len(vulns) > 0:
-              print(f"::error::Safety found {len(vulns)} vulnerabilities"); sys.exit(1)
+              fail(f"Safety found {len(vulns)} vulnerabilities")
           print("Safety: no vulnerabilities found")
           PY
       - name: Upload Safety report
@@ -329,7 +366,10 @@ jobs:
         if: always()
         with:
           name: python-security-report
-          path: src/safety-report.json
+          path: |
+            src/safety-report.json
+            src/safety-stderr.txt
+            src/safety-exit-code.txt
           retention-days: 30
 
   nodejs-security:
