@@ -1,6 +1,7 @@
 import { computed } from 'vue';
 import type { PropType } from 'vue';
 import type { Barcode, BarcodeChoice, BarcodeSettings, PullSettings } from '@barcode';
+import type { SettingsCardSetupArgs } from '@dashboard/types/dashboard';
 
 // CSS - use shared dashboard styles
 import '@dashboard/styles/BarcodeDashboard.css';
@@ -19,13 +20,16 @@ export const propsDefinition = {
   currentBarcodeHasProfile: { type: Boolean, default: false },
   errors: { type: Object as PropType<Record<string, string>>, default: () => ({}) },
   associateUserProfileWithBarcode: { type: Boolean, default: false },
-  formatRelativeTime: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
+  formatRelativeTime: {
+    type: Function as PropType<(value: string) => string>,
+    required: true,
+  },
+  formatDate: { type: Function as PropType<(value: string) => string>, required: true },
 };
 
 export const emitsDefinition = ['update-associate', 'update-pull-setting', 'update-gender-setting'];
 
-export function useSettingsCardSetup(args: any = {}) {
+export function useSettingsCardSetup(args: SettingsCardSetupArgs = {}) {
   const { props } = args;
   const componentProps = props ?? {};
 

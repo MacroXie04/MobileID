@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { clearAuthCookies, clearAuthStorage } from '@shared/utils/cookie';
+import { logger } from '@shared/utils/logger';
 import {
   checkAuthenticationError as sharedCheckAuthenticationError,
   refreshToken as sharedRefreshToken,
@@ -66,7 +67,7 @@ export function useToken() {
         const { clearUserProfile } = await import('@profile');
         clearUserProfile();
       } catch (error) {
-        console.warn('Could not clear user profile cache:', error);
+        logger.warn('Could not clear user profile cache:', error);
       }
 
       // Show prompt and redirect

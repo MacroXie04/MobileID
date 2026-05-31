@@ -63,8 +63,12 @@ export default [
       },
     },
     rules: {
-      'no-console':
-        process.env.NODE_ENV === 'production' ? ['warn', { allow: ['warn', 'error'] }] : 'off',
+      // Direct console use is banned in app code; route through the shared logger
+      // (@shared/utils/logger). The logger module itself is exempted below.
+      'no-console': 'error',
+      // Explicit `any` is banned to keep the type surface honest. Prefer concrete
+      // types, or `unknown` + a narrow cast when a precise type is impossible.
+      '@typescript-eslint/no-explicit-any': 'error',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -165,10 +169,33 @@ export default [
         sourceType: 'module',
       },
     },
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+    },
     rules: {
       'vue/multi-word-component-names': 'off',
       'vue/no-reserved-component-names': 'off',
       'vue/no-deprecated-slot-attribute': 'off',
+      // Same gates as TS files, applied inside <script setup> blocks.
+      'no-console': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
+    },
+  },
+
+  // The shared logger is the ONE place app code may call console.* directly.
+  {
+    files: ['src/shared/utils/logger.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
+  // Test files may reference/spy on console and use loosened typing.
+  {
+    files: ['src/**/*.spec.ts', 'src/test/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 

@@ -3,6 +3,7 @@ import { baseURL } from '@shared/config/config';
 import { useServerWakeup } from '@shared/composables/api/useServerWakeup';
 import { ensureCsrfToken } from '@shared/api/csrf';
 import { useToken } from '@auth/composables/token/useToken';
+import { logger } from '@shared/utils/logger';
 
 export interface AuthenticatedRequestOptions extends RequestInit {
   timeoutMs?: number;
@@ -63,9 +64,7 @@ export function useAuthenticatedRequest() {
         }
       }
 
-      if (import.meta.env?.MODE !== 'production') {
-        console.debug(`API ${response.status} ${fullUrl}`);
-      }
+      logger.debug(`API ${response.status} ${fullUrl}`);
 
       if (checkAuthenticationError(data, response)) {
         if (retryCount < maxRetries) {
@@ -106,9 +105,7 @@ export function useAuthenticatedRequest() {
         throw error;
       }
 
-      if (import.meta.env?.MODE !== 'production') {
-        console.debug(`API response for ${url}:`, data);
-      }
+      logger.debug(`API response for ${url}:`, data);
 
       return data as T;
     } catch (error) {
@@ -141,9 +138,7 @@ export function useAuthenticatedRequest() {
         throw err;
       }
 
-      if (import.meta.env?.MODE !== 'production') {
-        console.error(`API request failed (${url}):`, err);
-      }
+      logger.error(`API request failed (${url}):`, err);
       throw new Error(`Network error: ${err?.message || 'unknown_error'}`);
     }
   }

@@ -11,23 +11,13 @@
 
     <div class="settings-content">
       <!-- Camera Permission Required Banner -->
-      <div v-if="!hasCameraPermission" class="permission-banner">
-        <div class="permission-banner-icon">
-          <md-icon>videocam_off</md-icon>
-        </div>
-        <div class="permission-banner-content">
-          <span class="permission-banner-title">Camera Permission Required</span>
-          <span class="permission-banner-desc"
-            >Grant camera access to enable scanner detection</span
-          >
-        </div>
-        <md-filled-tonal-button :disabled="isRequestingPermission" @click="requestCameraPermission">
-          <md-icon slot="icon">{{
-            isRequestingPermission ? 'hourglass_empty' : 'videocam'
-          }}</md-icon>
-          {{ isRequestingPermission ? 'Requesting...' : 'Allow' }}
-        </md-filled-tonal-button>
-      </div>
+      <CameraPermissionBanner
+        v-if="!hasCameraPermission"
+        title="Camera Permission Required"
+        description="Grant camera access to enable scanner detection"
+        :is-requesting="isRequestingPermission"
+        @request="requestCameraPermission"
+      />
 
       <!-- Camera Preview Section (moved above settings) -->
       <div v-if="scannerDetectionEnabled && hasCameraPermission" class="camera-preview-section">
@@ -79,66 +69,22 @@
         </div>
       </div>
 
-      <!-- Scanner Detection Toggle -->
-      <md-list>
-        <md-list-item :class="{ 'disabled-item': !hasCameraPermission }">
-          <md-icon slot="start">sensors</md-icon>
-          <div slot="headline">Enable Scanner Detection</div>
-          <div slot="supporting-text">
-            {{
-              hasCameraPermission
-                ? 'Auto-display barcode when scanner is detected'
-                : 'Camera permission required to enable this feature'
-            }}
-          </div>
-          <div slot="end">
-            <md-switch
-              :disabled="!hasCameraPermission"
-              :selected="scannerDetectionEnabled"
-              @change="(e) => $emit('update-scanner-detection', e.target.selected)"
-            ></md-switch>
-          </div>
-        </md-list-item>
-
-        <md-divider inset></md-divider>
-
-        <md-list-item
-          :class="{ 'disabled-item': !scannerDetectionEnabled || !hasCameraPermission }"
-        >
-          <md-icon slot="start">videocam</md-icon>
-          <div slot="headline">Default Camera</div>
-          <div slot="supporting-text">
-            {{
-              cameras.length > 0
-                ? 'Select which camera to use for detection'
-                : 'No cameras available'
-            }}
-          </div>
-          <div slot="end">
-            <md-outlined-select
-              v-if="cameras.length > 0"
-              :disabled="!scannerDetectionEnabled || !hasCameraPermission"
-              :value="selectedCameraId"
-              class="camera-select-inline"
-              @change="handleCameraChange"
-            >
-              <md-select-option
-                v-for="camera in cameras"
-                :key="camera.deviceId"
-                :value="camera.deviceId"
-              >
-                <div slot="headline">{{ formatCameraLabel(camera) }}</div>
-              </md-select-option>
-            </md-outlined-select>
-            <span v-else class="no-camera-text">No cameras</span>
-          </div>
-        </md-list-item>
-      </md-list>
+      <!-- Scanner Detection Settings -->
+      <ScannerDetectionSettingsList
+        :scanner-detection-enabled="scannerDetectionEnabled"
+        :has-camera-permission="hasCameraPermission"
+        :cameras="cameras"
+        :selected-camera-id="selectedCameraId"
+        @update-scanner-detection="(val) => $emit('update-scanner-detection', val)"
+        @camera-change="handleCameraChangeId"
+      />
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import CameraPermissionBanner from '@dashboard/components/shared/CameraPermissionBanner.vue';
+import ScannerDetectionSettingsList from './camera/ScannerDetectionSettingsList.vue';
 import {
   propsDefinition,
   emitsDefinition,
@@ -161,9 +107,156 @@ const {
   hasCameraPermission,
   requestCameraPermission,
   toggleDetection,
-  handleCameraChange,
-  formatCameraLabel,
+  handleCameraChangeId,
   statusClass,
   statusIcon,
 } = useCameraSettingsCardSetup({ props });
 </script>
+
+<style scoped>
+/* Camera Preview Section — the video/canvas detection stream lives in this
+   parent (its template refs bind to composable-owned refs), so these rules
+   are co-located here rather than in a child component. */
+.camera-preview-section {
+  margin-bottom: var(--md-sys-spacing-4);
+  padding: var(--md-sys-spacing-4);
+  background: var(--md-sys-color-surface-container-low);
+  border-radius: var(--md-sys-shape-corner-medium);
+}
+
+/* Camera Preview Wrapper */
+.camera-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  border-radius: var(--md-sys-shape-corner-medium);
+  overflow: hidden;
+  background: #000;
+  border: 2px solid var(--md-sys-color-outline-variant);
+  transition: all 0.3s ease;
+}
+
+.camera-wrapper.active {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: var(--md-elevation-2);
+}
+
+.camera-video {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: scaleX(-1);
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.detection-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: scaleX(-1);
+}
+
+.status-overlay {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--md-sys-shape-corner-small);
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.status-badge.loading {
+  background: rgba(255, 152, 0, 0.85);
+}
+
+.status-badge.active {
+  background: rgba(76, 175, 80, 0.85);
+}
+
+.status-badge md-icon {
+  font-size: 12px;
+  --md-icon-size: 12px;
+}
+
+.detected-list {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.detected-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(76, 175, 80, 0.9);
+  color: white;
+}
+
+.detected-tag md-icon {
+  font-size: 10px;
+  --md-icon-size: 10px;
+}
+
+/* Camera Controls */
+.camera-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-sys-spacing-2);
+  margin-top: var(--md-sys-spacing-3);
+  flex-wrap: wrap;
+}
+
+.model-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-sys-spacing-2);
+  padding: var(--md-sys-spacing-3);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+}
+
+/* Info Hint */
+.info-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  margin-top: var(--md-sys-spacing-3);
+  padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+  background: var(--md-sys-color-surface-container);
+  border-radius: var(--md-sys-shape-corner-small);
+  font-size: var(--md-sys-typescale-body-small-size);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.info-hint md-icon {
+  font-size: 14px;
+  --md-icon-size: 14px;
+  color: var(--md-sys-color-outline);
+}
+</style>

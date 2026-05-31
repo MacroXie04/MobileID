@@ -4,22 +4,28 @@ import { useProfileAutoSave } from '@profile/composables/profile/useProfileAutoS
 import { useProfileAvatar } from '@profile/composables/profile/useProfileAvatar';
 import { useProfileLoad } from '@profile/composables/profile/useProfileLoad';
 import { useProfileSubmit } from '@profile/composables/profile/useProfileSubmit';
+import type {
+  ProfileEditLogicOptions,
+  ProfileErrors,
+  ProfileFormData,
+  UserProfile,
+} from '@profile/types/profile';
 
-export function useProfileEditLogic(options: any = {}) {
+export function useProfileEditLogic(options: ProfileEditLogicOptions = {}) {
   const { redirectOnSubmit = true, redirectPath = '/' } = options;
   const router = useRouter();
 
   // State
   const loading = ref(false);
-  const formData = ref<Record<string, any>>({
+  const formData = ref<UserProfile>({
     name: '',
     information_id: '',
   });
   const avatarFile = ref<File | null>(null);
   const avatarPreviewUrl = ref('');
-  const errors = ref<Record<string, any>>({});
+  const errors = ref<ProfileErrors>({});
   const successMessage = ref('');
-  const originalData = ref<Record<string, any>>({});
+  const originalData = ref<ProfileFormData>({ name: '', information_id: '' });
 
   const { autoSaving, lastSaved, autoSaveStatus, triggerAutoSave, getAutoSaveStatusText } =
     useProfileAutoSave({ formData, avatarFile, originalData });

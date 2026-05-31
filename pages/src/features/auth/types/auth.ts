@@ -1,19 +1,15 @@
 import type { UserProfile } from '@profile';
 
+// Canonical definition lives in the domain-neutral shared layer; re-exported here
+// so `@auth` consumers keep importing `ApiErrorData` from the auth barrel.
+export type { ApiErrorData } from '@shared/api/client';
+
 export interface AuthUser {
   id?: number | string;
   username?: string;
   email?: string;
   is_activated?: boolean;
   profile?: UserProfile;
-  [key: string]: unknown;
-}
-
-export interface ApiErrorData {
-  detail?: string;
-  message?: string;
-  errors?: Record<string, string | string[]>;
-  non_field_errors?: string | string[];
   [key: string]: unknown;
 }
 

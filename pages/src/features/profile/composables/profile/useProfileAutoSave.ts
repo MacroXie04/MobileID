@@ -1,9 +1,9 @@
 import { useAutoSave } from '@shared/composables/persistence/useAutoSave';
 import { updateUserProfile } from '@profile';
 import { fileToBase64 } from '@profile/utils/imageUtils';
-import type { UserProfileUpdatePayload } from '@profile/types/profile';
+import type { ProfileAutoSaveDeps, UserProfileUpdatePayload } from '@profile/types/profile';
 
-export function useProfileAutoSave({ formData, avatarFile, originalData }: any) {
+export function useProfileAutoSave({ formData, avatarFile, originalData }: ProfileAutoSaveDeps) {
   async function autoSaveChanges() {
     const profileData: UserProfileUpdatePayload = {
       name: formData.value.name,

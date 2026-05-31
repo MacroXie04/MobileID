@@ -1,5 +1,21 @@
 import { nextTick, onUnmounted, ref, watch } from 'vue';
+import type { Ref } from 'vue';
+import type { DetectedObject, ObjectDetection } from '@tensorflow-models/coco-ssd';
 import { useCameraPermission } from '@shared/composables/device/useCameraPermission';
+import { logger } from '@shared/utils/logger';
+
+export interface ScannerDetectionOptions {
+  /** Called with the validated detections when a scanner is detected. */
+  onDetected?: (objects: DetectedObject[]) => void;
+  /** Called when model load / camera / detection fails. */
+  onError?: (error: unknown) => void;
+  /** Prefer the front-facing camera. Default true. */
+  preferFrontCamera?: boolean;
+  /** Optional externally-supplied <video> element ref. */
+  videoRef?: Ref<HTMLVideoElement | null>;
+  /** Optional externally-supplied <canvas> element ref. */
+  canvasRef?: Ref<HTMLCanvasElement | null>;
+}
 
 /**
  * Composable for scanner detection using TensorFlow.js COCO-SSD model
@@ -12,7 +28,7 @@ import { useCameraPermission } from '@shared/composables/device/useCameraPermiss
  * @param {Ref} options.canvasRef - External canvas element ref (optional)
  * @returns {Object} Detection functions and state
  */
-export function useScannerDetection(options: any = {}) {
+export function useScannerDetection(options: ScannerDetectionOptions = {}) {
   const {
     onDetected,
     onError,
@@ -33,11 +49,11 @@ export function useScannerDetection(options: any = {}) {
   const canvasRef = externalCanvasRef || ref<HTMLCanvasElement | null>(null);
   const cameras = ref<MediaDeviceInfo[]>([]);
   const selectedCameraId = ref<string | null>(null);
-  const detectedObjects = ref<any[]>([]);
+  const detectedObjects = ref<DetectedObject[]>([]);
   const lastDetectionTime = ref<number | null>(null);
 
   // Internal state
-  let model: any = null;
+  let model: ObjectDetection | null = null;
   let stream: MediaStream | null = null;
   let animationFrameId: number | null = null;
   let detectionCooldown = false;
@@ -88,9 +104,9 @@ export function useScannerDetection(options: any = {}) {
 
       isModelLoaded.value = true;
       detectionStatus.value = 'AI model loaded';
-      console.log('COCO-SSD model loaded successfully');
+      logger.debug('COCO-SSD model loaded successfully');
     } catch (error) {
-      console.error('Failed to load COCO-SSD model:', error);
+      logger.error('Failed to load COCO-SSD model:', error);
       detectionStatus.value = 'Failed to load AI model';
       if (onError) {
         onError(error);
@@ -162,7 +178,7 @@ export function useScannerDetection(options: any = {}) {
 
       return true;
     } catch (error) {
-      console.error('Failed to enumerate cameras:', error);
+      logger.error('Failed to enumerate cameras:', error);
       return false;
     }
   }
@@ -192,7 +208,7 @@ export function useScannerDetection(options: any = {}) {
 
       return true;
     } catch (error) {
-      console.error('Failed to start camera:', error);
+      logger.error('Failed to start camera:', error);
       detectionStatus.value = 'Failed to start camera';
       return false;
     }
@@ -204,7 +220,7 @@ export function useScannerDetection(options: any = {}) {
    * @param {HTMLVideoElement} video - Video element
    * @returns {boolean} True if object passes all validation criteria
    */
-  function isValidObject(detection: any, video: HTMLVideoElement) {
+  function isValidObject(detection: DetectedObject, video: HTMLVideoElement) {
     const [, , width, height] = detection.bbox;
     const videoArea = video.videoWidth * video.videoHeight;
     const objectArea = width * height;
@@ -219,7 +235,7 @@ export function useScannerDetection(options: any = {}) {
     // Lighters are typically very thin, so they'll fail this check
     const aspectRatio = width / height;
     if (aspectRatio < MIN_ASPECT_RATIO || aspectRatio > MAX_ASPECT_RATIO) {
-      console.log(
+      logger.debug(
         `Object rejected: aspect ratio ${aspectRatio.toFixed(2)} out of range [${MIN_ASPECT_RATIO}, ${MAX_ASPECT_RATIO}]`
       );
       return false;
@@ -295,7 +311,7 @@ export function useScannerDetection(options: any = {}) {
         const bestMatch = relevantObjects.reduce((a, b) => (a.score > b.score ? a : b));
         detectionStatus.value = `Scanner detected (${Math.round(bestMatch.score * 100)}% confidence)`;
 
-        console.log('Scanner detection triggered:', {
+        logger.debug('Scanner detection triggered:', {
           class: bestMatch.class,
           confidence: bestMatch.score,
           consecutiveFrames: consecutiveDetectionCount,
@@ -320,7 +336,7 @@ export function useScannerDetection(options: any = {}) {
         animationFrameId = requestAnimationFrame(detectFrame);
       }
     } catch (error) {
-      console.error('Detection error:', error);
+      logger.error('Detection error:', error);
       // Continue trying
       if (isDetectionActive.value) {
         animationFrameId = requestAnimationFrame(detectFrame);
@@ -406,7 +422,7 @@ export function useScannerDetection(options: any = {}) {
 
       return true;
     } catch (error) {
-      console.error('Failed to start detection:', error);
+      logger.error('Failed to start detection:', error);
       detectionStatus.value = 'Failed to start detection';
       if (onError) {
         onError(error);

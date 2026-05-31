@@ -1,7 +1,22 @@
 import { ref } from 'vue';
+import type { Ref } from 'vue';
 import { avatarPlaceholder, useImageCropper, validateImageFile } from '@profile';
+import { logger } from '@shared/utils/logger';
 
-export function useRegisterAvatar({ errors, formData }: any) {
+interface RegisterAvatarFormData {
+  username: string;
+  name: string;
+  password1: string;
+  password2: string;
+  user_profile_img_base64: string;
+}
+
+interface RegisterAvatarDeps {
+  errors: Record<string, string | string[]>;
+  formData: Ref<RegisterAvatarFormData>;
+}
+
+export function useRegisterAvatar({ errors, formData }: RegisterAvatarDeps) {
   const fileInput = ref<HTMLInputElement | null>(null);
   const cropperDialog = ref<HTMLElement | null>(null);
   const avatarFile = ref<File | null>(null);
@@ -70,7 +85,7 @@ export function useRegisterAvatar({ errors, formData }: any) {
       closeCropper();
       if (fileInput.value) fileInput.value.value = '';
     } catch (error) {
-      console.error('Failed to apply crop:', error);
+      logger.error('Failed to apply crop:', error);
       errors.user_profile_img = ['Failed to process image. Please try again.'];
     }
   };

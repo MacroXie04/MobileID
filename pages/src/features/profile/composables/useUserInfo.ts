@@ -4,6 +4,7 @@ import { hasAuthTokens } from '@shared/utils/cookie';
 import { getUserInfo } from '@auth';
 import { useToken } from '@auth';
 import { baseURL } from '@shared/config/config';
+import { logger } from '@shared/utils/logger';
 import type { AuthUser } from '@auth';
 import type { UserProfile } from '@profile/types/profile';
 
@@ -68,7 +69,7 @@ export function useUserInfo() {
         avatarBlobUrl.value = '';
       }
     } catch (error) {
-      console.error('Failed to load avatar:', error);
+      logger.error('Failed to load avatar:', error);
       avatarBlobUrl.value = '';
     }
   }
@@ -135,7 +136,7 @@ export function useUserInfo() {
         return null;
       }
     } catch (error) {
-      console.error('Failed to get user info:', error);
+      logger.error('Failed to get user info:', error);
       throw error;
     } finally {
       isLoading.value = false;

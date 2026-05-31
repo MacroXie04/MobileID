@@ -1,9 +1,12 @@
 import { nextTick, onUnmounted, ref } from 'vue';
+import { logger } from '@shared/utils/logger';
+import type Cropper from 'cropperjs';
+import type { ImageCropperOptions } from '@profile/types/profile';
 
-type CropperInstance = any;
+type CropperInstance = Cropper;
 type CropperConstructor = new (
   element: HTMLImageElement,
-  options: Record<string, any>
+  options: Record<string, unknown>
 ) => CropperInstance;
 
 let cropperModulePromise: Promise<CropperConstructor> | null = null;
@@ -29,7 +32,7 @@ function loadCropperModule() {
  * @param {boolean} options.enableAdvancedControls - Enable zoom controls and preview (default: false)
  * @returns {Object} Cropper functions and state
  */
-export function useImageCropper(options: any = {}) {
+export function useImageCropper(options: ImageCropperOptions = {}) {
   const {
     targetWidth = 128,
     targetHeight = 128,
@@ -105,13 +108,13 @@ export function useImageCropper(options: any = {}) {
 
         zoomLevel.value = 1;
       } catch (error) {
-        console.error('Failed to initialize cropper:', error);
+        logger.error('Failed to initialize cropper:', error);
         cropperLoading.value = false;
       }
     };
 
     cropperImage.value.onerror = () => {
-      console.error('Failed to load image');
+      logger.error('Failed to load image');
       cropperLoading.value = false;
     };
 
@@ -143,7 +146,7 @@ export function useImageCropper(options: any = {}) {
 
       cropperPreview.value.appendChild(previewImg);
     } catch (error) {
-      console.error('Failed to update preview:', error);
+      logger.error('Failed to update preview:', error);
     }
   }
 
@@ -230,7 +233,7 @@ export function useImageCropper(options: any = {}) {
 
       // If base64 is too large, compress further
       if (base64String.length > maxBase64Length) {
-        console.warn('Image too large, reducing quality further...');
+        logger.warn('Image too large, reducing quality further...');
 
         const smallerCanvas = cropper.value.getCroppedCanvas({
           width: Math.floor(targetWidth * 0.75),
@@ -271,7 +274,7 @@ export function useImageCropper(options: any = {}) {
         previewUrl: URL.createObjectURL(blob),
       };
     } catch (error) {
-      console.error('Failed to apply crop:', error);
+      logger.error('Failed to apply crop:', error);
       throw error;
     } finally {
       applyingCrop.value = false;

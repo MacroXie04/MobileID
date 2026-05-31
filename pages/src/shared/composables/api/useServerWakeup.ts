@@ -1,5 +1,6 @@
 import { ref, readonly } from 'vue';
 import { baseURL } from '@shared/config/config';
+import { logger } from '@shared/utils/logger';
 
 // Singleton state - shared across all component instances
 const isWakingUp = ref(false);
@@ -46,12 +47,12 @@ async function checkServerHealth(timeoutMs = HEALTH_CHECK_TIMEOUT_MS): Promise<b
     const err = error as Error;
     if (err.name === 'AbortError') {
       // Request timed out - likely cold start
-      console.log('Health check timed out - server may be cold starting');
+      logger.debug('Health check timed out - server may be cold starting');
       return false;
     }
 
     // Network error or other issue
-    console.error('Health check failed:', err.message);
+    logger.error('Health check failed:', err.message);
     return false;
   }
 }

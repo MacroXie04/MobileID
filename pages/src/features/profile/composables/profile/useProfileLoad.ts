@@ -1,7 +1,14 @@
 import { getUserProfile } from '@profile';
 import { baseURL } from '@shared/config/config';
+import { logger } from '@shared/utils/logger';
+import type { ProfileLoadDeps } from '@profile/types/profile';
 
-export function useProfileLoad({ formData, originalData, avatarPreviewUrl, errors }: any) {
+export function useProfileLoad({
+  formData,
+  originalData,
+  avatarPreviewUrl,
+  errors,
+}: ProfileLoadDeps) {
   const loadProfile = async () => {
     try {
       const response = await getUserProfile();
@@ -25,11 +32,11 @@ export function useProfileLoad({ formData, originalData, avatarPreviewUrl, error
             avatarPreviewUrl.value = URL.createObjectURL(blob);
           }
         } catch (_avatarError) {
-          console.log('No avatar found or error loading avatar');
+          logger.debug('No avatar found or error loading avatar');
         }
       }
     } catch (error) {
-      console.error('Failed to load profile:', error);
+      logger.error('Failed to load profile:', error);
       errors.value.general = 'Failed to load profile data';
     }
   };

@@ -32,145 +32,138 @@
     </transition>
 
     <!-- Main Content -->
-    <main class="md-content">
-      <!-- Tabs Navigation -->
-      <div class="tabs-bar md-flex md-gap-2 md-items-center md-mb-6">
-        <div class="chip-wrapper" @click="setTab('Overview')">
-          <md-filter-chip :selected="activeTab === 'Overview'">
-            <md-icon slot="icon">tune</md-icon>
-            Overview
+    <main class="md-content dashboard-shell">
+      <!-- Mobile: compact horizontal tab navigation -->
+      <nav class="dashboard-tab-bar" aria-label="Dashboard sections">
+        <div v-for="tab in tabs" :key="tab.id" class="chip-wrapper" @click="setTab(tab.id)">
+          <md-filter-chip :selected="activeTab === tab.id">
+            <md-icon slot="icon">{{ tab.icon }}</md-icon>
+            {{ tab.label }}
           </md-filter-chip>
         </div>
-        <div class="chip-wrapper" @click="setTab('Profile')">
-          <md-filter-chip :selected="activeTab === 'Profile'">
-            <md-icon slot="icon">account_circle</md-icon>
-            Profile
-          </md-filter-chip>
-        </div>
-        <div class="chip-wrapper" @click="setTab('Camera')">
-          <md-filter-chip :selected="activeTab === 'Camera'">
-            <md-icon slot="icon">sensors</md-icon>
-            Scanner Detection
-          </md-filter-chip>
-        </div>
-        <div class="chip-wrapper" @click="setTab('Barcodes')">
-          <md-filter-chip :selected="activeTab === 'Barcodes'">
-            <md-icon slot="icon">inventory_2</md-icon>
-            Available Barcodes
-          </md-filter-chip>
-        </div>
-        <div class="chip-wrapper" @click="setTab('Devices')">
-          <md-filter-chip :selected="activeTab === 'Devices'">
-            <md-icon slot="icon">devices</md-icon>
-            Devices Management
-          </md-filter-chip>
-        </div>
-        <div class="chip-wrapper" @click="setTab('Add')">
-          <md-filter-chip :selected="activeTab === 'Add'">
-            <md-icon slot="icon">add_circle</md-icon>
-            Add Barcode
-          </md-filter-chip>
-        </div>
+      </nav>
+
+      <!-- Desktop: vertical navigation rail -->
+      <nav class="dashboard-nav-rail" aria-label="Dashboard sections">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          type="button"
+          class="nav-rail-item"
+          :class="{ 'is-active': activeTab === tab.id }"
+          :aria-current="activeTab === tab.id ? 'page' : undefined"
+          @click="setTab(tab.id)"
+        >
+          <span class="nav-rail-indicator">
+            <md-icon>{{ tab.icon }}</md-icon>
+          </span>
+          <span class="nav-rail-label md-typescale-label-medium">{{ tab.label }}</span>
+        </button>
+      </nav>
+
+      <!-- Tab content region -->
+      <div class="dashboard-content">
+        <!-- Barcode Settings -->
+        <SettingsCard
+          v-show="activeTab === 'Overview'"
+          :associate-user-profile-with-barcode="
+            Boolean(settings.associate_user_profile_with_barcode)
+          "
+          :barcode-choices="barcodeChoices"
+          :current-barcode-has-profile="currentBarcodeHasProfile"
+          :current-barcode-info="currentBarcodeInfo"
+          :errors="errors"
+          :format-date="formatDate"
+          :format-relative-time="formatRelativeTime"
+          :is-dynamic-selected="isDynamicSelected"
+          :is-saving="isSaving"
+          :pull-settings="pullSettings"
+          :selected-barcode="selectedBarcode"
+          :settings="settings"
+          @update-associate="
+            (val) => {
+              settings.associate_user_profile_with_barcode = val;
+              onSettingChange();
+            }
+          "
+          @update-pull-setting="
+            (val) => {
+              pullSettings.pull_setting = val;
+              onSettingChange();
+            }
+          "
+          @update-gender-setting="
+            (val) => {
+              pullSettings.gender_setting = val;
+              onSettingChange();
+            }
+          "
+        />
+
+        <!-- Camera/Scanner Detection Settings -->
+        <CameraSettingsCard
+          v-show="activeTab === 'Camera'"
+          :scanner-detection-enabled="Boolean(settings.scanner_detection_enabled)"
+          :prefer-front-camera="Boolean(settings.prefer_front_camera)"
+          :is-saving="isSaving"
+          @update-scanner-detection="
+            (val) => {
+              settings.scanner_detection_enabled = val;
+              onSettingChange();
+            }
+          "
+          @update-prefer-front-camera="
+            (val) => {
+              settings.prefer_front_camera = val;
+              onSettingChange();
+            }
+          "
+        />
+
+        <!-- Barcodes List -->
+        <BarcodesListCard
+          v-show="activeTab === 'Barcodes'"
+          :active-tab="activeTab"
+          :filter-type="filterType"
+          :filtered-barcodes="filteredBarcodes"
+          :has-active-filters="hasActiveFilters"
+          :owned-only="ownedOnly"
+          :pull-settings="pullSettings"
+          :settings="settings"
+          :updating-limit="updatingLimit"
+          @delete="deleteBarcode"
+          @update-filter="onFilterChange"
+          @toggle-owned="toggleOwned"
+          @set-active="setActiveBarcode"
+          @toggle-share="toggleShare"
+          @update-limit="updateDailyLimit"
+          @increment-limit="incrementDailyLimit"
+          @decrement-limit="decrementDailyLimit"
+          @toggle-unlimited-switch="toggleUnlimitedSwitch"
+          @apply-limit-preset="applyLimitPreset"
+        />
+
+        <!-- Profile Settings -->
+        <ProfileTabCard v-show="activeTab === 'Profile'" />
+
+        <!-- Add Barcode Section -->
+        <AddBarcodeCard
+          v-show="activeTab === 'Add'"
+          :active-tab="activeTab"
+          @added="loadDashboard"
+          @message="showMessage"
+        />
+
+        <!-- Devices Section -->
+        <DevicesCard v-show="activeTab === 'Devices'" />
+
+        <!-- Footer -->
+        <footer class="dashboard-footer">
+          <p class="md-typescale-body-small">
+            <router-link to="/privacy" class="privacy-link-text">Privacy Policy</router-link>
+          </p>
+        </footer>
       </div>
-
-      <!-- Barcode Settings -->
-      <SettingsCard
-        v-show="activeTab === 'Overview'"
-        :associate-user-profile-with-barcode="Boolean(settings.associate_user_profile_with_barcode)"
-        :barcode-choices="barcodeChoices"
-        :current-barcode-has-profile="currentBarcodeHasProfile"
-        :current-barcode-info="currentBarcodeInfo"
-        :errors="errors"
-        :format-date="formatDate"
-        :format-relative-time="formatRelativeTime"
-        :is-dynamic-selected="isDynamicSelected"
-        :is-saving="isSaving"
-        :pull-settings="pullSettings"
-        :selected-barcode="selectedBarcode"
-        :settings="settings"
-        @update-associate="
-          (val) => {
-            settings.associate_user_profile_with_barcode = val;
-            onSettingChange();
-          }
-        "
-        @update-pull-setting="
-          (val) => {
-            pullSettings.pull_setting = val;
-            onSettingChange();
-          }
-        "
-        @update-gender-setting="
-          (val) => {
-            pullSettings.gender_setting = val;
-            onSettingChange();
-          }
-        "
-      />
-
-      <!-- Camera/Scanner Detection Settings -->
-      <CameraSettingsCard
-        v-show="activeTab === 'Camera'"
-        :scanner-detection-enabled="Boolean(settings.scanner_detection_enabled)"
-        :prefer-front-camera="Boolean(settings.prefer_front_camera)"
-        :is-saving="isSaving"
-        @update-scanner-detection="
-          (val) => {
-            settings.scanner_detection_enabled = val;
-            onSettingChange();
-          }
-        "
-        @update-prefer-front-camera="
-          (val) => {
-            settings.prefer_front_camera = val;
-            onSettingChange();
-          }
-        "
-      />
-
-      <!-- Barcodes List -->
-      <BarcodesListCard
-        v-show="activeTab === 'Barcodes'"
-        :active-tab="activeTab"
-        :filter-type="filterType"
-        :filtered-barcodes="filteredBarcodes"
-        :has-active-filters="hasActiveFilters"
-        :owned-only="ownedOnly"
-        :pull-settings="pullSettings"
-        :settings="settings"
-        :updating-limit="updatingLimit"
-        @delete="deleteBarcode"
-        @update-filter="onFilterChange"
-        @toggle-owned="toggleOwned"
-        @set-active="setActiveBarcode"
-        @toggle-share="toggleShare"
-        @update-limit="updateDailyLimit"
-        @increment-limit="incrementDailyLimit"
-        @decrement-limit="decrementDailyLimit"
-        @toggle-unlimited-switch="toggleUnlimitedSwitch"
-        @apply-limit-preset="applyLimitPreset"
-      />
-
-      <!-- Profile Settings -->
-      <ProfileTabCard v-show="activeTab === 'Profile'" />
-
-      <!-- Add Barcode Section -->
-      <AddBarcodeCard
-        v-show="activeTab === 'Add'"
-        :active-tab="activeTab"
-        @added="loadDashboard"
-        @message="showMessage"
-      />
-
-      <!-- Devices Section -->
-      <DevicesCard v-show="activeTab === 'Devices'" />
-
-      <!-- Footer -->
-      <footer class="dashboard-footer">
-        <p class="md-typescale-body-small">
-          <router-link to="/privacy" class="privacy-link-text">Privacy Policy</router-link>
-        </p>
-      </footer>
     </main>
 
     <!-- Delete Confirmation Dialog -->
@@ -197,6 +190,7 @@ import {
   AddBarcodeCard,
   DevicesCard,
   ProfileTabCard,
+  tabs,
   useBarcodeDashboardViewSetup,
 } from './MobileIDDashboardView.setup';
 
@@ -239,3 +233,126 @@ const {
   applyLimitPreset,
 } = useBarcodeDashboardViewSetup();
 </script>
+
+<style scoped>
+/* Responsive shell: desktop navigation rail beside content, mobile tab bar above. */
+.dashboard-shell {
+  display: grid;
+  gap: var(--md-sys-spacing-6);
+}
+
+.dashboard-content {
+  min-width: 0; /* allow children to shrink instead of overflowing the grid */
+}
+
+/* --- Mobile horizontal tab bar (default) --- */
+.dashboard-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  margin-bottom: var(--md-sys-spacing-2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.dashboard-tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* The chip wrapper catches clicks anywhere on the chip. */
+.chip-wrapper {
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.chip-wrapper md-filter-chip {
+  pointer-events: none;
+}
+
+/* Desktop rail hidden on mobile. */
+.dashboard-nav-rail {
+  display: none;
+}
+
+/* --- Desktop navigation rail (>= 905px) --- */
+@media (min-width: 905px) {
+  .dashboard-shell {
+    grid-template-columns: 248px 1fr;
+    align-items: start;
+  }
+
+  .dashboard-tab-bar {
+    display: none;
+  }
+
+  .dashboard-nav-rail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-1);
+    position: sticky;
+    top: var(--md-sys-spacing-6);
+    padding: var(--md-sys-spacing-3);
+    background: var(--md-sys-color-surface-container-low);
+    border-radius: var(--md-sys-shape-corner-large);
+    border: 1px solid var(--md-sys-color-outline-variant);
+  }
+
+  .nav-rail-item {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-3);
+    width: 100%;
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+    border: none;
+    background: transparent;
+    border-radius: var(--md-sys-shape-corner-full);
+    color: var(--md-sys-color-on-surface-variant);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .nav-rail-item:hover {
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+  }
+
+  .nav-rail-item:focus-visible {
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: 2px;
+  }
+
+  .nav-rail-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 32px;
+    border-radius: var(--md-sys-shape-corner-full);
+  }
+
+  .nav-rail-item.is-active {
+    color: var(--md-sys-color-on-secondary-container);
+  }
+
+  .nav-rail-item.is-active .nav-rail-indicator {
+    background: var(--md-sys-color-secondary-container);
+  }
+
+  .nav-rail-item.is-active .nav-rail-label {
+    font-weight: 600;
+  }
+
+  .nav-rail-label {
+    flex: 1 1 auto;
+  }
+}
+</style>

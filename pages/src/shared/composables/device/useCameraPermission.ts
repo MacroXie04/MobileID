@@ -1,4 +1,12 @@
 import { ref } from 'vue';
+import { logger } from '@shared/utils/logger';
+
+export interface CameraPermissionOptions {
+  /** 'user' for front camera, 'environment' for back camera. Default 'environment'. */
+  facingMode?: 'user' | 'environment';
+  /** When true, the MediaStream is stopped immediately after permission is granted. Default false. */
+  stopStream?: boolean;
+}
 
 /**
  * Shared camera permission state - singleton pattern
@@ -58,7 +66,7 @@ async function checkExistingPermission() {
     }
   } catch (_err) {
     // Permissions API may not be supported, that's ok
-    console.log('Permissions API not supported, will check on request');
+    logger.debug('Permissions API not supported, will check on request');
   } finally {
     isCheckingPermission.value = false;
   }
@@ -72,7 +80,7 @@ async function checkExistingPermission() {
  * @param {boolean} options.stopStream - Whether to stop stream after permission granted (default: true)
  * @returns {Promise<{granted: boolean, stream: MediaStream|null, error: string|null}>} Permission result
  */
-async function ensureCameraPermission(options: any = {}) {
+async function ensureCameraPermission(options: CameraPermissionOptions = {}) {
   const { facingMode = 'environment', stopStream = false } = options;
 
   try {
@@ -100,7 +108,7 @@ async function ensureCameraPermission(options: any = {}) {
 
     return { granted: true, stream, error: null };
   } catch (err) {
-    console.error('Camera permission error:', err);
+    logger.error('Camera permission error:', err);
     hasCameraPermission.value = false;
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
       permissionDenied.value = true;

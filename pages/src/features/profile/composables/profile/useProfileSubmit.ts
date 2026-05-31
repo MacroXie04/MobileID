@@ -1,6 +1,8 @@
 import { updateUserProfile } from '@profile';
 import { clearUserInfo } from '@auth';
 import { fileToBase64 } from '@profile/utils/imageUtils';
+import { logger } from '@shared/utils/logger';
+import type { ProfileSubmitDeps } from '@profile/types/profile';
 
 export function useProfileSubmit({
   formData,
@@ -12,7 +14,7 @@ export function useProfileSubmit({
   router,
   redirectOnSubmit,
   redirectPath,
-}: any) {
+}: ProfileSubmitDeps) {
   const handleSubmit = async () => {
     if (loading.value) return;
 
@@ -61,7 +63,7 @@ export function useProfileSubmit({
         }, 3000);
       }
     } catch (error) {
-      console.error('Update error:', error);
+      logger.error('Update error:', error);
       errors.value.general = 'Network error. Please try again.';
     } finally {
       loading.value = false;

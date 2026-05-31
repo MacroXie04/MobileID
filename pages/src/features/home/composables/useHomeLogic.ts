@@ -4,6 +4,7 @@ import { getUserInfo, setUserInfo } from '@auth';
 import { useToken } from '@auth';
 import { useUserInfo } from '@profile';
 import { useBarcodeApi } from '@barcode';
+import { logger } from '@shared/utils/logger';
 
 export function useHomeLogic() {
   // State
@@ -44,7 +45,7 @@ export function useHomeLogic() {
           }
         }
       } catch (error) {
-        console.error('Home: Failed to refresh user info:', error);
+        logger.error('Home: Failed to refresh user info:', error);
       }
     } else if (cached && cached.profile) {
       // Update profile from cached auth state
@@ -55,7 +56,7 @@ export function useHomeLogic() {
     try {
       await loadUserProfile(forceRefresh);
     } catch (error) {
-      console.error('Home: Failed to reload user profile:', error);
+      logger.error('Home: Failed to reload user profile:', error);
     }
 
     // Load user avatar
@@ -78,7 +79,7 @@ export function useHomeLogic() {
         }
       }
     } catch (error) {
-      console.error('Home: Failed to load active profile:', error);
+      logger.error('Home: Failed to load active profile:', error);
     }
   }
 
@@ -123,7 +124,7 @@ export function useHomeLogic() {
             await barcodeDisplay.startDetection();
           }
 
-          console.error('Home: Failed to render barcode:', error);
+          logger.error('Home: Failed to render barcode:', error);
           return;
         }
 
@@ -147,14 +148,14 @@ export function useHomeLogic() {
         err.message.includes('Token refresh failed') ||
         err.message.includes('Max retries exceeded')
       ) {
-        console.log('Token refresh failed or max retries exceeded, redirecting to login page');
+        logger.debug('Token refresh failed or max retries exceeded, redirecting to login page');
         return;
       } else if (err.message.includes('Network error')) {
         serverStatus.value = 'Network Error';
-        console.error('Network error:', err.message);
+        logger.error('Network error:', err.message);
       } else {
         serverStatus.value = 'Error';
-        console.error('Barcode generation error:', err);
+        logger.error('Barcode generation error:', err);
       }
     } finally {
       loading.value = false;
@@ -175,7 +176,7 @@ export function useHomeLogic() {
             : true;
       }
     } catch (error) {
-      console.error('Home: Failed to load scanner settings:', error);
+      logger.error('Home: Failed to load scanner settings:', error);
     }
   }
 

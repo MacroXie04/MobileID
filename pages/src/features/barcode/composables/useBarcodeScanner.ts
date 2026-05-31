@@ -1,5 +1,12 @@
 import { nextTick, onUnmounted, ref, watch } from 'vue';
+import type { BrowserMultiFormatReader } from '@zxing/library';
 import { useCameraPermission } from '@shared/composables/device/useCameraPermission';
+import { logger } from '@shared/utils/logger';
+
+export interface BarcodeScannerOptions {
+  onScan?: (code: string) => void;
+  onError?: (error: Error) => void;
+}
 
 /**
  * Composable for handling barcode/QR code scanning functionality
@@ -9,7 +16,7 @@ import { useCameraPermission } from '@shared/composables/device/useCameraPermiss
  * @param {Function} options.onError - Callback when error occurs
  * @returns {Object} Scanner functions and state
  */
-export function useBarcodeScanner(options: any = {}) {
+export function useBarcodeScanner(options: BarcodeScannerOptions = {}) {
   const { onScan, onError } = options;
 
   // Shared camera permission state and methods
@@ -24,7 +31,7 @@ export function useBarcodeScanner(options: any = {}) {
   const selectedCameraId = ref<string | null>(null);
 
   // Internal state
-  let codeReader: any = null;
+  let codeReader: BrowserMultiFormatReader | null = null;
 
   /**
    * Initialize and start the scanner
@@ -91,7 +98,7 @@ export function useBarcodeScanner(options: any = {}) {
         // Ignore errors during scanning (they're usually just "no barcode found")
       });
     } catch (error) {
-      console.error('Scanner start error:', error);
+      logger.error('Scanner start error:', error);
       scannerStatus.value = `Failed to start scanner: ${error.message}`;
       scanning.value = false;
       if (onError) {

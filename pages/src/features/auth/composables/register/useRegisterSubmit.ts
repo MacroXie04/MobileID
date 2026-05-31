@@ -1,5 +1,6 @@
 import { register } from '@auth';
 import { ApiError } from '@shared/api/client';
+import { logger } from '@shared/utils/logger';
 
 export function useRegisterSubmit({
   formData,
@@ -39,7 +40,7 @@ export function useRegisterSubmit({
       // Account created but not activated — redirect to login with message
       await router.push({ path: '/login', query: { registered: 'true' } });
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
 
       if (error instanceof ApiError) {
         const apiData = error.data || {};
