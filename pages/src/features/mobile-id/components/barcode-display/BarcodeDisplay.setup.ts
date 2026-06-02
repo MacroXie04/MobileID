@@ -8,6 +8,7 @@ import '@mobile-id/styles/mobile-id.css';
 // Composable
 import { usePdf417 } from '@barcode';
 import { useScannerDetection } from '@shared/composables/device/useScannerDetection';
+import { logger } from '@shared/utils/logger';
 
 export const propsDefinition = {
   scannerDetectionEnabled: {
@@ -22,7 +23,20 @@ export const propsDefinition = {
 
 export const emitsDefinition = ['generate', 'scanner-detected'];
 
-export function useMobileIdBarcodeDisplaySetup(args: any = {}) {
+export interface BarcodeDisplayEmit {
+  (event: 'generate'): void;
+  (event: 'scanner-detected', objects: unknown[]): void;
+}
+
+export interface BarcodeDisplaySetupArgs {
+  props?: {
+    scannerDetectionEnabled?: boolean;
+    preferFrontCamera?: boolean;
+  };
+  emit?: BarcodeDisplayEmit;
+}
+
+export function useMobileIdBarcodeDisplaySetup(args: BarcodeDisplaySetupArgs = {}) {
   const { props, emit } = args;
   const componentProps = props ?? {
     scannerDetectionEnabled: false,
@@ -45,11 +59,11 @@ export function useMobileIdBarcodeDisplaySetup(args: any = {}) {
 
   // Methods (defined ahead for composable)
   function handleDetectionError(error: unknown) {
-    console.error('Detection error:', error);
+    logger.error('Detection error:', error);
   }
 
   function handleScannerDetected(objects: unknown[]) {
-    console.log('Scanner detected:', objects);
+    logger.debug('Scanner detected:', objects);
 
     // Pause detection while barcode is displayed
     stopDetection();

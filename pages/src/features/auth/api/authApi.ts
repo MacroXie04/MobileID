@@ -1,6 +1,7 @@
 import { ApiError, apiRequest } from '@shared/api/client';
 import { clearAuthCookies, clearAuthStorage } from '@shared/utils/cookie';
 import { clearUserInfo } from '@auth/state/authState';
+import { logger } from '@shared/utils/logger';
 import { refreshToken } from './tokenRefresh';
 import type { AuthUser, LoginResponse, RegisterPayload, RegisterResponse } from '@auth/types/auth';
 
@@ -59,7 +60,7 @@ export async function logout() {
     // The original implementation ignored errors. We'll log a warning.
     await apiRequest('/authn/logout/', { method: 'POST' });
   } catch (error) {
-    console.warn('Logout request failed:', error);
+    logger.warn('Logout request failed:', error);
   } finally {
     // Always clear cookies, storage, and cached user info on logout
     clearAuthCookies();

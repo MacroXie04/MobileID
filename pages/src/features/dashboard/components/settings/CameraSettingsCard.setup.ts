@@ -1,8 +1,18 @@
 import { computed, ref, watch, onUnmounted } from 'vue';
 import { useScannerDetection } from '@shared/composables/device/useScannerDetection';
+import { logger } from '@shared/utils/logger';
 
 // CSS - use shared dashboard styles
 import '@dashboard/styles/BarcodeDashboard.css';
+
+export interface CameraSettingsCardProps {
+  scannerDetectionEnabled?: boolean;
+  preferFrontCamera?: boolean;
+}
+
+export interface CameraSettingsCardSetupArgs {
+  props?: CameraSettingsCardProps;
+}
 
 export const propsDefinition = {
   scannerDetectionEnabled: {
@@ -17,7 +27,7 @@ export const propsDefinition = {
 
 export const emitsDefinition = ['update-scanner-detection', 'update-prefer-front-camera'];
 
-export function useCameraSettingsCardSetup(args: any = {}) {
+export function useCameraSettingsCardSetup(args: CameraSettingsCardSetupArgs = {}) {
   const { props } = args;
   const componentProps = props ?? {
     scannerDetectionEnabled: false,
@@ -48,10 +58,10 @@ export function useCameraSettingsCardSetup(args: any = {}) {
   } = useScannerDetection({
     preferFrontCamera: componentProps.preferFrontCamera,
     onDetected: (objects) => {
-      console.log('CameraSettings: Scanner detected:', objects);
+      logger.debug('CameraSettings: Scanner detected:', objects);
     },
     onError: (error) => {
-      console.error('CameraSettings: Detection error:', error);
+      logger.error('CameraSettings: Detection error:', error);
     },
     videoRef: videoElement,
     canvasRef: detectionCanvas,
@@ -81,7 +91,7 @@ export function useCameraSettingsCardSetup(args: any = {}) {
         permissionDenied.value = true;
       }
     } catch (error) {
-      console.error('Permission request error:', error);
+      logger.error('Permission request error:', error);
       permissionDenied.value = true;
     } finally {
       isRequestingPermission.value = false;
@@ -92,20 +102,9 @@ export function useCameraSettingsCardSetup(args: any = {}) {
     await toggleDetectionBase();
   }
 
-  function handleCameraChange(event) {
-    const cameraId = event.target.value;
+  // Camera selection from the settings list child (emits the deviceId directly).
+  function handleCameraChangeId(cameraId: string) {
     switchCamera(cameraId);
-  }
-
-  function formatCameraLabel(camera) {
-    if (camera.label) {
-      const label = camera.label;
-      if (label.length > 20) {
-        return label.substring(0, 17) + '...';
-      }
-      return label;
-    }
-    return `Camera ${cameras.value.indexOf(camera) + 1}`;
   }
 
   // Stop detection when disabled
@@ -137,8 +136,7 @@ export function useCameraSettingsCardSetup(args: any = {}) {
     hasCameraPermission,
     requestCameraPermission,
     toggleDetection,
-    handleCameraChange,
-    formatCameraLabel,
+    handleCameraChangeId,
     statusClass,
     statusIcon,
   };

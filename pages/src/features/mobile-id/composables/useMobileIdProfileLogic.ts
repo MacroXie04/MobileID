@@ -3,8 +3,8 @@ import { getInitials } from '@shared/utils/profileUtils';
 import type { UserProfile } from '@profile';
 
 export function useMobileIdProfileLogic(
-  props: { avatarSrc: string; profile: UserProfile },
-  emit: (event: 'generate') => void
+  props: { avatarSrc?: string; profile?: UserProfile },
+  emit?: (event: 'generate') => void
 ) {
   const { avatarSrc } = toRefs(props);
   const showInitials = ref(false);

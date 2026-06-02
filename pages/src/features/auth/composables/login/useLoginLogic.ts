@@ -4,6 +4,7 @@ import { establishAuthenticatedSession, login } from '@auth';
 import { ApiError } from '@shared/api/client';
 import { setUserInfo } from '@auth';
 import { useLoginValidation } from '@auth/composables/login/useLoginValidation';
+import { logger } from '@shared/utils/logger';
 
 export function useLoginLogic() {
   const router = useRouter();
@@ -66,7 +67,7 @@ export function useLoginLogic() {
         setGeneralError('Unable to sign in. Please try again.');
       }
     } catch (err) {
-      console.error('Login error:', err);
+      logger.error('Login error:', err);
       if (err instanceof ApiError) {
         setGeneralError(err.data?.detail || 'Invalid username or password.');
       } else {

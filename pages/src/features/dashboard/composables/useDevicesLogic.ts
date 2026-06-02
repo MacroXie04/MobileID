@@ -1,5 +1,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { useAuthenticatedRequest } from '@auth';
+import type { AuthenticatedRequestError } from '@auth';
+import { logger } from '@shared/utils/logger';
+import type { Device, DevicesListResponse } from '@dashboard/types/dashboard';
 
 /**
  * Composable for managing user devices/sessions.
@@ -9,10 +12,10 @@ export function useDevicesLogic() {
   const { apiCallWithAutoRefresh } = useAuthenticatedRequest();
 
   // Reactive state
-  const devices = ref<any[]>([]);
+  const devices = ref<Device[]>([]);
   const loading = ref(false);
-  const error = ref(null);
-  const revoking = ref(null); // token_id being revoked, or 'all'
+  const error = ref<string | null>(null);
+  const revoking = ref<number | 'all' | null>(null); // token_id being revoked, or 'all'
 
   /**
    * Fetch all devices/sessions for the current user.
@@ -24,7 +27,7 @@ export function useDevicesLogic() {
     try {
       // The backend identifies the current device using the access token's iat claim
       // which is automatically included in the authenticated request
-      const response = await apiCallWithAutoRefresh<{ devices?: any[] }>('/authn/devices/', {
+      const response = await apiCallWithAutoRefresh<DevicesListResponse>('/authn/devices/', {
         method: 'GET',
       });
 
@@ -37,8 +40,8 @@ export function useDevicesLogic() {
         devices.value = [];
       }
     } catch (err) {
-      console.error('Failed to fetch devices:', err);
-      error.value = err.message || 'Failed to load devices';
+      logger.error('Failed to fetch devices:', err);
+      error.value = (err as AuthenticatedRequestError).message || 'Failed to load devices';
       devices.value = [];
     } finally {
       loading.value = false;
@@ -50,7 +53,7 @@ export function useDevicesLogic() {
    * @param {string} deviceType - desktop/mobile/tablet/unknown
    * @returns {string} Material icon name
    */
-  function getDeviceIcon(deviceType) {
+  function getDeviceIcon(deviceType: string) {
     switch (deviceType) {
       case 'mobile':
         return 'smartphone';
@@ -68,7 +71,7 @@ export function useDevicesLogic() {
    * @param {string} dateString - ISO date string
    * @returns {string} Relative time string
    */
-  function formatRelativeTime(dateString) {
+  function formatRelativeTime(dateString: string) {
     if (!dateString) return 'Unknown';
 
     const date = new Date(dateString);
@@ -97,7 +100,7 @@ export function useDevicesLogic() {
    * @param {string} dateString - ISO date string of expiration
    * @returns {string} Formatted expiration info
    */
-  function formatExpirationTime(dateString) {
+  function formatExpirationTime(dateString: string) {
     if (!dateString) return 'Unknown';
 
     const date = new Date(dateString);
@@ -128,7 +131,7 @@ export function useDevicesLogic() {
    * @param {string} dateString - ISO date string
    * @returns {string} Formatted date
    */
-  function formatDateTime(dateString) {
+  function formatDateTime(dateString: string) {
     if (!dateString) return 'Unknown';
 
     const date = new Date(dateString);
@@ -145,7 +148,7 @@ export function useDevicesLogic() {
    * Revoke a specific device/session.
    * @param {number} tokenId - The token ID to revoke
    */
-  async function revokeDevice(tokenId) {
+  async function revokeDevice(tokenId: number) {
     revoking.value = tokenId;
     try {
       await apiCallWithAutoRefresh(`/authn/devices/${tokenId}/revoke/`, {
@@ -153,8 +156,8 @@ export function useDevicesLogic() {
       });
       await fetchDevices();
     } catch (err) {
-      console.error('Failed to revoke device:', err);
-      error.value = err.message || 'Failed to log out device';
+      logger.error('Failed to revoke device:', err);
+      error.value = (err as AuthenticatedRequestError).message || 'Failed to log out device';
     } finally {
       revoking.value = null;
     }
@@ -171,8 +174,8 @@ export function useDevicesLogic() {
       });
       await fetchDevices();
     } catch (err) {
-      console.error('Failed to revoke all devices:', err);
-      error.value = err.message || 'Failed to log out other devices';
+      logger.error('Failed to revoke all devices:', err);
+      error.value = (err as AuthenticatedRequestError).message || 'Failed to log out other devices';
     } finally {
       revoking.value = null;
     }

@@ -7,7 +7,7 @@ import { onUnmounted, ref } from 'vue';
 
 export function useDailyLimit(apiUpdateBarcodeDailyLimit, showMessage) {
   // Per-barcode daily limit updating state
-  const updatingLimit = ref<Record<string, any>>({});
+  const updatingLimit = ref<Record<string, boolean>>({});
 
   // Per-barcode debounce timeouts
   const dailyLimitTimeouts = new Map();

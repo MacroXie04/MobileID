@@ -2,8 +2,15 @@ import { ref } from 'vue';
 import { useImageCropper } from '@profile/composables/useImageCropper';
 import { validateImageFile } from '@profile/utils/imageUtils';
 import avatarPlaceholder from '@profile/assets/avatar_placeholder.png';
+import { logger } from '@shared/utils/logger';
+import type { ProfileAvatarDeps } from '@profile/types/profile';
 
-export function useProfileAvatar({ errors, avatarFile, avatarPreviewUrl, triggerAutoSave }: any) {
+export function useProfileAvatar({
+  errors,
+  avatarFile,
+  avatarPreviewUrl,
+  triggerAutoSave,
+}: ProfileAvatarDeps) {
   const fileInput = ref<HTMLInputElement | null>(null);
   const cropperDialog = ref<HTMLElement | null>(null);
 
@@ -68,7 +75,7 @@ export function useProfileAvatar({ errors, avatarFile, avatarPreviewUrl, trigger
       closeCropper();
       if (fileInput.value) fileInput.value.value = '';
     } catch (error) {
-      console.error('Failed to apply crop:', error);
+      logger.error('Failed to apply crop:', error);
       errors.value.user_profile_img = 'Failed to process image. Please try again.';
     }
   };

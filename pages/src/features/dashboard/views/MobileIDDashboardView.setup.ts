@@ -7,7 +7,10 @@ import AddBarcodeCard from '@dashboard/components/barcodes/AddBarcodeCard.vue';
 import DevicesCard from '@dashboard/components/devices/DevicesCard.vue';
 import { ProfileTabCard } from '@profile';
 import { useDashboardLogic } from '@dashboard/composables/useDashboardLogic';
+import { DASHBOARD_TABS } from './dashboardTabs';
 import '@dashboard/styles/BarcodeDashboard.css';
+
+export const tabs = DASHBOARD_TABS;
 
 export {
   SettingsCard,

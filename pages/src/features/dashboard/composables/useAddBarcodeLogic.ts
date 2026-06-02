@@ -1,15 +1,18 @@
 import { ref } from 'vue';
 import { useBarcodeApi, useBarcodeScanner } from '@barcode';
 import type { CreateDynamicBarcodePayload } from '@barcode';
+import type { AuthenticatedRequestError } from '@auth';
+import { logger } from '@shared/utils/logger';
+import type { AddBarcodeEmit } from '@dashboard/types/dashboard';
 
-export function useAddBarcodeLogic(emit: (...args: any[]) => void = () => {}) {
+export function useAddBarcodeLogic(emit: AddBarcodeEmit = () => {}) {
   const { apiCreateBarcode, apiCreateDynamicBarcodeWithProfile, apiTransferDynamicBarcode } =
     useBarcodeApi();
 
   // Barcode state
   const addSectionLocal = ref(null);
   const newBarcode = ref('');
-  const errors = ref<Record<string, any>>({});
+  const errors = ref<Record<string, string>>({});
 
   // Permission state
   const isRequestingPermission = ref(false);
@@ -49,7 +52,7 @@ export function useAddBarcodeLogic(emit: (...args: any[]) => void = () => {}) {
         permissionDenied.value = true;
       }
     } catch (error) {
-      console.error('Permission request error:', error);
+      logger.error('Permission request error:', error);
       permissionDenied.value = true;
     } finally {
       isRequestingPermission.value = false;
@@ -66,7 +69,7 @@ export function useAddBarcodeLogic(emit: (...args: any[]) => void = () => {}) {
   const dynamicSuccess = ref(false);
   const dynamicSuccessMessage = ref('');
   const dynamicError = ref('');
-  const dynamicErrors = ref<Record<string, any>>({});
+  const dynamicErrors = ref<Record<string, string>>({});
 
   // Transfer dynamic barcode state
   const transferHtml = ref('');
@@ -74,9 +77,9 @@ export function useAddBarcodeLogic(emit: (...args: any[]) => void = () => {}) {
   const transferSuccess = ref(false);
   const transferSuccessMessage = ref('');
   const transferError = ref('');
-  const transferErrors = ref<Record<string, any>>({});
+  const transferErrors = ref<Record<string, string>>({});
 
-  function clearError(field) {
+  function clearError(field: string) {
     delete errors.value[field];
   }
 
@@ -94,13 +97,15 @@ export function useAddBarcodeLogic(emit: (...args: any[]) => void = () => {}) {
         emit('added');
       }
     } catch (error) {
-      if (error.status === 400 && error.errors) {
-        if (error.errors.barcode && error.errors.barcode.length > 0) {
-          errors.value.newBarcode = error.errors.barcode[0];
+      const e = error as AuthenticatedRequestError;
+      const errs = e.errors as Record<string, string | string[]> | undefined;
+      if (e.status === 400 && errs) {
+        if (errs.barcode && errs.barcode.length > 0) {
+          errors.value.newBarcode = errs.barcode[0];
         } else if (
-          error.status === 400 &&
-          error.message &&
-          error.message.includes('barcode with this barcode already exists')
+          e.status === 400 &&
+          e.message &&
+          e.message.includes('barcode with this barcode already exists')
         ) {
           errors.value.newBarcode = 'Barcode already exists';
         } else {
@@ -112,7 +117,7 @@ export function useAddBarcodeLogic(emit: (...args: any[]) => void = () => {}) {
     }
   }
 
-  function clearDynamicError(field) {
+  function clearDynamicError(field: string) {
     delete dynamicErrors.value[field];
     dynamicError.value = '';
     dynamicSuccess.value = false;
@@ -187,42 +192,40 @@ export function useAddBarcodeLogic(emit: (...args: any[]) => void = () => {}) {
         dynamicError.value = data?.message || 'Failed to create dynamic barcode';
       }
     } catch (error) {
-      if (error.status === 400 && error.errors) {
+      const e = error as AuthenticatedRequestError;
+      const errs = e.errors as Record<string, string | string[]> | undefined;
+      if (e.status === 400 && errs) {
         // Handle field-specific errors and build detailed message
-        const fieldErrors = [];
-        if (error.errors.barcode) {
-          const msg = Array.isArray(error.errors.barcode)
-            ? error.errors.barcode[0]
-            : error.errors.barcode;
+        const fieldErrors: string[] = [];
+        if (errs.barcode) {
+          const msg = Array.isArray(errs.barcode) ? errs.barcode[0] : errs.barcode;
           dynamicErrors.value.barcode = msg;
           fieldErrors.push(`Barcode: ${msg}`);
         }
-        if (error.errors.name) {
-          const msg = Array.isArray(error.errors.name) ? error.errors.name[0] : error.errors.name;
+        if (errs.name) {
+          const msg = Array.isArray(errs.name) ? errs.name[0] : errs.name;
           dynamicErrors.value.name = msg;
           fieldErrors.push(`Name: ${msg}`);
         }
-        if (error.errors.information_id) {
-          const msg = Array.isArray(error.errors.information_id)
-            ? error.errors.information_id[0]
-            : error.errors.information_id;
+        if (errs.information_id) {
+          const msg = Array.isArray(errs.information_id)
+            ? errs.information_id[0]
+            : errs.information_id;
           dynamicErrors.value.information_id = msg;
           fieldErrors.push(`Student ID: ${msg}`);
         }
-        if (error.errors.avatar) {
-          const msg = Array.isArray(error.errors.avatar)
-            ? error.errors.avatar[0]
-            : error.errors.avatar;
+        if (errs.avatar) {
+          const msg = Array.isArray(errs.avatar) ? errs.avatar[0] : errs.avatar;
           dynamicErrors.value.avatar = msg;
           fieldErrors.push(`Avatar: ${msg}`);
         }
         // Show specific field errors if available, otherwise show generic message
         dynamicError.value =
-          fieldErrors.length > 0 ? fieldErrors.join('; ') : error.message || 'Invalid request';
-      } else if (error.status === 403) {
+          fieldErrors.length > 0 ? fieldErrors.join('; ') : e.message || 'Invalid request';
+      } else if (e.status === 403) {
         dynamicError.value = 'Permission denied. Please ensure you are logged in.';
       } else {
-        dynamicError.value = error.message || 'Network error occurred';
+        dynamicError.value = e.message || 'Network error occurred';
       }
     } finally {
       dynamicLoading.value = false;
@@ -264,40 +267,40 @@ export function useAddBarcodeLogic(emit: (...args: any[]) => void = () => {}) {
         transferError.value = data?.message || 'Failed to transfer dynamic barcode';
       }
     } catch (error) {
-      if (error.status === 400 && error.errors) {
+      const e = error as AuthenticatedRequestError;
+      const errs = e.errors as Record<string, string | string[]> | undefined;
+      if (e.status === 400 && errs) {
         // Handle field-specific errors and build detailed message
-        const fieldErrors = [];
-        if (error.errors.html) {
-          const msg = Array.isArray(error.errors.html) ? error.errors.html[0] : error.errors.html;
+        const fieldErrors: string[] = [];
+        if (errs.html) {
+          const msg = Array.isArray(errs.html) ? errs.html[0] : errs.html;
           transferErrors.value.html = msg;
           fieldErrors.push(msg);
         }
-        if (error.errors.barcode) {
-          const msg = Array.isArray(error.errors.barcode)
-            ? error.errors.barcode[0]
-            : error.errors.barcode;
+        if (errs.barcode) {
+          const msg = Array.isArray(errs.barcode) ? errs.barcode[0] : errs.barcode;
           transferErrors.value.barcode = msg;
           fieldErrors.push(`Barcode: ${msg}`);
         }
-        if (error.errors.name) {
-          const msg = Array.isArray(error.errors.name) ? error.errors.name[0] : error.errors.name;
+        if (errs.name) {
+          const msg = Array.isArray(errs.name) ? errs.name[0] : errs.name;
           transferErrors.value.name = msg;
           fieldErrors.push(`Name: ${msg}`);
         }
-        if (error.errors.information_id) {
-          const msg = Array.isArray(error.errors.information_id)
-            ? error.errors.information_id[0]
-            : error.errors.information_id;
+        if (errs.information_id) {
+          const msg = Array.isArray(errs.information_id)
+            ? errs.information_id[0]
+            : errs.information_id;
           transferErrors.value.information_id = msg;
           fieldErrors.push(`Student ID: ${msg}`);
         }
         // Show specific field errors if available, otherwise show generic message
         transferError.value =
           fieldErrors.length > 0 ? fieldErrors.join('; ') : 'Could not parse HTML content';
-      } else if (error.status === 403) {
+      } else if (e.status === 403) {
         transferError.value = 'Permission denied. Please ensure you are logged in.';
       } else {
-        transferError.value = error.message || 'Network error occurred';
+        transferError.value = e.message || 'Network error occurred';
       }
     } finally {
       transferLoading.value = false;

@@ -2,6 +2,7 @@ import { toRefs } from 'vue';
 import { useRouter } from 'vue-router';
 import { logout } from '@auth';
 import { clearAuthCookies, clearAuthStorage } from '@shared/utils/cookie';
+import { logger } from '@shared/utils/logger';
 
 // CSS
 import '@mobile-id/styles/mobile-id.css';
@@ -25,7 +26,16 @@ export const propsDefinition = {
   },
 };
 
-export function useGridMenuSetup(args: any = {}) {
+export interface GridMenuSetupArgs {
+  props?: {
+    serverStatus?: string;
+    scannerDetectionEnabled?: boolean;
+    isDetectionActive?: boolean;
+    scannerDetected?: boolean;
+  };
+}
+
+export function useGridMenuSetup(args: GridMenuSetupArgs = {}) {
   const { props } = args;
   const router = useRouter();
   const componentProps = props ?? {};
@@ -53,13 +63,13 @@ export function useGridMenuSetup(args: any = {}) {
         const { clearUserProfile } = await import('@profile');
         clearUserProfile();
       } catch (error) {
-        console.warn('Could not clear user profile cache:', error);
+        logger.warn('Could not clear user profile cache:', error);
       }
 
       // Redirect to login page
       router.push('/login');
     } catch (error) {
-      console.error('Logout failed:', error);
+      logger.error('Logout failed:', error);
       // Even if API call fails, still clear local data and redirect
       clearAuthCookies();
       clearAuthStorage();

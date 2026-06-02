@@ -1,4 +1,5 @@
 import { onUnmounted, ref } from 'vue';
+import { logger } from '@shared/utils/logger';
 
 type AutoSaveResult = { skipped?: boolean; success?: boolean; message?: string };
 type AutoSaveStatusType = 'info' | 'success' | 'error';
@@ -104,7 +105,7 @@ export function useAutoSave(
         showToast('error', result?.message || 'Auto-save failed');
       }
     } catch (error) {
-      console.error('Auto-save error:', error);
+      logger.error('Auto-save error:', error);
       showToast('error', error.message || 'Auto-save failed: Network error');
     } finally {
       autoSaving.value = false;

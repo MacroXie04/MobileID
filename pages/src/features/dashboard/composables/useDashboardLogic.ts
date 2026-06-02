@@ -1,6 +1,9 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useBarcodeApi, useDailyLimit } from '@barcode';
+import type { Barcode, BarcodeChoice, PullSettings } from '@barcode';
+import type { AuthenticatedRequestError } from '@auth';
+import type { DashboardSettings } from '@dashboard/types/dashboard';
 
 export function useDashboardLogic() {
   const router = useRouter();
@@ -18,26 +21,26 @@ export function useDashboardLogic() {
   // Reactive state
   const loading = ref(true);
   const message = ref('');
-  const messageType = ref('success');
-  const errors = ref<Record<string, any>>({});
+  const messageType = ref<'success' | 'danger'>('success');
+  const errors = ref<Record<string, string>>({});
   const isSaving = ref(false);
 
   // Tabs
   const activeTab = ref('Overview');
 
   // Dashboard data
-  const settings = ref({
+  const settings = ref<DashboardSettings>({
     associate_user_profile_with_barcode: false,
     scanner_detection_enabled: false,
     prefer_front_camera: true,
     barcode: null,
   });
-  const pullSettings = ref({
+  const pullSettings = ref<Required<PullSettings>>({
     pull_setting: 'Disable',
     gender_setting: 'Unknow',
   });
-  const barcodes = ref([]);
-  const barcodeChoices = ref([]);
+  const barcodes = ref<Barcode[]>([]);
+  const barcodeChoices = ref<BarcodeChoice[]>([]);
 
   // Filter state
   const filterType = ref('All'); // All | Dynamic | Static
@@ -45,13 +48,13 @@ export function useDashboardLogic() {
 
   // Dialog state
   const showConfirmDialog = ref(false);
-  const barcodeToDelete = ref(null);
+  const barcodeToDelete = ref<string | number | null>(null);
 
   // Auto-save settings with debounce
-  let saveTimeout = null;
+  let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Utility function for showing messages
-  function showMessage(msg, type = 'success') {
+  function showMessage(msg: string, type: 'success' | 'danger' = 'success') {
     message.value = msg;
     messageType.value = type;
 
@@ -72,12 +75,14 @@ export function useDashboardLogic() {
   } = useDailyLimit(apiUpdateBarcodeDailyLimit, showMessage);
 
   // Wrapper functions that pass barcodes ref
-  const updateDailyLimit = (barcode, value) => updateDailyLimitBase(barcode, value, barcodes);
-  const incrementDailyLimit = (barcode) => incrementDailyLimitBase(barcode, barcodes);
-  const decrementDailyLimit = (barcode) => decrementDailyLimitBase(barcode, barcodes);
-  const toggleUnlimitedSwitch = (barcode, event) =>
+  const updateDailyLimit = (barcode: Barcode, value: number) =>
+    updateDailyLimitBase(barcode, value, barcodes);
+  const incrementDailyLimit = (barcode: Barcode) => incrementDailyLimitBase(barcode, barcodes);
+  const decrementDailyLimit = (barcode: Barcode) => decrementDailyLimitBase(barcode, barcodes);
+  const toggleUnlimitedSwitch = (barcode: Barcode, event: Event) =>
     toggleUnlimitedSwitchBase(barcode, event, barcodes);
-  const applyLimitPreset = (barcode, value) => applyLimitPresetBase(barcode, value, barcodes);
+  const applyLimitPreset = (barcode: Barcode, value: number) =>
+    applyLimitPresetBase(barcode, value, barcodes);
 
   // Computed Properties
   const isDynamicSelected = computed(() => {
@@ -174,7 +179,8 @@ export function useDashboardLogic() {
 
       barcodes.value = data.barcodes || [];
     } catch (error) {
-      showMessage('Failed to load dashboard: ' + error.message, 'danger');
+      const e = error as AuthenticatedRequestError;
+      showMessage('Failed to load dashboard: ' + e.message, 'danger');
     } finally {
       loading.value = false;
     }
@@ -240,10 +246,11 @@ export function useDashboardLogic() {
         await new Promise((resolve) => setTimeout(resolve, remainingTime));
       }
     } catch (error) {
-      if (error.status === 400 && error.errors) {
-        errors.value = error.errors;
+      const e = error as AuthenticatedRequestError;
+      if (e.status === 400 && e.errors) {
+        errors.value = e.errors as Record<string, string>;
       } else {
-        showMessage('Failed to save settings: ' + error.message, 'danger');
+        showMessage('Failed to save settings: ' + e.message, 'danger');
       }
 
       // Also ensure minimum display time for errors
@@ -269,7 +276,7 @@ export function useDashboardLogic() {
     }, 800);
   }
 
-  async function setActiveBarcode(barcode) {
+  async function setActiveBarcode(barcode: Barcode) {
     if (!barcode) return;
     // Check if pull setting is enabled
     if (pullSettings.value.pull_setting === 'Enable') {
@@ -285,7 +292,7 @@ export function useDashboardLogic() {
     await autoSaveSettings();
   }
 
-  async function deleteBarcode(barcode) {
+  async function deleteBarcode(barcode: Barcode) {
     // Guard: only allow deletion for barcodes owned by the current user
     if (!barcode || !barcode.is_owned_by_current_user) {
       showMessage('You can only delete your own barcode', 'danger');
@@ -307,14 +314,15 @@ export function useDashboardLogic() {
         await loadDashboard();
       }
     } catch (error) {
-      showMessage('Failed to delete barcode: ' + error.message, 'danger');
+      const e = error as AuthenticatedRequestError;
+      showMessage('Failed to delete barcode: ' + e.message, 'danger');
     } finally {
       showConfirmDialog.value = false;
       barcodeToDelete.value = null;
     }
   }
 
-  async function toggleShare(barcode) {
+  async function toggleShare(barcode: Barcode) {
     if (!barcode || !barcode.is_owned_by_current_user) return;
     try {
       const next = !barcode.share_with_others;
@@ -330,12 +338,13 @@ export function useDashboardLogic() {
         }
         showMessage(next ? 'Sharing enabled' : 'Sharing disabled', 'success');
       }
-    } catch (e) {
+    } catch (error) {
+      const e = error as AuthenticatedRequestError;
       showMessage('Failed to update sharing: ' + (e?.message || 'Unknown error'), 'danger');
     }
   }
 
-  function onFilterChange(val) {
+  function onFilterChange(val: string) {
     if (val) filterType.value = val;
   }
 
@@ -347,7 +356,7 @@ export function useDashboardLogic() {
     activeTab.value = 'Add';
   }
 
-  function setTab(tab) {
+  function setTab(tab: string) {
     activeTab.value = tab;
   }
 

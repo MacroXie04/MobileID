@@ -2,11 +2,26 @@ import api from './axios';
 import { ensureCsrfToken } from './csrf';
 import type { AxiosRequestConfig } from 'axios';
 
+/**
+ * Canonical shape of a JSON error body returned by the Django/DRF backend.
+ * Lives here (the domain-neutral shared layer) so both shared and feature code
+ * can depend on it; `features/auth/types/auth.ts` re-exports it for `@auth`
+ * consumers. The index signature keeps dynamic field-error spreading/deletes
+ * type-checkable under the repo's loose null config.
+ */
+export interface ApiErrorData {
+  detail?: string;
+  message?: string;
+  errors?: Record<string, string | string[]>;
+  non_field_errors?: string | string[];
+  [key: string]: unknown;
+}
+
 export class ApiError extends Error {
   status: number;
-  data: any;
+  data: ApiErrorData;
 
-  constructor(message: string, status: number, data: any) {
+  constructor(message: string, status: number, data: ApiErrorData) {
     super(message);
     this.name = 'ApiError';
     this.status = status;

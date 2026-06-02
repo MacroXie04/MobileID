@@ -28,7 +28,21 @@ export const propsDefinition = {
 
 export const emitsDefinition = ['generate'];
 
-export function useSchoolUserProfileSetup(args: any = {}) {
+export interface UserProfileSetupArgs {
+  // Fields are optional because Vue's `defineProps(propsDefinition)` infers the
+  // bound props with optional/defaulted members; useMobileIdProfileLogic only
+  // reads avatarSrc/profile and tolerates their absence at runtime.
+  props?: {
+    profile?: UserProfile;
+    avatarSrc?: string;
+    loading?: boolean;
+    barcodeVisible?: boolean;
+    isRefreshingToken?: boolean;
+  };
+  emit?: (event: 'generate') => void;
+}
+
+export function useSchoolUserProfileSetup(args: UserProfileSetupArgs = {}) {
   const { props, emit } = args;
   return useMobileIdProfileLogic(props ?? {}, emit);
 }

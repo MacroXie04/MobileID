@@ -38,34 +38,14 @@
             <md-icon>smartphone</md-icon>
             <span>Current Device</span>
           </div>
-          <div class="device-card current-device">
-            <div class="device-icon-wrapper">
-              <md-icon>{{ getDeviceIcon(currentDevice.device_type) }}</md-icon>
-            </div>
-            <div class="device-info">
-              <div class="device-name md-typescale-title-medium">
-                {{ currentDevice.device_name }}
-                <md-assist-chip class="current-badge" has-icon>
-                  <md-icon slot="icon">check_circle</md-icon>
-                  Current
-                </md-assist-chip>
-              </div>
-              <div class="device-details md-typescale-body-small">
-                <span v-if="currentDevice.ip_address" class="detail-item">
-                  <md-icon>location_on</md-icon>
-                  {{ currentDevice.ip_address }}
-                </span>
-                <span class="detail-item">
-                  <md-icon>login</md-icon>
-                  Logged in {{ formatRelativeTime(currentDevice.created_at) }}
-                </span>
-                <span class="detail-item expiration">
-                  <md-icon>schedule</md-icon>
-                  {{ formatExpirationTime(currentDevice.expires_at) }}
-                </span>
-              </div>
-            </div>
-          </div>
+          <DeviceCard
+            :device="currentDevice"
+            :is-current="true"
+            :revoking="revoking"
+            :get-device-icon="getDeviceIcon"
+            :format-relative-time="formatRelativeTime"
+            :format-expiration-time="formatExpirationTime"
+          />
         </div>
 
         <!-- Other Devices Section -->
@@ -84,37 +64,16 @@
           </div>
 
           <div class="devices-list">
-            <div v-for="device in otherDevices" :key="device.id" class="device-card">
-              <div class="device-icon-wrapper">
-                <md-icon>{{ getDeviceIcon(device.device_type) }}</md-icon>
-              </div>
-              <div class="device-info">
-                <div class="device-name md-typescale-title-medium">
-                  {{ device.device_name }}
-                </div>
-                <div class="device-details md-typescale-body-small">
-                  <span v-if="device.ip_address" class="detail-item">
-                    <md-icon>location_on</md-icon>
-                    {{ device.ip_address }}
-                  </span>
-                  <span class="detail-item">
-                    <md-icon>login</md-icon>
-                    {{ formatRelativeTime(device.created_at) }}
-                  </span>
-                  <span class="detail-item expiration">
-                    <md-icon>schedule</md-icon>
-                    {{ formatExpirationTime(device.expires_at) }}
-                  </span>
-                </div>
-              </div>
-              <md-icon-button
-                class="revoke-button"
-                :disabled="revoking !== null"
-                @click="revokeDevice(device.id)"
-              >
-                <md-icon>{{ revoking === device.id ? 'hourglass_top' : 'logout' }}</md-icon>
-              </md-icon-button>
-            </div>
+            <DeviceCard
+              v-for="device in otherDevices"
+              :key="device.id"
+              :device="device"
+              :revoking="revoking"
+              :get-device-icon="getDeviceIcon"
+              :format-relative-time="formatRelativeTime"
+              :format-expiration-time="formatExpirationTime"
+              @revoke="revokeDevice"
+            />
           </div>
         </div>
 
@@ -144,6 +103,7 @@
 </template>
 
 <script setup lang="ts">
+import DeviceCard from './DeviceCard.vue';
 import { useDevicesCardSetup } from './DevicesCard.setup';
 
 const {
