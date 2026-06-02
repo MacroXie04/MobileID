@@ -41,11 +41,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 #   curl        - used by docker-compose healthcheck (curl -sf /health/)
 #   libcap2/libsystemd0/libudev1 are explicitly upgraded to pick up Debian
 #   security fixes that may lag behind the floating python slim base layer.
+#   The libkrb5 family is pulled in transitively (libpq5/curl link against
+#   GSSAPI); list it explicitly so the build always lands on the patched
+#   Debian security release rather than whatever the base layer froze.
 # tini gives us a proper PID 1 for Gunicorn signal handling.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libcap2 \
         libsystemd0 \
         libudev1 \
+        libgssapi-krb5-2 \
+        libkrb5-3 \
+        libk5crypto3 \
+        libkrb5support0 \
         libmariadb3 \
         libpq5 \
         curl \

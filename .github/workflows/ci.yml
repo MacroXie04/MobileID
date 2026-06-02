@@ -319,19 +319,20 @@ jobs:
           except (OSError, ValueError):
               fail("Safety scanner exit code missing or invalid")
 
+          # `safety check --output json` wraps the JSON document in
+          # human-readable deprecation banners (both before and after), so a
+          # plain json.loads fails on the surrounding text. Scan for the first
+          # JSON value and raw_decode it, ignoring any trailing banner.
           data = None
-          try:
-              data = json.loads(content)
-          except json.JSONDecodeError:
-              for line in content.splitlines():
-                  line = line.strip()
-                  if not line.startswith(("{", "[")):
-                      continue
-                  try:
-                      data = json.loads(line)
-                      break
-                  except json.JSONDecodeError:
-                      continue
+          decoder = json.JSONDecoder()
+          for start, char in enumerate(content):
+              if char not in "{[":
+                  continue
+              try:
+                  data, _ = decoder.raw_decode(content, start)
+                  break
+              except json.JSONDecodeError:
+                  continue
 
           if data is None:
               fail("Could not parse Safety JSON output")
